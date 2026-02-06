@@ -519,7 +519,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
   - Files: `src/primitives/path.lisp`, `src/primitives/path-algorithms.lisp`, `tests/test-path.lisp`
   - Pre-commit: `sbcl --eval '(asdf:test-system :cl-matplotlib-primitives)' --quit`
 
-- [ ] 2b. Transform System
+- [x] 2b. Transform System
 
   **What to do**:
   - Port CLOS class hierarchy: `transform-node` → `bbox-base`/`transform` → `affine-2d-base` → `affine-2d`, `composite-affine-2d`, `identity-transform`, `bbox-transform`, `blended-affine-2d`, `composite-generic-transform`, `blended-generic-transform`, `transform-wrapper`, `transformed-bbox`, `transformed-path`

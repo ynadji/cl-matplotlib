@@ -1,0 +1,20 @@
+This is SBCL 2.2.9.debian, an implementation of ANSI Common Lisp.
+More information about SBCL is available at <http://www.sbcl.org/>.
+
+SBCL is free software, provided as is, with absolutely no warranty.
+It is mostly in the public domain; some portions are provided under
+BSD-style licenses.  See the CREDITS and COPYING files in the
+distribution for more information.
+To load "cl-matplotlib-primitives":
+  Load 1 ASDF system:
+    cl-matplotlib-primitives
+; Loading "cl-matplotlib-primitives"
+; cl-matplotlib: 265 rcParams registered.
+; cl-matplotlib.colors: 8 base, 10 tableau, 148 CSS4 colors loaded (166 total).
+
+
+=== Scenario 1: Affine transform composition ===
+Transform (1, 1) → (12.0, 23.0) [expected: (12.0, 23.0)]
+Inverse (12, 23) → (1.0, 1.0) [expected: (1.0, 1.0)]
+
+SCENARIO 1: PASS

@@ -84,7 +84,7 @@
 (defpackage #:cl-matplotlib.primitives
   (:use #:cl)
   (:nicknames #:mpl.primitives)
-  (:documentation "Path, BBox, FontProperties — geometry primitives.")
+  (:documentation "Path, BBox, FontProperties, Transforms — geometry primitives.")
   (:export ;; Path code constants
            #:+stop+ #:+moveto+ #:+lineto+ #:+curve3+ #:+curve4+ #:+closepoly+
            #:*num-vertices-for-code*
@@ -121,7 +121,48 @@
            #:cubic-bezier-point-at #:quadratic-bezier-point-at
            #:segments-intersect-p #:segment-intersects-rectangle-p
            #:snap-to-pixel #:simple-linear-interpolation
-           #:isclose))
+           #:isclose
+           ;; Transform invalidation constants
+           #:+valid+ #:+invalid-affine-only+ #:+invalid-full+
+           ;; Affine matrix operations
+           #:affine-matrix
+           #:make-identity-matrix #:affine-matrix-multiply #:affine-matrix-invert
+           #:affine-transform-point #:copy-matrix #:matrix-equal-p
+           #:matrix-a #:matrix-b #:matrix-c #:matrix-d #:matrix-e #:matrix-f
+           ;; Transform node base
+           #:transform-node #:transform-node-invalid #:transform-node-is-affine-p
+           #:invalidate #:set-children #:frozen
+           ;; Transform base
+           #:transform #:get-matrix #:transform-point #:transform-path
+           #:invert #:compose
+           ;; Affine 2D transforms
+           #:affine-2d-base #:affine-2d #:make-affine-2d
+           #:affine-2d-matrix #:set-matrix #:affine-2d-clear
+           #:affine-2d-translate #:set-translate
+           #:affine-2d-scale #:affine-2d-rotate #:affine-2d-rotate-deg
+           #:affine-2d-rotate-around #:affine-2d-rotate-deg-around
+           #:affine-2d-skew #:affine-2d-skew-deg
+           ;; Identity transform
+           #:identity-transform #:make-identity-transform #:*identity-transform*
+           ;; Frozen transform
+           #:frozen-transform
+           ;; Composite transforms
+           #:composite-affine-2d #:composite-a #:composite-b
+           #:composite-generic-transform
+           ;; Blended transforms
+           #:blended-affine-2d #:blended-generic-transform
+           #:blended-x-transform #:blended-y-transform
+           #:make-blended-transform
+           ;; BBox transform
+           #:bbox-transform #:make-bbox-transform
+           ;; Transform wrapper
+           #:transform-wrapper #:transform-wrapper-child #:transform-wrapper-set
+           ;; TransformedBbox
+           #:transformed-bbox #:make-transformed-bbox
+           #:transformed-bbox-x0 #:transformed-bbox-y0
+           #:transformed-bbox-x1 #:transformed-bbox-y1
+           ;; TransformedPath
+           #:transformed-path-node #:transformed-path-get))
 
 (defpackage #:cl-matplotlib.rendering
   (:use #:cl)

@@ -1,0 +1,177 @@
+This is SBCL 2.2.9.debian, an implementation of ANSI Common Lisp.
+More information about SBCL is available at <http://www.sbcl.org/>.
+
+SBCL is free software, provided as is, with absolutely no warranty.
+It is mostly in the public domain; some portions are provided under
+BSD-style licenses.  See the CREDITS and COPYING files in the
+distribution for more information.
+; cl-matplotlib: 265 rcParams registered.
+; cl-matplotlib.colors: 8 base, 10 tableau, 148 CSS4 colors loaded (166 total).
+; in: ALEXANDRIA:NAMED-LAMBDA %TEST-TEST-DE-CASTELJAU-QUADRATIC-MIDPOINT
+;     (MULTIPLE-VALUE-BIND
+;         (CL-MATPLOTLIB.PRIMITIVES.TESTS::LEFT
+;          CL-MATPLOTLIB.PRIMITIVES.TESTS::RIGHT)
+;         (CL-MATPLOTLIB.PRIMITIVES:DE-CASTELJAU-SPLIT-QUADRATIC 0.0d0 0.0d0 1.0d0
+;                                                                1.0d0 2.0d0 0.0d0
+;                                                                0.5d0)
+;       (LET ((CL-MATPLOTLIB.PRIMITIVES.TESTS::MID
+;              (THIRD CL-MATPLOTLIB.PRIMITIVES.TESTS::LEFT)))
+;         (IT.BESE.FIVEAM:IS
+;          (CL-MATPLOTLIB.PRIMITIVES.TESTS::APPROX= 1.0d0
+;                                                   (CAR
+;                                                    CL-MATPLOTLIB.PRIMITIVES.TESTS::MID)
+;                                                   1.0d-10))
+;         (IT.BESE.FIVEAM:IS
+;          (CL-MATPLOTLIB.PRIMITIVES.TESTS::APPROX= 0.5d0
+;                                                   (CDR
+;                                                    CL-MATPLOTLIB.PRIMITIVES.TESTS::MID)
+;                                                   1.0d-10))))
+; ==>
+;   #'(LAMBDA
+;         (
+;          &OPTIONAL (CL-MATPLOTLIB.PRIMITIVES.TESTS::LEFT)
+;          (CL-MATPLOTLIB.PRIMITIVES.TESTS::RIGHT)
+;          &REST #:G0)
+;       (DECLARE (IGNORE #:G0))
+;       (LET ((CL-MATPLOTLIB.PRIMITIVES.TESTS::MID
+;              (THIRD CL-MATPLOTLIB.PRIMITIVES.TESTS::LEFT)))
+;         (IT.BESE.FIVEAM:IS
+;          (CL-MATPLOTLIB.PRIMITIVES.TESTS::APPROX= 1.0d0
+;                                                   (CAR
+;                                                    CL-MATPLOTLIB.PRIMITIVES.TESTS::MID)
+;                                                   1.0d-10))
+;         (IT.BESE.FIVEAM:IS
+;          (CL-MATPLOTLIB.PRIMITIVES.TESTS::APPROX= 0.5d0
+;                                                   (CDR
+;                                                    CL-MATPLOTLIB.PRIMITIVES.TESTS::MID)
+;                                                   1.0d-10))))
+; 
+; caught STYLE-WARNING:
+;   The variable RIGHT is defined but never used.
+
+Running test suite PATH-TESTS
+ Running test TEST-EMPTY-CLOSED-PATH ...
+ Running test TEST-READONLY-PATH .
+ Running test TEST-PATH-EXCEPTIONS ..
+ Running test TEST-POINT-IN-PATH ..
+ Running test TEST-POINT-IN-PATH-NAN ..
+ Running test TEST-EXTENTS-LINEAR ....
+ Running test TEST-EXTENTS-POINT ....
+ Running test TEST-EXTENTS-CUBIC-BEZIER ....
+ Running test TEST-EXTENTS-QUADRATIC-BEZIER ....
+ Running test TEST-EXTENTS-WITH-CLOSEPOLY-IGNORED ....
+ Running test TEST-EXTENTS-WITH-STOP-IGNORED ....
+ Running test TEST-MAKE-COMPOUND-PATH-EMPTY ..
+ Running test TEST-MAKE-COMPOUND-PATH-STOPS .
+ Running test TEST-UNIT-RECTANGLE ....
+ Running test TEST-UNIT-CIRCLE .....
+ Running test TEST-UNIT-CIRCLE-READONLY .
+ Running test TEST-UNIT-CIRCLE-CONTAINS-ORIGIN .
+ Running test TEST-UNIT-CIRCLE-NOT-CONTAINS-OUTSIDE .
+ Running test TEST-FULL-ARC ........................
+ Running test TEST-WEDGE ...
+ Running test TEST-PATH-DEEPCOPY ..........
+ Running test TEST-PATH-SHALLOWCOPY .....
+ Running test TEST-PATH-TO-POLYGONS-TWO-POINTS ...
+ Running test TEST-PATH-TO-POLYGONS-THREE-POINTS ......
+ Running test TEST-POINT-IN-POLYGON ...
+ Running test TEST-SUTHERLAND-HODGMAN-INSIDE .
+ Running test TEST-SUTHERLAND-HODGMAN-OUTSIDE .
+ Running test TEST-SUTHERLAND-HODGMAN-PARTIAL .................
+ Running test TEST-DOUGLAS-PEUCKER-COLLINEAR ...
+ Running test TEST-DOUGLAS-PEUCKER-PRESERVES-SHARP-TURNS .
+ Running test TEST-DE-CASTELJAU-CUBIC-MIDPOINT ..
+ Running test TEST-DE-CASTELJAU-QUADRATIC-MIDPOINT ..
+ Running test TEST-CUBIC-BEZIER-EXTREMA .....
+ Running test TEST-QUADRATIC-BEZIER-EXTREMA ..
+ Running test TEST-SEGMENTS-INTERSECT ...
+ Running test TEST-SEGMENTS-INTERSECT-TOUCHING .
+ Running test TEST-PATH-INTERSECTS-PATH-CROSSING ..
+ Running test TEST-PATH-INTERSECTS-PATH-DISJOINT ..
+ Running test TEST-PATH-INTERSECTS-PATH-SELF .
+ Running test TEST-PATH-INTERSECTS-PATH-CONTAINED ..
+ Running test TEST-PATH-INTERSECTS-BBOX-INSIDE .
+ Running test TEST-PATH-INTERSECTS-BBOX-OUTSIDE .
+ Running test TEST-PATH-CLIP-TO-BBOX ................
+ Running test TEST-PATH-TRANSFORMED ....
+ Running test TEST-INTERPOLATED-IDENTITY .
+ Running test TEST-INTERPOLATED-EMPTY .
+ Running test TEST-INTERPOLATED-BASIC ....
+ Running test TEST-BBOX-CREATION ......
+ Running test TEST-BBOX-NULL .
+ Running test TEST-BBOX-UNION ....
+ Running test TEST-BBOX-CONTAINS-POINT ..
+ Running test TEST-PATH-CODES-CONSTANTS ......
+ Running test TEST-NUM-VERTICES-FOR-CODE ......
+ Running test TEST-ISCLOSE ....
+ Running test TEST-SNAP-TO-PIXEL ..
+ Running test TEST-PATH-CLOSED ...
+ Running test TEST-CIRCLE-WITH-CENTER-AND-RADIUS ....
+ Running test TEST-INTERPOLATED-WITH-MOVETO .
+ Did 215 checks.
+    Pass: 215 (100%)
+    Skip: 0 ( 0%)
+    Fail: 0 ( 0%)
+
+
+Running test suite TRANSFORM-TESTS
+ Running test TEST-IDENTITY-MATRIX ......
+ Running test TEST-MATRIX-MULTIPLY .....
+ Running test TEST-MATRIX-INVERT .........
+ Running test TEST-AFFINE-TRANSFORM-POINT ......
+ Running test TEST-MAKE-AFFINE-2D-IDENTITY ......
+ Running test TEST-MAKE-AFFINE-2D-TRANSLATE ..
+ Running test TEST-MAKE-AFFINE-2D-SCALE ..
+ Running test TEST-MAKE-AFFINE-2D-ROTATE ..
+ Running test TEST-AFFINE2D-TRANSLATE ..
+ Running test TEST-AFFINE2D-SCALE ..
+ Running test TEST-AFFINE2D-ROTATE-90 ..
+ Running test TEST-AFFINE2D-ROTATE-180 ..
+ Running test TEST-AFFINE2D-ROTATE-270 ..
+ Running test TEST-AFFINE2D-ROTATE-AROUND ..
+ Running test TEST-AFFINE2D-SCALE-MULTIPLE-POINTS ......
+ Running test TEST-AFFINE2D-SKEW ..
+ Running test TEST-AFFINE2D-CLEAR ...
+ Running test TEST-COMPOSE-AFFINE-AFFINE ..
+ Running test TEST-COMPOSE-IDENTITY ..
+ Running test TEST-COMPOSE-R90-R90-EQUALS-R180 .
+ Running test TEST-ACCEPTANCE-AFFINE-COMPOSE ....
+ Running test TEST-INVERT-TRANSLATE ..
+ Running test TEST-INVERT-SCALE ..
+ Running test TEST-INVERT-ROUNDTRIP ..
+ Running test TEST-IDENTITY-TRANSFORM ....
+ Running test TEST-FROZEN-TRANSFORM ...
+ Running test TEST-INVALIDATION-BASIC .
+ Running test TEST-ACCEPTANCE-INVALIDATION .
+ Running test TEST-INVALIDATION-CHAIN .
+ Running test TEST-TRANSFORM-PATH ........
+ Running test TEST-IDENTITY-TRANSFORM-PATH .
+ Running test TEST-BBOX-TRANSFORM ......
+ Running test TEST-BBOX-TRANSFORM-NON-UNIT ....
+ Running test TEST-BLENDED-AFFINE ..
+ Running test TEST-TRANSFORM-WRAPPER ....
+ Running test TEST-ROTATE-PLUS-TRANSLATE ..
+ Running test TEST-ROTATE-PLUS-SCALE ..
+ Running test TEST-SCALE-PLUS-ROTATE ..
+ Running test TEST-CHAINED-EQUALS-COMPOSED .
+ Running test TEST-TRANSFORMED-BBOX ....
+ Running test TEST-WEAK-POINTER-PRUNING ..
+ Running test TEST-COPY-MATRIX ..
+ Running test TEST-TRANSFORM-POINT-LIST-INPUT ..
+ Running test TEST-COMPOSITE-GENERIC-INVERT ..
+ Running test TEST-TRANSLATE-MULTIPLE-POINTS-PATH ......
+ Running test TEST-ROTATE-90-MULTIPLE-POINTS ......
+ Running test TEST-ROTATE-180-MULTIPLE-POINTS ....
+ Running test TEST-ROTATE-270-MULTIPLE-POINTS ....
+ Running test TEST-COMPOSE-ROTATION-ADDITION ..
+ Running test TEST-MATRIX-ACCESSORS ......
+ Running test TEST-MAKE-AFFINE-2D-EXPLICIT-MATRIX ..
+ Running test TEST-MAKE-AFFINE-2D-MATRIX-LIST ..
+ Did 162 checks.
+    Pass: 162 (100%)
+    Skip: 0 ( 0%)
+    Fail: 0 ( 0%)
+
+; 
+; compilation unit finished
+;   caught 1 STYLE-WARNING condition

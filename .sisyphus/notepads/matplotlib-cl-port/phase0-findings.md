@@ -217,3 +217,47 @@ Date: 2026-02-06
 - `.sisyphus/evidence/phase2a-path-ops.txt` — Path creation, extents, containment, constructors
 - `.sisyphus/evidence/phase2a-path-clip.txt` — Sutherland-Hodgman clipping scenarios
 - `.sisyphus/evidence/phase2a-test-results.txt` — 215/215 checks pass (100%)
+
+---
+
+## Phase 2b Findings — Transform System
+Date: 2026-02-06
+
+### Implementation Summary
+- **Full CLOS class hierarchy** ported from matplotlib's transforms.py (~530 LOC)
+- **12 classes**: transform-node, transform, affine-2d-base, affine-2d, identity-transform, frozen-transform, composite-affine-2d, composite-generic-transform, blended-affine-2d, blended-generic-transform, transform-wrapper, bbox-transform, transformed-bbox, transformed-path-node
+- **3×3 affine matrix** as `(simple-array double-float (6))` — inline multiply (~6 muls + 4 adds), invert, point transform
+- **Invalidation caching** with 3 states: +valid+ (0), +invalid-affine-only+ (1), +invalid-full+ (2)
+- **Weak pointer child management** via trivial-garbage — parents stored as weak pointers, pruned on invalidation walk
+- **52 tests, 162 checks, 100% pass rate**
+
+### Architecture Decisions
+
+1. **CLOS classes with :allocation :class for flags** — `is-affine`, `pass-through`, `has-inverse` are class-allocated slots, not per-instance. This mirrors Python's class-level attributes.
+
+2. **Weak pointer list (not dict)** — matplotlib uses a dict with `id(self)` keys for O(1) removal. We use a list of weak pointers and prune dead refs during invalidation walks. Simpler, and transform trees in practice are small.
+
+3. **compose generic function** — Type-dispatched: `(compose affine affine)` → `composite-affine-2d`, `(compose transform transform)` → checks `is-affine` and picks `composite-affine-2d` or `composite-generic-transform`. Identity transforms short-circuit.
+
+4. **Matrix storage convention** — `[a b c d e f]` representing `[[a c e] [b d f] [0 0 1]]`. This matches matplotlib's `(a, b, c, d, e, f)` from `to_values()`.
+
+5. **Frozen transforms** — `frozen-transform` class holds immutable copy. No invalidation propagation. Used for snapshots.
+
+6. **make-affine-2d API** — Constructor accepts `:matrix`, `:translate`, `:scale`, `:rotate` keywords. Operations applied in order: scale → rotate → translate.
+
+### Gotchas Encountered
+
+1. **Acceptance scenario semantics** — The plan's acceptance scenario 1 says "translate first, then scale" → (12, 23) for point (1,1). This means scale(1,1)→(2,3) THEN translate(2,3)→(12,23), so scale is applied first in the composition: `(compose scale translate)`.
+
+2. **Invalidation direction** — matplotlib's invalidation propagates from children UP to parents (parents depend on children). `set_children` registers the PARENT as a dependent OF each child. This is counterintuitive — "children" in transform parlance are the INPUT transforms, not parent-child in the tree sense.
+
+3. **Class-allocated slots and subclasses** — Using `:allocation :class` with `:initform` on the base class means subclasses that override must also use `:allocation :class`. This works cleanly in SBCL.
+
+### Files Created
+- `src/primitives/transforms.lisp` — ~530 LOC, 12 classes + operations
+- `tests/test-transforms.lisp` — ~550 LOC, 52 tests, 162 checks
+
+### Evidence Files
+- `.sisyphus/evidence/phase2b-affine-compose.txt` — Scenario 1 PASS
+- `.sisyphus/evidence/phase2b-invalidation.txt` — Scenario 2 PASS
+- `.sisyphus/evidence/phase2b-test-results.txt` — 377/377 checks pass (215 path + 162 transform)
