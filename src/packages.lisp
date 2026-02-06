@@ -84,7 +84,7 @@
 (defpackage #:cl-matplotlib.primitives
   (:use #:cl)
   (:nicknames #:mpl.primitives)
-  (:documentation "Path, BBox, FontProperties, Transforms — geometry primitives.")
+  (:documentation "Path, BBox, FontProperties, Transforms, Colors — geometry and color primitives.")
   (:export ;; Path code constants
            #:+stop+ #:+moveto+ #:+lineto+ #:+curve3+ #:+curve4+ #:+closepoly+
            #:*num-vertices-for-code*
@@ -162,7 +162,30 @@
            #:transformed-bbox-x0 #:transformed-bbox-y0
            #:transformed-bbox-x1 #:transformed-bbox-y1
            ;; TransformedPath
-           #:transformed-path-node #:transformed-path-get))
+           #:transformed-path-node #:transformed-path-get
+           ;; Color conversion (extends foundation)
+           #:to-hex #:to-rgb
+           ;; Colormap classes
+           #:colormap #:colormap-name #:colormap-n #:colormap-call
+           #:linear-segmented-colormap #:make-linear-segmented-colormap
+           #:linear-segmented-colormap-from-list
+           #:listed-colormap #:make-listed-colormap
+           ;; Colormap registry
+           #:*colormaps* #:register-colormap #:get-colormap #:list-colormaps
+           #:initialize-colormaps
+           ;; Normalize classes
+           #:normalize #:make-normalize #:normalize-call #:normalize-inverse
+           #:norm-vmin #:norm-vmax #:norm-clip
+           #:no-norm #:make-no-norm
+           #:log-norm #:make-log-norm
+           #:sym-log-norm #:make-sym-log-norm
+           #:power-norm #:make-power-norm
+           #:two-slope-norm #:make-two-slope-norm
+           #:boundary-norm #:make-boundary-norm
+           ;; ScalarMappable
+           #:scalar-mappable #:make-scalar-mappable
+           #:scalar-mappable-to-rgba #:scalar-mappable-autoscale
+           #:sm-norm #:sm-cmap))
 
 (defpackage #:cl-matplotlib.rendering
   (:use #:cl)

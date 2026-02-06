@@ -1,0 +1,29 @@
+To load "cl-matplotlib-primitives":
+  Load 1 ASDF system:
+    cl-matplotlib-primitives
+; Loading "cl-matplotlib-primitives"
+; cl-matplotlib: 265 rcParams registered.
+; cl-matplotlib.colors: 8 base, 10 tableau, 148 CSS4 colors loaded (166 total).
+; cl-matplotlib.primitives: 23 colormaps registered.
+
+
+=== Scenario 2: Colormap mapping works ===
+
+(get-colormap :viridis) => #<LISTED-COLORMAP {100426AAF3}>
+(colormap-call (get-colormap :viridis) 0.0) => #(0.26700401306152344d0
+                                                 0.004873999860137701d0
+                                                 0.3294149935245514d0 1.0d0)
+(colormap-call (get-colormap :viridis) 1.0) => #(0.9932479858398438d0
+                                                 0.9061570167541504d0
+                                                 0.14393599331378937d0 1.0d0)
+(colormap-call (get-colormap :viridis) 0.5) => #(0.2968682909713072d0
+                                                 0.7816748338587144d0
+                                                 0.406617869349087d0 1.0d0)
+
+Registered colormaps: ("Blues" "Greens" "Greys" "RdBu" "RdYlGn" "Reds"
+                       "Spectral" "autumn" "binary" "cividis" "cool" "coolwarm"
+                       "gray" "grey" "hot" "inferno" "jet" "magma" "plasma"
+                       "spring" "summer" "viridis" "winter")
+Count: 23
+
+PASS: Colormap mapping works.

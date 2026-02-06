@@ -3,7 +3,7 @@
 
 (defpackage #:cl-matplotlib.primitives.tests
   (:use #:cl #:fiveam #:cl-matplotlib.primitives)
-  (:export #:path-tests))
+  (:export #:path-tests #:color-tests))
 
 (in-package #:cl-matplotlib.primitives.tests)
 

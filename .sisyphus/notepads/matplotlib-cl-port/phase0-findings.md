@@ -261,3 +261,51 @@ Date: 2026-02-06
 - `.sisyphus/evidence/phase2b-affine-compose.txt` — Scenario 1 PASS
 - `.sisyphus/evidence/phase2b-invalidation.txt` — Scenario 2 PASS
 - `.sisyphus/evidence/phase2b-test-results.txt` — 377/377 checks pass (215 path + 162 transform)
+
+---
+
+## Phase 2c Findings — Color System
+Date: 2026-02-06
+
+### Implementation Summary
+- **Colormap base class** with CLOS: `colormap`, `linear-segmented-colormap`, `listed-colormap`
+- **7 Normalize classes**: `normalize`, `no-norm`, `log-norm`, `sym-log-norm`, `power-norm`, `two-slope-norm`, `boundary-norm`
+- **ScalarMappable** mixin combining norm + colormap
+- **23 colormaps registered**: viridis, plasma, inferno, magma, cividis, Greys, Reds, Blues, Greens, hot, cool, coolwarm, RdBu, RdYlGn, Spectral, jet, gray, binary, spring, summer, autumn, winter, grey (alias)
+- **Colormap registry**: hash table with string keys, `register-colormap`, `get-colormap`, `list-colormaps`
+- **55 tests, 211 checks, 100% pass rate**
+- **Total system: 588 checks (215 path + 162 transform + 211 color), 100% pass**
+
+### Gotchas Encountered
+
+1. **Cannot define method on FUNCALL** — CL's `funcall` is a built-in function, not a generic function. Cannot use `(defmethod funcall ((cmap colormap) ...))`. Instead, use `colormap-call` as the generic function name.
+
+2. **CL format ~x produces uppercase hex** — `(format nil "~2,'0x" 255)` → "FF" not "ff". Must wrap with `string-downcase` to match matplotlib's lowercase hex convention.
+
+3. **Perceptually uniform colormaps (viridis etc.) have 256 entries** — Too large to embed directly. Used 16 control points with linear interpolation to approximate. This is a tradeoff: exact values would require ~15KB per colormap. The interpolated version is close but not bit-exact with matplotlib.
+
+4. **From-list colormaps (Blues, Reds, etc.) use 9-11 RGB control points** — These are passed through `linear-segmented-colormap-from-list` which builds segment data internally.
+
+5. **Segment data format** — matplotlib uses tuples `(x, y0, y1)` where y0 is the value approaching from below and y1 is the value leaving above. For continuous colormaps, y0 == y1. The `%create-lookup-table` function handles this correctly.
+
+### Architecture Decisions
+
+1. **CLOS classes for colormaps** — `colormap` base class with `linear-segmented-colormap` and `listed-colormap` subclasses. Uses `colormap-init` generic function for lazy LUT initialization.
+
+2. **LUT as 2D array** — `(simple-array double-float ((N+3) 4))` where N is the number of quantization levels, +3 for under/over/bad colors. This matches matplotlib's layout.
+
+3. **Normalize as CLOS classes** — Each normalization type is a separate class with `normalize-call` and `normalize-inverse` generic functions. This allows easy extension.
+
+4. **Colormap registry uses string keys** — `get-colormap` accepts keywords, strings, or symbols and normalizes to lowercase strings. Case-insensitive lookup as fallback.
+
+5. **Control point interpolation for listed colormaps** — Rather than embedding 256×3 = 768 floats per colormap, we store 16 control points and interpolate. This keeps the source compact while providing reasonable accuracy.
+
+### Files Created
+- `src/primitives/colors.lisp` — ~480 LOC, Colormap + Normalize classes + ScalarMappable
+- `src/primitives/colormaps.lisp` — ~350 LOC, Colormap data + registry
+- `tests/test-colors.lisp` — ~500 LOC, 55 tests, 211 checks
+
+### Evidence Files
+- `.sisyphus/evidence/phase2c-color-convert.txt` — Color conversion scenarios PASS
+- `.sisyphus/evidence/phase2c-colormap.txt` — Colormap mapping scenarios PASS
+- `.sisyphus/evidence/phase2c-test-results.txt` — 588/588 checks pass (100%)

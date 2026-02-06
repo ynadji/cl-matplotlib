@@ -11,7 +11,9 @@
                 :serial t
                 :components ((:file "path-algorithms")
                              (:file "path")
-                             (:file "transforms"))))
+                             (:file "transforms")
+                             (:file "colors")
+                             (:file "colormaps"))))
   :in-order-to ((test-op (test-op #:cl-matplotlib-primitives/tests))))
 
 (asdf:defsystem #:cl-matplotlib-primitives/tests
@@ -19,9 +21,12 @@
   :depends-on (#:cl-matplotlib-primitives #:fiveam)
   :pathname "tests/"
   :components ((:file "test-path")
-               (:file "test-transforms"))
+               (:file "test-transforms")
+               (:file "test-colors"))
   :perform (test-op (o c)
              (uiop:symbol-call :fiveam :run!
                                (uiop:find-symbol* :path-tests :cl-matplotlib.primitives.tests))
              (uiop:symbol-call :fiveam :run!
-                               (uiop:find-symbol* :transform-tests :cl-matplotlib.primitives.tests))))
+                               (uiop:find-symbol* :transform-tests :cl-matplotlib.primitives.tests))
+             (uiop:symbol-call :fiveam :run!
+                               (uiop:find-symbol* :color-tests :cl-matplotlib.primitives.tests))))

@@ -598,7 +598,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
   - Files: `src/primitives/transforms.lisp`, `tests/test-transforms.lisp`
   - Pre-commit: `sbcl --eval '(asdf:test-system :cl-matplotlib-primitives)' --quit`
 
-- [ ] 2c. Color System
+- [x] 2c. Color System
 
   **What to do**:
   - Port `colors.py`: `Colormap`, `Normalize`, `LinearSegmentedColormap`, `ListedColormap`, `BoundaryNorm`, `NoNorm`, `LogNorm`, `SymLogNorm`, `PowerNorm`, `TwoSlopeNorm`
