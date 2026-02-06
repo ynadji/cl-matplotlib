@@ -162,3 +162,58 @@ Date: 2026-02-06
 - `.sisyphus/evidence/phase1-all-scenarios.txt` — Full test output (all PASS)
 - `.sisyphus/evidence/phase1-rc-params.txt` — RC params scenario
 - `.sisyphus/evidence/phase1-cbook.txt` — cbook utilities scenario
+
+---
+
+## Phase 2a Findings — Path System
+Date: 2026-02-06
+
+### Implementation Summary
+- **Path class** with vertices (simple-array double-float (* 2)) and codes (simple-array (unsigned-byte 8) (*))
+- **6 path code constants**: +stop+ (0), +moveto+ (1), +lineto+ (2), +curve3+ (3), +curve4+ (4), +closepoly+ (79)
+- **BBox struct** with full operations (union, contains-point, extents)
+- **7 core algorithms** ported from C++ to pure CL:
+  1. Crossings-multiply point-in-path (from _path.h)
+  2. Sutherland-Hodgman polygon clipping
+  3. Douglas-Peucker path simplification
+  4. De Casteljau Bézier curve subdivision (cubic + quadratic)
+  5. Bézier curve extrema calculation (cubic + quadratic)
+  6. Segment-segment intersection (from _path.h segments_intersect)
+  7. Segment-rectangle intersection
+- **12 path operations**: make-path, path-get-extents, path-contains-point, path-contains-points, path-intersects-path, path-intersects-bbox, path-transformed, path-clip-to-bbox, path-to-polygons, path-interpolated, path-cleaned, path-iter-segments
+- **5 path constructors**: path-unit-rectangle, path-unit-circle, path-circle, path-arc, path-wedge
+- **58 tests, 215 checks, 100% pass rate**
+
+### Gotchas Encountered
+
+1. **float-features:double-float-nan is a constant, not a function** — Use it as a symbol-value, not a function call.
+
+2. **NaN in CL arithmetic** — CL comparison operators (>=, <=) may signal errors with NaN, unlike Python/C++ which return False. Must guard with float-nan-p checks before numeric comparisons.
+
+3. **%coerce-codes with mismatched length** — When coercing a list of codes to an array of size N, if the list has fewer elements, the array silently has zeros in unfilled positions. Must validate input length before coercing.
+
+4. **Bézier curve extents need both x AND y extrema** — Computing extrema along just one axis is insufficient. Must find zeros of the derivative for both x(t) and y(t) independently.
+
+5. **Sutherland-Hodgman requires polygon input** — The clipping algorithm works on closed polygons, not arbitrary paths. Must convert path to polygon(s) first via path-to-polygon-points.
+
+6. **Unit circle uses 8 cubic Bézier segments** — 26 vertices total (MOVETO + 8*3 CURVE4 vertices + CLOSEPOLY). The MAGIC constant 0.2652031 provides optimal circle approximation.
+
+### Architecture Decisions
+
+1. **Two files: path-algorithms.lisp + path.lisp** — Algorithms are pure math (no path struct dependency), path.lisp builds on top with the Path struct and operations.
+
+2. **Cons cells for polygon points** — Internal polygon operations use (x . y) cons cells for efficiency. Public API uses arrays.
+
+3. **Bézier curves flattened to line segments for point-in-path** — Rather than exact curve math, we subdivide curves into line segments (4 segments for quadratic, 8 for cubic). This matches matplotlib's approach of converting curves before testing.
+
+4. **float-features dependency** — Added for NaN handling (float-nan-p). Essential for robust geometry operations.
+
+### Files Created
+- `src/primitives/path-algorithms.lisp` — ~350 LOC, 7 algorithms
+- `src/primitives/path.lisp` — ~620 LOC, Path struct + 17 operations/constructors
+- `tests/test-path.lisp` — ~500 LOC, 58 tests, 215 checks
+
+### Evidence Files
+- `.sisyphus/evidence/phase2a-path-ops.txt` — Path creation, extents, containment, constructors
+- `.sisyphus/evidence/phase2a-path-clip.txt` — Sutherland-Hodgman clipping scenarios
+- `.sisyphus/evidence/phase2a-test-results.txt` — 215/215 checks pass (100%)

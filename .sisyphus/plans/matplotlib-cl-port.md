@@ -433,7 +433,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
 
 ### Phase 2: Primitives (Parallel Wave)
 
-- [ ] 2a. Path System
+- [x] 2a. Path System
 
   **What to do**:
   - Port `path.py` Path class: vertices (simple-array double-float (* 2)), codes (simple-array (unsigned-byte 8) (*))

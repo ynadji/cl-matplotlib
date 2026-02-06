@@ -85,9 +85,43 @@
   (:use #:cl)
   (:nicknames #:mpl.primitives)
   (:documentation "Path, BBox, FontProperties — geometry primitives.")
-  (:export #:mpl-path #:make-mpl-path
-           #:bbox #:make-bbox
-           #:+moveto+ #:+lineto+ #:+curve3+ #:+curve4+ #:+closepoly+))
+  (:export ;; Path code constants
+           #:+stop+ #:+moveto+ #:+lineto+ #:+curve3+ #:+curve4+ #:+closepoly+
+           #:*num-vertices-for-code*
+           ;; BBox
+           #:bbox #:make-bbox #:bbox-null #:bbox-null-p
+           #:bbox-x0 #:bbox-y0 #:bbox-x1 #:bbox-y1
+           #:bbox-extents #:bbox-width #:bbox-height
+           #:bbox-union #:bbox-contains-point-p
+           ;; Path struct
+           #:mpl-path #:make-path #:%make-mpl-path
+           #:mpl-path-vertices #:mpl-path-codes #:mpl-path-readonly
+           #:mpl-path-should-simplify #:mpl-path-simplify-threshold
+           #:mpl-path-interpolation-steps
+           #:path-length
+           ;; Path operations
+           #:path-iter-segments #:path-get-extents
+           #:path-contains-point #:path-contains-points
+           #:path-intersects-path #:path-intersects-bbox
+           #:path-transformed #:path-clip-to-bbox
+           #:path-to-polygons #:path-to-polygon-points
+           #:path-interpolated #:path-cleaned
+           #:path-copy #:path-deepcopy
+           #:path-create-closed
+           ;; Path constructors
+           #:path-make-compound-path
+           #:path-unit-rectangle #:path-unit-circle #:path-circle
+           #:path-arc #:path-wedge
+           ;; Algorithms (public)
+           #:point-in-path-crossings #:point-in-polygon-p
+           #:sutherland-hodgman-clip
+           #:douglas-peucker
+           #:de-casteljau-split-cubic #:de-casteljau-split-quadratic
+           #:cubic-bezier-extrema-t #:quadratic-bezier-extrema-t
+           #:cubic-bezier-point-at #:quadratic-bezier-point-at
+           #:segments-intersect-p #:segment-intersects-rectangle-p
+           #:snap-to-pixel #:simple-linear-interpolation
+           #:isclose))
 
 (defpackage #:cl-matplotlib.rendering
   (:use #:cl)
