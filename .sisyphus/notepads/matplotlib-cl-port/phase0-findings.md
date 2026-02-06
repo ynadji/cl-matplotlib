@@ -115,3 +115,50 @@ No pivot to custom cl-aa rasterizer is needed.
 - `.sisyphus/evidence/phase0-numcl-validation.txt` — 18/20 pass
 - `.sisyphus/evidence/phase0-weakref-test.txt` — 4/4 pass
 - `.sisyphus/evidence/phase0-scope-document.md` — ~1396 functions classified
+
+---
+
+## Phase 1 Findings — Foundation Layer
+Date: 2026-02-06
+
+### Implementation Summary
+- **265 rcParams** registered (exceeds 150-200 target — includes boxplot, date, SVG, PS, PDF params)
+- **166 named colors** loaded (8 base + 10 tableau + 148 CSS4)
+- **All acceptance scenarios PASS** (RC params, cbook, colors, API utilities)
+
+### Gotchas Encountered
+
+1. **CL strings are vectors** — `(vectorp "red")` returns T in CL. Must use `(not (stringp x))` guard when checking for numeric vectors. This caused `to-rgba "red"` to try floating `#\r`.
+
+2. **SBCL --eval only allows one expression** — Must use `--load` for multi-expression test scripts.
+
+3. **normalize-kwargs push order** — When building a plist with push+nreverse, must push key THEN value (not value then key) because nreverse flips the order.
+
+4. **Color name lookup must precede hex-without-# check** — "red" and many color names are valid hex strings (r=13, e=14, d=13). Named color lookup must happen first.
+
+5. **validate-float returns double** — Using `(float x 1.0d0)` produces double-float, which is correct for precision but means equality tests need `=` not `eql`.
+
+### Architecture Decisions
+
+1. **Single hash table per concern** — `*rc-params*`, `*rc-validators*`, `*rc-defaults*` are separate hash tables with string keys. This matches matplotlib's approach.
+
+2. **with-rc uses unwind-protect** — Restores values even on non-local exit. Uses direct `gethash` bypass during restore (not `(setf rc)`) to avoid re-validation of already-validated values.
+
+3. **Validators return validated/coerced values** — Following matplotlib pattern, validators like `validate-float` both validate AND coerce (e.g., int→float, string→float).
+
+4. **Color database uses lowercase keys** — All named color lookups convert to lowercase first, matching matplotlib behavior.
+
+5. **Keyword symbols for enums** — Line styles (`:solid`, `:dashed`), join styles (`:miter`, `:round`), cap styles (`:butt`, `:projecting`) all use CL keywords as specified.
+
+### Files Created
+- `src/foundation/cbook.lisp` — 145 LOC, 11 functions
+- `src/foundation/api.lisp` — 113 LOC, 11 functions/macros
+- `src/foundation/rcsetup.lisp` — 440 LOC, 35 validators + RC store + with-rc
+- `src/foundation/rcparams.lisp` — 270 LOC, 265 params registered
+- `src/foundation/matplotlibrc-parser.lisp` — 65 LOC, 4 functions
+- `src/foundation/colors-database.lisp` — 300 LOC, 166 colors
+
+### Evidence Files
+- `.sisyphus/evidence/phase1-all-scenarios.txt` — Full test output (all PASS)
+- `.sisyphus/evidence/phase1-rc-params.txt` — RC params scenario
+- `.sisyphus/evidence/phase1-cbook.txt` — cbook utilities scenario

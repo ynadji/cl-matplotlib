@@ -1,0 +1,10 @@
+=== SCENARIO 2: cbook utilities ===
+2a. check-isinstance 42 integer: PASS
+2b. check-isinstance 'hi' integer: PASS (signalled CHECK-ERROR)
+2c. ls-mapper '--': DASHED (expected :DASHED) PASS
+2d. normalize-kwargs: (:LINEWIDTH 2 :COLOR "red") PASS
+2e. check-in-list 'solid': PASS
+2f. check-in-list 'wavy': PASS (signalled CHECK-ERROR)
+2g. str-lower-equal 'Hello' 'hello': T PASS
+
+=== SCENARIO 3: Color name lookup ===

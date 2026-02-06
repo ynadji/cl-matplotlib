@@ -355,7 +355,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
 
 ### Phase 1: Foundation
 
-- [ ] 1. Foundation System (cl-matplotlib-foundation)
+- [x] 1. Foundation System (cl-matplotlib-foundation)
 
   **What to do**:
   - Port `cbook.py` utilities (cherry-pick useful functions: `normalize-kwargs`, `silent-list`, `ls-mapper`, type-checking helpers, `_check_isinstance`, `_check_in_list`, `_check_shape`, dict/list utilities). Skip deprecated functions and Python-only patterns.

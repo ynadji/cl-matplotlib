@@ -1,0 +1,13 @@
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/code/cl-ingrid/src/packages-tmpGHU3ALSV.fasl
+; compilation finished in 0:00:00.002
+; compiling file "/home/yacin/code/cl-ingrid/src/foundation/cbook.lisp" (written 06 FEB 2026 02:58:33 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/code/cl-ingrid/src/foundation/cbook-tmpAAURSO1.fasl
+; compilation finished in 0:00:00.015
+; compiling file "/home/yacin/code/cl-ingrid/src/foundation/api.lisp" (written 06 FEB 2026 02:50:44 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/code/cl-ingrid/src/foundation/api-tmp5GEXGEG5.fasl
+; compilation finished in 0:00:00.042
+; compiling file "/home/yacin/code/cl-ingrid/src/foundation/rcsetup.lisp" (written 06 FEB 2026 02:52:20 PM):
+

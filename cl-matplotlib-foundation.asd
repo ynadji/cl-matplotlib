@@ -1,9 +1,17 @@
-;;;; cl-matplotlib-foundation — Core types, math, color, transforms
+;;;; cl-matplotlib-foundation — Core utilities, rc-params, color database
 
 (asdf:defsystem #:cl-matplotlib-foundation
-  :description "Foundation types for cl-matplotlib: math, color, transforms"
-  :version "0.0.1"
-  :depends-on (#:trivial-garbage)
+  :description "Foundation layer for cl-matplotlib: cbook utilities, rc-params, API helpers, color database"
+  :version "0.1.0"
+  :depends-on (#:trivial-garbage #:uiop)
   :serial t
-  :pathname "src/foundation/"
-  :components ())
+  :pathname "src/"
+  :components ((:file "packages")
+               (:module "foundation"
+                :serial t
+                :components ((:file "cbook")
+                             (:file "api")
+                             (:file "rcsetup")
+                             (:file "rcparams")
+                             (:file "matplotlibrc-parser")
+                             (:file "colors-database")))))

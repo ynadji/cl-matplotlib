@@ -1,0 +1,74 @@
+; compiling file "/home/yacin/code/cl-ingrid/src/packages.lisp" (written 06 FEB 2026 02:55:51 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/code/cl-ingrid/src/packages-tmpGHU3ALSV.fasl
+; compilation finished in 0:00:00.002
+; compiling file "/home/yacin/code/cl-ingrid/src/foundation/cbook.lisp" (written 06 FEB 2026 02:58:33 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/code/cl-ingrid/src/foundation/cbook-tmpAAURSO1.fasl
+; compilation finished in 0:00:00.015
+; compiling file "/home/yacin/code/cl-ingrid/src/foundation/api.lisp" (written 06 FEB 2026 02:50:44 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/code/cl-ingrid/src/foundation/api-tmp5GEXGEG5.fasl
+; compilation finished in 0:00:00.042
+; compiling file "/home/yacin/code/cl-ingrid/src/foundation/rcsetup.lisp" (written 06 FEB 2026 02:52:20 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/code/cl-ingrid/src/foundation/rcsetup-tmpAR3FSGEY.fasl
+; compilation finished in 0:00:00.057
+; compiling file "/home/yacin/code/cl-ingrid/src/foundation/rcparams.lisp" (written 06 FEB 2026 02:53:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/code/cl-ingrid/src/foundation/rcparams-tmpJAIDFZTC.fasl
+; compilation finished in 0:00:00.020
+; cl-matplotlib: 265 rcParams registered.
+; compiling file "/home/yacin/code/cl-ingrid/src/foundation/matplotlibrc-parser.lisp" (written 06 FEB 2026 02:54:02 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/code/cl-ingrid/src/foundation/matplotlibrc-parser-tmp8V3J6PE9.fasl
+; compilation finished in 0:00:00.011
+; compiling file "/home/yacin/code/cl-ingrid/src/foundation/colors-database.lisp" (written 06 FEB 2026 02:58:16 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/code/cl-ingrid/src/foundation/colors-database-tmp9V47YWQF.fasl
+; compilation finished in 0:00:00.023
+; cl-matplotlib.colors: 8 base, 10 tableau, 148 CSS4 colors loaded (166 total).
+
+=== SCENARIO 1: RC params load and validate ===
+1a. Default lines.linewidth: 1.5 (expected 1.5) PASS
+1b. Set to 2.0: 2.0 (expected 2.0) PASS
+1c. Inside with-rc 3.0: 3.0 (expected 3.0) PASS
+1d. After with-rc restored: 2.0 (expected 2.0) PASS
+1e. lines.antialiased default: T (expected T) PASS
+1f. figure.dpi default: 100.0 (expected 100.0) PASS
+1g. lines.linestyle default: SOLID (expected :SOLID) PASS
+1h. rc-find-all 'lines.': 17 params found PASS
+1i. Total rcParams: 265 (expected >= 150) PASS
+1j. Validation error on bad value: PASS (RC-VALIDATION-ERROR)
+1k. After rc-reset, lines.linewidth: 1.5 (expected 1.5) PASS
+
+=== SCENARIO 2: cbook utilities ===
+2a. check-isinstance 42 integer: PASS
+2b. check-isinstance 'hi' integer: PASS (signalled CHECK-ERROR)
+2c. ls-mapper '--': DASHED (expected :DASHED) PASS
+2d. normalize-kwargs: (:LINEWIDTH 2 :COLOR "red") PASS
+2e. check-in-list 'solid': PASS
+2f. check-in-list 'wavy': PASS (signalled CHECK-ERROR)
+2g. str-lower-equal 'Hello' 'hello': T PASS
+
+=== SCENARIO 3: Color name lookup ===
+3a. to-rgba 'red': #(1.0 0.0 0.0 1.0) PASS
+3b. to-rgba '#00FF00': #(0.0 1.0 0.0 1.0) PASS
+3c. to-rgba 'b' (blue): #(0.0 0.0 1.0 1.0) PASS
+3d. to-rgba 'tab:blue': #(0.12156863 0.46666667 0.7058824 1.0) PASS
+3e. to-rgba 'cornflowerblue': #(0.39215687 0.58431375 0.92941177 1.0) PASS
+3f. is-color-like 'red': T PASS
+3g. is-color-like 'notacolor': NIL PASS
+3h. Total named colors: 166 (expected >= 148) PASS
+3i. to-rgba 'C0': #(0.12156863 0.46666667 0.7058824 1.0) PASS
+3j. to-rgba 'none': #(0.0 0.0 0.0 0.0) PASS
+
+=== SCENARIO 4: API utilities ===
+4a. *unset*: #<UNSET> PASS
+4b. unsetp nil: NIL PASS
+4c. Deprecation warning caught: PASS
+4d. Levenshtein 'kitten'/'sitting': 3 (expected 3) PASS
+
+=== ALL SCENARIOS COMPLETE ===
+
+Exit code: 0
