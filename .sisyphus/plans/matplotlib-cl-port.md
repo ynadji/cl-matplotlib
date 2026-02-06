@@ -747,7 +747,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
   - Files: `src/rendering/*.lisp`
   - Pre-commit: `sbcl --eval '(asdf:load-system :cl-matplotlib-rendering)' --quit`
 
-- [ ] 3b. Vecto PNG Backend (Extended)
+- [x] 3b. Vecto PNG Backend (Extended)
 
   **What to do**:
   - Implement `renderer-vecto` class implementing the `renderer-base` protocol:

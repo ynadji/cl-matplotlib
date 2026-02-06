@@ -270,8 +270,29 @@
   (:use #:cl)
   (:nicknames #:mpl.backends)
   (:documentation "Backend implementations (Vecto/cl-aa based).")
-  (:export #:renderer-agg #:canvas-agg
-           #:save-png #:save-pdf))
+  (:export ;; RendererBase protocol (generic functions)
+           #:draw-path #:draw-image #:draw-text #:draw-markers
+           #:draw-gouraud-triangles
+           #:get-canvas-width-height #:points-to-pixels
+           #:renderer-clear #:renderer-option-image-nocomposite
+           ;; RendererBase class
+           #:renderer-base #:renderer-width #:renderer-height #:renderer-dpi
+           ;; Canvas protocol
+           #:canvas-draw #:print-png #:get-renderer
+           ;; Canvas base class
+           #:canvas-base #:canvas-width #:canvas-height #:canvas-dpi
+           #:canvas-renderer #:canvas-figure
+           ;; Vecto renderer
+           #:renderer-vecto #:renderer-active-p #:renderer-font-cache
+           ;; Vecto canvas
+           #:canvas-vecto #:canvas-render-fn
+           ;; Deferred canvas
+           #:canvas-vecto-deferred #:canvas-draw-calls
+           #:canvas-record-draw-path
+           ;; Convenience
+           #:make-graphics-context #:render-to-png
+           ;; Font config
+           #:*default-font-path*))
 
 (defpackage #:cl-matplotlib.pyplot
   (:use #:cl)
