@@ -1,0 +1,29 @@
+This is SBCL 2.2.9.debian, an implementation of ANSI Common Lisp.
+More information about SBCL is available at <http://www.sbcl.org/>.
+SBCL is free software, provided as is, with absolutely no warranty.
+It is mostly in the public domain; some portions are provided under
+BSD-style licenses.  See the CREDITS and COPYING files in the
+distribution for more information.
+trivial-garbage Weak Reference Finalization Test
+================================================
+Implementation: SBCL 2.2.9.debian
+Test 1: make-weak-pointer
+  Created weak pointer: #<weak pointer: #<TEST-OBJECT {100376C6F3}>>
+  Weak pointer value: #<TEST-OBJECT {100376C6F3}>
+  Value alive: T
+  PASS
+Test 2: finalize callback
+  Object created, finalizer registered
+  After GC, finalized = T
+  PASS
+Test 3: weak pointer invalidation
+  Before GC: T
+  After GC: value = NIL
+  PASS (weak pointer correctly invalidated)
+Test 4: cancel-finalization
+  Finalizer registered then cancelled
+  After GC, finalized = NIL
+  PASS (finalization correctly cancelled)
+Summary: trivial-garbage works correctly on SBCL.
+All core features available: make-weak-pointer, weak-pointer-value,
+finalize, cancel-finalization.

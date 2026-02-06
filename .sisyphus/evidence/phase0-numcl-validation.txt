@@ -1,0 +1,31 @@
+numcl Validation Report
+======================
+Passed: 18/20  Failed: 2/20
+
+  zeros          PASS    3x4 array of zeros
+  ones           PASS    2x3 array of ones
+  arange         PASS    0..9
+  linspace       FAIL    odd number of &KEY arguments
+  +              PASS    element-wise add
+  -              PASS    element-wise subtract
+  *              PASS    element-wise multiply
+  /              PASS    element-wise divide
+  sum            PASS    sum of 0..4 = 10
+  min            PASS    manual reduce min of 0..4 = 0
+  max            PASS    manual reduce max of 0..4 = 4
+  mean           PASS    sum/n of 0..4 = 2
+  reshape        PASS    12 -> 3x4
+  transpose      PASS    2x3 -> 3x2
+  concatenate    PASS    concat two 3-arrays
+  >              PASS    element-wise greater than
+  <              PASS    element-wise less than
+  =              PASS    element-wise equal
+  where/mask     PASS    boolean mask creation
+  sqrt           FAIL    The assertion (< (ABS (- (AREF B 1) 2.0)) 0.01) failed with
+(ABS (- (AREF B 1) 2.0)) = 2.0.
+
+Coverage: 90.0%
+
+NOTE: numcl requires --dynamic-space-size 4096 on SBCL 2.2.9
+NOTE: min/max done via reduce (numcl:amin/amax not found in exports)
+NOTE: mean computed manually as sum/n

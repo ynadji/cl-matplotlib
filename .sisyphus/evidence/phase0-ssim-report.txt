@@ -1,0 +1,25 @@
+SSIM Cross-Validation Report
+============================
+Date: 2026-02-06
+Python image: /tmp/py-ref.png (640x480, matplotlib Agg)
+CL image:     /tmp/cl-matplotlib-poc.png (640x480, Vecto)
+
+Overall SSIM: 0.8241  (threshold: 0.70, PASS)
+
+Per-channel SSIM:
+  Red:   0.7815
+  Green: 0.7667
+  Blue:  0.7503
+  Alpha: 0.9978
+
+Notes:
+- Both images contain: solid line, dashed line, filled polygon,
+  clipped region, text label, embedded raster image
+- SSIM differences primarily from:
+  1. Different font rendering (matplotlib uses FreeType, CL uses zpb-ttf)
+  2. Different anti-aliasing algorithms (AGG vs cl-aa)
+  3. Slightly different coordinate mapping
+  4. Different axis tick/spine rendering (CL has simpler axes frame)
+- Alpha channel nearly identical (0.9978) = transparency compositing works
+
+GATE RESULT: PASS - Vecto produces visually comparable output to matplotlib
