@@ -1,0 +1,53 @@
+
+Running test suite FONT-SUITE
+ Running test SHIPPED-FONT-EXISTS ..
+ Running test SHIPPED-FONT-FILES-RETURNS-LIST ..
+ Running test FONT-MANAGER-CREATION .
+ Running test ENSURE-FONT-MANAGER-WORKS ..
+ Running test NORMALIZE-WEIGHT-KEYWORD ...
+ Running test NORMALIZE-WEIGHT-STRING ...
+ Running test NORMALIZE-WEIGHT-INTEGER ..
+ Running test RESOLVE-FONT-FAMILY-GENERIC ...
+ Running test RESOLVE-FONT-FAMILY-SPECIFIC ..
+ Running test FIND-FONT-DEJAVU ..
+ Running test FIND-FONT-SANS-SERIF .
+ Running test FIND-FONT-FALLBACK .
+ Running test MAKE-FONT-PROPERTIES-DEFAULTS ....
+ Running test MAKE-FONT-PROPERTIES-BOLD .
+ Running test LOAD-FONT-DEJAVU ..
+ Running test LOAD-FONT-BY-PATH-WORKS ..
+ Running test GLYPH-ADVANCE-WIDTH-POSITIVE .
+ Running test FONT-UNITS-PER-EM .
+ Running test FONT-ASCENDER-POSITIVE .
+ Running test FONT-DESCENDER-NEGATIVE .
+ Running test TEXT-EXTENTS-HELLO ..
+ Running test TEXT-EXTENTS-EMPTY .
+ Running test TEXT-WIDTH-HEIGHT-DESCENT ...
+ Running test FONT-UNITS-TO-POINTS-CONVERSION .
+ Running test TEXT-TO-PATH-SINGLE-CHAR ...
+ Running test TEXT-TO-PATH-HELLO ..
+ Running test TEXT-TO-PATH-SPACE-ONLY ..
+ Running test TEXT-TO-PATH-EMPTY ..
+ Running test TEXT-TO-COMPOUND-PATH-WORKS ..
+ Running test TEXT-TO-PATH-POSITIONING .
+ Running test MULTILINE-LAYOUT-BASIC .
+ Running test MULTILINE-LAYOUT-SINGLE-LINE .
+ Running test AFM-PARSE-TEST-FILE .
+ Running test AFM-FONTNAME .
+ Running test AFM-FAMILYNAME .
+ Running test AFM-WEIGHT .
+ Running test AFM-ANGLE .
+ Running test AFM-ASCENDER-DESCENDER ..
+ Running test AFM-CAPHEIGHT .
+ Running test AFM-XHEIGHT .
+ Running test AFM-BBOX .
+ Running test AFM-CHAR-WIDTH ..
+ Running test AFM-WIDTH-FROM-NAME ..
+ Running test AFM-KERN-DIST ..
+ Running test AFM-UNICODE-TO-TYPE1-MAPPING ....
+ Running test ACCEPTANCE-FONT-LOADING-AND-METRICS ......
+ Did 84 checks.
+    Pass: 84 (100%)
+    Skip: 0 ( 0%)
+    Fail: 0 ( 0%)
+

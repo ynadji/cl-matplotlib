@@ -1,0 +1,23 @@
+
+=== SYSTEM LOAD: SUCCESS ===
+
+=== Font Metrics Evidence ===
+Font family: DejaVu Sans
+Units/em: 2048
+Ascender: 1901
+Descender: -483
+
+Glyph A advance-width: 1401
+
+Text extents for Hello at 12pt:
+  width: 37.1015625d0
+  height: 13.96875d0
+  x0: 0.0d0 y0: -2.830078125d0 x1: 37.1015625d0 y1: 11.138671875d0
+
+Text-to-path Hello at 12pt:
+  Number of glyph paths: 5
+  Path vertices: 13
+  Path vertices: 38
+  Path vertices: 5
+  Path vertices: 5
+  Path vertices: 34

@@ -257,7 +257,39 @@
            #:axes-image #:image-data #:image-extent #:image-interpolation
            #:image-origin #:image-cmap #:image-norm #:image-vmin #:image-vmax
            #:image-shape #:image-rows #:image-cols
-           #:*interpolation-methods*))
+            #:*interpolation-methods*
+            ;; Font Manager
+            #:font-entry #:make-font-entry
+            #:font-entry-fname #:font-entry-name #:font-entry-style
+            #:font-entry-weight #:font-entry-stretch
+            #:font-properties #:make-font-properties
+            #:font-properties-family #:font-properties-style
+            #:font-properties-weight #:font-properties-size
+            #:font-manager #:*font-manager* #:ensure-font-manager #:reset-font-manager
+            #:find-font #:findfont #:load-font #:load-font-by-path
+            #:find-system-fonts #:shipped-font-directory #:shipped-font-files
+            #:build-font-database #:save-font-cache #:load-font-cache
+            #:get-glyph-advance-width #:get-font-units-per-em
+            #:get-font-ascender #:get-font-descender
+            #:font-units-to-points #:get-text-extents
+            #:normalize-weight #:resolve-font-family
+            #:*font-scalings* #:*weight-dict* #:*font-family-aliases*
+            #:*default-font-families* #:*system-font-directories*
+            ;; Text-to-Path
+            #:text-to-path #:text-to-compound-path
+            #:glyph-to-path #:glyph-contour-to-vertices-and-codes
+            #:layout-multiline-text #:get-text-width-height-descent
+            ;; AFM Parser
+            #:afm-font #:parse-afm-file
+            #:afm-char-metrics #:afm-char-metrics-width
+            #:afm-char-metrics-name #:afm-char-metrics-bbox
+            #:afm-get-fontname #:afm-get-fullname #:afm-get-familyname
+            #:afm-get-weight #:afm-get-angle
+            #:afm-get-ascender #:afm-get-descender
+            #:afm-get-capheight #:afm-get-xheight #:afm-get-bbox
+            #:afm-get-char-width #:afm-get-width-from-name
+            #:afm-get-kern-dist #:afm-get-str-bbox-and-descent
+            #:afm-unicode-to-type1-name #:*unicode-to-type1*))
 
 (defpackage #:cl-matplotlib.containers
   (:use #:cl)

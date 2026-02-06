@@ -60,3 +60,56 @@
 ### Evidence Files
 - `.sisyphus/evidence/phase3b-backend-render.png` — 640x480, 10KB, red line + blue rect
 - `.sisyphus/evidence/phase3b-dashed-line.png` — 400x300, 4.6KB, dashed line [5,3] pattern
+
+## Phase 3d Findings — Font Management, Text-to-Path, AFM Parser
+Date: 2026-02-06
+
+### Implementation Summary
+- **font-manager.lisp**: Font discovery (system dirs + shipped), CSS-like matching (family/weight/style), zpb-ttf-based property extraction, font cache, font-loader cache
+- **text-path.lisp**: zpb-ttf glyph contour → mpl-path conversion, text string → list of paths, multi-line layout with halign/valign
+- **afm.lisp**: Full AFM parser (header, char metrics, kern pairs), Unicode→Type1 name mapping
+- **DejaVu Sans font shipped** at `data/fonts/ttf/DejaVuSans.ttf` (756KB)
+- **84 tests, 84 checks, 100% pass rate**
+
+### Architecture Decisions
+
+1. **Font manager as CLOS class with singleton pattern** — `*font-manager*` global, `ensure-font-manager` for lazy init. Font-loaders cached in hash table keyed by path.
+
+2. **CSS-like font matching with scoring** — Each font entry scored against target (family, weight, style). Lower score = better match. Family mismatch = 10000, style mismatch = 1000, weight = absolute difference. This gives a reasonable CSS-like cascade.
+
+3. **zpb-ttf contour conversion** — `explicit-contour-points` gives on/off curve points. On-curve = LINETO, off-curve = CURVE3 (quadratic Bézier). Each contour closed with CLOSEPOLY. All contours merged into one compound path per glyph.
+
+4. **Font units → points scale** — `scale = size / units-per-em`. DejaVu Sans has 2048 units/em. All metrics (advance width, ascender, descender, bbox) scaled by this factor.
+
+5. **AFM parser as separate functions** — No CLOS, just `parse-afm-file` returning `afm-font` struct with hash-table storage. Matches matplotlib's stateless parser approach.
+
+### Gotchas Encountered
+
+1. **zpb-ttf `unsupported-format` is a CONDITION not ERROR** — `zpb-ttf::unsupported-format` inherits from `condition`, not `error`. Handler-case catching `error` won't catch it. Must catch `condition` instead. This happens with OpenType fonts using PostScript (CFF) outlines — zpb-ttf only handles TrueType outlines.
+
+2. **CL setf chain cannot contain loops** — In a multi-place `setf` form like `(setf (gethash x ht) "a" (loop ...) ...)`, the loop return value is interpreted as a place, causing `(setf BLOCK)` error. Must break setf into separate forms around loops.
+
+3. **Font discovery performance** — Scanning system fonts via `directory` with wildcard patterns up to 3 levels deep works but is slow on first run. Cache serialization to `~/.cache/cl-matplotlib/fontlist.cache` mitigates this.
+
+4. **Glyph space has no outlines** — The space character (U+0020) has a glyph with advance width but zero contours. `text-to-path` correctly returns no path for space while still advancing the x position.
+
+5. **Kerning API** — `zpb-ttf:kerning-offset` takes glyph objects (not characters), and may return NIL for pairs with no kerning. Must guard with `when kern`.
+
+### zpb-ttf API Used
+- `open-font-loader` / `close-font-loader` / `with-font-loader`
+- `family-name`, `subfamily-name`, `units/em`, `ascender`, `descender`
+- `find-glyph`, `advance-width`, `bounding-box`
+- `glyph-contours` (via `do-contours`), `explicit-contour-points`
+- `on-curve-p`, `x`, `y` (point accessors)
+- `kerning-offset`, `xmin`, `ymin`, `xmax`, `ymax` (bbox)
+
+### Files Created
+- `src/rendering/font-manager.lisp` — ~370 LOC, font discovery + matching + cache
+- `src/rendering/text-path.lisp` — ~170 LOC, text→path + multi-line layout
+- `src/rendering/afm.lisp` — ~330 LOC, AFM parser + Unicode→Type1 mapping
+- `data/fonts/ttf/DejaVuSans.ttf` — 756KB shipped font
+- `tests/test-font-manager.lisp` — ~400 LOC, 47 tests, 84 checks
+
+### Evidence Files
+- `.sisyphus/evidence/phase3d-font-metrics.txt` — Font loading, metrics, text-to-path
+- `.sisyphus/evidence/phase3d-test-results.txt` — 84/84 checks pass (100%)

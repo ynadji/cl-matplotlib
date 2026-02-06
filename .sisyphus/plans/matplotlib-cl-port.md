@@ -904,7 +904,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
   - Files: `src/backends/backend-pdf.lisp`
   - Pre-commit: `sbcl --eval '(asdf:load-system :cl-matplotlib-backends)' --quit`
 
-- [ ] 3d. Font Management + Text Rendering
+- [x] 3d. Font Management + Text Rendering
 
   **What to do**:
   - Port `font_manager.py` core: font discovery, property matching (family/weight/style/size), fallback chains
