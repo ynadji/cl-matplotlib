@@ -295,8 +295,34 @@
   (:use #:cl)
   (:nicknames #:mpl.containers)
   (:documentation "Figure, Axes, Artist hierarchy.")
-  (:export #:figure #:axes #:artist
-           #:line-2d #:patch #:text-artist))
+  (:export ;; Layout engine protocol
+           #:layout-engine #:layout-engine-execute #:layout-engine-set
+           #:layout-engine-get #:layout-engine-params
+           #:layout-engine-adjust-compatible-p #:layout-engine-colorbar-gridspec-p
+           ;; PlaceHolder layout
+           #:placeholder-layout-engine #:make-placeholder-layout-engine
+           ;; Tight layout
+           #:tight-layout-engine #:make-tight-layout-engine
+           ;; Figure class
+           #:mpl-figure #:make-figure
+           #:figure-figsize #:figure-dpi #:figure-facecolor #:figure-edgecolor
+           #:figure-linewidth #:figure-frameon-p
+           #:figure-axes #:figure-artists #:figure-lines #:figure-patches
+           #:figure-texts #:figure-images #:figure-legends #:figure-subfigs
+           #:figure-canvas #:figure-layout-engine #:figure-subplot-params
+           #:figure-suptitle-artist #:figure-patch
+           ;; Figure functions
+           #:figure-width-inches #:figure-height-inches
+           #:figure-width-px #:figure-height-px #:figure-size-px
+           #:figure-set-size-inches #:figure-get-size-inches
+           #:figure-set-layout-engine #:figure-get-layout-engine
+           #:figure-add-artist #:figure-remove-artist #:figure-get-children
+           #:figure-subplots-adjust #:figure-ensure-canvas
+           #:draw-figure-background
+           ;; savefig pipeline
+           #:savefig #:detect-format #:print-figure
+           ;; SubFigure
+           #:sub-figure #:make-subfigure #:subfigure-parent #:subfigure-position))
 
 (defpackage #:cl-matplotlib.backends
   (:use #:cl)

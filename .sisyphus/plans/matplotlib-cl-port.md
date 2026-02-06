@@ -976,7 +976,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
 
 ### Phase 4: Containers / MVP
 
-- [ ] 4a. Figure + FigureCanvas
+- [x] 4a. Figure + FigureCanvas
 
   **What to do**:
   - Port `figure.py` Figure class: figure size, dpi, facecolor, edgecolor, tight_layout, subplots_adjust

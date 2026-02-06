@@ -113,3 +113,41 @@ Date: 2026-02-06
 ### Evidence Files
 - `.sisyphus/evidence/phase3d-font-metrics.txt` — Font loading, metrics, text-to-path
 - `.sisyphus/evidence/phase3d-test-results.txt` — 84/84 checks pass (100%)
+
+## Phase 4a — Figure, Canvas, savefig Pipeline (2026-02-06)
+
+### Implementation Summary
+- **layout-engine.lisp**: LayoutEngine base, PlaceHolderLayoutEngine (no-op), TightLayoutEngine (simplified)
+- **figure.lisp**: mpl-figure class inheriting from artist, FigureCanvas integration, savefig with format detection, SubFigure support
+- **129 tests, 129 checks, 100% pass rate**
+- **Evidence**: phase4a-empty-figure.png (640x480 white PNG)
+
+### Architecture Decisions
+
+1. **Figure as Artist subclass**: mpl-figure inherits from mpl.rendering:artist, getting all artist properties (visible, zorder, transform, etc.) for free. The figure's `draw` method follows matplotlib's pattern: background first, then children sorted by z-order.
+
+2. **savefig creates canvas on-the-fly**: Following matplotlib's pattern, savefig creates a fresh canvas-vecto for each save operation rather than reusing a stored canvas. This allows DPI/format overrides per-save without mutating the figure permanently.
+
+3. **Property restoration via unwind-protect**: savefig temporarily overrides facecolor/edgecolor/dpi during rendering, then restores originals via unwind-protect. This matches matplotlib's ExitStack pattern.
+
+4. **draw-figure-background guards on renderer type**: The background drawing uses `mpl.backends:draw-path` which only works with `renderer-base` subclasses. Added a `typep` check so mock-renderer tests work without error.
+
+5. **Format detection**: Simple extension-based detection (`.png` → :png, `.pdf` → :pdf, etc.). Only PNG is actually implemented; other formats warn and fall back to PNG.
+
+6. **Layout engine protocol**: Three generics (execute, set, get) on a base class. PlaceHolder is a true no-op. TightLayout is simplified (no actual Axes layout computation yet since Axes don't exist).
+
+### Gotchas Encountered
+
+1. **FiveAM `(is t)` is INVALID**: Must use `(is (eq t t))` or `(pass)`. FiveAM's `is` macro requires a list form, not a bare value.
+
+2. **Single-to-double float coercion precision**: `(coerce 0.15 'double-float)` produces `0.15000000596046448d0`, not `0.15d0`. Tests must use `0.15d0` literals when comparing with coerced values.
+
+3. **Rendering vs Backends generic function split**: `mpl.rendering:renderer-draw-path` and `mpl.backends:draw-path` are DIFFERENT generic functions. Line2D uses the rendering protocol; the Vecto backend implements the backends protocol. This gap will need bridging when Axes pipeline connects artists to backends.
+
+4. **Named class `mpl-figure` instead of `figure`**: Avoided naming the class `figure` to prevent conflicts with the CL symbol and with the pyplot `figure` function. Using `mpl-figure` is more explicit.
+
+### Stats
+- 129/129 tests passing (100%)
+- Files: layout-engine.lisp, figure.lisp, test-figure.lisp
+- Classes: layout-engine, placeholder-layout-engine, tight-layout-engine, mpl-figure, sub-figure
+- All prior phases still green: backends 52/52, rendering 119/119, fonts 84/84
