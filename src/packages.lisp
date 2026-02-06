@@ -295,7 +295,7 @@
   (:use #:cl)
   (:nicknames #:mpl.containers)
   (:documentation "Figure, Axes, Artist hierarchy.")
-  (:export ;; Layout engine protocol
+   (:export ;; Layout engine protocol
            #:layout-engine #:layout-engine-execute #:layout-engine-set
            #:layout-engine-get #:layout-engine-params
            #:layout-engine-adjust-compatible-p #:layout-engine-colorbar-gridspec-p
@@ -322,7 +322,27 @@
            ;; savefig pipeline
            #:savefig #:detect-format #:print-figure
            ;; SubFigure
-           #:sub-figure #:make-subfigure #:subfigure-parent #:subfigure-position))
+           #:sub-figure #:make-subfigure #:subfigure-parent #:subfigure-position
+           ;; AxesBase class
+           #:axes-base #:axes-base-figure #:axes-base-position
+           #:axes-base-facecolor #:axes-base-frameon-p
+           #:axes-base-trans-data #:axes-base-trans-axes #:axes-base-trans-scale
+           #:axes-base-data-lim #:axes-base-view-lim
+           #:axes-base-lines #:axes-base-patches #:axes-base-artists
+           #:axes-base-texts #:axes-base-images #:axes-base-patch
+           #:axes-base-autoscale-x-p #:axes-base-autoscale-y-p
+           #:axes-base-autoscale-margin
+           ;; AxesBase functions
+           #:axes-update-datalim #:axes-autoscale-view
+           #:axes-set-xlim #:axes-set-ylim
+           #:axes-get-xlim #:axes-get-ylim
+           #:axes-add-line #:axes-add-patch #:axes-add-artist
+           #:axes-get-all-artists
+           ;; Axes class (rectilinear)
+           #:mpl-axes
+           ;; Plotting functions
+           #:add-subplot
+           #:plot #:scatter #:bar #:axes-fill #:fill-between))
 
 (defpackage #:cl-matplotlib.backends
   (:use #:cl)

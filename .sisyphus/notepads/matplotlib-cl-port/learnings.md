@@ -151,3 +151,48 @@ Date: 2026-02-06
 - Files: layout-engine.lisp, figure.lisp, test-figure.lisp
 - Classes: layout-engine, placeholder-layout-engine, tight-layout-engine, mpl-figure, sub-figure
 - All prior phases still green: backends 52/52, rendering 119/119, fonts 84/84
+
+## Phase 4b — Axes with plot, scatter, bar (2026-02-06)
+
+### Implementation Summary
+- **axes-base.lisp**: AxesBase class with coordinate transforms (transData, transAxes, transScale), data limit tracking, autoscaling, artist management, z-order draw
+- **axes.lisp**: Axes (mpl-axes) with plot(), scatter(), bar(), axes-fill(), fill-between(), add-subplot()
+- **test-axes.lisp**: 45 tests, 116 checks, 100% pass rate
+- **Combined: 245/245 checks passing** (129 figure + 116 axes)
+- **Evidence: phase4b-mvp-plot.png (10KB), phase4b-scatter.png (13.7KB)**
+
+### Architecture Decisions
+
+1. **AxesBase ← Artist**: Single inheritance. AxesBase manages own artist lists (lines, patches, artists, texts, images) and draws them in z-order.
+
+2. **Coordinate Transform Pipeline**: transData = viewLim→unitBbox ∘ transAxes. transAxes maps (0,1) → display pixels based on axes position in figure. transData maps data coords → display pixels via view limits.
+
+3. **BboxTransform for viewLim→unit**: Used existing make-bbox-transform from transforms.lisp. Composes with transAxes for full data→display mapping.
+
+4. **add-subplot position calculation**: Computes grid cell position from figure subplot params (left/right/top/bottom) with wspace/hspace gaps. Row 0 = top (matches matplotlib).
+
+5. **Scatter as circles**: Each scatter point is a circle patch with radius from marker size. Simple but correct approach matching matplotlib's marker-per-point model.
+
+6. **bar alignment**: Default :center alignment shifts x by -width/2. Data limits computed from bar extents (x0, x0+w) not just x positions.
+
+7. **fill-between as polygon**: Forward pass along y2 curve, backward pass along y1 curve creates closed polygon. Clean simple approach.
+
+8. **Bridge method for renderer protocol**: Added renderer-draw-path method on renderer-vecto to bridge artist draw protocol (keyword :fill/:stroke) to backend draw-path (positional rgbface).
+
+### Gotchas Encountered
+
+1. **CL:FILL name collision**: `fill` is a CL standard function. Defining `fill` as our plotting function in the containers package triggers `SYMBOL-PACKAGE-LOCKED-ERROR`. Solution: rename to `axes-fill`.
+
+2. **to-rgba returns vector not multiple-values**: `(mpl.colors:to-rgba "C0")` returns `#(0.12 0.46 0.70 1.0)` (a vector), NOT multiple values. Using `multiple-value-list` wraps it as `(#(...))` — a list of ONE element. This causes `(fourth edge-color)` to be NIL, crashing with `(* NIL 1.0)`. Fix: unpack vector to flat list in `%resolve-color`.
+
+3. **Artist draw protocol vs backend draw-path mismatch**: Line2D/Patch call `renderer-draw-path` (generic from artist.lisp) with `:fill/:stroke` keywords. Backend has `draw-path` (different generic from backends package) with positional `rgbface`. Need bridge method on renderer-vecto to translate between them.
+
+4. **Autoscale zero-range handling**: When all data has same value (e.g., single point), x-range or y-range is 0. Must handle by expanding to ±0.5 (for zero) or ±5% of abs value. Otherwise BboxTransform divides by zero.
+
+### Files Created/Modified
+- `src/containers/axes-base.lisp` — ~300 LOC, AxesBase class
+- `src/containers/axes.lisp` — ~280 LOC, Axes with plot methods
+- `tests/test-axes.lisp` — ~530 LOC, 45 tests
+- `src/packages.lisp` — Added 30+ exports for axes symbols
+- `cl-matplotlib-containers.asd` — Added axes-base, axes components
+- `src/backends/backend-vecto.lisp` — Fixed %resolve-color, added bridge method

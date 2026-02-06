@@ -1045,7 +1045,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
   - Files: `src/containers/figure.lisp`, `src/containers/layout-engine.lisp`
   - Pre-commit: `sbcl --eval '(asdf:load-system :cl-matplotlib-containers)' --quit`
 
-- [ ] 4b. Axes (Base + Core Plot Methods)
+- [x] 4b. Axes (Base + Core Plot Methods)
 
   **What to do**:
   - Port `axes/_base.py` _AxesBase: coordinate setup, artist management, data limits, autoscaling, view limits

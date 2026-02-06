@@ -54,7 +54,13 @@ COLOR-SPEC can be:
            (a (if (>= (length color-spec) 4) (float (nth 3 color-spec) 1.0) 1.0)))
        (list r g b a)))
     ((stringp color-spec)
-     (multiple-value-list (mpl.colors:to-rgba color-spec)))
+      (let ((rgba (mpl.colors:to-rgba color-spec)))
+        (if (vectorp rgba)
+            (list (float (elt rgba 0) 1.0)
+                  (float (elt rgba 1) 1.0)
+                  (float (elt rgba 2) 1.0)
+                  (float (elt rgba 3) 1.0))
+            (multiple-value-list rgba))))
     (t (list 0.0 0.0 0.0 1.0))))
 
 (defun %gc-edge-color (gc)
@@ -241,6 +247,28 @@ Must be called within an active canvas context (see canvas-vecto)."
           (vecto:set-rgba-stroke (float r 1.0) (float g 1.0) (float b 1.0) (float a 1.0)))
         (%trace-path-to-vecto path transform)
         (vecto:stroke)))))
+
+;;; ============================================================
+;;; Bridge: renderer-draw-path from artist protocol → draw-path
+;;; ============================================================
+
+(defmethod mpl.rendering:renderer-draw-path ((renderer renderer-vecto) gc path transform
+                                             &key fill stroke)
+  "Bridge from artist draw protocol to backend draw-path.
+FILL can be T (use gc-background), a color spec, or nil.
+STROKE can be T (use gc-foreground) or nil."
+  (let ((rgbface (cond
+                   ((and fill (not (eq fill t)))
+                    ;; Fill is an explicit color spec
+                    (%resolve-color fill))
+                   ((eq fill t)
+                    ;; Use gc-background or gc-foreground as fill color
+                    (or (%gc-face-color gc nil)
+                        (%gc-edge-color gc)))
+                   (t nil))))
+    ;; If stroke-only, ensure gc has a foreground but no background
+    ;; If fill+stroke, pass rgbface to draw-path
+    (draw-path renderer gc path transform rgbface)))
 
 ;;; ============================================================
 ;;; draw-image — Blit RGBA image into canvas
