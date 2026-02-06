@@ -675,7 +675,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
 
 ### Phase 3: Rendering (Parallel Wave)
 
-- [ ] 3a. Artist Base + Rendering Primitives
+- [x] 3a. Artist Base + Rendering Primitives
 
   **What to do**:
   - Port `artist.py` Artist CLOS class: slots for transform, alpha, visible, clip-box, clip-path, label, zorder, animated, picker, url, gid, rasterized, sketch-params

@@ -1,0 +1,6 @@
+DRAW PROTOCOL TEST:
+Mock renderer calls: 3
+  Call: :DRAW-PATH
+  Call: :DRAW-PATH
+  Call: :DRAW-TEXT
+SUCCESS

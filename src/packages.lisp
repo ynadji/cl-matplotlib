@@ -190,10 +190,74 @@
 (defpackage #:cl-matplotlib.rendering
   (:use #:cl)
   (:nicknames #:mpl.rendering)
-  (:documentation "Graphics context, renderer protocol.")
-  (:export #:graphics-context #:make-gc
-           #:renderer-base #:draw-path #:draw-image #:draw-text
-           #:get-canvas-width-height))
+  (:documentation "Artist hierarchy, rendering primitives, and draw protocol.")
+  (:export ;; Draw protocol
+           #:draw #:get-path #:get-patch-transform #:get-artist-transform
+           #:get-extents #:stale-p
+           ;; Artist base class
+           #:artist #:artist-transform #:artist-transform-set-p
+           #:artist-alpha #:artist-visible #:artist-clip-box #:artist-clip-path
+           #:artist-clip-on #:artist-label #:artist-zorder #:artist-animated
+           #:artist-picker #:artist-url #:artist-gid #:artist-rasterized
+           #:artist-sketch-params #:artist-stale #:artist-axes #:artist-figure
+           #:artist-children #:artist-set
+           ;; Graphics context
+           #:graphics-context #:make-gc
+           #:gc-foreground #:gc-background #:gc-linewidth #:gc-linestyle
+           #:gc-alpha #:gc-capstyle #:gc-joinstyle #:gc-clip-rectangle
+           #:gc-clip-path #:gc-antialiased #:gc-dashes #:gc-hatch #:gc-url
+           ;; Mock renderer
+           #:mock-renderer #:make-mock-renderer #:mock-renderer-calls
+           #:mock-renderer-record
+           #:renderer-draw-path #:renderer-draw-text #:renderer-draw-image
+           ;; Line2D
+           #:line-2d #:line-2d-xdata #:line-2d-ydata
+           #:line-2d-linewidth #:line-2d-linestyle #:line-2d-color
+           #:line-2d-marker #:line-2d-markersize
+           #:line-2d-markeredgecolor #:line-2d-markerfacecolor
+           #:line-2d-markeredgewidth #:line-2d-drawstyle
+           #:line-2d-antialiased #:line-2d-pickradius
+           #:line-2d-path #:line-2d-set-data
+           ;; Patch base
+           #:patch #:patch-edgecolor #:patch-facecolor
+           #:patch-linewidth #:patch-linestyle #:patch-antialiased
+           #:patch-hatch #:patch-fill #:patch-capstyle #:patch-joinstyle
+           ;; Rectangle
+           #:rectangle #:rectangle-x0 #:rectangle-y0
+           #:rectangle-width #:rectangle-height #:rectangle-angle
+           ;; Ellipse
+           #:ellipse #:ellipse-center #:ellipse-width #:ellipse-height #:ellipse-angle
+           ;; Circle
+           #:circle #:circle-radius
+           ;; Polygon
+           #:polygon #:polygon-xy #:polygon-closed
+           ;; Wedge
+           #:wedge #:wedge-center #:wedge-r #:wedge-theta1 #:wedge-theta2 #:wedge-width
+           ;; Arc
+           #:arc #:arc-theta1 #:arc-theta2
+           ;; PathPatch
+           #:path-patch #:path-patch-path
+           ;; FancyBboxPatch
+           #:fancy-bbox-patch #:fancy-bbox-x0 #:fancy-bbox-y0
+           #:fancy-bbox-width #:fancy-bbox-height #:fancy-bbox-boxstyle #:fancy-bbox-pad
+           ;; Text
+           #:text-artist #:text-x #:text-y #:text-text #:text-color
+           #:text-fontsize #:text-fontfamily #:text-fontweight #:text-fontstyle
+           #:text-rotation #:text-horizontalalignment #:text-verticalalignment
+           #:text-multialignment #:text-linespacing #:text-wrap
+           #:text-rotation-mode #:text-usetex
+           #:text-ha #:text-va #:text-set-position
+           ;; MarkerStyle
+           #:marker-style #:marker-style-marker #:marker-style-fillstyle
+           #:marker-style-path #:marker-style-transform
+           #:marker-style-filled-p #:marker-style-joinstyle #:marker-style-capstyle
+           #:make-marker-path #:make-marker-style
+           #:*marker-names* #:*filled-markers*
+           ;; AxesImage
+           #:axes-image #:image-data #:image-extent #:image-interpolation
+           #:image-origin #:image-cmap #:image-norm #:image-vmin #:image-vmax
+           #:image-shape #:image-rows #:image-cols
+           #:*interpolation-methods*))
 
 (defpackage #:cl-matplotlib.containers
   (:use #:cl)
