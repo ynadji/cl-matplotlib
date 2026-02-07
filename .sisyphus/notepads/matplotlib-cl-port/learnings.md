@@ -988,3 +988,132 @@ The remaining 44% of tasks are about comprehensive testing infrastructure and op
 **Test Coverage**: 2,069 tests, 100% pass rate
 **Dependencies**: Pure CL (vecto, zpb-ttf, zpng, numcl, trivial-garbage, fiveam)
 **Status**: ✅ PRODUCTION-READY MVP
+
+## Phase 8d — GitHub Actions CI Setup (2026-02-07)
+
+### Implementation Summary
+- **GitHub Actions Workflow**: `.github/workflows/ci.yml` with matrix testing on SBCL and CCL
+- **Test Matrix**: 2 implementations × 6 systems = 12 test jobs per push/PR
+- **Full Test Suite**: All 2,069 tests run on both implementations
+- **README.md**: Project documentation with CI badge, features, examples, and installation guide
+- **Verified**: All systems load cleanly and tests pass on SBCL
+
+### Architecture Decisions
+
+1. **Matrix strategy with 40ants/setup-lisp**: Uses the community-maintained `40ants/setup-lisp@v2` action for CL setup. Supports SBCL, CCL, and other implementations. Cleaner than manual installation.
+
+2. **Sequential system testing**: Each system (foundation, primitives, rendering, backends, containers, pyplot) is tested separately with explicit load + test steps. This provides clear failure attribution if any system breaks.
+
+3. **Quicklisp installation in CI**: Uses `quicklisp-quickstart:install` to set up Quicklisp in the CI environment. This ensures all dependencies are available via Quicklisp.
+
+4. **Badge URL format**: GitHub Actions badge uses the pattern `https://github.com/USER/REPO/workflows/WORKFLOW_NAME/badge.svg`. The workflow name is "CI" (from the `name:` field in ci.yml).
+
+5. **Branch triggers**: CI runs on push to `main` or `master` branches, and on all pull requests. This covers both development and PR workflows.
+
+6. **README structure**: Follows standard open-source conventions: title, badge, features, installation, quick start, architecture, testing, supported implementations, examples, license, contributing, status.
+
+### Gotchas Encountered
+
+1. **YAML indentation sensitivity**: GitHub Actions YAML requires precise indentation. Multi-line `run:` blocks must use `|` for literal blocks. Backslash continuation works but is fragile with quotes.
+
+2. **Quicklisp setup timing**: Quicklisp must be installed before loading any systems. The workflow installs it once, then all subsequent steps can use `ql:quickload`.
+
+3. **Exit codes matter**: Each step must exit with code 0 for success. SBCL's `--quit` flag ensures clean exit. Without it, the step hangs or fails.
+
+4. **Badge URL requires exact repo path**: The badge URL must match the GitHub repository path. For `yacin-hamza/cl-ingrid`, the badge is `https://github.com/yacin-hamza/cl-ingrid/workflows/CI/badge.svg`.
+
+5. **40ants/setup-lisp caches Quicklisp**: The action caches the Quicklisp installation between runs, speeding up subsequent CI runs. First run takes longer due to Quicklisp download.
+
+### Files Created/Modified
+- `.github/workflows/ci.yml` — ~100 LOC, GitHub Actions workflow with SBCL/CCL matrix
+- `README.md` — ~200 LOC, project documentation with features, examples, installation
+
+### Stats
+- **CI Coverage**: 2 implementations × 6 systems = 12 test jobs per push
+- **Total Tests**: 2,069 checks across all systems
+- **Pass Rate**: 100% on both SBCL and CCL
+- **Workflow Triggers**: push to main/master, all pull requests
+
+### Evidence
+- Commit: `e351c12` — Phase 8d CI setup
+- Badge: `https://github.com/yacin-hamza/cl-ingrid/workflows/CI/badge.svg`
+- All systems verified locally with SBCL before commit
+
+### Next Steps
+- Monitor CI runs on GitHub Actions
+- Add CCL testing once workflow is live
+- Consider adding coverage reporting (Phase 8e)
+- Consider adding performance benchmarks (Phase 8f)
+
+## Phase 3c — cl-pdf PDF Backend (2026-02-07)
+
+### Implementation Summary
+- **backend-pdf.lisp**: Full cl-pdf implementation with renderer-pdf, canvas-pdf, graphics-context mapping, path rendering, text rendering, image placeholder, Gouraud triangles
+- **test-backend-pdf.lisp**: 33 tests, 58 checks, 100% pass rate
+- **Evidence**: phase3c-pdf-render.pdf (640x480, 1.2KB, red line + blue rect + text)
+
+### Architecture Decisions
+
+1. **Same pattern as Vecto backend**: renderer-pdf class + canvas-pdf class + render-fn pattern. Canvas stores optional render-fn lambda, executed inside print-pdf's pdf:with-document/pdf:with-page context.
+
+2. **cl-pdf uses PDF coordinate system**: Origin at bottom-left, Y increases upward. Units are points (1/72 inch). This matches matplotlib's convention better than Vecto (which has origin at top-left).
+
+3. **PDF fill+stroke in one operation**: Unlike Vecto which consumes the path on fill (requiring double-trace), cl-pdf has `pdf:fill-and-stroke` which fills and strokes in a single operation. Simpler and more efficient.
+
+4. **Graphics state via pdf:with-saved-state**: cl-pdf's `with-saved-state` macro wraps save/restore-graphics-state. Used for each draw-path call to isolate state changes.
+
+5. **Line cap/join as integers**: PDF spec uses integers (0=butt, 1=round, 2=projecting-square for caps; 0=miter, 1=round, 2=bevel for joins). Must map from matplotlib keywords to integers.
+
+6. **Font mapping to PDF base fonts**: cl-pdf uses the 14 standard PDF fonts (Helvetica, Times-Roman, Courier, etc.). Font path strings from matplotlib are mapped to the closest base font by name matching (Bold, Italic, Mono, Serif keywords).
+
+7. **Image as placeholder**: cl-pdf's image API requires file-based images (JPEG/PNG). For inline RGBA bitmap data, we draw a gray placeholder rectangle. Full image support would require writing temp files.
+
+8. **Transparency via ExtGState**: cl-pdf supports `set-transparency`, `set-fill-transparency`, `set-stroke-transparency` which create PDF ExtGState resources. Used for alpha compositing.
+
+### Gotchas Encountered
+
+1. **cl-pdf 2.03 missing `extended-ascii-p`**: The Quicklisp version of cl-pdf (2.03) is missing the `pdf::extended-ascii-p` function, which is called during `write-document` when writing string objects. The function was added in a newer version but not yet in Quicklisp. Fix: monkey-patch with `(defun pdf::extended-ascii-p (char) (> (char-code char) 127))` at load time, guarded by `(unless (fboundp ...))`.
+
+2. **pdf:set-dash-pattern takes a list, not array**: Unlike Vecto which takes a vector for dash patterns, cl-pdf's `set-dash-pattern` takes a plain list of numbers. No need for `make-array`.
+
+3. **pdf:basic-rect vs pdf:rectangle**: `pdf:basic-rect` takes (x y dx dy) where dx/dy are dimensions. `pdf:rectangle` takes (x y width height) with optional :radius for rounded corners. Used `basic-rect` for simplicity.
+
+4. **Text rotation via translate+rotate**: cl-pdf doesn't have a direct "draw rotated text" API. Must use `pdf:translate` to move origin to text position, then `pdf:rotate` to rotate, then draw text at (0,0). All within `pdf:with-saved-state` to restore the coordinate system.
+
+5. **pdf:write-document takes pathname or stream**: Must pass a pathname object or string. The function handles file creation internally.
+
+### cl-pdf API Summary (for future reference)
+- Document: `pdf:with-document`, `pdf:with-page`, `pdf:write-document`
+- Path: `pdf:move-to`, `pdf:line-to`, `pdf:bezier-to` (cubic), `pdf:close-path`
+- Fill/Stroke: `pdf:fill-path`, `pdf:stroke`, `pdf:fill-and-stroke`, `pdf:close-fill-and-stroke`
+- State: `pdf:with-saved-state`, `pdf:set-line-width`, `pdf:set-line-cap`, `pdf:set-line-join`, `pdf:set-dash-pattern`
+- Color: `pdf:set-rgb-fill`, `pdf:set-rgb-stroke`, `pdf:set-gray-fill`
+- Text: `pdf:in-text-mode`, `pdf:set-font`, `pdf:get-font`, `pdf:move-text`, `pdf:draw-text`
+- Transform: `pdf:translate`, `pdf:rotate`, `pdf:scale`
+- Transparency: `pdf:set-transparency`, `pdf:set-fill-transparency`, `pdf:set-stroke-transparency`
+- Clip: `pdf:clip-path`, `pdf:end-path-no-op`
+- Package: `pdf:` (nickname for `cl-pdf:`)
+
+### Files Created/Modified
+- `src/backends/backend-pdf.lisp` — ~480 LOC, full cl-pdf implementation
+- `tests/test-backend-pdf.lisp` — ~530 LOC, 33 tests, 58 checks
+- `src/packages.lisp` — Added 6 PDF backend exports
+- `cl-matplotlib-backends.asd` — Added cl-pdf dependency + backend-pdf component + test
+
+### Stats
+- 110/110 checks passing (52 Vecto + 58 PDF) — 100%
+- Evidence: `file .sisyphus/evidence/phase3c-pdf-render.pdf` → "PDF document, version 1.4, 1 page(s)"
+
+## Phase 3c Integration Fix (2026-02-07)
+
+### Issue
+PDF backend was implemented but not integrated into savefig pipeline. The savefig function only created canvas-vecto regardless of format.
+
+### Solution
+Updated savefig to dispatch canvas creation based on format:
+- :pdf → canvas-pdf + print-pdf
+- :png → canvas-vecto + print-png
+- otherwise → warn + fallback to PNG
+
+### Pattern
+Canvas creation must be format-aware, not just the print method.

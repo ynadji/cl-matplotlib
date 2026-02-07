@@ -833,7 +833,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
   - Files: `src/backends/backend-vecto.lisp`, `src/backends/vecto-extensions.lisp`
   - Pre-commit: `sbcl --eval '(asdf:load-system :cl-matplotlib-backends)' --quit`
 
-- [ ] 3c. cl-pdf PDF Backend
+- [x] 3c. cl-pdf PDF Backend
 
   **What to do**:
   - Implement `renderer-pdf` class implementing `renderer-base` protocol:
@@ -1552,7 +1552,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
   **Acceptance Criteria**: Cross-validation report shows ≥ 85% of tests with SSIM ≥ 0.85.
   **Commit**: YES — `docs: cross-validation report against Python matplotlib`
 
-- [ ] 8d. CI Setup (SBCL + CCL)
+- [x] 8d. CI Setup (SBCL + CCL)
 
   **What to do**:
   - Set up GitHub Actions CI with SBCL and CCL

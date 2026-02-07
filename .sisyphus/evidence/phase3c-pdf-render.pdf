@@ -1,0 +1,103 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog
+/Pages 2 0 R
+ >>
+ endobj
+2 0 obj
+<< /Type /Pages
+/Count 1
+/Kids [ 5 0 R ]
+ >>
+ endobj
+3 0 obj
+ endobj
+4 0 obj
+<< /ModDate (D:20260207005522)
+/CreationDate (D:20260207005522)
+ >>
+ endobj
+5 0 obj
+<< /Type /Page
+/Parent 2 0 R 
+/MediaBox [ 0 0 640 480 ]
+/Resources << /XObject <<  >>
+
+/ProcSet [ /PDF /Text ]
+/ExtGState <<  >>
+
+/Font << /CLF101 7 0 R
+ >>
+
+ >>
+
+/Annots [ ] 
+/Rotate 0
+/Contents 6 0 R
+ >>
+ endobj
+6 0 obj
+<< /Length 394
+ >>
+stream
+  1.0   1.0   1.0 rg
+     0.0      0.0    640.0    480.0 re
+ f
+q
+     2.0 w
+0 J
+0 j
+[] 0 d
+  0.0   0.0   0.0 RG
+   100.0    100.0 m
+   500.0    400.0 l
+ S
+Q
+q
+     1.0 w
+0 J
+0 j
+[] 0 d
+  0.0   0.0   0.0 rg
+   200.0    200.0 m
+   300.0    200.0 l
+   300.0    300.0 l
+   200.0    300.0 l
+ h
+ f
+Q
+q
+  0.0   0.0   0.0 rg
+BT
+/CLF101 18.00 Tf
+   100.0    440.0 Td
+(cl-matplotlib PDF Backend) Tj
+ET
+Q
+
+endstream
+ endobj
+7 0 obj
+<< /Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+ >>
+ endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000060 00000 n 
+0000000121 00000 n 
+0000000137 00000 n 
+0000000221 00000 n 
+0000000443 00000 n 
+0000000890 00000 n 
+trailer
+<< /Size 8
+/Root 1 0 R /Info 4 0 R
+>>
+startxref
+989
+%%EOF

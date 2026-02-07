@@ -412,15 +412,21 @@ TRANSPARENT — if T, use transparent background."
     (unwind-protect
          (let* ((w (figure-width-px figure))
                 (h (figure-height-px figure))
-                (canvas (make-instance 'mpl.backends:canvas-vecto
-                                       :width w :height h
-                                       :dpi (figure-dpi figure)
-                                       :figure figure)))
+                (canvas (case fmt
+                          (:pdf (make-instance 'mpl.backends:canvas-pdf
+                                               :width w :height h
+                                               :dpi (figure-dpi figure)
+                                               :figure figure))
+                          (otherwise (make-instance 'mpl.backends:canvas-vecto
+                                                    :width w :height h
+                                                    :dpi (figure-dpi figure)
+                                                    :figure figure)))))
            (case fmt
              (:png
               (mpl.backends:print-png canvas (namestring (pathname filename))))
+             (:pdf
+              (mpl.backends:print-pdf canvas (namestring (pathname filename))))
              (otherwise
-              ;; For unsupported formats, fall back to PNG
               (warn "Format ~A not yet supported, falling back to PNG." fmt)
               (mpl.backends:print-png canvas (namestring (pathname filename))))))
       ;; Restore original properties

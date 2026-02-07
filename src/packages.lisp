@@ -583,10 +583,15 @@
            ;; Deferred canvas
            #:canvas-vecto-deferred #:canvas-draw-calls
            #:canvas-record-draw-path
-           ;; Convenience
-           #:make-graphics-context #:render-to-png
-           ;; Font config
-           #:*default-font-path*))
+            ;; Convenience
+            #:make-graphics-context #:render-to-png
+            ;; Font config
+            #:*default-font-path*
+            ;; PDF renderer
+            #:renderer-pdf #:renderer-pdf-font-cache
+            ;; PDF canvas
+            #:canvas-pdf #:canvas-render-fn-pdf
+            #:print-pdf #:render-to-pdf))
 
 (defpackage #:cl-matplotlib.pyplot
   (:use #:cl)
