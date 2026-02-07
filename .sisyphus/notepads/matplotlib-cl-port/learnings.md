@@ -652,3 +652,42 @@ Date: 2026-02-06
 - Containers: 1108/1108 checks (unchanged) — 100%
 - Total: 1235 checks passing, 100% pass rate
 - Evidence: `file .sisyphus/evidence/phase6c-annotation.png` → "PNG image data, 800 x 600, 8-bit/color RGBA"
+
+## Phase 7a — pyplot Procedural Interface (2026-02-07)
+
+### Implementation Summary
+- **src/pyplot/pyplot.lisp**: Complete procedural interface (470 lines)
+  - Figure management: `figure`, `gcf`, `gca`, `close-figure`, `clf`, `cla`
+  - 15 plot function wrappers: `plot`, `scatter`, `bar`, `hist`, `imshow`, `contour`, `contourf`, `pie`, `errorbar`, `stem`, `step-plot`, `stackplot`, `barh`, `boxplot`, `fill-between`
+  - Axes configuration: `xlabel`, `ylabel`, `title`, `xlim`, `ylim`, `grid`, `legend`, `colorbar`, `annotate`
+  - Output: `savefig`, `show` (no-op)
+  - Subplot creation: `subplots` with squeeze support
+- **91 tests, 91 checks, 100% pass rate**
+- **Evidence PNG**: `.sisyphus/evidence/phase7a-pyplot.png` (800x600 RGBA, 28KB)
+
+### Architecture Decisions
+
+1. **Thin wrapper pattern**: Each pyplot function simply calls `(gca)` to get current axes, then delegates to the corresponding `cl-matplotlib.containers` function. This keeps pyplot as pure coordination code with zero logic duplication.
+
+2. **Global state via special variables**: `*figures*` (hash-table), `*current-figure*` (integer), `*figure-counter*` (integer). The hash-table maps figure numbers to figure objects. Thread-safe via CL special variable binding semantics.
+
+3. **Auto-creation cascade**: `gca` → `gcf` → `figure`. If no axes exist, gca auto-creates via `add-subplot 1 1 1`. If no figure exists, gcf auto-creates via `figure`.
+
+4. **`step-plot` naming**: Named `step-plot` instead of `step` to avoid shadowing `CL:STEP` (the built-in debugger stepper). This is the CL-idiomatic choice.
+
+5. **`close-figure` naming**: Named `close-figure` instead of `close` to avoid shadowing `CL:CLOSE` (stream close). Accepts :current, :all, or integer.
+
+6. **title as text-artist**: Title is implemented by creating a `text-artist` at axes coordinates (0.5, 1.02) with transAxes transform, matching matplotlib's approach of placing title just above the axes frame.
+
+### Gotchas Encountered
+
+1. **SBCL --eval read-time package resolution**: When chaining multiple `--eval` forms, SBCL reads ALL forms before executing any. So `--eval '(asdf:load-system ...)' --eval '(cl-matplotlib.pyplot:figure)'` fails because the pyplot package doesn't exist at read time. Solution: use `--load script.lisp` or `read-from-string`/`funcall intern` pattern.
+
+2. **Package nickname collision avoidance**: Package has nicknames `mpl.pyplot` and `plt`, enabling the natural `(plt:plot ...)` usage pattern that mirrors Python's `plt.plot(...)`.
+
+3. **Test isolation**: Every test calls `reset-pyplot-state` to clear `*figures*`, `*current-figure*`, and `*figure-counter*`. Without this, test ordering dependencies would make tests fragile.
+
+### Stats
+- 91/91 tests passing (100%)
+- Files: pyplot.lisp (source), test-pyplot.lisp (tests), cl-matplotlib-pyplot.asd (system)
+- Exports: 30 public functions/variables from `cl-matplotlib.pyplot`

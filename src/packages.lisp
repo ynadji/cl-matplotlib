@@ -588,10 +588,24 @@
 (defpackage #:cl-matplotlib.pyplot
   (:use #:cl)
   (:nicknames #:mpl.pyplot #:plt)
-  (:documentation "Top-level plotting API matching matplotlib.pyplot.")
-  (:export #:figure #:subplots #:plot #:show #:savefig
-           #:xlabel #:ylabel #:title #:legend
-           #:xlim #:ylim #:grid))
+  (:documentation "Top-level plotting API matching matplotlib.pyplot.
+Provides a procedural interface wrapping the OO Figure/Axes API.
+Manages global figure state for convenience.")
+  (:export ;; Figure management
+           #:figure #:gcf #:gca #:close-figure #:clf #:cla
+           ;; Subplot creation
+           #:subplots
+           ;; Plot functions
+           #:plot #:scatter #:bar #:hist #:imshow #:contour #:contourf
+           #:pie #:errorbar #:stem #:step-plot #:stackplot #:barh #:boxplot
+           #:fill-between
+           ;; Axes configuration
+           #:xlabel #:ylabel #:title #:xlim #:ylim #:grid #:legend
+           #:colorbar #:annotate
+           ;; Output
+           #:savefig #:show
+           ;; State management
+           #:*figures* #:*current-figure* #:*figure-counter*))
 
 (defpackage #:cl-matplotlib
   (:use #:cl)
