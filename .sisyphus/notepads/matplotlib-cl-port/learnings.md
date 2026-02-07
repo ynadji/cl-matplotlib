@@ -1183,3 +1183,64 @@ Canvas creation must be format-aware, not just the print method.
 ### Stats
 - 662/662 rendering checks passing (119 artist + 84 font + 122 collections + 127 annotation + 210 mathtext) — 100%
 - Evidence: `file .sisyphus/evidence/phase6a-mathtext.png` → "PNG image data, 640 x 200, 8-bit/color RGBA"
+
+## Phase 8a — Testing Infrastructure (2026-02-07)
+
+### Implementation Summary
+- **package.lisp**: Package definition for `cl-matplotlib.testing` (alias `mpl.testing`)
+- **compare.lisp**: PNG loading via pngload, RMS calculation, SSIM calculation, compare-images API, baseline directory management, save-diff-image
+- **decorators.lisp**: `def-image-test` macro (FiveAM wrapper for image comparison), `def-figures-equal` macro, result directory management, baseline utilities
+- **cl-matplotlib-testing.asd**: New standalone ASDF system with pngload + zpng + fiveam deps
+- **69 tests, 69 checks, 100% pass rate**
+
+### Architecture Decisions
+
+1. **Standalone ASDF system**: `cl-matplotlib-testing` is independent of the main cl-matplotlib systems. It only depends on pngload, zpng, and fiveam. This allows it to be used as a lightweight testing dependency without pulling in the entire matplotlib port.
+
+2. **pngload for reading, zpng for diff writing**: pngload returns a 3D array (H W C) of (unsigned-byte 8), which is perfect for pixel-by-pixel comparison. zpng is already in the project for PNG generation, so it's used for save-diff-image.
+
+3. **SSIM with sampling for performance**: Full SSIM computation on large images is O(H*W*window^2). Using step=4 (sampling every 4th pixel for window centers) reduces computation by 16x while maintaining accuracy for typical test images.
+
+4. **Baseline directory convention**: `tests/baseline_images/<suite-name>/<test-name>.png` mirrors matplotlib's convention. Baselines are looked up by suite + test name, enabling organized storage per test suite.
+
+5. **def-image-test with save-baseline mode**: When no baseline exists, the macro can either skip the test (default) or save the current output as the new baseline (save-baseline=t). This supports both "strict comparison" and "generate baselines" workflows.
+
+6. **Result images in temp directory**: Test outputs go to `/tmp/cl-matplotlib-test-results/` to avoid polluting the source tree. Each test gets `<suite>/<test>.png`.
+
+7. **SSIM constants as parameters not constants**: `*ssim-c1*` and `*ssim-c2*` use `defparameter` because they depend on `defconstant` values but involve computation. Using `defconstant` on computed values can cause issues with FASL reloading in some implementations.
+
+### Gotchas Encountered
+
+1. **SBCL --eval multiple expressions**: SBCL's `--eval` flag accepts exactly ONE s-expression. Passing multiple top-level forms (as a multi-line string) causes "Multiple expressions in --eval option" error. Solution: use `--load /dev/stdin` with heredoc for complex eval scenarios.
+
+2. **pngload returns (H W C) not (W H C)**: The array dimensions are (height, width, channels), matching row-major image convention. Must be careful: `(aref data j i k)` where j=row=Y, i=col=X.
+
+3. **zpng image-data is flat 1D**: zpng stores pixel data as a flat `(unsigned-byte 8)` array with stride = width * channels. Offset formula: `(+ (* (+ (* j width) i) channels) k)`. This contrasts with pngload's 3D array.
+
+4. **SSIM for solid color images**: When both images are solid colors (zero variance everywhere), the SSIM formula degenerates. The C1/C2 constants in the SSIM formula prevent division by zero, ensuring well-defined results even for flat images.
+
+5. **CL format ~% vs %**: In CL format strings, `~%` is newline but `%` in `(format nil "100%")` is literal. To print a literal percent sign in format, use `~~%` — but this can be confusing. In evidence output, `100%%` was needed.
+
+### API Summary
+- `(compare-images expected actual :tolerance 2.0)` → plist with :rms :ssim :passed :tolerance :expected :actual
+- `(calculate-rms data1 data2)` → double-float RMS in [0, 255]
+- `(calculate-ssim data1 data2 :window-size 7 :step 4)` → double-float SSIM in [-1, 1]
+- `(def-image-test name (&key suite tolerance) &body body)` — FiveAM macro, binds OUTPUT-FILE
+- `(def-figures-equal name (&key suite tolerance) &body body)` — binds FIG-TEST, FIG-REF
+- `(find-baseline suite test)` → pathname or NIL
+- `(baseline-path suite test)` → pathname (creates dirs)
+- `(save-diff-image expected actual output)` — amplified visual diff
+
+### Files Created
+- `src/testing/package.lisp` — ~35 LOC, package definition
+- `src/testing/compare.lisp` — ~240 LOC, RMS + SSIM + compare-images + baseline management
+- `src/testing/decorators.lisp` — ~150 LOC, def-image-test + def-figures-equal macros
+- `cl-matplotlib-testing.asd` — ~25 LOC, system definition + test system
+- `tests/test-testing.lisp` — ~380 LOC, 29 tests, 69 checks
+- `tests/baseline_images/` — empty directory for future baselines
+- `.sisyphus/evidence/phase8a-testing.txt` — evidence with RMS/SSIM scores
+
+### Stats
+- 69/69 checks passing — 100%
+- System loads cleanly: `(ql:quickload :cl-matplotlib-testing)` exits 0
+- Test system runs: `(asdf:test-system :cl-matplotlib-testing)` exits 0
