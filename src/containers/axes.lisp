@@ -307,6 +307,522 @@ AXIS: :both, :x, or :y."
   (setf (mpl.rendering:artist-stale ax) t))
 
 ;;; ============================================================
+;;; pie — pie chart
+;;; ============================================================
+
+(defun pie (ax x &key (labels nil) (colors nil) (autopct nil)
+                      (startangle 0) (counterclock t)
+                      (wedgeprops nil) (textprops nil)
+                      (zorder 1))
+  "Draw a pie chart.
+
+AX — an axes-base instance.
+X — sequence of wedge sizes (need not sum to 1; will be normalized).
+LABELS — list of label strings for each wedge.
+COLORS — list of color strings for each wedge.
+AUTOPCT — format string for percentage labels (e.g. \"~,1F%\") or nil.
+STARTANGLE — angle in degrees for first wedge (default 0).
+COUNTERCLOCK — if T, wedges go counter-clockwise (default T).
+WEDGEPROPS — plist of extra wedge properties (ignored in simplified version).
+TEXTPROPS — plist of extra text properties (ignored in simplified version).
+ZORDER — drawing order (default 1).
+
+Returns (values patches texts autotexts)."
+  (declare (ignore wedgeprops textprops))
+  (let* ((data (mapcar (lambda (v) (float v 1.0d0)) (coerce x 'list)))
+         (total (reduce #'+ data))
+         (fractions (if (zerop total)
+                        (make-list (length data) :initial-element 0.0d0)
+                        (mapcar (lambda (v) (/ v total)) data)))
+         (default-colors '("C0" "C1" "C2" "C3" "C4" "C5" "C6" "C7" "C8" "C9"))
+         (patches nil)
+         (texts nil)
+         (autotexts nil)
+         (angle (float startangle 1.0d0)))
+    (loop for i from 0
+          for frac in fractions
+          for sweep = (* frac 360.0d0)
+          for theta1 = angle
+          for theta2 = (if counterclock (+ angle sweep) (- angle sweep))
+          for color = (if colors
+                          (elt colors (mod i (length colors)))
+                          (elt default-colors (mod i (length default-colors))))
+          do
+             ;; Create wedge patch
+             (let ((wedge-patch (make-instance 'mpl.rendering:wedge
+                                               :center '(0.0d0 0.0d0)
+                                               :r 1.0d0
+                                               :theta1 (min theta1 theta2)
+                                               :theta2 (max theta1 theta2)
+                                               :facecolor color
+                                               :edgecolor "white"
+                                               :linewidth 1.0
+                                               :zorder zorder)))
+               (setf (mpl.rendering:artist-transform wedge-patch)
+                     (axes-base-trans-data ax))
+               (axes-add-patch ax wedge-patch)
+               (push wedge-patch patches))
+             ;; Label text
+             (when (and labels (< i (length labels)))
+               (let* ((mid-angle (* (/ (+ theta1 theta2) 2.0d0) (/ pi 180.0d0)))
+                      (label-r 1.1d0)
+                      (lx (* label-r (cos mid-angle)))
+                      (ly (* label-r (sin mid-angle)))
+                      (txt (make-instance 'mpl.rendering:text-artist
+                                          :x lx :y ly
+                                          :text (elt labels i)
+                                          :fontsize 10.0
+                                          :horizontalalignment :center
+                                          :verticalalignment :center
+                                          :zorder (1+ zorder))))
+                 (setf (mpl.rendering:artist-transform txt)
+                       (axes-base-trans-data ax))
+                 (push txt (axes-base-texts ax))
+                 (push txt texts)))
+             ;; Auto-percentage text
+             (when autopct
+               (let* ((pct (* frac 100.0d0))
+                      (mid-angle (* (/ (+ theta1 theta2) 2.0d0) (/ pi 180.0d0)))
+                      (pct-r 0.6d0)
+                      (px (* pct-r (cos mid-angle)))
+                      (py (* pct-r (sin mid-angle)))
+                      (pct-text (format nil autopct pct))
+                      (txt (make-instance 'mpl.rendering:text-artist
+                                          :x px :y py
+                                          :text pct-text
+                                          :fontsize 8.0
+                                          :horizontalalignment :center
+                                          :verticalalignment :center
+                                          :zorder (1+ zorder))))
+                 (setf (mpl.rendering:artist-transform txt)
+                       (axes-base-trans-data ax))
+                 (push txt (axes-base-texts ax))
+                 (push txt autotexts)))
+             ;; Advance angle
+             (setf angle theta2))
+    ;; Set equal aspect and limits for pie
+    (axes-update-datalim ax '(-1.3d0 1.3d0) '(-1.3d0 1.3d0))
+    (axes-autoscale-view ax)
+    (values (nreverse patches) (nreverse texts) (nreverse autotexts))))
+
+;;; ============================================================
+;;; errorbar — line plot with error bars
+;;; ============================================================
+
+(defun errorbar (ax xdata ydata &key (yerr nil) (xerr nil) (fmt nil)
+                                     (ecolor nil) (elinewidth 1.0)
+                                     (capsize 3.0) (color nil)
+                                     (linewidth 1.5) (marker :none)
+                                     (label "") (zorder 2))
+  "Plot y versus x with error bars.
+
+AX — an axes-base instance.
+XDATA — sequence of x coordinates.
+YDATA — sequence of y coordinates.
+YERR — vertical error (number for symmetric, or list of numbers).
+XERR — horizontal error (number for symmetric, or list of numbers).
+FMT — format string (ignored, use COLOR/MARKER instead).
+ECOLOR — error bar color (default same as line color).
+ELINEWIDTH — error bar line width.
+CAPSIZE — cap size in points (default 3.0).
+COLOR — line/marker color.
+LINEWIDTH — main line width.
+MARKER — marker style.
+LABEL — legend label.
+ZORDER — drawing order.
+
+Returns (values line error-lines caps)."
+  (declare (ignore fmt))
+  (let* ((effective-color (or color "C0"))
+         (err-color (or ecolor effective-color))
+         (n (min (length xdata) (length ydata)))
+         (error-segments nil)
+         (cap-segments nil))
+    ;; Plot main line
+    (let ((line (first (plot ax xdata ydata
+                             :color effective-color
+                             :linewidth linewidth
+                             :marker marker
+                             :label label
+                             :zorder zorder))))
+      ;; Create error bar segments
+      (dotimes (i n)
+        (let ((xi (float (elt xdata i) 1.0d0))
+              (yi (float (elt ydata i) 1.0d0)))
+          ;; Vertical error bars
+          (when yerr
+            (let* ((ye (if (numberp yerr)
+                           (float yerr 1.0d0)
+                           (float (elt yerr i) 1.0d0)))
+                   (y-lo (- yi ye))
+                   (y-hi (+ yi ye)))
+              ;; Vertical line
+              (push (list (list xi y-lo) (list xi y-hi)) error-segments)
+              ;; Caps
+              (when (plusp capsize)
+                (let ((cap-hw (* capsize 0.01d0))) ; convert points to data approx
+                  (push (list (list (- xi cap-hw) y-lo) (list (+ xi cap-hw) y-lo)) cap-segments)
+                  (push (list (list (- xi cap-hw) y-hi) (list (+ xi cap-hw) y-hi)) cap-segments)))))
+          ;; Horizontal error bars
+          (when xerr
+            (let* ((xe (if (numberp xerr)
+                           (float xerr 1.0d0)
+                           (float (elt xerr i) 1.0d0)))
+                   (x-lo (- xi xe))
+                   (x-hi (+ xi xe)))
+              ;; Horizontal line
+              (push (list (list x-lo yi) (list x-hi yi)) error-segments)
+              ;; Caps
+              (when (plusp capsize)
+                (let ((cap-hw (* capsize 0.01d0)))
+                  (push (list (list x-lo (- yi cap-hw)) (list x-lo (+ yi cap-hw))) cap-segments)
+                  (push (list (list x-hi (- yi cap-hw)) (list x-hi (+ yi cap-hw))) cap-segments)))))))
+      ;; Create LineCollection for error bars
+      (let ((err-lc (mpl.rendering:make-line-collection
+                     :segments (nreverse error-segments)
+                     :edgecolors err-color
+                     :linewidths elinewidth
+                     :zorder (1- zorder))))
+        (setf (mpl.rendering:artist-transform err-lc)
+              (axes-base-trans-data ax))
+        (axes-add-artist ax err-lc)
+        ;; Create LineCollection for caps
+        (let ((cap-lc (when cap-segments
+                        (mpl.rendering:make-line-collection
+                         :segments (nreverse cap-segments)
+                         :edgecolors err-color
+                         :linewidths elinewidth
+                         :zorder (1- zorder)))))
+          (when cap-lc
+            (setf (mpl.rendering:artist-transform cap-lc)
+                  (axes-base-trans-data ax))
+            (axes-add-artist ax cap-lc))
+          ;; Update data limits with error extents
+          (when yerr
+            (let ((all-y nil))
+              (dotimes (i n)
+                (let* ((yi (float (elt ydata i) 1.0d0))
+                       (ye (if (numberp yerr) (float yerr 1.0d0) (float (elt yerr i) 1.0d0))))
+                  (push (- yi ye) all-y)
+                  (push (+ yi ye) all-y)))
+              (axes-update-datalim ax xdata (nreverse all-y))))
+          (when xerr
+            (let ((all-x nil))
+              (dotimes (i n)
+                (let* ((xi (float (elt xdata i) 1.0d0))
+                       (xe (if (numberp xerr) (float xerr 1.0d0) (float (elt xerr i) 1.0d0))))
+                  (push (- xi xe) all-x)
+                  (push (+ xi xe) all-x)))
+              (axes-update-datalim ax (nreverse all-x) ydata)))
+          (axes-autoscale-view ax)
+          (values line err-lc cap-lc))))))
+
+;;; ============================================================
+;;; stem — stem plot
+;;; ============================================================
+
+(defun stem (ax xdata ydata &key (linefmt nil) (markerfmt nil) (basefmt nil)
+                                  (bottom 0.0) (label "") (zorder 2))
+  "Create a stem plot.
+
+AX — an axes-base instance.
+XDATA — sequence of x coordinates.
+YDATA — sequence of y coordinates.
+LINEFMT — stem line color (default C0).
+MARKERFMT — marker color (default C0).
+BASEFMT — baseline color (default C3).
+BOTTOM — baseline y position (default 0).
+LABEL — legend label.
+ZORDER — drawing order.
+
+Returns (values markerline stemlines baseline)."
+  (let* ((stem-color (or linefmt "C0"))
+         (marker-color (or markerfmt "C0"))
+         (base-color (or basefmt "C3"))
+         (bot (float bottom 1.0d0))
+         (n (min (length xdata) (length ydata)))
+         (stem-segments nil))
+    ;; Create stem line segments (vertical lines from bottom to y)
+    (dotimes (i n)
+      (let ((xi (float (elt xdata i) 1.0d0))
+            (yi (float (elt ydata i) 1.0d0)))
+        (push (list (list xi bot) (list xi yi)) stem-segments)))
+    ;; Stem lines as LineCollection
+    (let ((stemlines (mpl.rendering:make-line-collection
+                      :segments (nreverse stem-segments)
+                      :edgecolors stem-color
+                      :linewidths 1.0
+                      :zorder zorder)))
+      (setf (mpl.rendering:artist-transform stemlines)
+            (axes-base-trans-data ax))
+      (axes-add-artist ax stemlines)
+      ;; Marker line (scatter at heads)
+      (let ((markerline (make-instance 'mpl.rendering:line-2d
+                                       :xdata xdata
+                                       :ydata ydata
+                                       :color marker-color
+                                       :linewidth 0
+                                       :linestyle :solid
+                                       :marker :circle
+                                       :label label
+                                       :zorder (1+ zorder))))
+        (setf (mpl.rendering:artist-transform markerline)
+              (axes-base-trans-data ax))
+        (axes-add-line ax markerline)
+        ;; Baseline
+        (let* ((x-min (reduce #'min (coerce xdata 'list)))
+               (x-max (reduce #'max (coerce xdata 'list)))
+               (baseline (make-instance 'mpl.rendering:line-2d
+                                        :xdata (list (float x-min 1.0d0) (float x-max 1.0d0))
+                                        :ydata (list bot bot)
+                                        :color base-color
+                                        :linewidth 1.0
+                                        :linestyle :solid
+                                        :zorder zorder)))
+          (setf (mpl.rendering:artist-transform baseline)
+                (axes-base-trans-data ax))
+          (axes-add-line ax baseline)
+          ;; Update data limits
+          (axes-update-datalim ax xdata ydata)
+          (axes-update-datalim ax xdata (list bot))
+          (axes-autoscale-view ax)
+          (values markerline stemlines baseline))))))
+
+;;; ============================================================
+;;; step — step plot
+;;; ============================================================
+
+(defun axes-step (ax xdata ydata &key (where :pre) (color nil) (linewidth 1.5)
+                                       (linestyle :solid) (label "") (zorder 2))
+  "Create a step plot.
+
+AX — an axes-base instance.
+XDATA — sequence of x coordinates.
+YDATA — sequence of y coordinates.
+WHERE — :pre (step before), :post (step after), :mid (step at midpoint).
+COLOR — line color.
+LINEWIDTH — line width.
+LINESTYLE — line style.
+LABEL — legend label.
+ZORDER — drawing order.
+
+Returns the created Line2D."
+  (let* ((effective-color (or color "C0"))
+         (n (min (length xdata) (length ydata)))
+         (step-x nil)
+         (step-y nil))
+    ;; Build step path based on where
+    (ecase where
+      (:pre
+       ;; Step happens before the next y value
+       ;; For each segment: first go horizontal at old y, then vertical to new y
+       (when (plusp n)
+         (push (float (elt xdata 0) 1.0d0) step-x)
+         (push (float (elt ydata 0) 1.0d0) step-y)
+         (loop for i from 1 below n
+               for xi = (float (elt xdata i) 1.0d0)
+               for yi = (float (elt ydata i) 1.0d0)
+               do ;; Horizontal at previous y to current x
+                  (push xi step-x)
+                  (push (float (elt ydata (1- i)) 1.0d0) step-y)
+                  ;; Vertical to current y
+                  (push xi step-x)
+                  (push yi step-y))))
+      (:post
+       ;; Step happens after the current y value
+       (when (plusp n)
+         (loop for i from 0 below (1- n)
+               for xi = (float (elt xdata i) 1.0d0)
+               for yi = (float (elt ydata i) 1.0d0)
+               for xi+1 = (float (elt xdata (1+ i)) 1.0d0)
+               do ;; Current point
+                  (push xi step-x)
+                  (push yi step-y)
+                  ;; Horizontal at current y to next x
+                  (push xi+1 step-x)
+                  (push yi step-y))
+         ;; Last point
+         (push (float (elt xdata (1- n)) 1.0d0) step-x)
+         (push (float (elt ydata (1- n)) 1.0d0) step-y)))
+      (:mid
+       ;; Step happens at midpoint between x values
+       (when (plusp n)
+         (push (float (elt xdata 0) 1.0d0) step-x)
+         (push (float (elt ydata 0) 1.0d0) step-y)
+         (loop for i from 1 below n
+               for xi-prev = (float (elt xdata (1- i)) 1.0d0)
+               for xi = (float (elt xdata i) 1.0d0)
+               for yi-prev = (float (elt ydata (1- i)) 1.0d0)
+               for yi = (float (elt ydata i) 1.0d0)
+               for mid-x = (* 0.5d0 (+ xi-prev xi))
+               do ;; Horizontal to midpoint at previous y
+                  (push mid-x step-x)
+                  (push yi-prev step-y)
+                  ;; Vertical to current y at midpoint
+                  (push mid-x step-x)
+                  (push yi step-y))
+         ;; Last segment to end
+         (push (float (elt xdata (1- n)) 1.0d0) step-x)
+         (push (float (elt ydata (1- n)) 1.0d0) step-y))))
+    (setf step-x (nreverse step-x)
+          step-y (nreverse step-y))
+    ;; Create Line2D with step path
+    (let ((line (make-instance 'mpl.rendering:line-2d
+                               :xdata step-x
+                               :ydata step-y
+                               :color effective-color
+                               :linewidth linewidth
+                               :linestyle linestyle
+                               :label label
+                               :zorder zorder)))
+      (setf (mpl.rendering:artist-transform line)
+            (axes-base-trans-data ax))
+      (axes-add-line ax line)
+      (axes-update-datalim ax xdata ydata)
+      (axes-autoscale-view ax)
+      line)))
+
+;;; ============================================================
+;;; stackplot — stacked area plot
+;;; ============================================================
+
+(defun stackplot (ax xdata ydatas &key (labels nil) (colors nil) (baseline :zero)
+                                        (zorder 1))
+  "Draw a stacked area plot.
+
+AX — an axes-base instance.
+XDATA — sequence of x coordinates.
+YDATAS — list of y-data sequences (one per layer).
+LABELS — list of label strings for each layer.
+COLORS — list of colors for each layer.
+BASELINE — :zero (default), :sym (symmetric), :wiggle.
+ZORDER — drawing order.
+
+Returns a list of Polygon patches."
+  (declare (ignore baseline))  ; Simplified: always :zero baseline
+  (let* ((default-colors '("C0" "C1" "C2" "C3" "C4" "C5" "C6" "C7" "C8" "C9"))
+         (n-layers (length ydatas))
+         (n-pts (length xdata))
+         ;; Compute cumulative sums
+         (cumsum (make-array (list (1+ n-layers) n-pts) :element-type 'double-float
+                             :initial-element 0.0d0))
+         (polys nil))
+    ;; cumsum[0] = baseline (zeros)
+    ;; cumsum[k] = sum of layers 0..k-1
+    (loop for k from 0 below n-layers
+          for ydata in ydatas
+          do (dotimes (j n-pts)
+               (setf (aref cumsum (1+ k) j)
+                     (+ (aref cumsum k j)
+                        (float (elt ydata j) 1.0d0)))))
+    ;; Create filled polygons for each layer
+    (loop for k from 0 below n-layers
+          for color = (if colors
+                          (elt colors (mod k (length colors)))
+                          (elt default-colors (mod k (length default-colors))))
+          for label = (if (and labels (< k (length labels)))
+                          (elt labels k) "")
+          do (let* ((total-verts (* 2 n-pts))
+                    (verts (make-array (list total-verts 2) :element-type 'double-float)))
+               ;; Forward pass: upper boundary (cumsum[k+1])
+               (dotimes (j n-pts)
+                 (setf (aref verts j 0) (float (elt xdata j) 1.0d0)
+                       (aref verts j 1) (aref cumsum (1+ k) j)))
+               ;; Backward pass: lower boundary (cumsum[k])
+               (dotimes (j n-pts)
+                 (let ((rev-j (- n-pts 1 j)))
+                   (setf (aref verts (+ n-pts j) 0) (float (elt xdata rev-j) 1.0d0)
+                         (aref verts (+ n-pts j) 1) (aref cumsum k rev-j))))
+               (let ((poly (make-instance 'mpl.rendering:polygon
+                                          :xy verts
+                                          :closed t
+                                          :facecolor color
+                                          :edgecolor "none"
+                                          :linewidth 0.0
+                                          :label label
+                                          :zorder zorder)))
+                 (setf (mpl.rendering:artist-transform poly)
+                       (axes-base-trans-data ax))
+                 (axes-add-patch ax poly)
+                 (push poly polys))))
+    ;; Update data limits
+    (let ((y-max 0.0d0))
+      (dotimes (j n-pts)
+        (setf y-max (max y-max (aref cumsum n-layers j))))
+      (axes-update-datalim ax xdata (list 0.0d0 y-max)))
+    (axes-autoscale-view ax)
+    (nreverse polys)))
+
+;;; ============================================================
+;;; barh — horizontal bar chart
+;;; ============================================================
+
+(defun barh (ax y width &key (height 0.8) (left 0) (color nil)
+                              (edgecolor "black") (linewidth 0.5)
+                              (label "") (zorder 1) (align :center))
+  "Make a horizontal bar plot.
+
+AX — an axes-base instance.
+Y — sequence of y positions for bars.
+WIDTH — sequence of bar widths (horizontal extent).
+HEIGHT — bar height (number or sequence, default 0.8).
+LEFT — bar left edge (number or sequence, default 0).
+COLOR — face color (default C0).
+EDGECOLOR — edge color (default black).
+LINEWIDTH — edge line width.
+LABEL — legend label.
+ZORDER — drawing order.
+ALIGN — :center or :edge.
+
+Returns a list of Rectangle patches."
+  (let* ((effective-color (or color "C0"))
+         (n (min (length y) (length width)))
+         (rects nil))
+    (dotimes (i n)
+      (let* ((yi (float (elt y i) 1.0d0))
+             (wi (float (elt width i) 1.0d0))
+             (hi (if (numberp height)
+                     (float height 1.0d0)
+                     (float (elt height i) 1.0d0)))
+             (li (if (numberp left)
+                     (float left 1.0d0)
+                     (float (elt left i) 1.0d0)))
+             ;; Adjust y based on alignment
+             (y0 (if (eq align :center)
+                     (- yi (* hi 0.5d0))
+                     yi))
+             (rect (make-instance 'mpl.rendering:rectangle
+                                  :x0 li
+                                  :y0 y0
+                                  :width wi
+                                  :height hi
+                                  :facecolor effective-color
+                                  :edgecolor edgecolor
+                                  :linewidth linewidth
+                                  :zorder zorder)))
+        (setf (mpl.rendering:artist-transform rect)
+              (axes-base-trans-data ax))
+        (axes-add-patch ax rect)
+        (push rect rects)))
+    ;; Update data limits
+    (let ((all-x nil) (all-y nil))
+      (dotimes (i n)
+        (let* ((yi (float (elt y i) 1.0d0))
+               (wi (float (elt width i) 1.0d0))
+               (hi (if (numberp height) (float height 1.0d0)
+                       (float (elt height i) 1.0d0)))
+               (li (if (numberp left) (float left 1.0d0)
+                       (float (elt left i) 1.0d0)))
+               (y0 (if (eq align :center) (- yi (* hi 0.5d0)) yi)))
+          (push li all-x)
+          (push (+ li wi) all-x)
+          (push y0 all-y)
+          (push (+ y0 hi) all-y)))
+      (axes-update-datalim ax (nreverse all-x) (nreverse all-y)))
+    (axes-autoscale-view ax)
+    (nreverse rects)))
+
+;;; ============================================================
 ;;; add-subplot — create axes in figure at subplot position
 ;;; ============================================================
 

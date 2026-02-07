@@ -550,3 +550,56 @@ Date: 2026-02-06
 - 999/999 checks passing (129 figure + 117 axes + 111 axis + 59 scale + 110 legend + 27 colorbar + 158 gridspec + 130 contour + 158 image) — 100%
 - Pre-commit: `sbcl --eval '(asdf:test-system :cl-matplotlib-containers)' --quit` exits 0
 - Evidence: `file .sisyphus/evidence/phase5e-imshow.png` → "PNG image data, 640 x 480, 8-bit/color RGBA"
+
+## Phase 6b — Additional Plot Types (2026-02-06)
+
+### Implementation Summary
+- **hist.lisp**: Histogram with binning, density normalization, cumulative mode, 3 histtypes (:bar, :step, :stepfilled)
+- **stats.lisp**: Simplified boxplot with quartiles, IQR whiskers, outlier detection, vertical/horizontal orientation
+- **axes.lisp**: Added 6 more plot types: pie, errorbar, stem, axes-step, stackplot, barh
+- **109 new tests, 1108 total checks, 100% pass rate**
+- **Evidence**: phase6b-hist.png (800x600, 16.7KB PNG, 1000-point histogram with 30 bins)
+
+### Architecture Decisions
+
+1. **Histogram binning as standalone functions**: `%compute-bin-edges` and `%histogram-counts` are utility functions, not methods. Linear search for bin assignment (correct for small bin counts). Density normalization divides by total*bin_width so sum of areas = 1.0.
+
+2. **Three histtypes via ecase**: `:bar` creates N Rectangle patches. `:step` creates a single Line2D with the step outline. `:stepfilled` creates a single Polygon with the filled step outline. Each returns different artist types but the same (values counts bin-edges patches).
+
+3. **Pie chart with Wedge patches**: Normalizes input to fractions, converts to angular sweeps (360°). Each slice is a Wedge patch with center=(0,0), radius=1. Label positions computed from midpoint angles.
+
+4. **Errorbar delegates to plot() for main line**: Creates the main data line via existing `plot()`, then adds LineCollections for error bar segments and caps. Returns (values line err-lc cap-lc).
+
+5. **Stem uses LineCollection for stems**: Vertical stem lines stored as a LineCollection for efficiency. Marker heads as a Line2D with linewidth=0 and marker=:circle. Baseline as a separate Line2D.
+
+6. **Step plot builds explicit path**: Three modes (:pre, :post, :mid) construct different vertex sequences. Returns a single Line2D with the pre-computed step path.
+
+7. **Stackplot via cumulative sums**: Uses a 2D array for cumulative layer boundaries. Each layer is a Polygon formed by forward pass (upper boundary) and backward pass (lower boundary). Clean closed polygon.
+
+8. **Barh mirrors bar() with x/y swapped**: Rectangle patches with x0=left, y0=y-height/2, width=horizontal extent, height=bar thickness.
+
+9. **Boxplot with IQR-based whiskers**: Q1/median/Q3 via linear interpolation percentile. Whiskers extend to most extreme data within 1.5×IQR. Points beyond whiskers are outliers (rendered as markers).
+
+### Gotchas Encountered
+
+1. **`step` name collision**: CL's `step` is a debugging macro. Named our function `axes-step` to avoid the package conflict (same pattern as `axes-fill` from Phase 4b).
+
+2. **line-2d-ydata returns whatever was passed**: Line2D stores xdata/ydata as-is (list or vector). Tests must use `elt` not `first` to access elements generically.
+
+3. **Density normalization returns heights not counts**: The `hist` function returns raw counts in the first value but uses normalized heights for the rectangles. Tests checking density must read patch heights, not the counts return value.
+
+4. **Step :mid point count**: For n=4 input points, :mid generates 1+2*(n-1)+1=8 step path points (first + midpoint pairs + last), not 2*(n-1)+1=7.
+
+5. **Boxplot single vs multiple datasets**: Boxplot must handle both a single dataset (list of numbers) and multiple datasets (list of lists). Detection via `(listp (first data))`.
+
+### Files Created/Modified
+- `src/plotting/hist.lisp` — ~175 LOC, histogram binning + plotting
+- `src/plotting/stats.lisp` — ~200 LOC, boxplot with quartiles + whiskers + outliers
+- `src/containers/axes.lisp` — +350 LOC, 6 plot types (pie, errorbar, stem, axes-step, stackplot, barh)
+- `tests/test-plot-types.lisp` — ~370 LOC, 39 tests, 109 checks
+- `src/packages.lisp` — Added 8 new exports (hist, pie, errorbar, stem, axes-step, stackplot, barh, boxplot)
+- `cl-matplotlib-containers.asd` — Added hist + stats components + test-plot-types
+
+### Stats
+- 1108/1108 checks passing (129 figure + 117 axes + 111 axis + 59 scale + 110 legend + 27 colorbar + 158 gridspec + 130 contour + 158 image + 109 plot-types) — 100%
+- Evidence: `file .sisyphus/evidence/phase6b-hist.png` → "PNG image data, 800 x 600, 8-bit/color RGBA"

@@ -1373,7 +1373,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
   **Acceptance Criteria**: `$x^2 + y^2 = r^2$` renders correctly in a plot title.
   **Commit**: YES — `feat(rendering): mathtext parser and layout engine`
 
-- [ ] 6b. Additional Plot Types
+- [x] 6b. Additional Plot Types
 
   **What to do**:
   - Port remaining core Axes methods: `hist`, `pie`, `errorbar`, `boxplot`, `violinplot`, `stem`, `step`, `stackplot`, `fill_between`, `barh`

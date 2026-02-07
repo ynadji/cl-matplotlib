@@ -387,8 +387,11 @@
             #:axes-base-xaxis #:axes-base-yaxis #:axes-base-spines
              ;; Plotting functions
              #:add-subplot
-             #:plot #:scatter #:bar #:axes-fill #:fill-between
-             #:imshow #:axes-add-image
+              #:plot #:scatter #:bar #:axes-fill #:fill-between
+              #:imshow #:axes-add-image
+              ;; Additional plot types (Phase 6b)
+              #:hist #:pie #:errorbar #:stem #:axes-step
+              #:stackplot #:barh #:boxplot
             ;; Grid
             #:axes-grid-toggle
             ;; Ticker — Locator base
