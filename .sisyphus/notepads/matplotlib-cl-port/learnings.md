@@ -765,3 +765,107 @@ Extended the existing rcParams system (265 params from Phase 1) with:
 ✓ 100% test pass rate (382 checks)
 ✓ Zero compilation warnings
 
+
+---
+
+## Phase 7c: Style Sheet System
+
+### Implementation Summary
+
+Ported matplotlib's style sheet system for easy plot styling. Provides:
+- `use-style`: Apply style globally
+- `with-style`: Apply style temporarily (with restoration)
+- `available-styles`: List available styles
+- `reload-styles`: Clear cache and rescan stylelib
+
+### Architecture
+
+**Style Loading Pipeline**:
+1. `available-styles` scans `data/stylelib/` for `.mplstyle` files
+2. `load-style` parses file using existing `parse-matplotlibrc` function
+3. Results cached in `*style-cache*` hash table
+4. `use-style` applies params via existing `rc` setter
+5. `with-style` uses `unwind-protect` for safe restoration
+
+**Key Design Decisions**:
+- Reuse `parse-matplotlibrc` for file parsing (DRY principle)
+- Reuse `rc` setter for param application (no duplication)
+- Cache styles to avoid repeated file I/O
+- Support both single style and list of styles (later overrides earlier)
+
+### Style Files (8 Core Styles)
+
+Ported from matplotlib's stylelib:
+1. **default**: matplotlib 2.0+ defaults
+2. **classic**: matplotlib 1.x defaults (thicker lines)
+3. **ggplot**: ggplot2-inspired (gray background, white grid)
+4. **seaborn**: Seaborn-inspired (muted colors, gray background)
+5. **bmh**: Bayesian Methods for Hackers (clean, minimal)
+6. **dark_background**: Dark background with light text
+7. **fivethirtyeight**: FiveThirtyEight.com style (bold, colorful)
+8. **grayscale**: Grayscale only (for printing)
+
+### Gotchas Encountered
+
+1. **Keyword to Filename Conversion**:
+   - Keywords use hyphens: `:dark-background`
+   - Filenames use underscores: `dark_background.mplstyle`
+   - Solution: `substitute #\_ #\- name` in `style-filename`
+
+2. **Color Value Formatting**:
+   - Style files have hex colors without `#`: `E5E5E5`
+   - Validator adds `#` prefix: `#E5E5E5`
+   - Tests must expect prefixed values
+
+3. **Unsupported Parameters**:
+   - `axes.prop_cycle` not recognized by rcParams system
+   - Removed from all style files (graceful degradation)
+   - Unknown keys silently skipped by `use-style`
+
+4. **Boolean Conversion**:
+   - Style files use strings: `"True"`, `"False"`, `"true"`, `"false"`
+   - Validator converts to Lisp booleans: `T`, `NIL`
+   - Tests must use `eq` for boolean checks, not `string-equal`
+
+### Testing Results
+
+- 36 style tests, 100% pass rate
+- Comprehensive coverage:
+  - Style loading and caching
+  - Single and multiple style application
+  - Temporary override with restoration
+  - Nested with-style calls
+  - Error handling (restoration on error)
+  - All 8 core styles functional
+
+### Integration Points
+
+- Added `style.lisp` to foundation module
+- Added style exports to `cl-matplotlib.rc` package
+- Updated `cl-matplotlib-foundation.asd` with style component
+- Style system depends on existing rcParams infrastructure
+
+### Performance Notes
+
+- Style caching: O(1) lookup after first load
+- File parsing: O(n) where n = params in file (~20-40 params per style)
+- `with-style` restoration: O(m) where m = modified params (typically 5-10)
+
+### Success Metrics
+
+✓ All 8 core styles load and apply correctly
+✓ `use-style` changes rcParams as expected
+✓ `with-style` restores params after execution
+✓ `available-styles` lists all styles alphabetically
+✓ 100% test pass rate (36 checks)
+✓ Graceful handling of unsupported parameters
+✓ Proper error handling and restoration
+
+### Future Enhancements
+
+- Style composition (combine multiple styles with weights)
+- Custom style registration
+- Style validation (check all params are valid)
+- Style documentation generation
+- Performance optimization (lazy loading)
+

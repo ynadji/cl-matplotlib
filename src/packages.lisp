@@ -55,10 +55,13 @@
            #:register-rc-param #:define-rc-param
            ;; Accessor
            #:rc #:with-rc #:rc-reset #:rc-update #:rc-find-all
-           ;; RC file parser
-           #:strip-comment #:parse-rc-line #:parse-matplotlibrc #:load-matplotlibrc
-           ;; Initialization
-           #:initialize-default-rc-params))
+            ;; RC file parser
+            #:strip-comment #:parse-rc-line #:parse-matplotlibrc #:load-matplotlibrc
+            ;; Style sheets
+            #:use-style #:with-style #:available-styles #:reload-styles
+            #:initialize-styles
+            ;; Initialization
+            #:initialize-default-rc-params))
 
 (defpackage #:cl-matplotlib.colors
   (:use #:cl)

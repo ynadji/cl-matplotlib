@@ -1,0 +1,27 @@
+# Seaborn-inspired style
+
+# Seaborn darkgrid style
+
+figure.facecolor: white
+text.color: .15
+axes.labelcolor: .15
+legend.frameon: False
+xtick.direction: out
+ytick.direction: out
+xtick.color: .15
+ytick.color: .15
+axes.axisbelow: True
+image.cmap: Greys
+font.family: sans-serif
+grid.linestyle: -
+lines.solid_capstyle: round
+
+axes.grid: True
+axes.facecolor: EAEAF2
+axes.edgecolor: white
+axes.linewidth: 0
+grid.color: white
+xtick.major.size: 0
+ytick.major.size: 0
+xtick.minor.size: 0
+ytick.minor.size: 0

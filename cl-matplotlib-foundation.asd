@@ -14,13 +14,16 @@
                              (:file "rcsetup")
                              (:file "rcparams")
                              (:file "matplotlibrc-parser")
-                             (:file "colors-database"))))
+                             (:file "colors-database")
+                             (:file "style"))))
   :in-order-to ((asdf:test-op (asdf:test-op #:cl-matplotlib-foundation/tests))))
 
 (asdf:defsystem #:cl-matplotlib-foundation/tests
   :description "Tests for cl-matplotlib-foundation"
   :depends-on (#:cl-matplotlib-foundation #:fiveam)
   :pathname "tests/"
-  :components ((:file "test-rcparams"))
+  :components ((:file "test-rcparams")
+               (:file "test-style"))
   :perform (asdf:test-op (o c)
-             (uiop:symbol-call '#:cl-matplotlib.tests.rcparams '#:run-rcparams-tests)))
+             (uiop:symbol-call '#:cl-matplotlib.tests.rcparams '#:run-rcparams-tests)
+             (uiop:symbol-call '#:cl-matplotlib.tests.style '#:run-style-tests)))

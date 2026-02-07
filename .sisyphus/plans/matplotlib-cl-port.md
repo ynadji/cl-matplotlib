@@ -1464,7 +1464,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
   **Acceptance Criteria**: All ported params load from rcfile and validate correctly.
   **Commit**: YES — `feat(config): complete rcParams for PNG/PDF`
 
-- [ ] 7c. Style Sheets
+- [x] 7c. Style Sheets
 
   **What to do**:
   - Port `style/core.py`: style sheet loading, `use-style`, style context manager

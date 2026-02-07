@@ -1,0 +1,46 @@
+# Classic matplotlib style (matplotlib 1.x)
+
+# Lines
+lines.linewidth: 1.0
+lines.linestyle: -
+lines.color: b
+lines.marker: None
+lines.markerfacecolor: auto
+lines.markeredgecolor: auto
+lines.markeredgewidth: 0.5
+lines.markersize: 6
+lines.antialiased: True
+
+# Patches
+patch.linewidth: 1.0
+patch.facecolor: b
+patch.edgecolor: k
+patch.antialiased: True
+
+# Axes
+axes.facecolor: white
+axes.edgecolor: black
+axes.linewidth: 1.0
+axes.grid: False
+axes.labelsize: medium
+axes.labelcolor: black
+axes.titlesize: large
+axes.axisbelow: True
+
+# Ticks
+xtick.color: black
+xtick.direction: out
+ytick.color: black
+ytick.direction: out
+
+# Grid
+grid.color: gray
+grid.linestyle: -
+grid.linewidth: 1.0
+
+# Figure
+figure.facecolor: white
+figure.edgecolor: white
+
+# Font
+font.size: 12.0
