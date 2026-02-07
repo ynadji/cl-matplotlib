@@ -271,6 +271,15 @@ STROKE can be T (use gc-foreground) or nil."
     (draw-path renderer gc path transform rgbface)))
 
 ;;; ============================================================
+;;; Bridge: renderer-draw-text from artist protocol → draw-text
+;;; ============================================================
+
+(defmethod mpl.rendering:renderer-draw-text ((renderer renderer-vecto) gc x y text
+                                             &key angle)
+  "Bridge from artist draw text protocol to backend draw-text."
+  (draw-text renderer gc (float x 1.0d0) (float y 1.0d0) text nil (or angle 0.0)))
+
+;;; ============================================================
 ;;; draw-image — Blit RGBA image into canvas
 ;;; ============================================================
 

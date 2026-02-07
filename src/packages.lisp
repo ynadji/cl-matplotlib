@@ -338,11 +338,66 @@
            #:axes-get-xlim #:axes-get-ylim
            #:axes-add-line #:axes-add-patch #:axes-add-artist
            #:axes-get-all-artists
-           ;; Axes class (rectilinear)
-           #:mpl-axes
-           ;; Plotting functions
-           #:add-subplot
-           #:plot #:scatter #:bar #:axes-fill #:fill-between))
+            ;; Axes class (rectilinear)
+            #:mpl-axes
+            ;; Axes axis/spine accessors
+            #:axes-base-xaxis #:axes-base-yaxis #:axes-base-spines
+            ;; Plotting functions
+            #:add-subplot
+            #:plot #:scatter #:bar #:axes-fill #:fill-between
+            ;; Grid
+            #:axes-grid-toggle
+            ;; Ticker — Locator base
+            #:locator #:locator-axis #:locator-tick-values #:locator-call
+            ;; Locators (7 total)
+            #:null-locator
+            #:fixed-locator #:fixed-locator-locs #:fixed-locator-nbins
+            #:linear-locator #:linear-locator-numticks
+            #:multiple-locator #:multiple-locator-base #:multiple-locator-offset
+            #:max-n-locator #:max-n-locator-nbins #:max-n-locator-steps
+            #:max-n-locator-integer-p #:max-n-locator-symmetric-p
+            #:max-n-locator-prune #:max-n-locator-min-n-ticks
+            #:auto-locator
+            #:log-locator #:log-locator-base #:log-locator-subs
+            ;; Ticker — Formatter base
+            #:tick-formatter #:tick-formatter-axis #:tick-formatter-call
+            #:tick-formatter-format-ticks
+            ;; Formatters (6 total)
+            #:null-formatter
+            #:fixed-formatter #:fixed-formatter-seq
+            #:scalar-formatter #:scalar-formatter-use-offset-p
+            #:scalar-formatter-scientific-p #:scalar-formatter-power-limits
+            #:str-method-formatter #:str-method-formatter-fmt
+            #:log-formatter #:log-formatter-base #:log-formatter-label-only-base-p
+            #:percent-formatter #:percent-formatter-xmax
+            #:percent-formatter-decimals #:percent-formatter-symbol
+            ;; Spine
+            #:spine #:spine-axes #:spine-spine-type #:spine-path
+            #:spine-visible-p #:spine-position-spec #:spine-bounds
+            #:spine-set-visible #:spine-set-position #:spine-set-color
+            #:spine-set-linewidth
+            ;; Spines container
+            #:spines #:make-spines #:spines-ref #:spines-all #:spines-draw-all
+            ;; Axis
+            #:axis-obj #:axis-axes #:axis-major-locator #:axis-minor-locator
+            #:axis-major-formatter #:axis-minor-formatter
+            #:axis-label-text #:axis-label-artist
+            #:axis-tick-size-major #:axis-tick-size-minor
+            #:axis-tick-direction #:axis-tick-label-fontsize
+            #:axis-grid-on-p #:axis-grid-color #:axis-grid-linewidth
+            #:axis-grid-linestyle #:axis-grid-alpha
+            #:axis-set-major-locator #:axis-set-minor-locator
+            #:axis-set-major-formatter #:axis-set-minor-formatter
+            #:axis-set-label-text #:axis-grid #:axis-set-tick-params
+            #:axis-get-view-interval #:axis-get-data-interval
+            #:axis-get-major-ticks #:axis-get-minor-ticks
+            ;; XAxis / YAxis
+            #:x-axis #:y-axis
+            ;; Tick
+            #:tick #:tick-loc #:tick-major-p #:tick-size #:tick-width
+            #:tick-color #:tick-direction #:tick-pad
+            #:tick-label-text #:tick-label-fontsize #:tick-label-color
+            #:tick-gridline-visible-p))
 
 (defpackage #:cl-matplotlib.backends
   (:use #:cl)

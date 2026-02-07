@@ -1116,7 +1116,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
   - Files: `src/containers/axes-base.lisp`, `src/containers/axes.lisp`
   - Pre-commit: `sbcl --eval '(savefig (let ... (plot ...)) "/tmp/test.png")' --quit`
 
-- [ ] 4c. Axis + Ticker + Spines
+- [x] 4c. Axis + Ticker + Spines
 
   **What to do**:
   - Port `axis.py` XAxis/YAxis: tick generation, label positioning, grid lines

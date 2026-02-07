@@ -196,3 +196,56 @@ Date: 2026-02-06
 - `src/packages.lisp` — Added 30+ exports for axes symbols
 - `cl-matplotlib-containers.asd` — Added axes-base, axes components
 - `src/backends/backend-vecto.lisp` — Fixed %resolve-color, added bridge method
+
+## Phase 4c — Axis, Ticker, Spines (2026-02-06)
+
+### Implementation Summary
+- **ticker.lisp**: 7 locators (NullLocator, FixedLocator, LinearLocator, MultipleLocator, MaxNLocator, AutoLocator, LogLocator) + 6 formatters (NullFormatter, FixedFormatter, ScalarFormatter, StrMethodFormatter, LogFormatter, PercentFormatter)
+- **spines.lisp**: Spine class (line-based, inherits from Patch), Spines container (hash-table dict)
+- **axis.lisp**: Tick class, axis-obj base, XAxis, YAxis with tick mark/label/grid rendering
+- **Integration**: AxesBase gets xaxis/yaxis/spines slots, draw method renders all three
+- **Bridge**: renderer-draw-text bridge method added to backend-vecto
+- **111 new tests, 356 total checks, 100% pass rate**
+- **Evidence**: phase4c-ticks-labels.png (640x480, 17KB PNG)
+
+### Architecture Decisions
+
+1. **tick-formatter not formatter**: CL's `cl:formatter` macro conflicts with a class named `formatter`. Renamed to `tick-formatter` with accessors `tick-formatter-call`, `tick-formatter-format-ticks`, etc. Same pattern as matplotlib's `Formatter` but with namespace prefix.
+
+2. **MaxNLocator's _raw_ticks algorithm**: Ported the extended staircase approach from matplotlib. Steps array (1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10) is extended with 0.1× and 10× factors. The algorithm walks backward through steps to find the smallest that provides enough ticks.
+
+3. **scale_range helper**: Key utility from matplotlib.ticker that computes scale (order of magnitude of step) and offset (for large-value ranges). Pure arithmetic port.
+
+4. **Spine as Patch subclass**: Each spine is a 2-vertex path (line segment) in axes coordinates (0-1). Four spines per axes (left, right, top, bottom). Drawn using axes-base-trans-axes transform.
+
+5. **XAxis/YAxis draw methods**: Transform tick locations from data→display coords, then draw tick marks as 2-vertex paths, labels via renderer-draw-text, and gridlines as full-span paths.
+
+6. **AxesBase integration**: The draw method was updated to: background → artists → xaxis → yaxis → spines. Spines replace the old %draw-axes-frame for border rendering.
+
+7. **renderer-draw-text bridge**: Added `mpl.rendering:renderer-draw-text` method on `renderer-vecto` to bridge the artist draw protocol to the backend `draw-text` method. Similar to the existing draw-path bridge.
+
+### Gotchas Encountered
+
+1. **cl:formatter package lock**: SBCL locks the CL package. Defining a class named `formatter` in a package that `(:use #:cl)` triggers `SYMBOL-PACKAGE-LOCKED-ERROR`. Solution: rename to `tick-formatter`.
+
+2. **CL ~,0F format**: `(format nil "~,0F" 42.0d0)` produces `"42."` (with trailing dot), not `"42"`. Tests must accept this or use custom formatting.
+
+3. **Multiline --eval with quotes**: SBCL's `--eval` with multiline strings containing `'(...)` can fail to parse. Use `--load /dev/stdin` with heredoc instead for complex eval scenarios.
+
+4. **renderer-draw-text bridge missing**: The axis draw code calls `mpl.rendering:renderer-draw-text` but `renderer-vecto` only had `mpl.backends:draw-text`. Had to add a bridge method (same pattern as the draw-path bridge from Phase 4b).
+
+### Files Created/Modified
+- `src/containers/ticker.lisp` — ~400 LOC, 7 locators + 6 formatters + helpers
+- `src/containers/spines.lisp` — ~170 LOC, Spine class + Spines container
+- `src/containers/axis.lisp` — ~420 LOC, Tick, XAxis, YAxis + drawing
+- `src/containers/axes-base.lisp` — Modified: added xaxis/yaxis/spines slots, updated draw
+- `src/containers/axes.lisp` — Modified: added axes-grid-toggle function
+- `src/packages.lisp` — Added 70+ new exports for axis/ticker/spine symbols
+- `src/backends/backend-vecto.lisp` — Added renderer-draw-text bridge method
+- `cl-matplotlib-containers.asd` — Added ticker, spines, axis components + test-axis
+- `tests/test-axis.lisp` — ~330 LOC, 42 tests, 111 checks
+- `.sisyphus/evidence/phase4c-ticks-labels.png` — 640x480 PNG evidence
+
+### Stats
+- 356/356 checks passing (129 figure + 116 axes + 111 axis) — 100%
+- Pre-commit: `sbcl --eval '(asdf:load-system :cl-matplotlib-containers)' --quit` exits 0

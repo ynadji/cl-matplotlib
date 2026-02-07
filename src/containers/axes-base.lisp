@@ -59,10 +59,21 @@
    (axes-images :initform nil
                 :accessor axes-base-images
                 :documentation "List of image artists.")
-   ;; Background patch
-   (axes-patch :initform nil
-               :accessor axes-base-patch
-               :documentation "Rectangle patch for axes background.")
+    ;; Background patch
+    (axes-patch :initform nil
+                :accessor axes-base-patch
+                :documentation "Rectangle patch for axes background.")
+    ;; Axis objects
+    (xaxis :initform nil
+           :accessor axes-base-xaxis
+           :documentation "XAxis object for this axes.")
+    (yaxis :initform nil
+           :accessor axes-base-yaxis
+           :documentation "YAxis object for this axes.")
+    ;; Spines
+    (axes-spines :initform nil
+                 :accessor axes-base-spines
+                 :documentation "Spines container for axes borders.")
    ;; Autoscaling
    (autoscale-x-p :initform t
                    :accessor axes-base-autoscale-x-p
@@ -106,12 +117,19 @@ Ported from matplotlib.axes._base._AxesBase."))
                        :edgecolor "black"
                        :linewidth 1.0
                        :zorder 0))
-  ;; Set figure reference
-  (when figure
-    (setf (axes-base-figure ax) figure)
-    (setf (mpl.rendering:artist-figure ax) figure))
-  ;; Set up transforms
-  (%setup-transforms ax))
+   ;; Set figure reference
+   (when figure
+     (setf (axes-base-figure ax) figure)
+     (setf (mpl.rendering:artist-figure ax) figure))
+   ;; Set up transforms
+   (%setup-transforms ax)
+   ;; Create xaxis and yaxis
+   (setf (axes-base-xaxis ax)
+         (make-instance 'x-axis :axes ax))
+   (setf (axes-base-yaxis ax)
+         (make-instance 'y-axis :axes ax))
+   ;; Create spines
+   (setf (axes-base-spines ax) (make-spines ax)))
 
 ;;; ============================================================
 ;;; Coordinate transform setup
@@ -333,7 +351,7 @@ If TIGHT is T, use exact data limits (no margin)."
 ;;; ============================================================
 
 (defmethod mpl.rendering:draw ((ax axes-base) renderer)
-  "Draw the axes: background, then all artists in z-order."
+  "Draw the axes: background, grid, artists, ticks, spines, labels."
   (unless (mpl.rendering:artist-visible ax)
     (return-from mpl.rendering:draw))
   ;; Ensure transforms are up to date
@@ -350,8 +368,16 @@ If TIGHT is T, use exact data limits (no margin)."
       (when (and (typep artist 'mpl.rendering:artist)
                  (mpl.rendering:artist-visible artist))
         (mpl.rendering:draw artist renderer))))
-  ;; Draw axes frame (border rectangle)
-  (when (axes-base-frameon-p ax)
+  ;; Draw xaxis and yaxis (tick marks, labels, grid)
+  (when (axes-base-xaxis ax)
+    (mpl.rendering:draw (axes-base-xaxis ax) renderer))
+  (when (axes-base-yaxis ax)
+    (mpl.rendering:draw (axes-base-yaxis ax) renderer))
+  ;; Draw spines (axes border lines) — replaces old %draw-axes-frame
+  (when (axes-base-spines ax)
+    (spines-draw-all (axes-base-spines ax) renderer))
+  ;; Fallback: draw axes frame if no spines
+  (when (and (axes-base-frameon-p ax) (null (axes-base-spines ax)))
     (%draw-axes-frame ax renderer))
   (setf (mpl.rendering:artist-stale ax) nil))
 

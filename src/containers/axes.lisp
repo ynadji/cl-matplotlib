@@ -279,6 +279,29 @@ Returns the created Polygon."
       poly)))
 
 ;;; ============================================================
+;;; grid — enable/disable grid lines
+;;; ============================================================
+
+(defun axes-grid-toggle (ax &key (visible t) (which :major) (axis :both)
+                                  (color nil) (linewidth nil) (linestyle nil)
+                                  (alpha nil))
+  "Toggle grid lines on the axes.
+WHICH: :major, :minor, or :both.
+AXIS: :both, :x, or :y."
+  (declare (ignore which))
+  (when (member axis '(:both :x))
+    (when (axes-base-xaxis ax)
+      (axis-grid (axes-base-xaxis ax) :visible visible
+                 :color color :linewidth linewidth
+                 :linestyle linestyle :alpha alpha)))
+  (when (member axis '(:both :y))
+    (when (axes-base-yaxis ax)
+      (axis-grid (axes-base-yaxis ax) :visible visible
+                 :color color :linewidth linewidth
+                 :linestyle linestyle :alpha alpha)))
+  (setf (mpl.rendering:artist-stale ax) t))
+
+;;; ============================================================
 ;;; add-subplot — create axes in figure at subplot position
 ;;; ============================================================
 

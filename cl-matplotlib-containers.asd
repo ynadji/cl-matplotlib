@@ -10,6 +10,9 @@
   :pathname "src/containers/"
   :components ((:file "layout-engine")
                (:file "figure")
+               (:file "ticker")
+               (:file "spines")
+               (:file "axis")
                (:file "axes-base")
                (:file "axes"))
   :in-order-to ((asdf:test-op (asdf:test-op #:cl-matplotlib-containers/tests))))
@@ -19,7 +22,9 @@
   :depends-on (#:cl-matplotlib-containers #:fiveam)
   :pathname "tests/"
   :components ((:file "test-figure")
-               (:file "test-axes"))
+               (:file "test-axes")
+               (:file "test-axis"))
   :perform (asdf:test-op (o c)
              (uiop:symbol-call '#:cl-matplotlib.tests.figure '#:run-figure-tests)
-             (uiop:symbol-call '#:cl-matplotlib.tests.axes '#:run-axes-tests)))
+             (uiop:symbol-call '#:cl-matplotlib.tests.axes '#:run-axes-tests)
+             (uiop:symbol-call '#:cl-matplotlib.tests.axis '#:run-axis-tests)))
