@@ -121,6 +121,10 @@ Ported from matplotlib.axis.Tick."))
    (axis-label-text :initform ""
                     :accessor axis-label-text
                     :documentation "The axis label string.")
+   ;; Scale
+   (axis-scale :initform nil
+               :accessor axis-scale
+               :documentation "The scale object for this axis (LinearScale, LogScale, etc.).")
    ;; Tick parameters
    (tick-size-major :initform 6.0
                     :accessor axis-tick-size-major
@@ -156,6 +160,9 @@ Ported from matplotlib.axis.Axis."))
 
 (defmethod initialize-instance :after ((ax axis-obj) &key)
   "Set up default locators and formatters."
+  ;; Default: LinearScale
+  (unless (axis-scale ax)
+    (setf (axis-scale ax) (make-instance 'linear-scale :axis ax)))
   ;; Default: AutoLocator and ScalarFormatter for major
   (unless (axis-major-locator ax)
     (setf (axis-major-locator ax) (make-instance 'auto-locator)))
@@ -233,6 +240,20 @@ Ported from matplotlib.axis.Axis."))
   (when linewidth (setf (axis-grid-linewidth axis) linewidth))
   (when linestyle (setf (axis-grid-linestyle axis) linestyle))
   (when alpha (setf (axis-grid-alpha axis) alpha))
+  (setf (mpl.rendering:artist-stale axis) t))
+
+;;; ============================================================
+;;; Scale control
+;;; ============================================================
+
+(defun axis-set-scale (axis scale-instance)
+  "Set the scale for this axis.
+SCALE-INSTANCE is a scale object (LinearScale, LogScale, etc.).
+The scale sets default locators and formatters."
+  (setf (axis-scale axis) scale-instance)
+  (setf (scale-axis scale-instance) axis)
+  ;; Let the scale set default locators and formatters
+  (scale-set-default-locators-and-formatters scale-instance axis)
   (setf (mpl.rendering:artist-stale axis) t))
 
 ;;; ============================================================

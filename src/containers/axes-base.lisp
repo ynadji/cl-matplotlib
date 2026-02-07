@@ -422,6 +422,26 @@ If TIGHT is T, use exact data limits (no margin)."
         (mpl.backends:draw-path renderer gc path transform nil)))))
 
 ;;; ============================================================
+;;; Scale control
+;;; ============================================================
+
+(defun axes-set-xscale (ax scale-name &rest args)
+  "Set the X axis scale.
+SCALE-NAME is a keyword: :linear, :log, :symlog, :logit, or :function.
+Additional keyword arguments are passed to the scale constructor."
+  (let ((scale (apply #'make-scale scale-name :axis (axes-base-xaxis ax) args)))
+    (axis-set-scale (axes-base-xaxis ax) scale))
+  (setf (mpl.rendering:artist-stale ax) t))
+
+(defun axes-set-yscale (ax scale-name &rest args)
+  "Set the Y axis scale.
+SCALE-NAME is a keyword: :linear, :log, :symlog, :logit, or :function.
+Additional keyword arguments are passed to the scale constructor."
+  (let ((scale (apply #'make-scale scale-name :axis (axes-base-yaxis ax) args)))
+    (axis-set-scale (axes-base-yaxis ax) scale))
+  (setf (mpl.rendering:artist-stale ax) t))
+
+;;; ============================================================
 ;;; Print representation
 ;;; ============================================================
 

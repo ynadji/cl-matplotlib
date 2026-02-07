@@ -300,3 +300,60 @@ Date: 2026-02-06
 ### Stats
 - 493/493 checks passing (129 figure + 116 axes + 111 axis + 110 legend + 27 colorbar) — 100%
 - Pre-commit: `sbcl --eval '(asdf:test-system :cl-matplotlib-containers)' --quit` exits 0
+
+## Phase 5a — Scale System (2026-02-06)
+
+### Implementation Summary
+- **scale-transforms.lisp**: 5 transform classes (LogTransform, InvertedLogTransform, SymLogTransform, LogitTransform, LogisticTransform, FuncTransform)
+- **scale.lisp**: 5 scale classes (LinearScale, LogScale, SymLogScale, LogitScale, FuncScale) + ScaleBase + factory
+- **axis.lisp**: Added axis-scale slot + axis-set-scale method
+- **axes-base.lisp**: Added axes-set-xscale + axes-set-yscale methods
+- **59 new tests, 552 total checks, 100% pass rate**
+- **Evidence**: phase5a-log-scale.png (640x480, 9.6KB PNG)
+
+### Architecture Decisions
+
+1. **Transform-only approach**: Scale transforms only transform the X coordinate, leaving Y unchanged. This matches matplotlib's 1D transform model where each axis has its own scale.
+
+2. **Scale as CLOS class with transform slot**: Each scale class stores a transform instance in a slot (e.g., `log-scale-transform`). The `scale-get-transform` generic returns this cached transform.
+
+3. **Scale sets locators/formatters**: The `scale-set-default-locators-and-formatters` generic allows each scale to configure appropriate tick placement. LogScale sets LogLocator + LogFormatter, LinearScale sets AutoLocator + ScalarFormatter.
+
+4. **Axis owns scale**: Added `axis-scale` slot to `axis-obj`. The `axis-set-scale` function sets the scale and calls `scale-set-default-locators-and-formatters` to update ticks.
+
+5. **Axes convenience methods**: `axes-set-xscale` and `axes-set-yscale` create scale instances via `make-scale` factory and call `axis-set-scale` on the appropriate axis.
+
+6. **Factory pattern**: `make-scale` takes a keyword (`:linear`, `:log`, `:symlog`, `:logit`, `:function`) and additional args, returning the appropriate scale instance.
+
+7. **Limit range protocol**: `scale-limit-range-for-scale` generic allows scales to constrain data limits. LogScale replaces non-positive values with minpos (1e-300 fallback). LogitScale clamps to (0, 1).
+
+### Gotchas Encountered
+
+1. **Transform point signature**: Scale transforms must implement `transform-point` taking a 2-element point and returning a 2-element array. The Y coordinate passes through unchanged for 1D scales.
+
+2. **Nonpositive handling**: LogTransform supports both `:clip` (replace with -1000) and `:mask` (replace with NaN) for non-positive values. Clipping is the default to avoid breaking rendering.
+
+3. **SymLog complexity**: SymmetricalLogTransform has a piecewise definition: linear within `[-linthresh, linthresh]`, logarithmic outside. The `linscale` parameter controls the relative width of the linear region.
+
+4. **Logit domain**: LogitTransform is only valid for (0, 1). Values outside this range are clipped or masked. The inverse (LogisticTransform) maps all reals to (0, 1).
+
+5. **FuncScale validation**: FuncScale requires both forward and inverse functions. The constructor validates that both are callable before creating the FuncTransform.
+
+6. **Scale initialization order**: Scales must be created AFTER the axis exists, since `scale-set-default-locators-and-formatters` needs to call `axis-set-major-locator` etc.
+
+### Files Created/Modified
+- `src/primitives/scale-transforms.lisp` — ~330 LOC, 6 transform classes
+- `src/containers/scale.lisp` — ~230 LOC, 5 scale classes + factory
+- `src/containers/axis.lisp` — Modified: added axis-scale slot + axis-set-scale
+- `src/containers/axes-base.lisp` — Modified: added axes-set-xscale + axes-set-yscale
+- `src/packages.lisp` — Added 30+ scale exports
+- `cl-matplotlib-primitives.asd` — Added scale-transforms component
+- `cl-matplotlib-containers.asd` — Added scale component + test-scale
+- `tests/test-scale.lisp` — ~280 LOC, 26 tests, 59 checks
+- `.sisyphus/evidence/phase5a-log-scale.png` — 640x480 PNG evidence
+
+### Stats
+- 552/552 checks passing (129 figure + 116 axes + 111 axis + 59 scale + 110 legend + 27 colorbar) — 100%
+- Pre-commit: `sbcl --eval '(asdf:load-system :cl-matplotlib-containers)' --quit` exits 0
+- Evidence: `file .sisyphus/evidence/phase5a-log-scale.png` → "PNG image data, 640 x 480, 8-bit/color RGBA"
+

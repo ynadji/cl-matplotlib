@@ -1240,7 +1240,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
 
 ### Phase 5: Extended Features (Parallel with Phase 6)
 
-- [ ] 5a. Scale System (log, symlog, logit)
+- [x] 5a. Scale System (log, symlog, logit)
 
   **What to do**:
   - Port `scale.py`: LinearScale, LogScale, SymmetricalLogScale, LogitScale, FuncScale

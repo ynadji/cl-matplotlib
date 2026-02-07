@@ -161,10 +161,20 @@
            #:transformed-bbox #:make-transformed-bbox
            #:transformed-bbox-x0 #:transformed-bbox-y0
            #:transformed-bbox-x1 #:transformed-bbox-y1
-           ;; TransformedPath
-           #:transformed-path-node #:transformed-path-get
-           ;; Color conversion (extends foundation)
-           #:to-hex #:to-rgb
+            ;; TransformedPath
+            #:transformed-path-node #:transformed-path-get
+            ;; Scale transforms
+            #:log-transform #:log-transform-base #:log-transform-nonpositive
+            #:inverted-log-transform #:inverted-log-transform-base
+            #:symlog-transform #:symlog-transform-base #:symlog-transform-linthresh
+            #:symlog-transform-linscale
+            #:inverted-symlog-transform #:inverted-symlog-transform-base
+            #:inverted-symlog-transform-linthresh #:inverted-symlog-transform-linscale
+            #:logit-transform #:logit-transform-nonpositive
+            #:logistic-transform #:logistic-transform-nonpositive
+            #:func-transform #:func-transform-forward #:func-transform-inverse
+            ;; Color conversion (extends foundation)
+            #:to-hex #:to-rgb
            ;; Colormap classes
            #:colormap #:colormap-name #:colormap-n #:colormap-call
            #:linear-segmented-colormap #:make-linear-segmented-colormap
@@ -386,13 +396,30 @@
             #:axis-tick-direction #:axis-tick-label-fontsize
             #:axis-grid-on-p #:axis-grid-color #:axis-grid-linewidth
             #:axis-grid-linestyle #:axis-grid-alpha
-            #:axis-set-major-locator #:axis-set-minor-locator
-            #:axis-set-major-formatter #:axis-set-minor-formatter
-            #:axis-set-label-text #:axis-grid #:axis-set-tick-params
-            #:axis-get-view-interval #:axis-get-data-interval
-            #:axis-get-major-ticks #:axis-get-minor-ticks
-            ;; XAxis / YAxis
-            #:x-axis #:y-axis
+             #:axis-set-major-locator #:axis-set-minor-locator
+             #:axis-set-major-formatter #:axis-set-minor-formatter
+             #:axis-set-label-text #:axis-grid #:axis-set-tick-params
+             #:axis-get-view-interval #:axis-get-data-interval
+             #:axis-get-major-ticks #:axis-get-minor-ticks
+             ;; Axis scale
+             #:axis-scale #:axis-set-scale
+             ;; XAxis / YAxis
+             #:x-axis #:y-axis
+             ;; Scale base
+             #:scale-base #:scale-name #:scale-axis
+             #:scale-get-transform #:scale-set-default-locators-and-formatters
+             #:scale-limit-range-for-scale
+             ;; Scale classes
+             #:linear-scale
+             #:log-scale #:log-scale-base #:log-scale-subs #:log-scale-nonpositive
+             #:symlog-scale #:symlog-scale-base #:symlog-scale-linthresh
+             #:symlog-scale-linscale #:symlog-scale-subs
+             #:logit-scale #:logit-scale-nonpositive
+             #:func-scale #:func-scale-functions
+             ;; Scale factory
+             #:make-scale
+             ;; Axes scale methods
+             #:axes-set-xscale #:axes-set-yscale
              ;; Tick
              #:tick #:tick-loc #:tick-major-p #:tick-size #:tick-width
              #:tick-color #:tick-direction #:tick-pad

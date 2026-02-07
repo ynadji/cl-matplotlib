@@ -12,6 +12,7 @@
                 :components ((:file "path-algorithms")
                              (:file "path")
                              (:file "transforms")
+                             (:file "scale-transforms")
                              (:file "colors")
                              (:file "colormaps"))))
   :in-order-to ((test-op (test-op #:cl-matplotlib-primitives/tests))))
