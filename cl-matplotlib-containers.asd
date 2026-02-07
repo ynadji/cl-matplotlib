@@ -22,8 +22,9 @@
                              (:file "gridspec")))
                (:module "src/algorithms"
                 :components ((:file "marching-squares")))
-               (:module "src/plotting"
-                :components ((:file "contour"))))
+                (:module "src/plotting"
+                 :components ((:file "contour")
+                              (:file "image"))))
   :in-order-to ((asdf:test-op (asdf:test-op #:cl-matplotlib-containers/tests))))
 
 (asdf:defsystem #:cl-matplotlib-containers/tests
@@ -37,13 +38,15 @@
                (:file "test-legend")
                (:file "test-colorbar")
                (:file "test-gridspec")
-               (:file "test-contour"))
-  :perform (asdf:test-op (o c)
-               (uiop:symbol-call '#:cl-matplotlib.tests.figure '#:run-figure-tests)
-               (uiop:symbol-call '#:cl-matplotlib.tests.axes '#:run-axes-tests)
-               (uiop:symbol-call '#:cl-matplotlib.tests.axis '#:run-axis-tests)
-               (uiop:symbol-call '#:cl-matplotlib.tests.scale '#:run-scale-tests)
-               (uiop:symbol-call '#:cl-matplotlib.tests.legend '#:run-legend-tests)
-               (uiop:symbol-call '#:cl-matplotlib.tests.colorbar '#:run-colorbar-tests)
-               (uiop:symbol-call '#:cl-matplotlib.tests.gridspec '#:run-gridspec-tests)
-               (uiop:symbol-call '#:cl-matplotlib.tests.contour '#:run-contour-tests)))
+                (:file "test-contour")
+                (:file "test-image"))
+   :perform (asdf:test-op (o c)
+                (uiop:symbol-call '#:cl-matplotlib.tests.figure '#:run-figure-tests)
+                (uiop:symbol-call '#:cl-matplotlib.tests.axes '#:run-axes-tests)
+                (uiop:symbol-call '#:cl-matplotlib.tests.axis '#:run-axis-tests)
+                (uiop:symbol-call '#:cl-matplotlib.tests.scale '#:run-scale-tests)
+                (uiop:symbol-call '#:cl-matplotlib.tests.legend '#:run-legend-tests)
+                (uiop:symbol-call '#:cl-matplotlib.tests.colorbar '#:run-colorbar-tests)
+                (uiop:symbol-call '#:cl-matplotlib.tests.gridspec '#:run-gridspec-tests)
+                (uiop:symbol-call '#:cl-matplotlib.tests.contour '#:run-contour-tests)
+                (uiop:symbol-call '#:cl-matplotlib.tests.image '#:run-image-tests)))

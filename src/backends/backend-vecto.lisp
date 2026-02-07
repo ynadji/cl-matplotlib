@@ -332,6 +332,14 @@ IM should be a plist with :data (flat RGBA bytes), :width, :height."
       (%blit-image-to-canvas data w h (round x) (round y)))))
 
 ;;; ============================================================
+;;; Bridge: renderer-draw-image from artist protocol → draw-image
+;;; ============================================================
+
+(defmethod mpl.rendering:renderer-draw-image ((renderer renderer-vecto) gc x y image)
+  "Bridge from artist draw-image protocol to backend draw-image."
+  (draw-image renderer gc x y image))
+
+;;; ============================================================
 ;;; draw-text — Render text using zpb-ttf via Vecto
 ;;; ============================================================
 

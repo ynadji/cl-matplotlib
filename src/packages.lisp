@@ -264,10 +264,14 @@
            #:make-marker-path #:make-marker-style
            #:*marker-names* #:*filled-markers*
            ;; AxesImage
-           #:axes-image #:image-data #:image-extent #:image-interpolation
-           #:image-origin #:image-cmap #:image-norm #:image-vmin #:image-vmax
-           #:image-shape #:image-rows #:image-cols
-            #:*interpolation-methods*
+            #:axes-image #:image-data #:image-extent #:image-interpolation
+            #:image-origin #:image-cmap #:image-norm #:image-vmin #:image-vmax
+            #:image-aspect
+            #:image-shape #:image-rows #:image-cols
+             #:*interpolation-methods*
+             ;; Interpolation algorithms
+             #:interpolate-nearest #:interpolate-bilinear
+             #:interpolate-nearest-rgba #:interpolate-bilinear-rgba
             ;; Font Manager
             #:font-entry #:make-font-entry
             #:font-entry-fname #:font-entry-name #:font-entry-style
@@ -381,9 +385,10 @@
             #:mpl-axes
             ;; Axes axis/spine accessors
             #:axes-base-xaxis #:axes-base-yaxis #:axes-base-spines
-            ;; Plotting functions
-            #:add-subplot
-            #:plot #:scatter #:bar #:axes-fill #:fill-between
+             ;; Plotting functions
+             #:add-subplot
+             #:plot #:scatter #:bar #:axes-fill #:fill-between
+             #:imshow #:axes-add-image
             ;; Grid
             #:axes-grid-toggle
             ;; Ticker — Locator base

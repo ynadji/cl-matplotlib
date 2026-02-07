@@ -1322,7 +1322,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
   **Acceptance Criteria**: `contourf` of a 2D Gaussian produces filled contours.
   **Commit**: YES — `feat(plotting): contour and contourf with pure CL marching squares`
 
-- [ ] 5e. Image Display (imshow + Interpolation)
+- [x] 5e. Image Display (imshow + Interpolation)
 
   **What to do**:
   - Implement `imshow()` on Axes: map 2D array → colormap → RGBA image → render

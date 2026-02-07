@@ -504,3 +504,49 @@ Date: 2026-02-06
 - Pre-commit: `sbcl --eval '(asdf:test-system :cl-matplotlib-containers)' --quit` exits 0
 - Evidence: `file .sisyphus/evidence/phase5d-contour.png` → "PNG image data, 640 x 480, 8-bit/color RGBA"
 
+
+## Phase 5e — Image Display (imshow) with Interpolation (2026-02-06)
+
+### Implementation Summary
+- **image.lisp (rendering)**: Extended AxesImage class with interpolation algorithms (nearest-neighbor, bilinear), data→RGBA conversion pipeline, origin handling, aspect ratio support, and proper draw method with backend integration
+- **image.lisp (plotting)**: imshow() function creating AxesImage with colormap, normalization, extent, origin, and aspect parameters. axes-add-image() for artist management
+- **backend-vecto.lisp**: Added renderer-draw-image bridge method (mpl.rendering → mpl.backends)
+- **158 new checks, 999 total, 100% pass rate**
+- **Evidence**: phase5e-imshow.png (640x480, RGBA PNG, 100×100 random array with viridis colormap)
+
+### Architecture Decisions
+
+1. **Two-file split**: Rendering logic (AxesImage class, interpolation, data→RGBA) lives in `src/rendering/image.lisp`. Plotting API (imshow function) lives in `src/plotting/image.lisp`. This follows the contour pattern.
+
+2. **Interpolation target size cap**: Capped interpolation target dimensions at 2048×2048 pixels to prevent heap exhaustion. Without this, a 100×100 image with extent 0-100 in data coords gets transformed to ~50,000 pixels in display coords through the data→display transform pipeline.
+
+3. **Data→RGBA pipeline**: 2D scalar data flows through `normalize-call → colormap-call → RGBA`. 3D data (RGB/RGBA) auto-detects 0-255 vs 0-1 range. All intermediate processing uses double-float arrays; final conversion to (unsigned-byte 8) flat array for backend blitting.
+
+4. **Origin handling via flip**: `:upper` origin (matplotlib default, row 0 at top) implemented by vertically flipping the RGBA array after colormap application but before interpolation. `:lower` passes through unchanged.
+
+5. **Bridge method pattern**: Added `renderer-draw-image` method on `renderer-vecto` to bridge from artist protocol (`mpl.rendering:renderer-draw-image`) to backend protocol (`mpl.backends:draw-image`). Same pattern as draw-path and draw-text bridges from Phase 4b/4c.
+
+6. **Extent default**: When extent is nil, defaults to `(0 W 0 H)` where W=cols, H=rows. This maps each data pixel to one unit in data coordinates.
+
+### Gotchas Encountered
+
+1. **Heap exhaustion on large interpolation**: A 100×100 image at extent (0,100,0,100) with transData mapping data→display coordinates results in target dimensions of ~50K×37K pixels — requiring ~55 GB for the RGBA array. Solution: cap target dimensions at 2048×2048.
+
+2. **renderer-draw-image bridge missing**: The existing AxesImage draw method called `renderer-draw-image` from the artist protocol, but no method was defined on `renderer-vecto` to bridge to the backend's `draw-image`. Had to add the bridge (same pattern as Phase 4b's draw-path bridge).
+
+3. **Colormap auto-detection**: When cmap is nil, must resolve to the viridis colormap instance via `get-colormap`. When it's a keyword, must look it up. When it's already a colormap instance, use as-is. Three cases in the cond.
+
+4. **Normalize auto-detection for vmin/vmax**: When norm is nil, create a new Normalize instance and scan the 2D data array for min/max values. Must check both image-vmin/vmax (explicit) and data-derived values.
+
+### Files Created/Modified
+- `src/rendering/image.lisp` — ~400 LOC, AxesImage class + interpolation + data→RGBA + draw (extended from ~110 LOC)
+- `src/plotting/image.lisp` — ~100 LOC, imshow() + axes-add-image()
+- `tests/test-image.lisp` — ~370 LOC, 42 tests, 158 checks
+- `src/packages.lisp` — Added ~8 new exports (interpolation functions, image-aspect, imshow, axes-add-image)
+- `cl-matplotlib-containers.asd` — Added image component + test-image
+- `src/backends/backend-vecto.lisp` — Added renderer-draw-image bridge method
+
+### Stats
+- 999/999 checks passing (129 figure + 117 axes + 111 axis + 59 scale + 110 legend + 27 colorbar + 158 gridspec + 130 contour + 158 image) — 100%
+- Pre-commit: `sbcl --eval '(asdf:test-system :cl-matplotlib-containers)' --quit` exits 0
+- Evidence: `file .sisyphus/evidence/phase5e-imshow.png` → "PNG image data, 640 x 480, 8-bit/color RGBA"
