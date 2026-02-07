@@ -603,3 +603,52 @@ Date: 2026-02-06
 ### Stats
 - 1108/1108 checks passing (129 figure + 117 axes + 111 axis + 59 scale + 110 legend + 27 colorbar + 158 gridspec + 130 contour + 158 image + 109 plot-types) — 100%
 - Evidence: `file .sisyphus/evidence/phase6b-hist.png` → "PNG image data, 800 x 600, 8-bit/color RGBA"
+
+## Phase 6c — Annotation System (2026-02-06)
+
+### Implementation Summary
+- **fancy-arrow.lisp**: FancyArrowPatch class (inherits Patch), 3 ConnectionStyle classes (Arc3, Angle3, Angle), 5 BoxStyle classes (Square, Round, Round4, Sawtooth, Roundtooth), AnchoredText class, 9 arrow styles, arrow path generation algorithms
+- **annotation.lisp**: Annotation class (inherits Text), arrow creation from arrowprops, bbox text box support, position/target update methods
+- **axes.lisp**: `annotate` function added to containers package
+- **127 new tests, 1235 total checks across all systems, 100% pass rate**
+- **Evidence**: phase6c-annotation.png (800x600, 17.6KB PNG, plot with red arrow annotation)
+
+### Architecture Decisions
+
+1. **Annotation inherits from text-artist**: Clean subclass that adds xy (target), xytext (text position), arrowprops, and bbox. The text-artist parent handles text rendering; Annotation adds arrow drawing before text.
+
+2. **FancyArrowPatch inherits from Patch**: Gets edge/face color, linewidth, etc. for free. Overrides `draw` and `get-path`. Default capstyle/joinstyle set to :round (matching matplotlib).
+
+3. **Arrow path computation as standalone function**: `%compute-arrow-path` takes positions, style, and parameters and returns (values shaft-path head-path). The cond dispatch on style-key supports 9 styles. Clean separation from class logic.
+
+4. **ConnectionStyle as generic function protocol**: `connect(style posA posB) → mpl-path`. Three implementations: Arc3 (quadratic Bézier via cubic approximation), Angle3 (3 segments via line intersection), Angle (2 segments at right angle).
+
+5. **Arrow styles as keywords**: `:->`, `:<-`, `:<->`, `:-`, `:-bracket`, `:-bar-bar`, `:simple`, `:fancy`, `:wedge`. Avoided `:-[` and `:|` in CL because special characters in keyword symbols cause reader issues with `ecase`.
+
+6. **cond instead of ecase for arrow styles**: After discovering that CL reader interprets `:-[` and `:|-|` problematically (pipe character starts escape sequences), switched from ecase to cond with eq/member tests. Clean arrow style names: `:->`, `:-bracket`, `:-bar-bar`.
+
+7. **AnchoredText as Artist subclass**: Simple text box anchored to axes corners. 9 location keywords. frameon controls border. zorder=5 (above data). Position computed as axes-fraction coordinates.
+
+### Gotchas Encountered
+
+1. **CL keyword symbol naming**: `:|-|` is parsed as the symbol `:-` by CL reader because `|` starts an escape sequence. `:-[` requires `:-\[` with escape. Using `ecase` with these produces "duplicate key" warnings. Solution: use descriptive keywords (`:->`, `:-bracket`, `:-bar-bar`) and `cond` instead of `ecase`.
+
+2. **Extra closing paren from ecase→cond migration**: When converting `ecase` (which has its own closing paren) to `cond` (which also closes with `)`), easy to leave an extra `)`. CL reader gives "unmatched close parenthesis" error with line number.
+
+3. **declare ignore in inner scope**: `(declare (ignore connection-path))` inside an inner let/cond scope triggers a style warning "IGNORE declaration for a variable from outer scope". Must place declare at the correct scope level.
+
+4. **Arrow head direction**: Arrow heads point in the direction the arrow is going. For `->` style, the head points from xytext toward xy (the annotated point). The direction vector is `(- posA posB)` for the B-end head.
+
+### Files Created/Modified
+- `src/rendering/fancy-arrow.lisp` — ~520 LOC, FancyArrowPatch + 3 ConnectionStyles + 5 BoxStyles + AnchoredText
+- `src/rendering/annotation.lisp` — ~170 LOC, Annotation class + arrow creation + draw
+- `src/containers/axes.lisp` — +55 LOC, annotate() function
+- `tests/test-annotation.lisp` — ~420 LOC, 49 tests, 127 checks
+- `src/packages.lisp` — Added ~40 annotation/arrow/connection/box exports
+- `cl-matplotlib-rendering.asd` — Added fancy-arrow, annotation components + test
+
+### Stats
+- Rendering: 452/452 checks (119 artist + 84 font + 122 collections + 127 annotation) — 100%
+- Containers: 1108/1108 checks (unchanged) — 100%
+- Total: 1235 checks passing, 100% pass rate
+- Evidence: `file .sisyphus/evidence/phase6c-annotation.png` → "PNG image data, 800 x 600, 8-bit/color RGBA"

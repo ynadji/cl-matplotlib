@@ -18,7 +18,9 @@
                (:file "text-path")
                (:file "afm")
                (:file "hatch")
-               (:file "collections"))
+                (:file "collections")
+                (:file "fancy-arrow")
+                (:file "annotation"))
   :in-order-to ((asdf:test-op (asdf:test-op #:cl-matplotlib-rendering/tests))))
 
 (asdf:defsystem #:cl-matplotlib-rendering/tests
@@ -27,8 +29,10 @@
   :pathname "tests/"
   :components ((:file "test-artist")
                (:file "test-font-manager")
-               (:file "test-collections"))
+               (:file "test-collections")
+               (:file "test-annotation"))
   :perform (asdf:test-op (o c)
               (uiop:symbol-call '#:cl-matplotlib.tests.artist '#:run-artist-tests)
               (uiop:symbol-call '#:cl-matplotlib.tests.font '#:run-font-tests)
-              (uiop:symbol-call '#:cl-matplotlib.tests.collections '#:run-collection-tests)))
+              (uiop:symbol-call '#:cl-matplotlib.tests.collections '#:run-collection-tests)
+              (uiop:symbol-call '#:cl-matplotlib.tests.annotation '#:run-annotation-tests)))

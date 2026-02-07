@@ -1391,7 +1391,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
   **Acceptance Criteria**: Each plot type produces visually correct output.
   **Commit**: YES — `feat(plotting): hist, pie, errorbar, boxplot, stem, step, stackplot`
 
-- [ ] 6c. Annotation System
+- [x] 6c. Annotation System
 
   **What to do**:
   - Port annotation from `text.py`: Annotation class, arrow properties

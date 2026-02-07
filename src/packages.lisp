@@ -257,7 +257,35 @@
            #:text-multialignment #:text-linespacing #:text-wrap
            #:text-rotation-mode #:text-usetex
            #:text-ha #:text-va #:text-set-position
-           ;; MarkerStyle
+            ;; FancyArrowPatch
+            #:fancy-arrow-patch #:fancy-arrow-posA #:fancy-arrow-posB
+            #:fancy-arrow-arrowstyle #:fancy-arrow-connectionstyle
+            #:fancy-arrow-shrinkA #:fancy-arrow-shrinkB
+            #:fancy-arrow-mutation-scale #:fancy-arrow-patchA #:fancy-arrow-patchB
+            #:fancy-arrow-path-original #:fancy-arrow-cached-path
+            ;; ConnectionStyle
+            #:connection-style #:connect #:make-connection-style
+            #:arc3-connection #:arc3-rad
+            #:angle3-connection #:angle3-angleA #:angle3-angleB
+            #:angle-connection #:angle-angleA
+            ;; BoxStyle
+            #:box-style #:box-transmute #:make-box-style
+            #:square-box #:round-box #:round4-box #:sawtooth-box #:roundtooth-box
+            #:square-box-pad #:round-box-pad #:round-box-rounding-size
+            #:round4-box-pad #:round4-box-rounding-size
+            #:sawtooth-box-pad #:roundtooth-box-pad
+            ;; Annotation
+            #:annotation #:annotation-xy #:annotation-xytext
+            #:annotation-xycoords #:annotation-textcoords
+            #:annotation-arrowprops #:annotation-bbox
+            #:annotation-arrow-patch
+            #:annotation-set-position #:annotation-set-target
+            ;; AnchoredText
+            #:anchored-text #:anchored-text-text #:anchored-text-loc
+            #:anchored-text-pad #:anchored-text-borderpad
+            #:anchored-text-frameon #:anchored-text-fontsize
+            #:anchored-text-color #:anchored-text-facecolor #:anchored-text-edgecolor
+            ;; MarkerStyle
            #:marker-style #:marker-style-marker #:marker-style-fillstyle
            #:marker-style-path #:marker-style-transform
            #:marker-style-filled-p #:marker-style-joinstyle #:marker-style-capstyle
@@ -391,7 +419,8 @@
               #:imshow #:axes-add-image
               ;; Additional plot types (Phase 6b)
               #:hist #:pie #:errorbar #:stem #:axes-step
-              #:stackplot #:barh #:boxplot
+               #:stackplot #:barh #:boxplot
+               #:annotate
             ;; Grid
             #:axes-grid-toggle
             ;; Ticker — Locator base

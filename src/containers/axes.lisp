@@ -823,6 +823,65 @@ Returns a list of Rectangle patches."
     (nreverse rects)))
 
 ;;; ============================================================
+;;; annotate — add text annotation with optional arrow
+;;; ============================================================
+
+(defun annotate (ax text xy &key (xytext nil) (xycoords :data) (textcoords nil)
+                                  (arrowprops nil) (bbox nil) (fontsize 12.0)
+                                  (color "black") (horizontalalignment :left)
+                                  (verticalalignment :baseline) (zorder 3))
+  "Annotate the point XY with text TEXT, optionally drawing an arrow.
+
+AX — an axes-base (or mpl-axes) instance.
+TEXT — the text of the annotation (string).
+XY — point (x y) to annotate (target of arrow).
+XYTEXT — position (x y) to place text. Defaults to XY (no arrow).
+XYCOORDS — coordinate system for XY: :data, :axes, :figure (default :data).
+TEXTCOORDS — coordinate system for XYTEXT. Defaults to XYCOORDS.
+ARROWPROPS — plist of arrow properties:
+  :arrowstyle (default :->) — arrow head style
+  :connectionstyle (default :arc3) — path between points
+  :color — arrow color
+  :linewidth — arrow line width
+  :shrinkA — shrink at start (points)
+  :shrinkB — shrink at end (points)
+BBOX — plist for text box: :boxstyle :facecolor :edgecolor :pad.
+FONTSIZE — font size in points.
+COLOR — text color.
+HORIZONTALALIGNMENT — :left, :center, :right.
+VERTICALALIGNMENT — :top, :center, :bottom, :baseline.
+ZORDER — drawing order (default 3).
+
+Returns the created Annotation."
+  (let ((ann (make-instance 'mpl.rendering:annotation
+                            :text text
+                            :xy xy
+                            :xytext xytext
+                            :xycoords xycoords
+                            :textcoords textcoords
+                            :arrowprops arrowprops
+                            :bbox bbox
+                            :fontsize (float fontsize 1.0d0)
+                            :color color
+                            :horizontalalignment horizontalalignment
+                            :verticalalignment verticalalignment
+                            :zorder zorder)))
+    ;; Set transform to transData
+    (setf (mpl.rendering:artist-transform ann)
+          (axes-base-trans-data ax))
+    ;; Set arrow transform too
+    (when (mpl.rendering:annotation-arrow-patch ann)
+      (setf (mpl.rendering:artist-transform (mpl.rendering:annotation-arrow-patch ann))
+            (axes-base-trans-data ax)))
+    ;; Add to axes texts list
+    (push ann (axes-base-texts ax))
+    ;; Also add to artists for draw ordering
+    (axes-add-artist ax ann)
+    ;; Mark stale
+    (setf (mpl.rendering:artist-stale ax) t)
+    ann))
+
+;;; ============================================================
 ;;; add-subplot — create axes in figure at subplot position
 ;;; ============================================================
 
