@@ -449,7 +449,33 @@
              #:colorbar-orientation #:colorbar-label #:colorbar-ticks
              #:colorbar-format #:colorbar-n-levels #:colorbar-extend
              ;; Colorbar convenience
-             #:make-colorbar))
+              #:make-colorbar
+              ;; GridSpec classes
+              #:gridspec-base #:gridspec #:gridspec-from-subplot-spec
+              #:subplot-spec
+              ;; GridSpec constructors
+              #:make-gridspec #:make-subplot-spec #:make-gridspec-from-subplot-spec
+              ;; GridSpec accessors
+              #:gridspec-nrows #:gridspec-ncols #:gridspec-figure
+              #:gridspec-left #:gridspec-right #:gridspec-top #:gridspec-bottom
+              #:gridspec-wspace #:gridspec-hspace
+              #:gridspec-width-ratios #:gridspec-height-ratios
+              ;; GridSpec functions
+              #:gridspec-get-geometry #:gridspec-get-subplot-params
+              #:gridspec-get-grid-positions #:gridspec-subplotspec
+              ;; SubplotSpec accessors/functions
+              #:subplotspec-gridspec #:subplotspec-num1 #:subplotspec-num2
+              #:subplotspec-get-gridspec #:subplotspec-get-rows-columns
+              #:subplotspec-rowspan #:subplotspec-colspan
+              #:subplotspec-get-position
+              ;; GridSpecFromSubplotSpec
+              #:gridspec-from-ss-parent #:gridspec-from-ss-wspace
+              #:gridspec-from-ss-hspace #:gridspec-from-ss-get-topmost-subplotspec
+              ;; Subplots and mosaic
+              #:subplots #:subplot-mosaic
+              ;; Shared axes
+              #:axes-share-x #:axes-share-y
+              #:axes-base-sharex-group #:axes-base-sharey-group))
 
 (defpackage #:cl-matplotlib.backends
   (:use #:cl)

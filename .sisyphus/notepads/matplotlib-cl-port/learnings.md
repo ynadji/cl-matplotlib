@@ -357,3 +357,47 @@ Date: 2026-02-06
 - Pre-commit: `sbcl --eval '(asdf:load-system :cl-matplotlib-containers)' --quit` exits 0
 - Evidence: `file .sisyphus/evidence/phase5a-log-scale.png` → "PNG image data, 640 x 480, 8-bit/color RGBA"
 
+
+## Phase 5b — GridSpec System (2026-02-06)
+
+### Implementation Summary
+- **gridspec.lisp**: GridSpec, SubplotSpec, GridSpecFromSubplotSpec classes + subplots() + subplot-mosaic()
+- **axes-base.lisp**: Added sharex/sharey slots, axes-share-x/axes-share-y functions, limit propagation with circular-update guard
+- **158 new tests, 710 total checks, 100% pass rate**
+- **Evidence**: phase5b-gridspec.png (640x480, 11.6KB PNG)
+
+### Architecture Decisions
+
+1. **gridspec-get-subplot-params as defgeneric**: Must be a generic function (not defun) because GridSpecFromSubplotSpec needs a specialized method. The gridspec class method merges overrides with figure/default params; the nested version computes params from parent SubplotSpec position.
+
+2. **Grid position algorithm (port of matplotlib's get_grid_positions)**: Cumulative accumulation of cell heights/widths with separator gaps. Uses height-ratios and width-ratios to scale cell sizes proportionally. Row 0 = top (matplotlib convention preserved).
+
+3. **Shared axes via guard flag**: `axes-base-%propagating-p` slot prevents circular updates. When ax1 shares with ax2, setting xlim on ax1 propagates to ax2 but ax2's guard flag prevents re-propagating back to ax1. Uses `unwind-protect` to always clear the flag.
+
+4. **subplot-mosaic via hash-table parsing**: Iterates layout string array character by character, building a hash of name→cells. Then computes bounding rectangle for each name's cells and creates a spanning SubplotSpec. '.' character treated as empty space.
+
+5. **subplots squeeze semantics**: Matches matplotlib exactly — 1×1 returns single axes, 1×N or N×1 returns 1D array, N×M returns 2D array. squeeze=nil forces 2D array always.
+
+6. **Shared axes in subplots**: Normalized sharex/sharey values (:all, :row, :col, :none). For each cell, identifies the share-target based on mode: :all→(0,0), :row→(row,0), :col→(0,col). Skips self-sharing.
+
+### Gotchas Encountered
+
+1. **defun → defgeneric conflict**: Defining `gridspec-get-subplot-params` as a regular function first, then trying to specialize it with `defmethod` for `gridspec-from-subplot-spec`, causes "already names an ordinary function" error. Must define as `defgeneric` from the start.
+
+2. **copy-list for figure-subplot-params**: When using figure's subplot params as defaults, must `copy-list` to avoid mutating the figure's actual params when applying GridSpec overrides via `setf getf`.
+
+3. **Limit propagation in autoscale**: `axes-autoscale-view` also needs to propagate shared limits, not just `axes-set-xlim/axes-set-ylim`. Added `%propagate-xlim/%propagate-ylim` calls at end of autoscale.
+
+4. **Row-major indexing**: SubplotSpec uses flat row-major indices (num1, num2). Converting (row, col) to flat index: `num = row * ncols + col`. Converting back: `row = floor(num / ncols)`, `col = num mod ncols`.
+
+### Files Created/Modified
+- `src/containers/gridspec.lisp` — ~350 LOC, GridSpec + SubplotSpec + subplots + subplot-mosaic
+- `src/containers/axes-base.lisp` — Modified: +3 slots (sharex-group, sharey-group, %propagating-p), +6 functions (axes-share-x, axes-share-y, %propagate-xlim, %propagate-ylim), modified axes-set-xlim/axes-set-ylim/axes-autoscale-view for propagation
+- `src/packages.lisp` — Added ~30 gridspec/shared-axes exports
+- `cl-matplotlib-containers.asd` — Added gridspec component + test-gridspec
+- `tests/test-gridspec.lisp` — ~450 LOC, 49 tests, 158 checks
+
+### Stats
+- 710/710 checks passing (129 figure + 116 axes + 111 axis + 59 scale + 110 legend + 27 colorbar + 158 gridspec) — 100%
+- Pre-commit: `sbcl --eval '(asdf:test-system :cl-matplotlib-containers)' --quit` exits 0
+- Evidence: `file .sisyphus/evidence/phase5b-gridspec.png` → "PNG image data, 640 x 480, 8-bit/color RGBA"

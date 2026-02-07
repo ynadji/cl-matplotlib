@@ -88,9 +88,20 @@
                    :type boolean
                    :documentation "Whether to autoscale Y axis.")
    (autoscale-margin :initform 0.05d0
-                     :accessor axes-base-autoscale-margin
-                     :type double-float
-                     :documentation "Margin fraction for autoscaling (5% default)."))
+                      :accessor axes-base-autoscale-margin
+                      :type double-float
+                      :documentation "Margin fraction for autoscaling (5% default).")
+   ;; Shared axes
+   (sharex-group :initform nil
+                 :accessor axes-base-sharex-group
+                 :documentation "List of axes sharing X limits with this one.")
+   (sharey-group :initform nil
+                 :accessor axes-base-sharey-group
+                 :documentation "List of axes sharing Y limits with this one.")
+   (%propagating-limits :initform nil
+                        :accessor axes-base-%propagating-p
+                        :type boolean
+                        :documentation "Guard against circular limit propagation."))
   (:default-initargs :zorder 0)
   (:documentation "Base class for all Axes types.
 Handles coordinate transforms, data limits, artist management, and drawing.
@@ -263,7 +274,10 @@ If TIGHT is T, use exact data limits (no margin)."
       (setf (axes-base-view-lim ax)
             (mpl.primitives:make-bbox x0 y0 x1 y1))
       ;; Update transData to reflect new view limits
-      (%update-trans-data ax))))
+      (%update-trans-data ax)
+      ;; Propagate to shared axes
+      (%propagate-xlim ax)
+      (%propagate-ylim ax))))
 
 ;;; ============================================================
 ;;; Set/get limits
@@ -280,7 +294,9 @@ If TIGHT is T, use exact data limits (no margin)."
            (mpl.primitives:bbox-y1 view)))
     (when min (setf (axes-base-autoscale-x-p ax) nil))
     (when max (setf (axes-base-autoscale-x-p ax) nil))
-    (%update-trans-data ax)))
+    (%update-trans-data ax)
+    ;; Propagate to shared axes
+    (%propagate-xlim ax)))
 
 (defun axes-set-ylim (ax &key min max)
   "Set the y-axis view limits."
@@ -293,7 +309,9 @@ If TIGHT is T, use exact data limits (no margin)."
            (or (when max (float max 1.0d0)) (mpl.primitives:bbox-y1 view))))
     (when min (setf (axes-base-autoscale-y-p ax) nil))
     (when max (setf (axes-base-autoscale-y-p ax) nil))
-    (%update-trans-data ax)))
+    (%update-trans-data ax)
+    ;; Propagate to shared axes
+    (%propagate-ylim ax)))
 
 (defun axes-get-xlim (ax)
   "Return (values xmin xmax) for the axes."
@@ -440,6 +458,85 @@ Additional keyword arguments are passed to the scale constructor."
   (let ((scale (apply #'make-scale scale-name :axis (axes-base-yaxis ax) args)))
     (axis-set-scale (axes-base-yaxis ax) scale))
   (setf (mpl.rendering:artist-stale ax) t))
+
+;;; ============================================================
+;;; Shared axes linking
+;;; ============================================================
+
+(defun axes-share-x (ax other)
+  "Link AX's X limits to OTHER's X limits.
+When either axes' X limits change, the other is updated."
+  (unless (eq ax other)
+    ;; Add each to the other's share group
+    (pushnew other (axes-base-sharex-group ax))
+    (pushnew ax (axes-base-sharex-group other))
+    ;; Sync current limits: use other's limits
+    (multiple-value-bind (xmin xmax) (axes-get-xlim other)
+      (unless (axes-base-%propagating-p ax)
+        (setf (axes-base-%propagating-p ax) t)
+        (unwind-protect
+             (progn
+               (let ((view (axes-base-view-lim ax)))
+                 (setf (axes-base-view-lim ax)
+                       (mpl.primitives:make-bbox
+                        xmin (mpl.primitives:bbox-y0 view)
+                        xmax (mpl.primitives:bbox-y1 view))))
+               (%update-trans-data ax))
+          (setf (axes-base-%propagating-p ax) nil))))))
+
+(defun axes-share-y (ax other)
+  "Link AX's Y limits to OTHER's Y limits.
+When either axes' Y limits change, the other is updated."
+  (unless (eq ax other)
+    (pushnew other (axes-base-sharey-group ax))
+    (pushnew ax (axes-base-sharey-group other))
+    ;; Sync current limits: use other's limits
+    (multiple-value-bind (ymin ymax) (axes-get-ylim other)
+      (unless (axes-base-%propagating-p ax)
+        (setf (axes-base-%propagating-p ax) t)
+        (unwind-protect
+             (progn
+               (let ((view (axes-base-view-lim ax)))
+                 (setf (axes-base-view-lim ax)
+                       (mpl.primitives:make-bbox
+                        (mpl.primitives:bbox-x0 view) ymin
+                        (mpl.primitives:bbox-x1 view) ymax)))
+               (%update-trans-data ax))
+          (setf (axes-base-%propagating-p ax) nil))))))
+
+(defun %propagate-xlim (ax)
+  "Propagate X limits from AX to all shared axes. Guards against circular updates."
+  (when (and (axes-base-sharex-group ax)
+             (not (axes-base-%propagating-p ax)))
+    (setf (axes-base-%propagating-p ax) t)
+    (unwind-protect
+         (multiple-value-bind (xmin xmax) (axes-get-xlim ax)
+           (dolist (other (axes-base-sharex-group ax))
+             (unless (axes-base-%propagating-p other)
+               (let ((view (axes-base-view-lim other)))
+                 (setf (axes-base-view-lim other)
+                       (mpl.primitives:make-bbox
+                        xmin (mpl.primitives:bbox-y0 view)
+                        xmax (mpl.primitives:bbox-y1 view))))
+               (%update-trans-data other))))
+      (setf (axes-base-%propagating-p ax) nil))))
+
+(defun %propagate-ylim (ax)
+  "Propagate Y limits from AX to all shared axes. Guards against circular updates."
+  (when (and (axes-base-sharey-group ax)
+             (not (axes-base-%propagating-p ax)))
+    (setf (axes-base-%propagating-p ax) t)
+    (unwind-protect
+         (multiple-value-bind (ymin ymax) (axes-get-ylim ax)
+           (dolist (other (axes-base-sharey-group ax))
+             (unless (axes-base-%propagating-p other)
+               (let ((view (axes-base-view-lim other)))
+                 (setf (axes-base-view-lim other)
+                       (mpl.primitives:make-bbox
+                        (mpl.primitives:bbox-x0 view) ymin
+                        (mpl.primitives:bbox-x1 view) ymax)))
+               (%update-trans-data other))))
+      (setf (axes-base-%propagating-p ax) nil))))
 
 ;;; ============================================================
 ;;; Print representation

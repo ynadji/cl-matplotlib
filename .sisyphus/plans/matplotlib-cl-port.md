@@ -1260,7 +1260,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
   **Acceptance Criteria**: Log-scaled plot produces correctly spaced ticks.
   **Commit**: YES — `feat(containers): log/symlog/logit scale support`
 
-- [ ] 5b. GridSpec + Subplot Layouts
+- [x] 5b. GridSpec + Subplot Layouts
 
   **What to do**:
   - Port `gridspec.py`: GridSpec, SubplotSpec, GridSpecFromSubplotSpec
