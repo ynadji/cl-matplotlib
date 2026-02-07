@@ -691,3 +691,77 @@ Date: 2026-02-06
 - 91/91 tests passing (100%)
 - Files: pyplot.lisp (source), test-pyplot.lisp (tests), cl-matplotlib-pyplot.asd (system)
 - Exports: 30 public functions/variables from `cl-matplotlib.pyplot`
+
+## Phase 7b: rcParams Configuration System (Complete)
+
+### Implementation Summary
+Extended the existing rcParams system (265 params from Phase 1) with:
+- `rc-context` macro for temporary parameter overrides with unwind-protect
+- `rc-defaults` function to reset all params to defaults
+- `rc-from-file` function to load params from matplotlibrc files
+- `rc-params-to-file` function to save current params to file
+- Default `data/matplotlibrc` file with all 265 params organized by category
+
+### Key Design Decisions
+
+1. **rc-context Macro Pattern**:
+   - Uses `unwind-protect` to ensure restoration even on non-local exit
+   - Saves original values before modification
+   - Restores via direct hash table access (not through setf rc) for efficiency
+   - Supports nested contexts correctly
+
+2. **File Format Handling**:
+   - Reused existing `parse-matplotlibrc` from matplotlibrc-parser.lisp
+   - Format: `key: value` with # comments
+   - Boolean values: "True"/"False" strings (matplotlib convention)
+   - NIL values: "None" string
+   - Lists: comma-separated values
+
+3. **Validator Integration**:
+   - All params use existing validators from rcsetup.lisp
+   - File loading validates each param and warns on errors
+   - Unknown keys are silently skipped (forward compatibility)
+
+### Testing Results
+- 382 checks, 100% pass rate
+- Comprehensive coverage:
+  - Basic get/set operations
+  - All validator functions
+  - rc-context with nesting and error handling
+  - File I/O roundtrip
+  - All 265 params accessible
+
+### Gotchas Encountered
+
+1. **Boolean File Format**:
+   - Matplotlibrc uses "True"/"False" strings
+   - Validator expects actual booleans or specific strings
+   - Solution: validate-bool handles string conversion
+
+2. **NIL as Valid Value**:
+   - Some params (e.g., legend.linewidth) have NIL as valid default
+   - Tests must use `finishes` not `(not (null ...))` for accessibility checks
+
+3. **Format-rc-value Edge Cases**:
+   - Keywords need string-downcase conversion
+   - Vectors need coercion to list for formatting
+   - NIL must become "None" string for file format
+
+### Performance Notes
+- Hash table access is O(1) for all operations
+- rc-context saves/restores in O(n) where n = number of overridden params
+- File I/O validates each param, ~265 validations per load
+
+### Integration Points
+- Foundation system already included rcsetup.lisp, rcparams.lisp, matplotlibrc-parser.lisp
+- Added test system to cl-matplotlib-foundation.asd
+- Default matplotlibrc in data/ directory (alongside fonts/)
+
+### Success Metrics
+✓ All 265 rcParams registered and accessible
+✓ rc-context correctly restores on normal and error exit
+✓ rc-defaults resets all params
+✓ File I/O roundtrip works (264/265 params, 1 skipped due to format)
+✓ 100% test pass rate (382 checks)
+✓ Zero compilation warnings
+
