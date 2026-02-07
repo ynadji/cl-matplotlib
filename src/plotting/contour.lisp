@@ -234,11 +234,17 @@ Returns list of PolyCollection instances."
         (let ((val (float (aref z j i) 1.0d0)))
           (when (< val zmin) (setf zmin val))
           (when (> val zmax) (setf zmax val)))))
-    ;; Auto-select levels if not provided
-    (unless levels
-      (setf levels (if filled
-                       (auto-select-levels-filled zmin zmax 7)
-                       (auto-select-levels zmin zmax 7))))
+    ;; Auto-select levels if not provided, or if an integer (= number of levels)
+    (cond
+      ((null levels)
+       (setf levels (if filled
+                        (auto-select-levels-filled zmin zmax 7)
+                        (auto-select-levels zmin zmax 7))))
+      ((integerp levels)
+       (let ((n levels))
+         (setf levels (if filled
+                         (auto-select-levels-filled zmin zmax n)
+                         (auto-select-levels zmin zmax n))))))
     (setf (contourset-levels qcs) levels)
     ;; Set up normalization if cmap provided but no norm
     (when (and (contourset-cmap qcs) (null (contourset-norm qcs)))

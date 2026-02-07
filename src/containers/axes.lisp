@@ -132,7 +132,7 @@ ZORDER — drawing order (default 1).
 ALIGN — :center or :edge (default :center).
 
 Returns a list of Rectangle patches."
-  (let* ((effective-color (or color "C0"))
+  (let* ((base-color (or color "C0"))
          (n (min (length x) (length height)))
          (rects nil))
     (dotimes (i n)
@@ -148,6 +148,10 @@ Returns a list of Rectangle patches."
              (x0 (if (eq align :center)
                      (- xi (* wi 0.5d0))
                      xi))
+             ;; Per-bar color: if color is a list, index into it
+             (effective-color (if (and (listp base-color) (not (null base-color)))
+                                  (elt base-color (mod i (length base-color)))
+                                  base-color))
              (rect (make-instance 'mpl.rendering:rectangle
                                   :x0 x0
                                   :y0 bi
