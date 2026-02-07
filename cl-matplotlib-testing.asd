@@ -21,3 +21,28 @@
   :components ((:file "test-testing"))
   :perform (asdf:test-op (o c)
              (uiop:symbol-call '#:cl-matplotlib.tests.testing '#:run-testing-tests)))
+
+;;; Ported image comparison tests (batch 1/3)
+(asdf:defsystem #:cl-matplotlib-testing/ported
+  :description "Ported image comparison tests from matplotlib (batch 1/3)"
+  :depends-on (#:cl-matplotlib-testing
+               #:cl-matplotlib-pyplot
+               #:fiveam)
+  :pathname "tests/"
+  :serial t
+  :components ((:file "test-backend-pdf-ported")
+               (:file "test-pyplot-ported")
+               (:file "test-legend-ported")
+               (:file "test-colorbar-ported")
+               (:file "test-scale-ported"))
+  :perform (asdf:test-op (o c)
+             (uiop:symbol-call '#:cl-matplotlib.tests.backend-pdf-ported
+                               '#:run-backend-pdf-ported-tests)
+             (uiop:symbol-call '#:cl-matplotlib.tests.pyplot-ported
+                               '#:run-pyplot-ported-tests)
+             (uiop:symbol-call '#:cl-matplotlib.tests.legend-ported
+                               '#:run-legend-ported-tests)
+             (uiop:symbol-call '#:cl-matplotlib.tests.colorbar-ported
+                               '#:run-colorbar-ported-tests)
+             (uiop:symbol-call '#:cl-matplotlib.tests.scale-ported
+                               '#:run-scale-ported-tests)))

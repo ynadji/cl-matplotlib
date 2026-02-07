@@ -1244,3 +1244,24 @@ Canvas creation must be format-aware, not just the print method.
 - 69/69 checks passing — 100%
 - System loads cleanly: `(ql:quickload :cl-matplotlib-testing)` exits 0
 - Test system runs: `(asdf:test-system :cl-matplotlib-testing)` exits 0
+
+## Phase 8a — Ported Test Files Batch 1/3 (2026-02-07)
+
+### Patterns
+- `def-image-test` macro binds `output-file` in the `cl-matplotlib.testing` package — test packages MUST import `output-file` or it will be unbound
+- Export `output-file` from the testing package to make it part of the macro's public API
+- Scale tests with log/symlog transforms on large canvas sizes (>300px) can cause heap exhaustion via Vecto's anti-aliased rendering — use smaller figure sizes (3x2 @ 72dpi) for scale tests
+- `save-baseline t` flag auto-saves baselines on first run; subsequent runs compare against them
+- There is no `axes-set-title` at the containers level — title is pyplot-only; labels go through `axis-set-label-text`
+
+### Test Coverage Summary (159 checks total)
+- **test-backend-pdf-ported.lisp**: 7 image tests + 5 parametrized (19 checks) — line, rect, text, dash, scatter, mixed rendering
+- **test-pyplot-ported.lisp**: 16 image tests + 2 parametrized (34 checks) — all plot types, subplots, styling, workflow
+- **test-legend-ported.lisp**: 15 image tests + 1 parametrized (40 checks) — positions, frames, artists, styles, titles
+- **test-colorbar-ported.lisp**: 8 image tests + 1 parametrized (18 checks) — orientations, labels, ticks, ranges
+- **test-scale-ported.lisp**: 9 image tests + 4 parametrized (48 checks) — linear, log, symlog, logit, function, transform accuracy
+
+### Infrastructure Notes
+- 55 baseline images generated in `tests/baseline_images/{suite-name}/`
+- Tests registered as `cl-matplotlib-testing/ported` ASDF system
+- Baseline images are deterministic — second run confirms all comparisons pass

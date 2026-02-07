@@ -29,4 +29,6 @@ Port of matplotlib.testing.compare and matplotlib.testing.decorators.")
    #:result-path
    ;; FiveAM macros
    #:def-image-test
-   #:def-figures-equal))
+   #:def-figures-equal
+   ;; Macro-bound variables (used in def-image-test body)
+   #:output-file))
