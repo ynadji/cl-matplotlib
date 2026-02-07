@@ -75,35 +75,40 @@ LABEL — string label for legend.
 ZORDER — drawing order (default 1).
 ALPHA — transparency (nil for opaque).
 
-Returns a list of created artists (patches for each point)."
+Returns the PathCollection artist."
   (let* ((effective-color (or c color "C0"))
          (n (min (length xdata) (length ydata)))
-         (marker-size (sqrt (float s 1.0d0)))  ; diameter from area
-         (artists nil))
-    ;; Create a small circle patch for each data point
-    (dotimes (i n)
-      (let* ((x (float (elt xdata i) 1.0d0))
-             (y (float (elt ydata i) 1.0d0))
-             (circle (make-instance 'mpl.rendering:circle
-                                    :center (list x y)
-                                    :radius (* marker-size 0.5d0)
-                                    :facecolor effective-color
-                                    :edgecolor effective-color
-                                    :linewidth 0.5
-                                    :zorder zorder)))
-        (when alpha
-          (setf (mpl.rendering:artist-alpha circle)
-                (float alpha 1.0d0)))
-        ;; Set transform to transData
-        (setf (mpl.rendering:artist-transform circle)
-              (axes-base-trans-data ax))
-        (axes-add-patch ax circle)
-        (push circle artists)))
+         ;; Build offsets from data coordinates
+         (offsets (loop for i from 0 below n
+                        collect (list (float (elt xdata i) 1.0d0)
+                                      (float (elt ydata i) 1.0d0))))
+         ;; Create marker path — a unit circle for :circle marker
+         (marker-path (mpl.rendering:make-marker-path
+                       (if (eq marker :circle) :circle marker)))
+         ;; Build sizes list (uniform for now)
+         (sizes (if (numberp s)
+                    (make-list n :initial-element (float s 1.0d0))
+                    (loop for i from 0 below n
+                          collect (float (elt s i) 1.0d0))))
+         ;; Create PathCollection
+         (pc (mpl.rendering:make-path-collection
+              :paths (list marker-path)
+              :offsets offsets
+              :sizes sizes
+              :facecolors effective-color
+              :edgecolors effective-color
+              :linewidths 0.5
+              :alpha alpha
+              :trans-offset (axes-base-trans-data ax)
+              :zorder zorder
+              :label label)))
+    ;; Add the collection as an artist to the axes
+    (axes-add-artist ax pc)
     ;; Update data limits
     (axes-update-datalim ax xdata ydata)
     ;; Autoscale
     (axes-autoscale-view ax)
-    (nreverse artists)))
+    pc))
 
 ;;; ============================================================
 ;;; bar — bar chart

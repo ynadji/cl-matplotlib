@@ -368,12 +368,12 @@
 ;;; ============================================================
 
 (test scatter-basic
-  "scatter() creates patches for each point."
+  "scatter() creates a PathCollection for the points."
   (let* ((fig (make-figure))
          (ax (add-subplot fig 1 1 1))
-         (artists (scatter ax '(1 2 3 4 5) '(2 4 1 5 3))))
-    (is (= 5 (length artists)))
-    (is (= 5 (length (axes-base-patches ax))))))
+         (pc (scatter ax '(1 2 3 4 5) '(2 4 1 5 3))))
+    (is (typep pc 'mpl.rendering:path-collection))
+    (is (= 5 (length (mpl.rendering:collection-offsets pc))))))
 
 (test scatter-updates-data-limits
   "scatter() updates axes data limits."
@@ -390,8 +390,9 @@
   "scatter() accepts color option."
   (let* ((fig (make-figure))
          (ax (add-subplot fig 1 1 1))
-         (artists (scatter ax '(1 2) '(3 4) :color "green")))
-    (is (= 2 (length artists)))))
+         (pc (scatter ax '(1 2) '(3 4) :color "green")))
+    (is (typep pc 'mpl.rendering:path-collection))
+    (is (equal '("green") (mpl.rendering:collection-facecolors pc)))))
 
 ;;; ============================================================
 ;;; bar() Tests

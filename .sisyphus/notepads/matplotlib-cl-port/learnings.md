@@ -401,3 +401,58 @@ Date: 2026-02-06
 - 710/710 checks passing (129 figure + 116 axes + 111 axis + 59 scale + 110 legend + 27 colorbar + 158 gridspec) — 100%
 - Pre-commit: `sbcl --eval '(asdf:test-system :cl-matplotlib-containers)' --quit` exits 0
 - Evidence: `file .sisyphus/evidence/phase5b-gridspec.png` → "PNG image data, 640 x 480, 8-bit/color RGBA"
+
+## Phase 5c — Collection Classes and Hatch Patterns (2026-02-06)
+
+### Implementation Summary
+- **hatch.lisp**: 10 hatch patterns (/, \, |, -, +, x, o, O, ., *) with density control. Generates mpl-paths tiling a unit square.
+- **collections.lisp**: Collection base class + 5 types (LineCollection, PathCollection, PatchCollection, PolyCollection, QuadMesh). Each type has specialized `collection-get-paths` and custom `draw` methods.
+- **backend-vecto.lisp**: Added `draw-path-collection` method for batch rendering with per-item colors/transforms.
+- **axes.lisp**: Updated `scatter()` to use PathCollection instead of individual Circle patches.
+- **122 new tests (collection tests), 325 rendering total, 711 container total, all passing 100%**
+- **Evidence**: phase5c-collections.png (640x480, 9.2KB PNG, 1000-point scatter)
+
+### Architecture Decisions
+
+1. **Collection inherits from Artist (not Patch)**: Collections are a sibling to Patch, not a subclass. They share the draw protocol but handle multiple items rather than a single shape. This matches matplotlib's hierarchy.
+
+2. **Cyclic property access via %coll-nth**: Properties (colors, linewidths, etc.) are accessed cyclically using `(mod index (length list))`. This matches matplotlib's `prop[i % len(prop)]` pattern.
+
+3. **Specialized draw methods per collection type**: LineCollection, PolyCollection, and QuadMesh override the base `draw` method because their drawing semantics differ:
+   - LineCollection: each segment is its own path, no offsets needed
+   - PolyCollection: each polygon is its own path, no offsets needed  
+   - QuadMesh: quads generated from coordinate grid, per-quad colors
+   - PathCollection/base Collection: paths + offsets + per-item transforms
+
+4. **scatter() returns PathCollection**: Changed from returning a list of Circle patches to returning a single PathCollection. This is more efficient and matches matplotlib's actual implementation. Required updating 2 existing tests.
+
+5. **Hatch as functional generation**: Each hatch type (horizontal, vertical, diagonal, shapes) is a standalone function that returns (values vertices codes n-vertices). The main `hatch-get-path` merges all patterns into a single mpl-path. This avoids the class-based approach of matplotlib which is unnecessary without numpy array slicing.
+
+6. **draw-path-collection on backend**: Added as a generic function on renderer-base with a default fallback implementation, plus an optimized Vecto-specific method that minimizes state changes.
+
+### Gotchas Encountered
+
+1. **scatter() return type change breaks tests**: The old scatter() returned `(nreverse artists)` — a list of circles. Changing to PathCollection broke 2 tests that called `(length artists)`. Fixed by updating tests to check `typep` and PathCollection properties instead.
+
+2. **PathCollection needs trans-offset not transform**: When scatter creates a PathCollection, the offsets are in data coordinates. These need to be transformed through `transData` (via `trans-offset` slot), NOT through the artist's main transform. The main transform stays nil; offset transform does the data→display mapping.
+
+3. **QuadMesh coordinates are (H+1, W+1, 2)**: For a mesh of W×H quads, you need (H+1)×(W+1) corner points. Each quad uses 4 corners: (i,j), (i,j+1), (i+1,j+1), (i+1,j).
+
+4. **Hatch circle approximation**: Used 16-segment polygon approximation for circles instead of Bézier curves. Simpler and sufficient for hatch fill patterns where exact smoothness isn't critical.
+
+### Files Created/Modified
+- `src/rendering/hatch.lisp` — ~240 LOC, 10 hatch pattern types + generator
+- `src/rendering/collections.lisp` — ~430 LOC, Collection base + 5 types + constructors
+- `tests/test-collections.lisp` — ~350 LOC, 47 tests, 122 checks
+- `src/packages.lisp` — Added ~35 collection/hatch exports
+- `cl-matplotlib-rendering.asd` — Added hatch, collections components + test
+- `src/backends/renderer-base.lisp` — Added draw-path-collection generic + default
+- `src/backends/backend-vecto.lisp` — Added draw-path-collection Vecto implementation
+- `src/containers/axes.lisp` — Updated scatter() to use PathCollection
+- `tests/test-axes.lisp` — Updated 2 scatter tests for new return type
+- `.sisyphus/evidence/phase5c-collections.png` — 1000-point scatter evidence
+
+### Stats
+- Rendering: 325/325 checks (119 artist + 84 font + 122 collections) — 100%
+- Containers: 711/711 checks (129 figure + 117 axes + 111 axis + 59 scale + 110 legend + 27 colorbar + 158 gridspec) — 100%
+- Total: 1036 checks passing, 100% pass rate

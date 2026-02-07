@@ -1280,7 +1280,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
   **Acceptance Criteria**: 2×2 subplot grid renders correctly.
   **Commit**: YES — `feat(containers): gridspec and subplot layouts`
 
-- [ ] 5c. Collections + Advanced Artists
+- [x] 5c. Collections + Advanced Artists
 
   **What to do**:
   - Port `collections.py`: LineCollection, PathCollection, PatchCollection, PolyCollection, QuadMesh

@@ -16,7 +16,9 @@
                (:file "image")
                (:file "font-manager")
                (:file "text-path")
-               (:file "afm"))
+               (:file "afm")
+               (:file "hatch")
+               (:file "collections"))
   :in-order-to ((asdf:test-op (asdf:test-op #:cl-matplotlib-rendering/tests))))
 
 (asdf:defsystem #:cl-matplotlib-rendering/tests
@@ -24,7 +26,9 @@
   :depends-on (#:cl-matplotlib-rendering #:fiveam)
   :pathname "tests/"
   :components ((:file "test-artist")
-               (:file "test-font-manager"))
+               (:file "test-font-manager")
+               (:file "test-collections"))
   :perform (asdf:test-op (o c)
-             (uiop:symbol-call '#:cl-matplotlib.tests.artist '#:run-artist-tests)
-             (uiop:symbol-call '#:cl-matplotlib.tests.font '#:run-font-tests)))
+              (uiop:symbol-call '#:cl-matplotlib.tests.artist '#:run-artist-tests)
+              (uiop:symbol-call '#:cl-matplotlib.tests.font '#:run-font-tests)
+              (uiop:symbol-call '#:cl-matplotlib.tests.collections '#:run-collection-tests)))

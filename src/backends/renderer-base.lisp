@@ -49,6 +49,19 @@ PATH — the positions where markers should be drawn.
 TRANS — transform applied to PATH vertices.
 RGBFACE — optional fill color for the marker."))
 
+(defgeneric draw-path-collection (renderer gc paths all-transforms
+                                  offsets offset-trans facecolors edgecolors
+                                  linewidths linestyles antialiaseds)
+  (:documentation
+   "Draw a collection of paths efficiently.
+
+PATHS — list of mpl-paths.
+ALL-TRANSFORMS — list of per-item transforms (or nil).
+OFFSETS — list of (x y) offset positions.
+OFFSET-TRANS — transform applied to each offset.
+FACECOLORS, EDGECOLORS — lists of (r g b a) color specs.
+LINEWIDTHS, LINESTYLES, ANTIALIASEDS — per-item drawing properties."))
+
 (defgeneric draw-gouraud-triangles (renderer gc triangles-array colors-array transform)
   (:documentation
    "Draw a series of Gouraud-shaded triangles.
@@ -137,6 +150,21 @@ This is the fallback; backends may override for performance."
             (draw-path r gc marker-path
                        (mpl.primitives:make-affine-2d :translate (list x y))
                        rgbface)))))))
+
+(defmethod draw-path-collection ((r renderer-base) gc paths all-transforms
+                                  offsets offset-trans facecolors edgecolors
+                                  linewidths linestyles antialiaseds)
+  "Default draw-path-collection: iterate and draw each path individually."
+  (let* ((n-offsets (if offsets (length offsets) 0))
+         (n-paths (if paths (length paths) 0))
+         (n-items (max n-offsets n-paths 0)))
+    (dotimes (i n-items)
+      (let* ((path-idx (if (zerop n-paths) 0 (mod i n-paths)))
+             (path (when (plusp n-paths) (elt paths path-idx)))
+             (rgbface (when facecolors
+                        (elt facecolors (mod i (length facecolors))))))
+        (when path
+          (draw-path r gc path nil rgbface))))))
 
 (defmethod draw-gouraud-triangles ((r renderer-base) gc triangles-array colors-array transform)
   "Default: signal not-implemented. Backends should override."

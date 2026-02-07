@@ -299,7 +299,36 @@
             #:afm-get-capheight #:afm-get-xheight #:afm-get-bbox
             #:afm-get-char-width #:afm-get-width-from-name
             #:afm-get-kern-dist #:afm-get-str-bbox-and-descent
-            #:afm-unicode-to-type1-name #:*unicode-to-type1*))
+             #:afm-unicode-to-type1-name #:*unicode-to-type1*
+             ;; Hatch patterns
+             #:hatch-get-path #:*valid-hatch-patterns*
+             ;; Collection protocol
+             #:collection-get-paths #:collection-get-transforms
+             ;; Collection base class
+             #:collection #:collection-offsets #:collection-trans-offset
+             #:collection-facecolors #:collection-edgecolors
+             #:collection-linewidths #:collection-linestyles
+             #:collection-antialiaseds #:collection-hatch
+             #:collection-pickradius #:collection-capstyle #:collection-joinstyle
+             #:collection-set-offsets #:collection-set-facecolor
+             #:collection-set-edgecolor #:collection-set-linewidth
+             #:collection-set-color
+             ;; LineCollection
+             #:line-collection #:line-collection-segments
+             #:collection-set-segments #:make-line-collection
+             ;; PathCollection
+             #:path-collection #:path-collection-paths #:path-collection-sizes
+             #:collection-set-paths #:collection-set-sizes
+             #:make-path-collection
+             ;; PatchCollection
+             #:patch-collection #:patch-collection-patches
+             #:collection-set-patches
+             ;; PolyCollection
+             #:poly-collection #:poly-collection-verts
+             #:collection-set-verts
+             ;; QuadMesh
+             #:quad-mesh #:quad-mesh-width #:quad-mesh-height
+             #:quad-mesh-coordinates))
 
 (defpackage #:cl-matplotlib.containers
   (:use #:cl)
@@ -481,9 +510,9 @@
   (:use #:cl)
   (:nicknames #:mpl.backends)
   (:documentation "Backend implementations (Vecto/cl-aa based).")
-  (:export ;; RendererBase protocol (generic functions)
-           #:draw-path #:draw-image #:draw-text #:draw-markers
-           #:draw-gouraud-triangles
+   (:export ;; RendererBase protocol (generic functions)
+            #:draw-path #:draw-image #:draw-text #:draw-markers
+            #:draw-path-collection #:draw-gouraud-triangles
            #:get-canvas-width-height #:points-to-pixels
            #:renderer-clear #:renderer-option-image-nocomposite
            ;; RendererBase class

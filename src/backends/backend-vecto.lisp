@@ -406,6 +406,105 @@ Optimized: applies gc once, then draws marker at each position."
                     (draw-path renderer gc marker-path full-transform rgbface)))))))))))
 
 ;;; ============================================================
+;;; draw-path-collection — Optimized batch path drawing
+;;; ============================================================
+
+(defmethod draw-path-collection ((renderer renderer-vecto) gc paths all-transforms
+                                 offsets offset-trans facecolors edgecolors
+                                 linewidths linestyles antialiaseds)
+  "Draw a collection of paths efficiently.
+PATHS — list of mpl-paths.
+ALL-TRANSFORMS — list of per-item transforms (or nil).
+OFFSETS — list of (x y) offset positions.
+OFFSET-TRANS — transform applied to each offset.
+FACECOLORS, EDGECOLORS — lists of (r g b a) color specs.
+LINEWIDTHS, LINESTYLES, ANTIALIASEDS — per-item drawing properties."
+  (let* ((n-offsets (if offsets (length offsets) 0))
+         (n-paths (if paths (length paths) 0))
+         (n-items (max n-offsets n-paths 0))
+         (alpha (mpl.rendering:gc-alpha gc)))
+    (when (zerop n-items)
+      (return-from draw-path-collection))
+    ;; Draw each item
+    (dotimes (i n-items)
+      (let* ((path-idx (if (zerop n-paths) 0 (mod i n-paths)))
+             (path (when (plusp n-paths) (elt paths path-idx)))
+             (item-transform (when all-transforms
+                               (elt all-transforms (mod i (length all-transforms)))))
+             (offset (when (plusp n-offsets) (elt offsets (mod i n-offsets))))
+             (face-color (when facecolors
+                           (elt facecolors (mod i (length facecolors)))))
+             (edge-color (when edgecolors
+                           (elt edgecolors (mod i (length edgecolors)))))
+             (linewidth (if linewidths
+                            (elt linewidths (mod i (length linewidths)))
+                            1.0))
+             (antialiased (if antialiaseds
+                              (elt antialiaseds (mod i (length antialiaseds)))
+                              t)))
+        (when path
+          ;; Compute final transform
+          (let ((final-transform nil))
+            ;; Per-item transform
+            (when item-transform
+              (setf final-transform item-transform))
+            ;; Offset translation
+            (when offset
+              (let* ((ox (float (first offset) 1.0d0))
+                     (oy (float (second offset) 1.0d0))
+                     (transformed-offset
+                       (if offset-trans
+                           (mpl.primitives:transform-point
+                            offset-trans (list ox oy))
+                           (vector ox oy)))
+                     (tx (aref transformed-offset 0))
+                     (ty (aref transformed-offset 1))
+                     (offset-tr (mpl.primitives:make-affine-2d
+                                 :translate (list tx ty))))
+                (if final-transform
+                    (setf final-transform
+                          (mpl.primitives:compose final-transform offset-tr))
+                    (setf final-transform offset-tr))))
+            ;; Set GC and draw
+            (vecto:with-graphics-state
+              (vecto:set-line-width (float linewidth 1.0))
+              (when (not antialiased)
+                ;; Vecto doesn't have AA toggle, but we track the intent
+                nil)
+              ;; Fill
+              (when face-color
+                (let ((r (first face-color))
+                      (g (second face-color))
+                      (b (third face-color))
+                      (a (* (fourth face-color) (float alpha 1.0))))
+                  (vecto:set-rgba-fill (float r 1.0) (float g 1.0) (float b 1.0)
+                                       (float a 1.0)))
+                (%trace-path-to-vecto path final-transform)
+                (if edge-color
+                    (progn
+                      (vecto:fill-path)
+                      ;; Re-trace for stroke
+                      (let ((r (first edge-color))
+                            (g (second edge-color))
+                            (b (third edge-color))
+                            (a (* (fourth edge-color) (float alpha 1.0))))
+                        (vecto:set-rgba-stroke (float r 1.0) (float g 1.0)
+                                               (float b 1.0) (float a 1.0)))
+                      (%trace-path-to-vecto path final-transform)
+                      (vecto:stroke))
+                    (vecto:fill-path)))
+              ;; Stroke only
+              (when (and (not face-color) edge-color)
+                (let ((r (first edge-color))
+                      (g (second edge-color))
+                      (b (third edge-color))
+                      (a (* (fourth edge-color) (float alpha 1.0))))
+                  (vecto:set-rgba-stroke (float r 1.0) (float g 1.0)
+                                         (float b 1.0) (float a 1.0)))
+                (%trace-path-to-vecto path final-transform)
+                (vecto:stroke)))))))))
+
+;;; ============================================================
 ;;; draw-gouraud-triangles — Stub implementation
 ;;; ============================================================
 
