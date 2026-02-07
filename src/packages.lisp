@@ -502,9 +502,23 @@
               #:gridspec-from-ss-hspace #:gridspec-from-ss-get-topmost-subplotspec
               ;; Subplots and mosaic
               #:subplots #:subplot-mosaic
-              ;; Shared axes
-              #:axes-share-x #:axes-share-y
-              #:axes-base-sharex-group #:axes-base-sharey-group))
+               ;; Shared axes
+               #:axes-share-x #:axes-share-y
+               #:axes-base-sharex-group #:axes-base-sharey-group
+               ;; Marching squares algorithm
+               #:marching-squares-single-level #:marching-squares-levels
+               #:marching-squares-filled
+               #:auto-select-levels #:auto-select-levels-filled
+               ;; ContourSet classes
+               #:contour-set #:contourset-levels #:contourset-collections
+               #:contourset-cmap #:contourset-norm #:contourset-filled-p
+               #:contourset-linewidths #:contourset-linestyles
+               #:contourset-colors #:contourset-label-texts
+               #:contourset-get-paths
+               ;; QuadContourSet
+               #:quad-contour-set #:qcs-x #:qcs-y #:qcs-z
+               ;; Contour plotting functions
+               #:contour #:contourf #:clabel))
 
 (defpackage #:cl-matplotlib.backends
   (:use #:cl)

@@ -1300,7 +1300,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
   **Acceptance Criteria**: Scatter with 1000 points renders using PathCollection.
   **Commit**: YES — `feat(rendering): collections, hatch patterns`
 
-- [ ] 5d. Contour (Marching Squares in Pure CL)
+- [x] 5d. Contour (Marching Squares in Pure CL)
 
   **What to do**:
   - Port `contour.py`: ContourSet, QuadContourSet

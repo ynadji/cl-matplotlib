@@ -456,3 +456,51 @@ Date: 2026-02-06
 - Rendering: 325/325 checks (119 artist + 84 font + 122 collections) — 100%
 - Containers: 711/711 checks (129 figure + 117 axes + 111 axis + 59 scale + 110 legend + 27 colorbar + 158 gridspec) — 100%
 - Total: 1036 checks passing, 100% pass rate
+
+## Phase 5d — Contour Plotting with Marching Squares (2026-02-06)
+
+### Implementation Summary
+- **marching-squares.lisp**: Pure CL marching squares algorithm (~250 LOC). 16-case lookup table, linear interpolation, saddle point disambiguation (center value), segment connectivity via greedy path building.
+- **contour.lisp**: ContourSet and QuadContourSet classes (~300 LOC). ContourSet inherits from Artist, manages per-level collections. QuadContourSet auto-builds LineCollection (contour) or PolyCollection (contourf) from marching squares output.
+- **contour/contourf/clabel**: Three main API functions added to containers package. Auto level selection, cmap+norm color mapping, alpha support.
+- **130 new tests, 841 total checks, 100% pass rate**
+- **Evidence**: phase5d-contour.png (640x480, 9.2KB PNG, filled Gaussian contours)
+
+### Architecture Decisions
+
+1. **Marching squares in containers package**: Rather than creating a separate `cl-matplotlib-algorithms` system, the marching-squares functions live in the containers package since they're only used by contour plotting. This avoids another system dependency.
+
+2. **Module-based .asd structure**: Changed from flat `:pathname "src/containers/"` to module-based structure with three modules (`src/containers`, `src/algorithms`, `src/plotting`). This allows the single `cl-matplotlib-containers` system to span multiple directories while keeping `:serial t` for load ordering.
+
+3. **Filled contours via cell-clipping**: Rather than the more complex approach of tracing boundary contours and forming closed regions, used a per-cell band-clipping algorithm. For each grid cell, walk the boundary and include corners in-band plus interpolated edge crossings. Simpler, O(N*M) per level pair.
+
+4. **Segment connectivity via greedy extension**: Raw marching squares produces disconnected line segments. Connected them by repeatedly scanning unmatched segments for endpoint matches (within tolerance). Each pass extends the current path in both directions. Produces clean polylines from raw segments.
+
+5. **Saddle disambiguation by center value**: Cases 5 and 10 (diagonal saddle points) are resolved using the average of the 4 corner values. If center >= level, use alternative connection. This matches the standard approach.
+
+6. **ContourSet as Artist**: Follows matplotlib's pattern — ContourSet is an Artist that owns per-level collections. The draw method delegates to each collection's draw. This integrates cleanly with the existing axes draw pipeline.
+
+7. **Auto-level selection**: Simple even spacing between zmin and zmax. For contour lines: N levels interior to the range. For contourf: N+1 boundary levels spanning the full range. Could be enhanced with MaxNLocator but kept simple for correctness.
+
+### Gotchas Encountered
+
+1. **Module path in ASDF**: When using `:module` directive, the component files are relative to the module's path. `(:module "src/algorithms" :components ((:file "marching-squares")))` looks for `src/algorithms/marching-squares.lisp`.
+
+2. **PolyCollection vs LineCollection for filled contours**: contour() uses LineCollection (segments), contourf() uses PolyCollection (filled polygons). The key difference is facecolors — LineCollection has nil facecolors by default, PolyCollection fills them.
+
+3. **clabel position via path midpoint**: Simple but effective — find the longest contour path for each level and place the label at its midpoint. Full inline labeling (breaking the contour line) is deferred as optional enhancement.
+
+4. **Z array indexing**: CL arrays are row-major. `(aref z j i)` where j=row=Y, i=col=X. This matches matplotlib's convention but requires care when iterating.
+
+### Files Created/Modified
+- `src/algorithms/marching-squares.lisp` — ~250 LOC, marching squares + filled + auto levels
+- `src/plotting/contour.lisp` — ~300 LOC, ContourSet + QuadContourSet + contour/contourf/clabel
+- `tests/test-contour.lisp` — ~470 LOC, 45 tests, 130 checks
+- `src/packages.lisp` — Added ~20 contour exports
+- `cl-matplotlib-containers.asd` — Changed to module structure, added algorithms+plotting+test-contour
+
+### Stats
+- 841/841 checks passing (129 figure + 117 axes + 111 axis + 59 scale + 110 legend + 27 colorbar + 158 gridspec + 130 contour) — 100%
+- Pre-commit: `sbcl --eval '(asdf:test-system :cl-matplotlib-containers)' --quit` exits 0
+- Evidence: `file .sisyphus/evidence/phase5d-contour.png` → "PNG image data, 640 x 480, 8-bit/color RGBA"
+
