@@ -14,7 +14,10 @@
                (:file "spines")
                (:file "axis")
                (:file "axes-base")
-               (:file "axes"))
+               (:file "axes")
+               (:file "legend-handler")
+               (:file "legend")
+               (:file "colorbar"))
   :in-order-to ((asdf:test-op (asdf:test-op #:cl-matplotlib-containers/tests))))
 
 (asdf:defsystem #:cl-matplotlib-containers/tests
@@ -23,8 +26,12 @@
   :pathname "tests/"
   :components ((:file "test-figure")
                (:file "test-axes")
-               (:file "test-axis"))
+               (:file "test-axis")
+               (:file "test-legend")
+               (:file "test-colorbar"))
   :perform (asdf:test-op (o c)
              (uiop:symbol-call '#:cl-matplotlib.tests.figure '#:run-figure-tests)
              (uiop:symbol-call '#:cl-matplotlib.tests.axes '#:run-axes-tests)
-             (uiop:symbol-call '#:cl-matplotlib.tests.axis '#:run-axis-tests)))
+             (uiop:symbol-call '#:cl-matplotlib.tests.axis '#:run-axis-tests)
+             (uiop:symbol-call '#:cl-matplotlib.tests.legend '#:run-legend-tests)
+             (uiop:symbol-call '#:cl-matplotlib.tests.colorbar '#:run-colorbar-tests)))

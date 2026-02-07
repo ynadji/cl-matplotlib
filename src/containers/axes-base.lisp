@@ -70,10 +70,14 @@
     (yaxis :initform nil
            :accessor axes-base-yaxis
            :documentation "YAxis object for this axes.")
-    ;; Spines
-    (axes-spines :initform nil
-                 :accessor axes-base-spines
-                 :documentation "Spines container for axes borders.")
+     ;; Spines
+     (axes-spines :initform nil
+                  :accessor axes-base-spines
+                  :documentation "Spines container for axes borders.")
+     ;; Legend
+     (axes-legend :initform nil
+                  :accessor axes-base-legend
+                  :documentation "Legend object for this axes.")
    ;; Autoscaling
    (autoscale-x-p :initform t
                    :accessor axes-base-autoscale-x-p
@@ -376,10 +380,13 @@ If TIGHT is T, use exact data limits (no margin)."
   ;; Draw spines (axes border lines) — replaces old %draw-axes-frame
   (when (axes-base-spines ax)
     (spines-draw-all (axes-base-spines ax) renderer))
-  ;; Fallback: draw axes frame if no spines
-  (when (and (axes-base-frameon-p ax) (null (axes-base-spines ax)))
-    (%draw-axes-frame ax renderer))
-  (setf (mpl.rendering:artist-stale ax) nil))
+   ;; Fallback: draw axes frame if no spines
+   (when (and (axes-base-frameon-p ax) (null (axes-base-spines ax)))
+     (%draw-axes-frame ax renderer))
+   ;; Draw legend (on top of everything)
+   (when (axes-base-legend ax)
+     (mpl.rendering:draw (axes-base-legend ax) renderer))
+   (setf (mpl.rendering:artist-stale ax) nil))
 
 (defun %draw-axes-background (ax renderer)
   "Draw the axes background fill."

@@ -249,3 +249,54 @@ Date: 2026-02-06
 ### Stats
 - 356/356 checks passing (129 figure + 116 axes + 111 axis) — 100%
 - Pre-commit: `sbcl --eval '(asdf:load-system :cl-matplotlib-containers)' --quit` exits 0
+
+## Phase 4d — Legend, Colorbar, Legend Handlers (2026-02-06)
+
+### Implementation Summary
+- **legend-handler.lisp**: 4 core handler classes (HandlerLine2D, HandlerPatch, HandlerLineCollection, HandlerPathCollection) with `create-legend-artists` generic + default handler map
+- **legend.lisp**: mpl-legend class inheriting from Artist, 10 position keywords, auto-placement algorithm ("best"), `axes-legend` convenience function, frame rendering, entry building from handles+labels
+- **colorbar.lisp**: mpl-colorbar class, auto-creates colorbar axes, color gradient rendering via ScalarMappable, auto tick generation, tick+label drawing, border and label
+- **Integration**: `axes-base-legend` slot added to AxesBase, draw method updated to draw legend on top
+- **137 new checks (110 legend + 27 colorbar), 493 total, 100% pass rate**
+- **Evidence**: phase4d-legend.png (640x480, 16KB PNG)
+
+### Architecture Decisions
+
+1. **Handler dispatch via typep**: Instead of using `closer-mop:class-precedence-list` (would add a dependency), handler lookup walks the handler map with `typep` for type matching. Falls back to `handler-patch` for any `patch` subclass and `handler-line-2d` for any `line-2d` subclass.
+
+2. **Legend as Artist subclass**: mpl-legend inherits from Artist, gets zorder=5 (above all data artists). Drawn last in axes draw cycle via explicit check after spines.
+
+3. **Legend auto-labels skip underscore**: Following matplotlib convention, `%axes-get-legend-handles-labels` skips artists whose label starts with `_`. This allows internal artists (like background patch) to be labeled without appearing in legends.
+
+4. **Position computation in display coords**: Legend bbox computed in display pixels by transforming axes-fraction positions through transAxes. The x/y fractions (0.05-0.95) determine anchor points; legend is positioned so it doesn't overflow at edges.
+
+5. **"Best" placement via overlap minimization**: Tests all 9 fixed positions, computes bounding-box overlap with data artists (lines), picks position with minimum overlap. Simple but effective for most cases.
+
+6. **Colorbar creates its own axes**: `%make-colorbar-axes` shrinks the parent axes and inserts a narrow axes for the colorbar. Vertical: to the right; horizontal: below. This matches matplotlib's `make_axes` approach.
+
+7. **Fontsize via gc-linewidth**: The Vecto backend uses `gc-linewidth` as fontsize for `draw-text` (a design decision from Phase 3b). Legend and colorbar text drawing must pass fontsize through linewidth in the graphics context, not as a separate parameter.
+
+### Gotchas Encountered
+
+1. **`push` reverses order**: `axes-base-lines` stores lines via `push`, so the most recently added line is first. When iterating for legend labels, `nreverse` is needed — but the resulting order depends on the traversal order of `push`-accumulated lists. Tests should check membership, not exact order.
+
+2. **Backend draw-text signature**: `draw-text(renderer gc x y s prop angle)` — no `:fontsize` keyword. Fontsize comes from `gc-linewidth` (a Vecto renderer convention). Calling `draw-text` with keyword args causes errors.
+
+3. **`closer-mop` not in dependencies**: Can't use `class-precedence-list` for handler dispatch without adding the dependency. Used `typep`-based matching instead, which is simpler and sufficient for the 5 types we handle.
+
+4. **Colorbar axes frameon**: Must pass `:frameon nil` when creating colorbar axes to avoid drawing a background rectangle that covers the gradient.
+
+### Files Created/Modified
+- `src/containers/legend-handler.lisp` — ~170 LOC, 4 handler classes + dispatch
+- `src/containers/legend.lisp` — ~380 LOC, Legend class + positioning + drawing + axes-legend
+- `src/containers/colorbar.lisp` — ~280 LOC, Colorbar class + gradient + ticks + label
+- `src/containers/axes-base.lisp` — Modified: added axes-legend slot + draw legend in draw method
+- `src/packages.lisp` — Added ~40 new exports for legend/colorbar/handler symbols
+- `cl-matplotlib-containers.asd` — Added 3 components + 2 test files
+- `tests/test-legend.lisp` — ~380 LOC, 42 tests, 110 checks
+- `tests/test-colorbar.lisp` — ~190 LOC, 15 tests, 27 checks
+- `.sisyphus/evidence/phase4d-legend.png` — 640x480 PNG evidence
+
+### Stats
+- 493/493 checks passing (129 figure + 116 axes + 111 axis + 110 legend + 27 colorbar) — 100%
+- Pre-commit: `sbcl --eval '(asdf:test-system :cl-matplotlib-containers)' --quit` exits 0

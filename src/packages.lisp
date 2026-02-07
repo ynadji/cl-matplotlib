@@ -393,11 +393,36 @@
             #:axis-get-major-ticks #:axis-get-minor-ticks
             ;; XAxis / YAxis
             #:x-axis #:y-axis
-            ;; Tick
-            #:tick #:tick-loc #:tick-major-p #:tick-size #:tick-width
-            #:tick-color #:tick-direction #:tick-pad
-            #:tick-label-text #:tick-label-fontsize #:tick-label-color
-            #:tick-gridline-visible-p))
+             ;; Tick
+             #:tick #:tick-loc #:tick-major-p #:tick-size #:tick-width
+             #:tick-color #:tick-direction #:tick-pad
+             #:tick-label-text #:tick-label-fontsize #:tick-label-color
+             #:tick-gridline-visible-p
+             ;; Legend slot on axes
+             #:axes-base-legend
+             ;; Legend handler classes
+             #:handler-base #:handler-line-2d #:handler-patch
+             #:handler-line-collection #:handler-path-collection
+             #:create-legend-artists #:legend-artist
+             #:get-legend-handler #:*default-handler-map*
+             ;; Legend class
+             #:mpl-legend #:legend-parent #:legend-handles #:legend-labels
+             #:legend-loc #:legend-bbox-to-anchor #:legend-ncol
+             #:legend-fontsize #:legend-frameon-p #:legend-facecolor
+             #:legend-edgecolor #:legend-framealpha #:legend-title
+             #:legend-title-fontsize #:legend-handleheight #:legend-handlelength
+             #:legend-handletextpad #:legend-columnspacing #:legend-borderpad
+             #:legend-labelspacing #:legend-handler-map
+             #:legend-entry-artists #:legend-frame
+             #:*legend-codes* #:*legend-loc-positions*
+             ;; Legend convenience
+             #:axes-legend
+             ;; Colorbar class
+             #:mpl-colorbar #:colorbar-mappable #:colorbar-cax #:colorbar-ax
+             #:colorbar-orientation #:colorbar-label #:colorbar-ticks
+             #:colorbar-format #:colorbar-n-levels #:colorbar-extend
+             ;; Colorbar convenience
+             #:make-colorbar))
 
 (defpackage #:cl-matplotlib.backends
   (:use #:cl)

@@ -1177,7 +1177,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
   - Files: `src/containers/axis.lisp`, `src/containers/ticker.lisp`, `src/containers/spines.lisp`
   - Pre-commit: `sbcl --eval '(asdf:load-system :cl-matplotlib-containers)' --quit`
 
-- [ ] 4d. Legend + Colorbar
+- [x] 4d. Legend + Colorbar
 
   **What to do**:
   - Port `legend.py` Legend class: legend positioning (best, upper right, etc.), legend entries, legend frame
