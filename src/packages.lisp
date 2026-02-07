@@ -324,8 +324,42 @@
             #:text-to-path #:text-to-compound-path
             #:glyph-to-path #:glyph-contour-to-vertices-and-codes
             #:layout-multiline-text #:get-text-width-height-descent
-            ;; AFM Parser
-            #:afm-font #:parse-afm-file
+             ;; Mathtext — Data
+             #:*tex2uni* #:initialize-tex2uni #:get-unicode-index
+             #:*operator-names* #:operator-name-p
+             #:classify-symbol #:classify-char #:inter-element-spacing
+             #:+thin-space+ #:+medium-space+ #:+thick-space+ #:+quad-space+ #:+qquad-space+
+             #:+shrink-factor+ #:+num-size-levels+
+             #:+script-space+ #:+sub-drop+ #:+sup-drop+ #:+sub1+ #:+sup1+
+             #:+delta+ #:+fraction-rule-thickness+ #:+fraction-num-vgap+
+             #:+fraction-denom-vgap+ #:+sqrt-rule-thickness+ #:+sqrt-vgap+
+             ;; Mathtext — Layout (box model)
+             #:mt-node #:mt-node-size #:mt-node-shrink #:mt-node-render #:mt-node-get-kerning
+             #:mt-box #:mt-box-width #:mt-box-height #:mt-box-depth
+             #:mt-hbox #:make-mt-hbox
+             #:mt-vbox #:make-mt-vbox
+             #:mt-kern #:make-mt-kern #:mt-kern-width
+             #:glue-spec #:make-glue-spec #:mt-glue #:make-mt-glue
+             #:mt-list #:mt-list-shift-amount #:mt-list-children
+             #:mt-char #:make-mt-char #:mt-char-c #:mt-char-width #:mt-char-height
+             #:mt-char-depth #:mt-char-fontsize #:mt-char-italic-p
+             #:mt-rule #:make-mt-rule #:make-mt-hrule
+             #:mt-hlist #:make-mt-hlist
+             #:mt-vlist #:make-mt-vlist
+             #:make-mt-hcentered
+             #:mt-ship
+             ;; Mathtext — Parser
+             #:mt-token #:make-mt-token #:mt-token-type #:mt-token-value
+             #:mt-lexer #:make-mt-lexer #:mt-lexer-peek #:mt-lexer-advance
+             #:mt-parser #:make-mt-parser
+             #:mt-parse #:mt-parse-math-string
+             ;; Mathtext — Public interface
+             #:mathtext-parser #:make-mathtext-parser
+             #:*mathtext-parser* #:ensure-mathtext-parser
+             #:mathtext-to-path #:mathtext-to-compound-path
+             #:mathtext-get-dimensions #:mathtext-p
+             ;; AFM Parser
+             #:afm-font #:parse-afm-file
             #:afm-char-metrics #:afm-char-metrics-width
             #:afm-char-metrics-name #:afm-char-metrics-bbox
             #:afm-get-fontname #:afm-get-fullname #:afm-get-familyname

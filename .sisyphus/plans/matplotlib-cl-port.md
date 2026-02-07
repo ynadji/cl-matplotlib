@@ -1345,7 +1345,7 @@ Parallel Groups: (2a, 2b, 2c), (3a, 3b, 3c, 3d), (5a-e ∥ 6a-c)
 
 ### Phase 6: Mathtext + Specialized (Parallel with Phase 5)
 
-- [ ] 6a. Mathtext Parser + Layout Engine
+- [x] 6a. Mathtext Parser + Layout Engine
 
   **What to do**:
   - Port `_mathtext.py` recursive-descent parser (~3K LOC): parses `$\int_0^\infty e^{-x} dx$` syntax
