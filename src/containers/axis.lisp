@@ -398,6 +398,7 @@ Ported from matplotlib.axis.XAxis."))
       (let* ((label-y (- y-end (float (tick-pad tk) 1.0d0) 2.0d0))
              (gc (mpl.rendering:make-gc
                   :foreground (tick-label-color tk)
+                  :linewidth (tick-label-fontsize tk)
                   :alpha 1.0)))
         (mpl.rendering:renderer-draw-text renderer gc
                                           x-display label-y
@@ -423,7 +424,7 @@ Ported from matplotlib.axis.XAxis."))
   (let* ((p-mid (mpl.primitives:transform-point trans-axes (list 0.5d0 0.0d0)))
          (x-mid (aref p-mid 0))
          (y-bottom (- (aref p-mid 1) 35.0d0))  ;; Below tick labels
-         (gc (mpl.rendering:make-gc :foreground "black" :alpha 1.0)))
+         (gc (mpl.rendering:make-gc :foreground "black" :linewidth 12.0 :alpha 1.0)))
     (mpl.rendering:renderer-draw-text renderer gc
                                       x-mid y-bottom
                                       (axis-label-text axis)
@@ -516,6 +517,7 @@ Ported from matplotlib.axis.YAxis."))
       (let* ((label-x (- x-end (float (tick-pad tk) 1.0d0) 5.0d0))
              (gc (mpl.rendering:make-gc
                   :foreground (tick-label-color tk)
+                  :linewidth (tick-label-fontsize tk)
                   :alpha 1.0)))
         (mpl.rendering:renderer-draw-text renderer gc
                                           label-x y-display
@@ -541,7 +543,7 @@ Ported from matplotlib.axis.YAxis."))
   (let* ((p-mid (mpl.primitives:transform-point trans-axes (list 0.0d0 0.5d0)))
          (x-left (- (aref p-mid 0) 45.0d0))
          (y-mid (aref p-mid 1))
-         (gc (mpl.rendering:make-gc :foreground "black" :alpha 1.0)))
+         (gc (mpl.rendering:make-gc :foreground "black" :linewidth 12.0 :alpha 1.0)))
     (mpl.rendering:renderer-draw-text renderer gc
                                       x-left y-mid
                                       (axis-label-text axis)

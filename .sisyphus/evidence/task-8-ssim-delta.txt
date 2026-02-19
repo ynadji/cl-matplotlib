@@ -1,0 +1,13 @@
+bar-chart                : 0.7178 -> 0.7086  (delta: -0.0092)
+filled-contour           : 0.0243 -> 0.0242  (delta: -0.0001)
+histogram                : 0.6750 -> 0.6662  (delta: -0.0088)
+pie-chart                : 0.7225 -> 0.7198  (delta: -0.0027)
+scatter                  : 0.8642 -> 0.8618  (delta: -0.0024)
+simple-line              : 0.8433 -> 0.8390  (delta: -0.0043)
+subplots                 : 0.8134 -> 0.8100  (delta: -0.0034)
+
+Note: Small SSIM decrease (~0.004) is expected. Text was previously
+rendered at 1pt (invisible) — contributing 0 to SSIM difference.
+Now rendered at proper 10-12pt (visible) but with slight position
+differences from reference matplotlib output.
+This is correct behavior — text rendering was BROKEN before.

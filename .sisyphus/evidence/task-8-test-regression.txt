@@ -1,0 +1,10 @@
+ Running test CLOSE-WITH-NO-FIGURES .
+ Running test FIGURE-COUNTER-TRACKS-EXPLICIT .
+ Running test XLIM-YLIM-GET-RETURNS-VALUES ......
+ Running test CONTOUR-BASIC .
+ Running test IMSHOW-BASIC .
+ Did 91 checks.
+    Pass: 91 (100%)
+    Skip: 0 ( 0%)
+    Fail: 0 ( 0%)
+

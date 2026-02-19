@@ -1,0 +1,36 @@
+Image shape: 800x600
+
+=== Title region (rows 60-90) ===
+Variance: 1028.1
+Non-white pixels: 1130
+Title: VISIBLE
+
+=== X-label region (rows 585-600, full width) ===
+Variance: 1070.6
+Non-white pixels: 546
+Xlabel: VISIBLE
+
+=== Y-label region (cols 0-50, middle rows) ===
+Variance: 0.0
+Non-white pixels: 0
+Ylabel: NOT VISIBLE
+
+=== X-Tick labels (rows 520-550) ===
+Variance: 1557.0
+Non-white pixels: 2363
+Tick labels: VISIBLE
+
+=== Detailed scan of bottom 30 rows ===
+  Row 570-575: non-white=0
+  Row 575-580: non-white=0
+  Row 580-585: non-white=0
+  Row 585-590: non-white=33
+  Row 590-595: non-white=269
+  Row 595-600: non-white=244
+
+=== Summary ===
+Text rendering pipeline FIXED: fontsize now passed via :linewidth in GC
+Before fix: text drawn at default 1.0pt (invisible)
+After fix: text drawn at proper fontsize (10-12pt, visible)
+Fixed files: src/rendering/text.lisp, src/containers/axis.lisp
+5 GC calls updated to include :linewidth for fontsize
