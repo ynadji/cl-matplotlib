@@ -262,7 +262,7 @@ ZORDER — drawing order."
                         :label label :zorder zorder))
 
 (defun imshow (data &key (cmap nil) (norm nil) (interpolation :nearest)
-                         (extent nil) (origin :upper) (aspect :auto)
+                         (extent nil) (origin :upper) (aspect :equal)
                          (alpha nil) (vmin nil) (vmax nil) (zorder 0))
   "Display a 2D data array as an image on the current axes.
 

@@ -38,8 +38,8 @@ Returns the created AxesImage."
                 (array-dimension data 1)
                 1))
          (effective-extent (or extent
-                               (list 0.0d0 (float w 1.0d0)
-                                     0.0d0 (float h 1.0d0))))
+                               (list -0.5d0 (- (float w 1.0d0) 0.5d0)
+                                     -0.5d0 (- (float h 1.0d0) 0.5d0))))
          ;; Create normalize if needed
          (norm-obj (cond
                      (norm norm)
@@ -84,42 +84,53 @@ Returns the created AxesImage."
           (ymin (float (third effective-extent) 1.0d0))
           (ymax (float (fourth effective-extent) 1.0d0)))
       (axes-update-datalim ax (list xmin xmax) (list ymin ymax)))
-    ;; Autoscale
-    (axes-autoscale-view ax)
+    ;; Autoscale (tight for images — no margin, matching matplotlib's sticky edges)
+    ;; For imshow, use tight autoscale (no extra margin) since the extent
+    ;; already includes the 0.5-pixel margin around each pixel center.
+    (axes-autoscale-view ax :tight t)
     ;; Handle aspect ratio (after autoscale so view-lim is set)
     (when (eq aspect :equal)
-      ;; For equal aspect, adjust view limits so data aspect = display aspect
-      (let* ((view (axes-base-view-lim ax))
-             (x0 (mpl.primitives:bbox-x0 view))
-             (x1 (mpl.primitives:bbox-x1 view))
-             (y0 (mpl.primitives:bbox-y0 view))
-             (y1 (mpl.primitives:bbox-y1 view))
-             (data-w (- x1 x0))
-             (data-h (- y1 y0))
-             (fig (axes-base-figure ax))
+      ;; For equal aspect, matplotlib adjusts the AXES BOX (position) to be square.
+      ;; The view limits are already correct from tight autoscale (= extent).
+      ;; Adjust axes position to make the display box square
+      (let* ((fig (axes-base-figure ax))
              (pos (axes-base-position ax))
+             (left-frac (first pos))
+             (bottom-frac (second pos))
+             (width-frac (third pos))
+             (height-frac (fourth pos))
              (fig-w (float (figure-width-px fig) 1.0d0))
              (fig-h (float (figure-height-px fig) 1.0d0))
-             (ax-w (* (third pos) fig-w))
-             (ax-h (* (fourth pos) fig-h))
-             (display-aspect (/ ax-w ax-h))
-             (data-aspect (/ data-w data-h)))
-        (when (> data-aspect display-aspect)
-          ;; Data is wider than display: expand y range
-          (let* ((new-data-h (* data-w (/ ax-h ax-w)))
-                 (y-center (/ (+ y0 y1) 2.0d0))
-                 (half-h (/ new-data-h 2.0d0)))
-            (setf (axes-base-view-lim ax)
-                  (mpl.primitives:make-bbox x0 (- y-center half-h) x1 (+ y-center half-h)))
-            (%update-trans-data ax)))
-        (when (< data-aspect display-aspect)
-          ;; Data is taller than display: expand x range
-          (let* ((new-data-w (* data-h (/ ax-w ax-h)))
-                 (x-center (/ (+ x0 x1) 2.0d0))
-                 (half-w (/ new-data-w 2.0d0)))
-            (setf (axes-base-view-lim ax)
-                  (mpl.primitives:make-bbox (- x-center half-w) y0 (+ x-center half-w) y1))
-            (%update-trans-data ax)))))
+             (ax-left-px (* left-frac fig-w))
+             (ax-bottom-px (* bottom-frac fig-h))
+             (ax-w (* width-frac fig-w))
+             (ax-h (* height-frac fig-h))
+             ;; Data aspect from effective-extent: (xmin xmax ymin ymax)
+             (data-w (- (float (second effective-extent) 1.0d0)
+                        (float (first effective-extent) 1.0d0)))
+             (data-h (- (float (fourth effective-extent) 1.0d0)
+                        (float (third effective-extent) 1.0d0)))
+             (data-aspect (/ (abs data-w) (abs data-h)))
+             (display-aspect (/ ax-w ax-h)))
+        (cond
+          ((> display-aspect data-aspect)
+           ;; Axes wider than data: shrink width, center horizontally
+           (let* ((new-ax-w (float (* ax-h data-aspect) 1.0d0))
+                  (x-offset (/ (- ax-w new-ax-w) 2.0d0))
+                  (new-left-frac (/ (+ ax-left-px x-offset) fig-w))
+                  (new-width-frac (/ new-ax-w fig-w)))
+             (setf (axes-base-position ax)
+                   (list new-left-frac bottom-frac new-width-frac height-frac))
+             (%setup-transforms ax)))
+          ((< display-aspect data-aspect)
+           ;; Axes taller than data: shrink height, center vertically
+           (let* ((new-ax-h (float (/ ax-w data-aspect) 1.0d0))
+                  (y-offset (/ (- ax-h new-ax-h) 2.0d0))
+                  (new-bottom-frac (/ (+ ax-bottom-px y-offset) fig-h))
+                  (new-height-frac (/ new-ax-h fig-h)))
+             (setf (axes-base-position ax)
+                   (list left-frac new-bottom-frac width-frac new-height-frac))
+             (%setup-transforms ax))))))
     ;; Return the image
     img))
 
