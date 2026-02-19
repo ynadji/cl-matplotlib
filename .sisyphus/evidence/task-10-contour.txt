@@ -1,0 +1,3 @@
+Mean brightness: 132.3
+Unique colors: 2499
+PASS: filled-contour has visible content

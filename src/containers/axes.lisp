@@ -84,7 +84,7 @@ Returns the PathCollection artist."
                                       (float (elt ydata i) 1.0d0))))
          ;; Create marker path — a unit circle for :circle marker
          (marker-path (mpl.rendering:make-marker-path
-                       (if (eq marker :circle) :circle marker)))
+                       (if (eq marker :circle) :o marker)))
          ;; Build sizes list (uniform for now)
          (sizes (if (numberp s)
                     (make-list n :initial-element (float s 1.0d0))
@@ -404,9 +404,20 @@ Returns (values patches texts autotexts)."
                  (push txt autotexts)))
              ;; Advance angle
              (setf angle theta2))
-    ;; Set equal aspect and limits for pie
-    (axes-update-datalim ax '(-1.3d0 1.3d0) '(-1.3d0 1.3d0))
-    (axes-autoscale-view ax)
+    ;; Set equal aspect and limits for pie — match matplotlib behavior:
+    ;; 1. Explicit symmetric view limits for centering (no autoscale margin)
+    (axes-set-xlim ax :min -1.3d0 :max 1.3d0)
+    (axes-set-ylim ax :min -1.3d0 :max 1.3d0)
+    ;; 2. Hide ticks and tick labels (pie charts have no axes)
+    (axis-set-major-locator (axes-base-xaxis ax) (make-instance 'null-locator))
+    (axis-set-major-locator (axes-base-yaxis ax) (make-instance 'null-locator))
+    (axis-set-major-formatter (axes-base-xaxis ax) (make-instance 'null-formatter))
+    (axis-set-major-formatter (axes-base-yaxis ax) (make-instance 'null-formatter))
+    ;; 3. Hide frame and spines (like matplotlib's set_frame_on(False))
+    (setf (axes-base-frameon-p ax) nil)
+    (when (axes-base-spines ax)
+      (dolist (sp (spines-all (axes-base-spines ax)))
+        (spine-set-visible sp nil)))
     (values (nreverse patches) (nreverse texts) (nreverse autotexts))))
 
 ;;; ============================================================

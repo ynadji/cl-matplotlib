@@ -1,0 +1,3 @@
+Unique colors: 614
+Colored (non-gray) pixels: 2051
+PASS: scatter has visible colored points

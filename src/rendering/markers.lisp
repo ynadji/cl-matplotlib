@@ -234,10 +234,26 @@ Ported from matplotlib.markers.MarkerStyle."))
 ;;; ============================================================
 
 (defun make-marker-path (marker-keyword)
-  "Return the path for the given marker keyword.
-Example: (make-marker-path :o) → circle path."
-  (let ((ms (make-instance 'marker-style :marker marker-keyword)))
-    (marker-style-path ms)))
+  "Return the path for the given marker keyword, with marker-style transform pre-applied.
+Example: (make-marker-path :o) → circle path with radius 0.5."
+  (let* ((ms (make-instance 'marker-style :marker marker-keyword))
+         (path (marker-style-path ms))
+         (transform (marker-style-transform ms)))
+    (if (and path transform (mpl.primitives:mpl-path-vertices path)
+             (plusp (array-dimension (mpl.primitives:mpl-path-vertices path) 0)))
+        ;; Pre-apply the marker-style transform to the path vertices
+        (let* ((verts (mpl.primitives:mpl-path-vertices path))
+               (codes (mpl.primitives:mpl-path-codes path))
+               (n (array-dimension verts 0))
+               (new-verts (make-array (list n 2) :element-type 'double-float)))
+          (dotimes (i n)
+            (let ((result (mpl.primitives:transform-point
+                           transform
+                           (list (aref verts i 0) (aref verts i 1)))))
+              (setf (aref new-verts i 0) (aref result 0)
+                    (aref new-verts i 1) (aref result 1))))
+          (mpl.primitives:%make-mpl-path :vertices new-verts :codes codes))
+        path)))
 
 (defun make-marker-style (marker &key (fillstyle :full))
   "Create a new MarkerStyle instance."
