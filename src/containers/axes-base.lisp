@@ -387,7 +387,9 @@ If TIGHT is T, use exact data limits (no margin)."
     (dolist (l (axes-base-lines ax))
       (setf (mpl.rendering:artist-transform l) td))
     (dolist (img (axes-base-images ax))
-      (setf (mpl.rendering:artist-transform img) td)))
+      (setf (mpl.rendering:artist-transform img) td))
+    (dolist (a (axes-base-artists ax))
+      (setf (mpl.rendering:artist-transform a) td)))
   ;; Draw background patch if frameon
   (when (and (axes-base-frameon-p ax) (axes-base-patch ax))
     (%draw-axes-background ax renderer))
