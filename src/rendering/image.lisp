@@ -312,10 +312,10 @@ Returns a plist (:data flat-array :width W :height H)."
     (list :data flat :width w :height h)))
 
 (defun %apply-origin (rgba-data origin)
-  "If ORIGIN is :upper, flip the image vertically (row 0 at top).
-For :lower, no flip needed.
+  "If ORIGIN is :lower, flip the image vertically (row 0 at bottom).
+For :upper, no flip needed (Vecto renders row 0 at top by default).
 Modifies in-place and returns the data."
-  (when (eq origin :upper)
+  (when (eq origin :lower)
     (let* ((h (array-dimension rgba-data 0))
            (w (array-dimension rgba-data 1))
            (half-h (floor h 2)))
