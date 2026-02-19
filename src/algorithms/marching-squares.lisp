@@ -308,14 +308,55 @@ and interpolated crossing points where the contour crosses edges."
 ;;; Auto level selection
 ;;; ============================================================
 
+(defun %nice-steps-for-range (data-range n)
+  "Return candidate nice step sizes for DATA-RANGE targeting ~N levels.
+Tries steps of the form k × 10^m for k in {1, 1.5, 2, 2.5, 5} and
+picks the one that produces the closest to N levels."
+  (let* ((magnitude (expt 10.0d0 (floor (log (/ data-range (float n 1.0d0)) 10.0d0))))
+         (candidates (list (* 1.0d0 magnitude)
+                           (* 1.5d0 magnitude)
+                           (* 2.0d0 magnitude)
+                           (* 2.5d0 magnitude)
+                           (* 5.0d0 magnitude)
+                           (* 1.0d0 magnitude 10.0d0)))
+         (best-step (first candidates))
+         (best-diff most-positive-fixnum))
+    (dolist (step candidates)
+      (let* ((first-level (* step (ceiling 0.0d0 step)))
+             (count 0))
+        (loop for level = first-level then (+ level step)
+              while (<= level (+ data-range (* 0.5d0 step)))
+              do (incf count))
+        (let ((diff (abs (- count n))))
+          (when (< diff best-diff)
+            (setf best-diff diff
+                  best-step step)))))
+    best-step))
+
 (defun auto-select-levels (zmin zmax &optional (n 7))
   "Auto-select N contour levels spanning [ZMIN, ZMAX].
-Returns a list of evenly-spaced level values."
+Uses 'nice' step sizes (like matplotlib's MaxNLocator) to produce
+visually clean level values.
+Returns a list of level values."
   (when (= zmin zmax)
     (return-from auto-select-levels (list zmin)))
-  (let ((step (/ (- zmax zmin) (float (1+ n) 1.0d0))))
-    (loop for i from 1 to n
-          collect (+ zmin (* i step)))))
+  (let* ((data-range (- zmax zmin))
+         ;; Find a nice step that produces ~n levels
+         (step (%nice-steps-for-range data-range n))
+         ;; First level: smallest multiple of step >= zmin
+         (first-level (* step (ceiling zmin step)))
+         ;; Collect levels within [zmin - 0.5*step, zmax + 0.5*step]
+         (levels nil))
+    ;; Generate levels from first-level upward
+    (loop for level = first-level then (+ level step)
+          while (<= level (+ zmax (* 0.5d0 step)))
+          do (push level levels))
+    (if levels
+        (nreverse levels)
+        ;; Fallback: simple linear spacing
+        (let ((s (/ data-range (float (1+ n) 1.0d0))))
+          (loop for i from 1 to n
+                collect (+ zmin (* i s)))))))
 
 (defun auto-select-levels-filled (zmin zmax &optional (n 7))
   "Auto-select N+1 boundary levels for filled contours spanning [ZMIN, ZMAX].
