@@ -1,0 +1,78 @@
+Task 5: SSIM Comparison Tool Evidence
+======================================
+Date: 2026-02-19
+
+1. --help output
+----------------
+$ .venv/bin/python tools/compare.py --help
+
+usage: compare.py [-h] --reference REFERENCE --actual ACTUAL
+                  [--threshold THRESHOLD] --output OUTPUT
+
+Compare CL matplotlib output vs Python matplotlib reference images.
+
+options:
+  -h, --help            show this help message and exit
+  --reference REFERENCE
+                        Directory containing reference PNG images (Python
+                        matplotlib)
+  --actual ACTUAL       Directory containing actual PNG images (CL matplotlib)
+  --threshold THRESHOLD
+                        SSIM pass threshold (default: 0.90)
+  --output OUTPUT       Output directory for comparison report
+
+Examples:
+  compare.py --reference reference_images/ --actual examples/ --output comparison_report/
+  compare.py --reference reference_images/ --actual examples/ --threshold 0.85 --output report/
+
+Exit codes:
+  0  All compared examples pass the SSIM threshold
+  1  One or more examples fail the SSIM threshold
+  2  No reference images found or other error
+
+2. Validation test
+------------------
+$ .venv/bin/python tools/compare.py --reference reference_images/ --actual examples/ --threshold 0.90 --output comparison_report/
+
+Found 7 reference images in reference_images
+Comparing against examples
+SSIM threshold: 0.90
+Output: comparison_report
+
+  bar-chart..................... 0.3577  FAIL
+  filled-contour................ 0.0054  FAIL
+  histogram..................... 0.3135  FAIL
+  pie-chart..................... 0.4314  FAIL
+  scatter....................... -0.0035  FAIL
+  simple-line................... -0.0039  FAIL
+  subplots...................... -0.0086  FAIL
+
+Results: 0 passed, 7 failed, 0 skipped
+SSIM: mean=0.1560  min=-0.0086  max=0.4314
+Report: comparison_report/index.html
+Summary: comparison_report/summary.json
+
+Exit code: 1 (correct — failures detected)
+
+3. Output files generated
+-------------------------
+comparison_report/
+  bar-chart-comparison.png       (55063 bytes)
+  filled-contour-comparison.png  (48011 bytes)
+  histogram-comparison.png       (69008 bytes)
+  pie-chart-comparison.png       (99977 bytes)
+  scatter-comparison.png         (53565 bytes)
+  simple-line-comparison.png     (68256 bytes)
+  subplots-comparison.png        (97860 bytes)
+  index.html                     (5772 bytes)
+  summary.json                   (1634 bytes)
+
+4. JSON structure validation
+----------------------------
+summary.json contains required keys: threshold, overall, examples
+overall contains: total, passed, failed, skipped, mean_ssim, min_ssim, max_ssim
+Each example contains: name, reference, actual, ssim, status, note
+
+5. Script stats
+---------------
+tools/compare.py: 404 lines, pure functions, no classes, no frameworks

@@ -1,0 +1,12 @@
+BASELINE SSIM SCORES (before bug fixes)
+==================================================
+bar-chart                : SSIM=0.3577  FAIL
+filled-contour           : SSIM=0.0054  FAIL
+histogram                : SSIM=0.3135  FAIL
+pie-chart                : SSIM=0.4314  FAIL
+scatter                  : SSIM=-0.0035  FAIL
+simple-line              : SSIM=-0.0039  FAIL
+subplots                 : SSIM=-0.0086  FAIL
+
+Overall: 0/7 passed
+Mean SSIM: 0.1560

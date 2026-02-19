@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>CL-Matplotlib Visual Comparison Report</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           max-width: 1200px; margin: 2em auto; padding: 0 1em;
+           background: #fafafa; color: #171717; }
+    h1 { border-bottom: 2px solid #e5e5e5; padding-bottom: 0.5em; }
+    .summary { display: flex; gap: 2em; margin: 1.5em 0; }
+    .summary-card { background: white; border: 1px solid #e5e5e5; border-radius: 8px;
+                     padding: 1em 1.5em; min-width: 120px; text-align: center; }
+    .summary-card .value { font-size: 1.8em; font-weight: bold; }
+    .summary-card .label { font-size: 0.85em; color: #737373; margin-top: 0.3em; }
+    table { width: 100%; border-collapse: collapse; background: white;
+             border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; }
+    th { background: #f5f5f5; padding: 0.8em 1em; text-align: left;
+         border-bottom: 2px solid #e5e5e5; font-size: 0.9em; text-transform: uppercase;
+         letter-spacing: 0.03em; color: #525252; }
+    td { padding: 0.8em 1em; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    tr:hover { background: #fafafa; }
+    .footer { margin-top: 2em; font-size: 0.8em; color: #a3a3a3; text-align: center; }
+  </style>
+</head>
+<body>
+  <h1>CL-Matplotlib Visual Comparison Report</h1>
+
+  <div class="summary">
+    <div class="summary-card">
+      <div class="value" style="color:#ef4444">7 FAILURE(S)</div>
+      <div class="label">Overall Result</div>
+    </div>
+    <div class="summary-card">
+      <div class="value">7</div>
+      <div class="label">Total Examples</div>
+    </div>
+    <div class="summary-card">
+      <div class="value" style="color:#22c55e">0</div>
+      <div class="label">Passed</div>
+    </div>
+    <div class="summary-card">
+      <div class="value" style="color:#ef4444">7</div>
+      <div class="label">Failed</div>
+    </div>
+    <div class="summary-card">
+      <div class="value" style="color:#a3a3a3">0</div>
+      <div class="label">Skipped</div>
+    </div>
+    <div class="summary-card">
+      <div class="value">0.90</div>
+      <div class="label">SSIM Threshold</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Example</th>
+        <th style="text-align:center">Status</th>
+        <th style="text-align:center">SSIM</th>
+        <th>Comparison</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>bar-chart</td>
+          <td style="text-align:center"><span style="color:#ef4444;font-weight:bold">FAIL</span></td>
+          <td style="text-align:center;font-family:monospace">0.3577</td>
+          <td><a href="bar-chart-comparison.png" target="_blank"><img src="bar-chart-comparison.png" style="max-width:600px;max-height:150px" /></a></td>
+          <td style="font-size:0.85em;color:#737373"></td>
+        </tr>
+        <tr>
+          <td>filled-contour</td>
+          <td style="text-align:center"><span style="color:#ef4444;font-weight:bold">FAIL</span></td>
+          <td style="text-align:center;font-family:monospace">0.0054</td>
+          <td><a href="filled-contour-comparison.png" target="_blank"><img src="filled-contour-comparison.png" style="max-width:600px;max-height:150px" /></a></td>
+          <td style="font-size:0.85em;color:#737373"></td>
+        </tr>
+        <tr>
+          <td>histogram</td>
+          <td style="text-align:center"><span style="color:#ef4444;font-weight:bold">FAIL</span></td>
+          <td style="text-align:center;font-family:monospace">0.3135</td>
+          <td><a href="histogram-comparison.png" target="_blank"><img src="histogram-comparison.png" style="max-width:600px;max-height:150px" /></a></td>
+          <td style="font-size:0.85em;color:#737373"></td>
+        </tr>
+        <tr>
+          <td>pie-chart</td>
+          <td style="text-align:center"><span style="color:#ef4444;font-weight:bold">FAIL</span></td>
+          <td style="text-align:center;font-family:monospace">0.4314</td>
+          <td><a href="pie-chart-comparison.png" target="_blank"><img src="pie-chart-comparison.png" style="max-width:600px;max-height:150px" /></a></td>
+          <td style="font-size:0.85em;color:#737373"></td>
+        </tr>
+        <tr>
+          <td>scatter</td>
+          <td style="text-align:center"><span style="color:#ef4444;font-weight:bold">FAIL</span></td>
+          <td style="text-align:center;font-family:monospace">-0.0035</td>
+          <td><a href="scatter-comparison.png" target="_blank"><img src="scatter-comparison.png" style="max-width:600px;max-height:150px" /></a></td>
+          <td style="font-size:0.85em;color:#737373"></td>
+        </tr>
+        <tr>
+          <td>simple-line</td>
+          <td style="text-align:center"><span style="color:#ef4444;font-weight:bold">FAIL</span></td>
+          <td style="text-align:center;font-family:monospace">-0.0039</td>
+          <td><a href="simple-line-comparison.png" target="_blank"><img src="simple-line-comparison.png" style="max-width:600px;max-height:150px" /></a></td>
+          <td style="font-size:0.85em;color:#737373"></td>
+        </tr>
+        <tr>
+          <td>subplots</td>
+          <td style="text-align:center"><span style="color:#ef4444;font-weight:bold">FAIL</span></td>
+          <td style="text-align:center;font-family:monospace">-0.0086</td>
+          <td><a href="subplots-comparison.png" target="_blank"><img src="subplots-comparison.png" style="max-width:600px;max-height:150px" /></a></td>
+          <td style="font-size:0.85em;color:#737373"></td>
+        </tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    Generated by <code>tools/compare.py</code> | Threshold: 0.90
+  </div>
+</body>
+</html>

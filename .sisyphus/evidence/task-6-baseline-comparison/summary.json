@@ -1,0 +1,70 @@
+{
+  "threshold": 0.9,
+  "overall": {
+    "total": 7,
+    "passed": 0,
+    "failed": 7,
+    "skipped": 0,
+    "mean_ssim": 0.15598757142857142,
+    "min_ssim": -0.008639,
+    "max_ssim": 0.43135
+  },
+  "examples": [
+    {
+      "name": "bar-chart",
+      "reference": "reference_images/bar-chart.png",
+      "actual": "examples/bar-chart.png",
+      "ssim": 0.357652,
+      "status": "FAIL",
+      "note": ""
+    },
+    {
+      "name": "filled-contour",
+      "reference": "reference_images/filled-contour.png",
+      "actual": "examples/filled-contour.png",
+      "ssim": 0.005373,
+      "status": "FAIL",
+      "note": ""
+    },
+    {
+      "name": "histogram",
+      "reference": "reference_images/histogram.png",
+      "actual": "examples/histogram.png",
+      "ssim": 0.313535,
+      "status": "FAIL",
+      "note": ""
+    },
+    {
+      "name": "pie-chart",
+      "reference": "reference_images/pie-chart.png",
+      "actual": "examples/pie-chart.png",
+      "ssim": 0.43135,
+      "status": "FAIL",
+      "note": ""
+    },
+    {
+      "name": "scatter",
+      "reference": "reference_images/scatter.png",
+      "actual": "examples/scatter.png",
+      "ssim": -0.003487,
+      "status": "FAIL",
+      "note": ""
+    },
+    {
+      "name": "simple-line",
+      "reference": "reference_images/simple-line.png",
+      "actual": "examples/simple-line.png",
+      "ssim": -0.003871,
+      "status": "FAIL",
+      "note": ""
+    },
+    {
+      "name": "subplots",
+      "reference": "reference_images/subplots.png",
+      "actual": "examples/subplots.png",
+      "ssim": -0.008639,
+      "status": "FAIL",
+      "note": ""
+    }
+  ]
+}
