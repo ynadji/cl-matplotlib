@@ -369,6 +369,13 @@ ANGLE is rotation in degrees (currently only 0 supported by Vecto)."
            (fontsize (or (and gc (mpl.rendering:gc-linewidth gc)) 12.0))
            (edge-color (%gc-edge-color gc))
            (alpha (if gc (mpl.rendering:gc-alpha gc) 1.0)))
+      ;; Reset clip to full figure for text labels (axis labels go outside axes clip)
+      (unless (and gc (mpl.rendering:gc-clip-rectangle gc))
+        (vecto:rectangle 0 0
+                         (float (renderer-width renderer) 1.0)
+                         (float (renderer-height renderer) 1.0))
+        (vecto:clip-path)
+        (vecto:end-path-no-op))
       (vecto:set-font font (float fontsize 1.0))
       ;; Set text fill color
       (if edge-color
@@ -377,12 +384,13 @@ ANGLE is rotation in degrees (currently only 0 supported by Vecto)."
                                (float (third edge-color) 1.0)
                                (float (* (fourth edge-color) alpha) 1.0))
           (vecto:set-rgba-fill 0.0 0.0 0.0 (float alpha 1.0)))
-      ;; Vecto doesn't support rotation natively — for angle=0, just draw
-      ;; For non-zero angles, we'd need to transform coordinates
-      (when (and (numberp angle) (/= angle 0))
-        ;; TODO: Apply rotation transform for text
-        nil)
-      (vecto:draw-string (float x 1.0) (float y 1.0) s))))
+      ;; Apply rotation transform for text (e.g., ylabel needs 90°)
+      (if (and (numberp angle) (not (zerop (float angle 1.0))))
+          (progn
+            (vecto:translate (float x 1.0) (float y 1.0))
+            (vecto:rotate-degrees (float angle 1.0))
+            (vecto:draw-string 0.0 0.0 s))
+          (vecto:draw-string (float x 1.0) (float y 1.0) s)))))
 
 ;;; ============================================================
 ;;; draw-markers — Optimized repeated path drawing
