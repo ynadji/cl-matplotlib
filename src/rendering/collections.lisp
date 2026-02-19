@@ -385,16 +385,15 @@ Fixes bowtie/crossed polygons from marching-squares cell-band output."
 
 (defmethod collection-get-paths ((pc poly-collection))
   "Convert polygon vertices to closed paths.
-Sorts vertices by angle from centroid to fix crossed polygons."
+Vertices are already in correct winding order from marching squares."
   (mapcar (lambda (vert-list)
-            (let* ((sorted (%sort-polygon-vertices vert-list))
-                   (n (length sorted))
+            (let* ((n (length vert-list))
                    ;; +1 for closepoly
                    (total (1+ n))
                    (verts (make-array (list total 2) :element-type 'double-float))
                    (codes (make-array total :element-type '(unsigned-byte 8))))
               (dotimes (i n)
-                (let ((pt (elt sorted i)))
+                (let ((pt (elt vert-list i)))
                   (setf (aref verts i 0) (float (first pt) 1.0d0)
                         (aref verts i 1) (float (second pt) 1.0d0))
                   (setf (aref codes i)
