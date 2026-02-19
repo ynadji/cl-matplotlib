@@ -772,6 +772,8 @@ Returns a list of Polygon patches."
       (dotimes (j n-pts)
         (setf y-max (max y-max (aref cumsum n-layers j))))
       (axes-update-datalim ax xdata (list 0.0d0 y-max)))
+    ;; Set sticky y-min: stackplot always starts at y=0 (sticky edge)
+    (setf (axes-base-sticky-y-min ax) t)
     (axes-autoscale-view ax)
     (nreverse polys)))
 
