@@ -268,8 +268,10 @@ If TIGHT is T, use exact data limits (no margin)."
           (setf x0 (- x0 x-margin)
                 x1 (+ x1 x-margin)))
         (when (axes-base-autoscale-y-p ax)
-          (setf y0 (- y0 y-margin)
-                y1 (+ y1 y-margin))))
+          ;; Sticky edge: if y0 is exactly 0 (bar chart bottom), don't apply margin below
+          (unless (zerop y0)
+            (setf y0 (- y0 y-margin)))
+          (setf y1 (+ y1 y-margin))))
       ;; Set view limits
       (setf (axes-base-view-lim ax)
             (mpl.primitives:make-bbox x0 y0 x1 y1))

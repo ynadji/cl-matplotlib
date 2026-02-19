@@ -9,7 +9,7 @@
 ;;; ============================================================
 
 (defun imshow (ax data &key (cmap nil) (norm nil) (interpolation :nearest)
-                             (extent nil) (origin :upper) (aspect :auto)
+                             (extent nil) (origin :upper) (aspect :equal)
                              (alpha nil) (vmin nil) (vmax nil) (zorder 0))
   "Display a 2D data array as an image on axes AX.
 
@@ -84,19 +84,42 @@ Returns the created AxesImage."
           (ymin (float (third effective-extent) 1.0d0))
           (ymax (float (fourth effective-extent) 1.0d0)))
       (axes-update-datalim ax (list xmin xmax) (list ymin ymax)))
-    ;; Handle aspect ratio
-    (when (eq aspect :equal)
-      ;; For equal aspect, adjust view limits to maintain 1:1 pixel ratio
-      (let* ((ext-w (- (float (second effective-extent) 1.0d0)
-                       (float (first effective-extent) 1.0d0)))
-             (ext-h (- (float (fourth effective-extent) 1.0d0)
-                       (float (third effective-extent) 1.0d0))))
-        (declare (ignore ext-w ext-h))
-        ;; Let autoscale handle it for now; full aspect enforcement
-        ;; would require knowing the display bbox dimensions
-        nil))
     ;; Autoscale
     (axes-autoscale-view ax)
+    ;; Handle aspect ratio (after autoscale so view-lim is set)
+    (when (eq aspect :equal)
+      ;; For equal aspect, adjust view limits so data aspect = display aspect
+      (let* ((view (axes-base-view-lim ax))
+             (x0 (mpl.primitives:bbox-x0 view))
+             (x1 (mpl.primitives:bbox-x1 view))
+             (y0 (mpl.primitives:bbox-y0 view))
+             (y1 (mpl.primitives:bbox-y1 view))
+             (data-w (- x1 x0))
+             (data-h (- y1 y0))
+             (fig (axes-base-figure ax))
+             (pos (axes-base-position ax))
+             (fig-w (float (figure-width-px fig) 1.0d0))
+             (fig-h (float (figure-height-px fig) 1.0d0))
+             (ax-w (* (third pos) fig-w))
+             (ax-h (* (fourth pos) fig-h))
+             (display-aspect (/ ax-w ax-h))
+             (data-aspect (/ data-w data-h)))
+        (when (> data-aspect display-aspect)
+          ;; Data is wider than display: expand y range
+          (let* ((new-data-h (* data-w (/ ax-h ax-w)))
+                 (y-center (/ (+ y0 y1) 2.0d0))
+                 (half-h (/ new-data-h 2.0d0)))
+            (setf (axes-base-view-lim ax)
+                  (mpl.primitives:make-bbox x0 (- y-center half-h) x1 (+ y-center half-h)))
+            (%update-trans-data ax)))
+        (when (< data-aspect display-aspect)
+          ;; Data is taller than display: expand x range
+          (let* ((new-data-w (* data-h (/ ax-w ax-h)))
+                 (x-center (/ (+ x0 x1) 2.0d0))
+                 (half-w (/ new-data-w 2.0d0)))
+            (setf (axes-base-view-lim ax)
+                  (mpl.primitives:make-bbox (- x-center half-w) y0 (+ x-center half-w) y1))
+            (%update-trans-data ax)))))
     ;; Return the image
     img))
 

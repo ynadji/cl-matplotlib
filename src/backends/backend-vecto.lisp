@@ -398,8 +398,13 @@ VA is vertical alignment (:baseline, :bottom, :center, :top). Default :baseline.
                    (ymin (aref bbox 1))
                    (ymax (aref bbox 3)))
               (ecase va
-                (:bottom  (setf y-offset (- (abs ymin))))
-                (:center  (setf y-offset (- (/ (+ ymax ymin) 2.0))))
+                ;; In Vecto's y-up coordinate system:
+                ;; ymin < 0 (descent below baseline), ymax > 0 (ascent above baseline)
+                ;; :bottom → bottom of text at y → shift y up by |ymin|
+                (:bottom  (setf y-offset (abs ymin)))
+                ;; :center → center of text at y → shift y up by (ymax+ymin)/2
+                (:center  (setf y-offset (/ (+ ymax ymin) 2.0)))
+                ;; :top → top of text at y → shift y down by ymax
                 (:top     (setf y-offset (- ymax))))))
           ;; Apply rotation transform for text (e.g., ylabel needs 90°)
           (if (and (numberp angle) (not (zerop (float angle 1.0))))
@@ -407,13 +412,18 @@ VA is vertical alignment (:baseline, :bottom, :center, :top). Default :baseline.
                 (vecto:translate (float x 1.0) (float y 1.0))
                 (vecto:rotate-degrees (float angle 1.0))
                 (if (eq ha :center)
-                    (vecto:draw-centered-string 0.0 (float y-offset 1.0) s)
+                    (let* ((bbox (vecto:string-bounding-box s (float fontsize 1.0) font))
+                           (width (- (aref bbox 2) (aref bbox 0))))
+                      (vecto:draw-string (float (/ width -2.0) 1.0) (float y-offset 1.0) s))
                     (vecto:draw-string 0.0 (float y-offset 1.0) s)))
               (let ((dx (float x 1.0))
                     (dy (+ (float y 1.0) y-offset)))
                 (ecase ha
                   (:left   (vecto:draw-string dx (float dy 1.0) s))
-                  (:center (vecto:draw-centered-string dx (float dy 1.0) s))
+                  (:center
+                   (let* ((bbox (vecto:string-bounding-box s (float fontsize 1.0) font))
+                          (width (- (aref bbox 2) (aref bbox 0))))
+                     (vecto:draw-string (float (- dx (/ width 2.0)) 1.0) (float dy 1.0d0) s)))
                    (:right
                     (let* ((bbox (vecto:string-bounding-box s (float fontsize 1.0) font))
                            (width (- (aref bbox 2) (aref bbox 0))))
