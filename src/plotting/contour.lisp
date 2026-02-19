@@ -254,10 +254,14 @@ Returns list of PolyCollection instances."
                          (auto-select-levels-filled zmin zmax n)
                          (auto-select-levels zmin zmax n))))))
     (setf (contourset-levels qcs) levels)
-    ;; Set up normalization if cmap provided but no norm
+    ;; Set up normalization if cmap provided but no norm.
+    ;; Use the LEVEL range (not data range) to match matplotlib behavior:
+    ;; matplotlib's ContourSet sets norm.vmin/vmax = levels.min/max.
     (when (and (contourset-cmap qcs) (null (contourset-norm qcs)))
-      (setf (contourset-norm qcs)
-            (mpl.primitives:make-normalize :vmin zmin :vmax zmax)))
+      (let ((lev-min (float (first levels) 1.0d0))
+            (lev-max (float (car (last levels)) 1.0d0)))
+        (setf (contourset-norm qcs)
+              (mpl.primitives:make-normalize :vmin lev-min :vmax lev-max))))
     ;; Build collections
     (if filled
         (setf (contourset-collections qcs)
