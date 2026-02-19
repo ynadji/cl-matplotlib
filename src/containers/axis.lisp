@@ -486,7 +486,7 @@ Ported from matplotlib.axis.YAxis."))
          ;; Transform tick location to display coords
          (data-pt (mpl.primitives:transform-point trans-data (list 0.0d0 loc)))
          (y-display (aref data-pt 1))                              ; original position for labels/grid
-         (y-display-snapped (+ (round y-display) 0.5d0))          ; snapped for tick line and grid
+         (y-display-snapped (- (round y-display) 0.5d0))          ; snapped for tick line and grid (horizontal lines: y - 0.5)
          ;; Get axes left edge in display coords
          (axes-left (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 0))
          (axes-right (aref (mpl.primitives:transform-point trans-axes (list 1.0d0 0.0d0)) 0))
