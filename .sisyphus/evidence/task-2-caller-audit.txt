@@ -1,0 +1,226 @@
+=== TO-RGBA RETURN TYPE VERIFICATION ===
+
+SBCL Test Result:
+  Type: (SIMPLE-VECTOR 4)
+  Value: #(1.0 0.0 0.0 1.0)
+  Vectorp: T
+
+CONCLUSION: to-rgba returns a VECTOR, NOT multiple values.
+This is critical: (multiple-value-list (to-rgba "red")) returns ((#(1.0 0.0 0.0 1.0)))
+NOT (1.0 0.0 0.0 1.0) as intended.
+
+=== CALLER AUDIT ===
+
+File: src/containers/figure.lisp
+  Line 290: (multiple-value-list (mpl.colors:to-rgba fc))
+  Pattern: multiple-value-list wrapping
+  Status: BROKEN
+  Reason: to-rgba returns vector, not multiple values. This wraps the vector in a list,
+          producing ((#(r g b a))) instead of (r g b a). Later code expects a flat list.
+
+  Line 293: (multiple-value-list (mpl.colors:to-rgba ec))
+  Pattern: multiple-value-list wrapping
+  Status: BROKEN
+  Reason: Same issue as line 290.
+
+File: src/containers/axes-base.lisp
+  Line 415: (multiple-value-list (mpl.colors:to-rgba fc))
+  Pattern: multiple-value-list wrapping
+  Status: BROKEN
+  Reason: Same issue as figure.lisp. Wraps vector in extra list layer.
+
+File: src/backends/backend-vecto.lisp
+  Line 57: (let ((rgba (mpl.colors:to-rgba color-spec)))
+           (if (vectorp rgba)
+               (list (float (elt rgba 0) 1.0) ...)
+               (multiple-value-list rgba)))
+  Pattern: Conditional handling with vectorp check
+  Status: CORRECT
+  Reason: Explicitly checks if result is a vector and handles it correctly.
+          Also has fallback for multiple-value case (defensive programming).
+          This is the CORRECT pattern to follow for fixes.
+
+File: src/backends/renderer-base.lisp
+  Line 239: (multiple-value-list (mpl.colors:to-rgba edgecolor))
+  Pattern: multiple-value-list wrapping
+  Status: BROKEN
+  Reason: Same vector-wrapping issue.
+
+  Line 243: (multiple-value-list (mpl.colors:to-rgba facecolor))
+  Pattern: multiple-value-list wrapping
+  Status: BROKEN
+  Reason: Same vector-wrapping issue.
+
+File: src/containers/legend.lisp
+  Line 442: (let ((rgba (mpl.colors:to-rgba color)))
+            (if (vectorp rgba)
+                (list (aref rgba 0) (aref rgba 1) (aref rgba 2)
+                      (* (aref rgba 3) (float alpha 1.0d0)))
+                (list 1.0d0 1.0d0 1.0d0 (float alpha 1.0d0))))
+  Pattern: Conditional handling with vectorp check
+  Status: CORRECT
+  Reason: Explicitly checks if result is a vector and extracts elements correctly.
+          Handles both vector and non-vector cases.
+
+File: src/primitives/colors.lisp
+  Line 14: (let ((rgba (cl-matplotlib.colors:to-rgba color)))
+           (string-downcase
+            (if keep-alpha
+                (format nil "#~2,'0x~2,'0x~2,'0x~2,'0x"
+                        (round (* (aref rgba 0) 255)) ...)))
+  Pattern: Direct vector element access with aref
+  Status: CORRECT
+  Reason: Uses aref to access vector elements directly. Correct pattern.
+
+  Line 29: (let ((rgba (cl-matplotlib.colors:to-rgba color)))
+           (vector (aref rgba 0) (aref rgba 1) (aref rgba 2)))
+  Pattern: Direct vector element access with aref
+  Status: CORRECT
+  Reason: Uses aref to access vector elements. Correct pattern.
+
+  Line 250: (cl-matplotlib.colors:to-rgba c)
+  Pattern: Result stored in list, later accessed with aref
+  Context: Part of mapcar in rgba-list construction
+  Status: CORRECT
+  Reason: Result is stored in a list and later accessed with aref (line 265-269).
+          The vector is preserved in the list, not wrapped.
+
+  Line 261: (mapcar (lambda (vc) (cl-matplotlib.colors:to-rgba (second vc))) rgba-list)
+  Pattern: Result stored in list, later accessed with aref
+  Context: Part of mapcar in rgbas construction
+  Status: CORRECT
+  Reason: Result is stored in a list and later accessed with aref (line 265-269).
+          The vector is preserved in the list, not wrapped.
+
+  Line 262: (mapcar #'cl-matplotlib.colors:to-rgba colors)
+  Pattern: Result stored in list, later accessed with aref
+  Context: Part of mapcar in rgbas construction
+  Status: CORRECT
+  Reason: Result is stored in a list and later accessed with aref (line 265-269).
+          The vector is preserved in the list, not wrapped.
+
+  Line 313: (cl-matplotlib.colors:to-rgba color)
+  Pattern: Result stored in variable, accessed with aref
+  Context: Inside let binding, later accessed with aref (lines 314-317)
+  Status: CORRECT
+  Reason: Vector is stored in rgba variable and accessed with aref.
+          Correct pattern.
+
+File: src/rendering/image.lisp
+  Line 234: (defun %image-data-to-rgba (data cmap norm) ...)
+  Pattern: Function definition (not a caller)
+  Status: N/A
+  Reason: This is a function definition, not a call to to-rgba.
+
+  Line 371: (rgba (%image-data-to-rgba data cmap-obj norm))
+  Pattern: Function call (not to-rgba)
+  Status: N/A
+  Reason: This calls %image-data-to-rgba, not to-rgba.
+
+File: src/foundation/colors-database.lisp
+  Line 61: (defun to-rgba (color &optional (alpha nil)) ...)
+  Pattern: Function definition (not a caller)
+  Status: N/A
+  Reason: This is the definition of to-rgba itself.
+
+  Line 92: (apply #'rgb-to-rgba color)
+  Pattern: Not a to-rgba call
+  Status: N/A
+  Reason: This is inside to-rgba definition, calls rgb-to-rgba.
+
+  Line 100: (hex-to-rgba lower)
+  Pattern: Not a to-rgba call
+  Status: N/A
+  Reason: This is inside to-rgba definition, calls hex-to-rgba.
+
+  Line 111: (hex-to-rgba (concatenate 'string "#" ...))
+  Pattern: Not a to-rgba call
+  Status: N/A
+  Reason: This is inside to-rgba definition, calls hex-to-rgba.
+
+  Line 116: (hex-to-rgba (concatenate 'string "#" lower))
+  Pattern: Not a to-rgba call
+  Status: N/A
+  Reason: This is inside to-rgba definition, calls hex-to-rgba.
+
+  Line 132: (handler-case (progn (to-rgba color) t) ...)
+  Pattern: to-rgba called for side effects (testing if valid)
+  Status: CORRECT
+  Reason: Return value is discarded, only used to test if color is valid.
+          No consumption of return value.
+
+  Line 153: (apply #'rgb-to-rgba rgb)
+  Pattern: Not a to-rgba call
+  Status: N/A
+  Reason: This is inside to-rgba definition, calls rgb-to-rgba.
+
+  Line 167: (setf (gethash name *all-named-colors*) (hex-to-rgba hex))
+  Pattern: Not a to-rgba call
+  Status: N/A
+  Reason: This is inside to-rgba definition, calls hex-to-rgba.
+
+  Line 320: (setf (gethash name *all-named-colors*) (hex-to-rgba hex))
+  Pattern: Not a to-rgba call
+  Status: N/A
+  Reason: This is inside to-rgba definition, calls hex-to-rgba.
+
+=== SUMMARY ===
+
+Total actual to-rgba CALLERS (excluding definitions and internal calls): 11
+
+CORRECT: 7
+  - src/primitives/colors.lisp:14 (aref access)
+  - src/primitives/colors.lisp:29 (aref access)
+  - src/primitives/colors.lisp:250 (stored in list, aref access)
+  - src/primitives/colors.lisp:261 (stored in list, aref access)
+  - src/primitives/colors.lisp:262 (stored in list, aref access)
+  - src/primitives/colors.lisp:313 (aref access)
+  - src/containers/legend.lisp:442 (vectorp check + aref access)
+  - src/backends/backend-vecto.lisp:57 (vectorp check + aref access)
+
+BROKEN: 5
+  - src/containers/figure.lisp:290 (multiple-value-list wrapping)
+  - src/containers/figure.lisp:293 (multiple-value-list wrapping)
+  - src/containers/axes-base.lisp:415 (multiple-value-list wrapping)
+  - src/backends/renderer-base.lisp:239 (multiple-value-list wrapping)
+  - src/backends/renderer-base.lisp:243 (multiple-value-list wrapping)
+
+NEEDS-REVIEW: 0
+
+=== IMPACT ANALYSIS ===
+
+The 5 broken callers all use the same incorrect pattern:
+  (multiple-value-list (mpl.colors:to-rgba color))
+
+This pattern produces: ((#(r g b a))) instead of (r g b a)
+
+When this is passed to functions expecting (r g b a), it causes:
+  - Type errors when trying to access elements
+  - Incorrect color rendering
+  - Potential crashes in graphics context creation
+
+CORRECT PATTERNS (from working code):
+  1. Direct vector access: (aref rgba 0), (aref rgba 1), etc.
+  2. Conditional check: (if (vectorp rgba) (list (aref rgba 0) ...) ...)
+  3. Store in variable: (let ((rgba (to-rgba ...))) (aref rgba 0) ...)
+
+=== RECOMMENDED FIX PATTERN ===
+
+Replace all broken instances with the pattern from backend-vecto.lisp:
+
+  (let ((rgba (mpl.colors:to-rgba color-spec)))
+    (if (vectorp rgba)
+        (list (float (elt rgba 0) 1.0)
+              (float (elt rgba 1) 1.0)
+              (float (elt rgba 2) 1.0)
+              (float (elt rgba 3) 1.0))
+        (multiple-value-list rgba)))
+
+This handles both vector returns (current behavior) and potential future
+multiple-value returns (defensive programming).
+
+Alternatively, simpler fix (if confident to-rgba always returns vector):
+
+  (list (aref rgba 0) (aref rgba 1) (aref rgba 2) (aref rgba 3))
+
+where rgba is bound from (mpl.colors:to-rgba color).

@@ -1,0 +1,24 @@
+Makefile Target Verification
+=============================
+
+setup-python target:
+echo "Setting up Python virtual environment..."
+python -m venv .venv
+.venv/bin/pip install -r requirements.txt
+
+reference-images target:
+echo "Generating Python reference images..."
+mkdir -p reference_images
+for f in reference_scripts/*.py; do \
+
+cl-images target:
+echo "Generating CL images..."
+for f in examples/*.lisp; do \
+	echo "Running $f..."; \
+
+compare target:
+echo "Running visual comparison..."
+mkdir -p comparison_report
+.venv/bin/python tools/compare.py \
+
+All targets verified and present.

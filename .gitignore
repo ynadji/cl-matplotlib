@@ -1,0 +1,5 @@
+.venv/
+reference_images/
+comparison_report/
+*.pyc
+__pycache__/

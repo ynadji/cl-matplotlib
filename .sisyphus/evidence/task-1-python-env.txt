@@ -1,0 +1,18 @@
+=== Python Environment Setup Evidence ===
+
+Python Version:
+Python 3.11.5
+
+Matplotlib Version:
+3.8.4
+
+Scikit-image SSIM Check:
+SSIM available
+
+All imports test:
+OK
+
+Installed packages:
+matplotlib      3.8.4
+numpy           2.4.2
+scikit-image    0.23.2

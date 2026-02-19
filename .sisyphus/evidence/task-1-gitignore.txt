@@ -1,0 +1,7 @@
+=== .gitignore Configuration ===
+
+Content of .gitignore:
+.venv/
+
+Verification - grep for .venv:
+.venv/
