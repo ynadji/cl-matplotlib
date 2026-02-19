@@ -412,8 +412,9 @@ If TIGHT is T, use exact data limits (no margin)."
     (multiple-value-bind (dx dy dw dh) (%compute-display-bbox ax)
       (let* ((fc (axes-base-facecolor ax))
              (rgba-face (if (stringp fc)
-                            (multiple-value-list (mpl.colors:to-rgba fc))
-                            (list 1.0 1.0 1.0 1.0)))
+                             (let ((rgba (mpl.colors:to-rgba fc)))
+                               (list (elt rgba 0) (elt rgba 1) (elt rgba 2) (elt rgba 3)))
+                             (list 1.0 1.0 1.0 1.0)))
              (path (mpl.primitives:path-unit-rectangle))
              (transform (mpl.primitives:make-affine-2d
                          :scale (list dw dh)

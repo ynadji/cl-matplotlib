@@ -1,0 +1,20 @@
+ Running test LEGEND-CREATION .
+ Running test ANNOTATE-BASIC .
+ Running test SAVEFIG-CREATES-PNG ..
+ Running test SHOW-NO-ERROR 
+; pyplot: Non-interactive backend — use (savefig "file.png") to save.
+.
+ Running test MULTIPLE-FIGURES-INDEPENDENT ..
+ Running test GCA-AFTER-CLF .
+ Running test FULL-PLOT-WORKFLOW ..
+ Running test SUBPLOTS-WORKFLOW .
+ Running test CLOSE-WITH-NO-FIGURES .
+ Running test FIGURE-COUNTER-TRACKS-EXPLICIT .
+ Running test XLIM-YLIM-GET-RETURNS-VALUES ......
+ Running test CONTOUR-BASIC .
+ Running test IMSHOW-BASIC .
+ Did 91 checks.
+    Pass: 91 (100%)
+    Skip: 0 ( 0%)
+    Fail: 0 ( 0%)
+

@@ -236,9 +236,11 @@ Colors can be strings (looked up via to-rgba) or RGBA lists."
     (when edgecolor
       (setf (mpl.rendering:gc-foreground gc)
             (if (listp edgecolor) edgecolor
-                (multiple-value-list (mpl.colors:to-rgba edgecolor)))))
+                (let ((rgba (mpl.colors:to-rgba edgecolor)))
+                  (list (elt rgba 0) (elt rgba 1) (elt rgba 2) (elt rgba 3))))))
     (when facecolor
       (setf (mpl.rendering:gc-background gc)
             (if (listp facecolor) facecolor
-                (multiple-value-list (mpl.colors:to-rgba facecolor)))))
+                (let ((rgba (mpl.colors:to-rgba facecolor)))
+                  (list (elt rgba 0) (elt rgba 1) (elt rgba 2) (elt rgba 3))))))
     gc))

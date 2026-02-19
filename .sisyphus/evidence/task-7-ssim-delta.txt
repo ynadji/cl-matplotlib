@@ -1,0 +1,7 @@
+bar-chart                : +0.3577 -> +0.7178  (delta: +0.3601)
+filled-contour           : +0.0054 -> +0.0243  (delta: +0.0189)
+histogram                : +0.3135 -> +0.6750  (delta: +0.3615)
+pie-chart                : +0.4314 -> +0.7225  (delta: +0.2911)
+scatter                  : -0.0035 -> +0.8642  (delta: +0.8677)
+simple-line              : -0.0039 -> +0.8433  (delta: +0.8472)
+subplots                 : -0.0086 -> +0.8134  (delta: +0.8220)

@@ -1,0 +1,2 @@
+Corner pixel (top-left): [255 255 255]
+PASS: Background is white
