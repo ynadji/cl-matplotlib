@@ -363,7 +363,8 @@ Ported from matplotlib.axis.XAxis."))
   (let* ((loc (tick-loc tk))
          ;; Transform tick location to display coords
          (data-pt (mpl.primitives:transform-point trans-data (list loc 0.0d0)))
-         (x-display (+ (floor (aref data-pt 0)) 0.5d0))
+         (x-display (aref data-pt 0))                              ; original position for labels/grid
+         (x-display-snapped (+ (floor x-display) 0.5d0))          ; snapped for tick line only
          ;; Get axes bottom in display coords
          (axes-bottom (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 1))
          (axes-top (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 1.0d0)) 1))
@@ -389,17 +390,17 @@ Ported from matplotlib.axis.XAxis."))
       (let ((path (mpl.primitives:make-path
                    :vertices (make-array '(2 2) :element-type 'double-float
                                          :initial-contents
-                                         (list (list x-display y-start)
-                                               (list x-display y-end))))))
+                                         (list (list x-display-snapped y-start)
+                                               (list x-display-snapped y-end))))))
         (mpl.rendering:renderer-draw-path renderer gc path nil :stroke t)))
     ;; Draw tick label
     (when (and (tick-label-text tk)
                (> (length (tick-label-text tk)) 0))
       (let* ((label-y (- y-end (float (tick-pad tk) 1.0d0) 2.0d0))
-             (gc (mpl.rendering:make-gc
-                  :foreground (tick-label-color tk)
-                  :linewidth (tick-label-fontsize tk)
-                  :alpha 1.0)))
+              (gc (mpl.rendering:make-gc
+                   :foreground (tick-label-color tk)
+                   :linewidth (tick-label-fontsize tk)
+                   :alpha 1.0)))
         (mpl.rendering:renderer-draw-text renderer gc
                                           x-display label-y
                                           (tick-label-text tk)
@@ -482,7 +483,8 @@ Ported from matplotlib.axis.YAxis."))
   (let* ((loc (tick-loc tk))
          ;; Transform tick location to display coords
          (data-pt (mpl.primitives:transform-point trans-data (list 0.0d0 loc)))
-         (y-display (+ (floor (aref data-pt 1)) 0.5d0))
+         (y-display (aref data-pt 1))                              ; original position for labels/grid
+         (y-display-snapped (+ (floor y-display) 0.5d0))          ; snapped for tick line only
          ;; Get axes left edge in display coords
          (axes-left (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 0))
          (axes-right (aref (mpl.primitives:transform-point trans-axes (list 1.0d0 0.0d0)) 0))
@@ -508,17 +510,17 @@ Ported from matplotlib.axis.YAxis."))
       (let ((path (mpl.primitives:make-path
                    :vertices (make-array '(2 2) :element-type 'double-float
                                          :initial-contents
-                                         (list (list x-start y-display)
-                                               (list x-end y-display))))))
+                                         (list (list x-start y-display-snapped)
+                                               (list x-end y-display-snapped))))))
         (mpl.rendering:renderer-draw-path renderer gc path nil :stroke t)))
     ;; Draw tick label
     (when (and (tick-label-text tk)
                (> (length (tick-label-text tk)) 0))
       (let* ((label-x (- x-end (float (tick-pad tk) 1.0d0) 5.0d0))
-             (gc (mpl.rendering:make-gc
-                  :foreground (tick-label-color tk)
-                  :linewidth (tick-label-fontsize tk)
-                  :alpha 1.0)))
+              (gc (mpl.rendering:make-gc
+                   :foreground (tick-label-color tk)
+                   :linewidth (tick-label-fontsize tk)
+                   :alpha 1.0)))
         (mpl.rendering:renderer-draw-text renderer gc
                                           label-x y-display
                                           (tick-label-text tk)
