@@ -269,8 +269,8 @@ Returns the created Polygon."
                                :xy verts
                                :closed t
                                :facecolor effective-color
-                                           :edgecolor color
-                                           :linewidth 0.5
+                               :edgecolor "none"
+                               :linewidth 0.0
                                :label label
                                :zorder zorder)))
       (when alpha
@@ -737,25 +737,30 @@ Returns a list of Polygon patches."
                           (elt default-colors (mod k (length default-colors))))
           for label = (if (and labels (< k (length labels)))
                           (elt labels k) "")
-          do (let* ((total-verts (* 2 n-pts))
-                    (verts (make-array (list total-verts 2) :element-type 'double-float)))
-               ;; Forward pass: upper boundary (cumsum[k+1])
-               (dotimes (j n-pts)
-                 (setf (aref verts j 0) (float (elt xdata j) 1.0d0)
-                       (aref verts j 1) (aref cumsum (1+ k) j)))
-               ;; Backward pass: lower boundary (cumsum[k])
-               (dotimes (j n-pts)
-                 (let ((rev-j (- n-pts 1 j)))
-                   (setf (aref verts (+ n-pts j) 0) (float (elt xdata rev-j) 1.0d0)
-                         (aref verts (+ n-pts j) 1) (aref cumsum k rev-j))))
-               (let ((poly (make-instance 'mpl.rendering:polygon
-                                          :xy verts
-                                          :closed t
-                                          :facecolor color
-                                          :edgecolor "none"
-                                          :linewidth 0.0
-                                          :label label
-                                          :zorder zorder)))
+           do (let* (;; +1 extra vertex so the last backward point is LINETO (not CLOSEPOLY)
+                     ;; This ensures the left edge is drawn correctly as a vertical line
+                     (total-verts (+ (* 2 n-pts) 1))
+                     (verts (make-array (list total-verts 2) :element-type 'double-float)))
+                ;; Forward pass: upper boundary (cumsum[k+1])
+                (dotimes (j n-pts)
+                  (setf (aref verts j 0) (float (elt xdata j) 1.0d0)
+                        (aref verts j 1) (aref cumsum (1+ k) j)))
+                ;; Backward pass: lower boundary (cumsum[k])
+                (dotimes (j n-pts)
+                  (let ((rev-j (- n-pts 1 j)))
+                    (setf (aref verts (+ n-pts j) 0) (float (elt xdata rev-j) 1.0d0)
+                          (aref verts (+ n-pts j) 1) (aref cumsum k rev-j))))
+                ;; Extra closing vertex = same as start, so CLOSEPOLY draws the left edge
+                (setf (aref verts (* 2 n-pts) 0) (aref verts 0 0)
+                      (aref verts (* 2 n-pts) 1) (aref verts 0 1))
+                (let ((poly (make-instance 'mpl.rendering:polygon
+                                           :xy verts
+                                           :closed t
+                                           :facecolor color
+                                           :edgecolor color
+                                           :linewidth 0.5
+                                           :label label
+                                           :zorder zorder)))
                  (setf (mpl.rendering:artist-transform poly)
                        (axes-base-trans-data ax))
                  (axes-add-patch ax poly)
