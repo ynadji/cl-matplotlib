@@ -189,8 +189,34 @@ vertices and a marker at each vertex. Ported from matplotlib.lines.Line2D."))
                                     (line-2d-dash-capstyle line)))))
     ;; Draw the line path
     (renderer-draw-path renderer gc path transform :stroke t)
-    ;; TODO: Draw markers at each vertex if marker is set
-    )
+    ;; Draw markers at each vertex if marker is set
+    (let ((marker (line-2d-marker line)))
+      (when (and marker (not (eq marker :none)))
+        (let* (;; Normalize marker aliases (e.g. :circle -> :o)
+               (marker-key (case marker
+                             (:circle :o)
+                             (otherwise marker)))
+               (marker-path (make-marker-path marker-key))
+               (markersize (line-2d-markersize line))
+               (marker-trans (mpl.primitives:make-affine-2d
+                              :scale (list (float markersize 1.0d0)
+                                           (float markersize 1.0d0))))
+               ;; Determine face color for filled markers
+               ;; Inline list to avoid compile-time warning (markers.lisp loads after lines.lisp)
+               (filled-p (member marker-key '(:point :o :v :^ :< :> :s :d :star)))
+               (face-color (when filled-p
+                             (let* ((fc (or (line-2d-markerfacecolor line)
+                                            (line-2d-color line)))
+                                    (rgba (mpl.colors:to-rgba fc)))
+                               (list (elt rgba 0) (elt rgba 1)
+                                     (elt rgba 2) (elt rgba 3)))))
+               ;; Create a GC for the marker (edge color + edge width)
+               (marker-gc (make-gc :foreground (or (line-2d-markeredgecolor line)
+                                                   (line-2d-color line))
+                                   :linewidth (line-2d-markeredgewidth line)
+                                   :alpha (or (artist-alpha line) 1.0))))
+          (mpl.backends:draw-markers renderer marker-gc marker-path marker-trans
+                                     path transform face-color)))))
   (setf (artist-stale line) nil))
 
 ;;; ============================================================
