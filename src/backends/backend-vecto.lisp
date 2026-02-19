@@ -13,7 +13,7 @@
 ;;; ============================================================
 
 (defparameter *default-font-path*
-  "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+  "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
   "Default font path for text rendering.")
 
 ;;; ============================================================
