@@ -247,11 +247,15 @@ Returns a plist with :boxes :medians :whiskers :caps :fliers."
            (pos-max (reduce #'max pos)))
       (if vert
           (axes-update-datalim ax
-                               (list (- pos-min 1.0d0) (+ pos-max 1.0d0))
+                               (list (- pos-min 0.5d0) (+ pos-max 0.5d0))
                                (list data-min data-max))
           (axes-update-datalim ax
                                (list data-min data-max)
-                               (list (- pos-min 1.0d0) (+ pos-max 1.0d0)))))
+                               (list (- pos-min 0.5d0) (+ pos-max 0.5d0))))
+      ;; Set x-limits to match matplotlib's boxplot default (pos_min - 0.5, pos_max + 0.5)
+      (if vert
+          (axes-set-xlim ax :min (- pos-min 0.5d0) :max (+ pos-max 0.5d0))
+          (axes-set-ylim ax :min (- pos-min 0.5d0) :max (+ pos-max 0.5d0))))
     (setf (mpl.containers::axes-base-sticky-y-min ax) t)
     (axes-autoscale-view ax)
     (list :boxes (nreverse all-boxes)
