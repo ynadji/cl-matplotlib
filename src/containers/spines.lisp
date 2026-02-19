@@ -84,6 +84,33 @@ Ported from matplotlib.spines.Spine."))
 ;;; Spine drawing
 ;;; ============================================================
 
+(defun %snap-spine-path (path transform spine-type)
+  "Transform PATH to display coordinates and snap to pixel centers.
+For vertical spines (left/right), snap x to pixel center.
+For horizontal spines (top/bottom), snap y to pixel center.
+This avoids antialiasing gray from sub-pixel boundaries."
+  (let* ((verts (mpl.primitives:mpl-path-vertices path))
+         (n (array-dimension verts 0))
+         (new-verts (make-array (list n 2) :element-type 'double-float))
+         (vertical-p (or (string= spine-type "left")
+                         (string= spine-type "right"))))
+    (dotimes (i n)
+      (let* ((pt (mpl.primitives:transform-point
+                  transform
+                  (list (aref verts i 0) (aref verts i 1))))
+             (px (aref pt 0))
+             (py (aref pt 1)))
+        (if vertical-p
+            ;; Vertical spine: snap x to pixel center
+            (setf (aref new-verts i 0) (+ (floor px) 0.5d0)
+                  (aref new-verts i 1) py)
+            ;; Horizontal spine: snap y to pixel center
+            (setf (aref new-verts i 0) px
+                  (aref new-verts i 1) (+ (floor py) 0.5d0)))))
+    (mpl.primitives:make-path
+     :vertices new-verts
+     :codes (mpl.primitives:mpl-path-codes path))))
+
 (defmethod mpl.rendering:draw ((sp spine) renderer)
   "Draw the spine line."
   (unless (and (mpl.rendering:artist-visible sp)
@@ -96,12 +123,16 @@ Ported from matplotlib.spines.Spine."))
          ;; Spine is drawn in axes coordinates (0-1)
          (transform (when ax (axes-base-trans-axes ax))))
     (when (and path renderer transform)
-      (let ((gc (mpl.rendering:make-gc
-                 :foreground ec
-                 :linewidth lw
-                 :alpha (or (mpl.rendering:artist-alpha sp) 1.0)
-                 :capstyle :projecting)))
-        (mpl.rendering:renderer-draw-path renderer gc path transform
+      ;; Snap spine path to pixel centers to avoid antialiasing gray
+      (let* ((snapped-path (%snap-spine-path path transform
+                                             (spine-spine-type sp)))
+             (gc (mpl.rendering:make-gc
+                  :foreground ec
+                  :linewidth lw
+                  :alpha (or (mpl.rendering:artist-alpha sp) 1.0)
+                  :capstyle :projecting)))
+        (mpl.rendering:renderer-draw-path renderer gc snapped-path
+                                          (mpl.primitives:make-identity-transform)
                                           :stroke t))))
   (setf (mpl.rendering:artist-stale sp) nil))
 
