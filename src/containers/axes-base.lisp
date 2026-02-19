@@ -87,12 +87,16 @@
                    :accessor axes-base-autoscale-y-p
                    :type boolean
                    :documentation "Whether to autoscale Y axis.")
-   (autoscale-margin :initform 0.05d0
-                      :accessor axes-base-autoscale-margin
-                      :type double-float
-                      :documentation "Margin fraction for autoscaling (5% default).")
-   ;; Shared axes
-   (sharex-group :initform nil
+    (autoscale-margin :initform 0.05d0
+                       :accessor axes-base-autoscale-margin
+                       :type double-float
+                       :documentation "Margin fraction for autoscaling (5% default).")
+    (sticky-y-min :initform nil
+                  :accessor axes-base-sticky-y-min
+                  :type boolean
+                  :documentation "When T, y0=0 is treated as a sticky edge (bar charts).")
+    ;; Shared axes
+    (sharex-group :initform nil
                  :accessor axes-base-sharex-group
                  :documentation "List of axes sharing X limits with this one.")
    (sharey-group :initform nil
@@ -268,10 +272,11 @@ If TIGHT is T, use exact data limits (no margin)."
           (setf x0 (- x0 x-margin)
                 x1 (+ x1 x-margin)))
         (when (axes-base-autoscale-y-p ax)
-          ;; Sticky edge: if y0 is exactly 0 (bar chart bottom), don't apply margin below
-          (unless (zerop y0)
-            (setf y0 (- y0 y-margin)))
-          (setf y1 (+ y1 y-margin))))
+          ;; Sticky edge: only pin y0=0 for bar charts (when sticky-y-min is set)
+          (if (and (axes-base-sticky-y-min ax) (zerop y0))
+              (setf y1 (+ y1 y-margin))
+              (setf y0 (- y0 y-margin)
+                    y1 (+ y1 y-margin)))))
       ;; Set view limits
       (setf (axes-base-view-lim ax)
             (mpl.primitives:make-bbox x0 y0 x1 y1))

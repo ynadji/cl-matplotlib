@@ -104,9 +104,9 @@ This avoids antialiasing gray from sub-pixel boundaries."
             ;; Vertical spine: snap x to pixel center
             (setf (aref new-verts i 0) (+ (floor px) 0.5d0)
                   (aref new-verts i 1) py)
-            ;; Horizontal spine: snap y to pixel row
+            ;; Horizontal spine: snap y to pixel center
             (setf (aref new-verts i 0) px
-                  (aref new-verts i 1) (float (floor py) 1.0d0)))))
+                  (aref new-verts i 1) (- (floor py) 0.5d0)))))
     (mpl.primitives:make-path
      :vertices new-verts
      :codes (mpl.primitives:mpl-path-codes path))))

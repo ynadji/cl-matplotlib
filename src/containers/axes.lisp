@@ -184,10 +184,12 @@ Returns a list of Rectangle patches."
           (push (+ x0 wi) all-x)
           (push bi all-y)
           (push (+ bi hi) all-y)))
-      (axes-update-datalim ax (nreverse all-x) (nreverse all-y)))
-    ;; Autoscale
-    (axes-autoscale-view ax)
-    (nreverse rects)))
+       (axes-update-datalim ax (nreverse all-x) (nreverse all-y)))
+     ;; Set sticky y-min for bar charts (y=0 is a sticky edge)
+     (setf (axes-base-sticky-y-min ax) t)
+     ;; Autoscale
+     (axes-autoscale-view ax)
+     (nreverse rects)))
 
 ;;; ============================================================
 ;;; fill — filled polygon
