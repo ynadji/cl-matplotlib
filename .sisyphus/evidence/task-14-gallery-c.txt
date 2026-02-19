@@ -1,0 +1,14 @@
+=== Gallery Batch C ===
+OK: log-scale.png (36048 bytes)
+OK: custom-markers.png (52476 bytes)
+OK: shared-axes.png (52594 bytes)
+OK: gridspec-custom.png (83711 bytes)
+OK: figure-sizes.png (56251 bytes)
+OK: twin-axes.png (51609 bytes)
+OK: color-cycle.png (121094 bytes)
+
+Notes:
+- twin-axes: uses side-by-side subplots (twinx not implemented)
+- color-cycle: uses explicit colors (no auto color cycle)
+- gridspec-custom: uses 2x2 subplots (true gridspec too complex)
+- All 7 examples ran without errors
