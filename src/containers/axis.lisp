@@ -364,7 +364,7 @@ Ported from matplotlib.axis.XAxis."))
          ;; Transform tick location to display coords
          (data-pt (mpl.primitives:transform-point trans-data (list loc 0.0d0)))
          (x-display (aref data-pt 0))                              ; original position for labels/grid
-         (x-display-snapped (+ (floor x-display) 0.5d0))          ; snapped for tick line only
+         (x-display-snapped (+ (round x-display) 0.5d0))          ; snapped for tick line and grid
          ;; Get axes bottom in display coords
          (axes-bottom (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 1))
          (axes-top (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 1.0d0)) 1))
@@ -417,8 +417,8 @@ Ported from matplotlib.axis.XAxis."))
         (let ((path (mpl.primitives:make-path
                      :vertices (make-array '(2 2) :element-type 'double-float
                                            :initial-contents
-                                           (list (list x-display axes-bottom)
-                                                 (list x-display axes-top))))))
+                                           (list (list x-display-snapped axes-bottom)
+                                                 (list x-display-snapped axes-top))))))
           (mpl.rendering:renderer-draw-path renderer gc path nil :stroke t))))))
 
 (defun %draw-x-axis-label (renderer ax axis trans-axes)
@@ -486,7 +486,7 @@ Ported from matplotlib.axis.YAxis."))
          ;; Transform tick location to display coords
          (data-pt (mpl.primitives:transform-point trans-data (list 0.0d0 loc)))
          (y-display (aref data-pt 1))                              ; original position for labels/grid
-         (y-display-snapped (+ (floor y-display) 0.5d0))          ; snapped for tick line only
+         (y-display-snapped (+ (round y-display) 0.5d0))          ; snapped for tick line and grid
          ;; Get axes left edge in display coords
          (axes-left (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 0))
          (axes-right (aref (mpl.primitives:transform-point trans-axes (list 1.0d0 0.0d0)) 0))
@@ -539,8 +539,8 @@ Ported from matplotlib.axis.YAxis."))
         (let ((path (mpl.primitives:make-path
                      :vertices (make-array '(2 2) :element-type 'double-float
                                            :initial-contents
-                                           (list (list axes-left y-display)
-                                                 (list axes-right y-display))))))
+                                           (list (list axes-left y-display-snapped)
+                                                 (list axes-right y-display-snapped))))))
           (mpl.rendering:renderer-draw-path renderer gc path nil :stroke t))))))
 
 (defun %draw-y-axis-label (renderer ax axis trans-axes)

@@ -244,14 +244,13 @@ Returns a plist with :boxes :medians :whiskers :caps :fliers."
            (data-min (reduce #'min (mapcar (lambda (x) (float x 1.0d0)) all-data)))
            (data-max (reduce #'max (mapcar (lambda (x) (float x 1.0d0)) all-data)))
            (pos-min (reduce #'min pos))
-           (pos-max (reduce #'max pos))
-           (margin (* 0.05d0 (- data-max data-min))))
+           (pos-max (reduce #'max pos)))
       (if vert
           (axes-update-datalim ax
                                (list (- pos-min 1.0d0) (+ pos-max 1.0d0))
-                               (list (- data-min margin) (+ data-max margin)))
+                               (list data-min data-max))
           (axes-update-datalim ax
-                               (list (- data-min margin) (+ data-max margin))
+                               (list data-min data-max)
                                (list (- pos-min 1.0d0) (+ pos-max 1.0d0)))))
     (setf (mpl.containers::axes-base-sticky-y-min ax) t)
     (axes-autoscale-view ax)
