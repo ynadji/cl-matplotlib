@@ -1,0 +1,2 @@
+Horizontal offset: 9.50%
+PASS: Centered
