@@ -198,6 +198,7 @@ Returns (values counts bin-edges patches)."
     (let* ((all-x (coerce bin-edges 'list))
            (all-y (cons 0.0d0 heights)))
       (axes-update-datalim ax all-x all-y))
+    (setf (mpl.containers::axes-base-sticky-y-min ax) t)
     (axes-autoscale-view ax)
     ;; Clamp y_min to 0 (matching matplotlib's hist behavior)
     (axes-set-ylim ax :min 0.0d0)

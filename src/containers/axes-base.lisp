@@ -95,6 +95,10 @@
                   :accessor axes-base-sticky-y-min
                   :type boolean
                   :documentation "When T, y0=0 is treated as a sticky edge (bar charts).")
+    (sticky-x-min :initform nil
+                  :accessor axes-base-sticky-x-min
+                  :type boolean
+                  :documentation "When T, x0=0 is treated as a sticky edge (barh charts).")
     ;; Shared axes
     (sharex-group :initform nil
                  :accessor axes-base-sharex-group
@@ -269,8 +273,11 @@ If TIGHT is T, use exact data limits (no margin)."
       (let ((x-margin (* x-range margin))
             (y-margin (* y-range margin)))
         (when (axes-base-autoscale-x-p ax)
-          (setf x0 (- x0 x-margin)
-                x1 (+ x1 x-margin)))
+          ;; Sticky edge: only pin x0=0 for barh charts (when sticky-x-min is set)
+          (if (and (axes-base-sticky-x-min ax) (zerop x0))
+              (setf x1 (+ x1 x-margin))
+              (setf x0 (- x0 x-margin)
+                    x1 (+ x1 x-margin))))
         (when (axes-base-autoscale-y-p ax)
           ;; Sticky edge: only pin y0=0 for bar charts (when sticky-y-min is set)
           (if (and (axes-base-sticky-y-min ax) (zerop y0))

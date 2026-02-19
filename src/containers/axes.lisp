@@ -843,6 +843,7 @@ Returns a list of Rectangle patches."
           (push y0 all-y)
           (push (+ y0 hi) all-y)))
       (axes-update-datalim ax (nreverse all-x) (nreverse all-y)))
+    (setf (axes-base-sticky-x-min ax) t)
     (axes-autoscale-view ax)
     (nreverse rects)))
 

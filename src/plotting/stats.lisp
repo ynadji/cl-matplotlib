@@ -253,6 +253,7 @@ Returns a plist with :boxes :medians :whiskers :caps :fliers."
           (axes-update-datalim ax
                                (list (- data-min margin) (+ data-max margin))
                                (list (- pos-min 1.0d0) (+ pos-max 1.0d0)))))
+    (setf (mpl.containers::axes-base-sticky-y-min ax) t)
     (axes-autoscale-view ax)
     (list :boxes (nreverse all-boxes)
           :medians (nreverse all-medians)

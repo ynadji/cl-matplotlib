@@ -33,7 +33,7 @@
    (spine-bounds :initform nil
                  :accessor spine-bounds
                  :documentation "Custom bounds or nil for full extent."))
-  (:default-initargs :facecolor "none" :edgecolor "black" :linewidth 1.0 :zorder 2.5)
+  (:default-initargs :facecolor "none" :edgecolor "black" :linewidth 0.8 :zorder 2.5)
   (:documentation "An axis spine — the line noting the data area boundaries.
 Ported from matplotlib.spines.Spine."))
 
@@ -106,7 +106,7 @@ This avoids antialiasing gray from sub-pixel boundaries."
                   (aref new-verts i 1) py)
             ;; Horizontal spine: snap y to pixel center
             (setf (aref new-verts i 0) px
-                  (aref new-verts i 1) (- (floor py) 0.5d0)))))
+                  (aref new-verts i 1) (- (round py) 0.5d0)))))
     (mpl.primitives:make-path
      :vertices new-verts
      :codes (mpl.primitives:mpl-path-codes path))))
