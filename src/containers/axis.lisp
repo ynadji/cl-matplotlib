@@ -363,7 +363,7 @@ Ported from matplotlib.axis.XAxis."))
   (let* ((loc (tick-loc tk))
          ;; Transform tick location to display coords
          (data-pt (mpl.primitives:transform-point trans-data (list loc 0.0d0)))
-         (x-display (aref data-pt 0))
+         (x-display (+ (floor (aref data-pt 0)) 0.5d0))
          ;; Get axes bottom in display coords
          (axes-bottom (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 1))
          (axes-top (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 1.0d0)) 1))
@@ -482,7 +482,7 @@ Ported from matplotlib.axis.YAxis."))
   (let* ((loc (tick-loc tk))
          ;; Transform tick location to display coords
          (data-pt (mpl.primitives:transform-point trans-data (list 0.0d0 loc)))
-         (y-display (aref data-pt 1))
+         (y-display (+ (floor (aref data-pt 1)) 0.5d0))
          ;; Get axes left edge in display coords
          (axes-left (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 0))
          (axes-right (aref (mpl.primitives:transform-point trans-axes (list 1.0d0 0.0d0)) 0))
