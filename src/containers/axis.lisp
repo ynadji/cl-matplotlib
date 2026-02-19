@@ -396,7 +396,7 @@ Ported from matplotlib.axis.XAxis."))
     ;; Draw tick label
     (when (and (tick-label-text tk)
                (> (length (tick-label-text tk)) 0))
-      (let* ((label-y (- y-end (float (tick-pad tk) 1.0d0) 8.0d0))
+      (let* ((label-y (- y-end (float (tick-pad tk) 1.0d0) 2.0d0))
               (gc (mpl.rendering:make-gc
                    :foreground (tick-label-color tk)
                    :linewidth (tick-label-fontsize tk)
@@ -404,7 +404,9 @@ Ported from matplotlib.axis.XAxis."))
         (mpl.rendering:renderer-draw-text renderer gc
                                           x-display label-y
                                           (tick-label-text tk)
-                                          :angle 0.0)))
+                                          :angle 0.0
+                                          :ha :center
+                                          :va :top)))
     ;; Draw gridline
     (when (tick-gridline-visible-p tk)
       (let ((gc (mpl.rendering:make-gc
@@ -516,7 +518,7 @@ Ported from matplotlib.axis.YAxis."))
     ;; Draw tick label
     (when (and (tick-label-text tk)
                (> (length (tick-label-text tk)) 0))
-      (let* ((label-x (- x-end (float (tick-pad tk) 1.0d0) 20.0d0))
+      (let* ((label-x (- x-end (float (tick-pad tk) 1.0d0) 2.0d0))
               (gc (mpl.rendering:make-gc
                    :foreground (tick-label-color tk)
                    :linewidth (tick-label-fontsize tk)
@@ -524,7 +526,9 @@ Ported from matplotlib.axis.YAxis."))
         (mpl.rendering:renderer-draw-text renderer gc
                                           label-x y-display
                                           (tick-label-text tk)
-                                          :angle 0.0)))
+                                          :angle 0.0
+                                          :ha :right
+                                          :va :center)))
     ;; Draw gridline
     (when (tick-gridline-visible-p tk)
       (let ((gc (mpl.rendering:make-gc
