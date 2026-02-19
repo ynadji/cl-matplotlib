@@ -396,7 +396,7 @@ Ported from matplotlib.axis.XAxis."))
     ;; Draw tick label
     (when (and (tick-label-text tk)
                (> (length (tick-label-text tk)) 0))
-      (let* ((label-y (- y-end (float (tick-pad tk) 1.0d0) 2.0d0))
+      (let* ((label-y (- y-end (float (tick-pad tk) 1.0d0) 8.0d0))
               (gc (mpl.rendering:make-gc
                    :foreground (tick-label-color tk)
                    :linewidth (tick-label-fontsize tk)
@@ -516,7 +516,7 @@ Ported from matplotlib.axis.YAxis."))
     ;; Draw tick label
     (when (and (tick-label-text tk)
                (> (length (tick-label-text tk)) 0))
-      (let* ((label-x (- x-end (float (tick-pad tk) 1.0d0) 5.0d0))
+      (let* ((label-x (- x-end (float (tick-pad tk) 1.0d0) 20.0d0))
               (gc (mpl.rendering:make-gc
                    :foreground (tick-label-color tk)
                    :linewidth (tick-label-fontsize tk)
