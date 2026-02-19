@@ -1,0 +1,2 @@
+Bar-chart unique colors: 506
+PASS: bar-chart has distinct bars

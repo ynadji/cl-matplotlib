@@ -378,6 +378,14 @@ If TIGHT is T, use exact data limits (no margin)."
     (return-from mpl.rendering:draw))
   ;; Ensure transforms are up to date
   (%setup-transforms ax)
+  ;; Propagate current transData to child patches and lines that may hold
+  ;; stale references from creation time (transData is re-created by
+  ;; %update-trans-data, so stored references become stale after autoscaling)
+  (let ((td (axes-base-trans-data ax)))
+    (dolist (p (axes-base-patches ax))
+      (setf (mpl.rendering:artist-transform p) td))
+    (dolist (l (axes-base-lines ax))
+      (setf (mpl.rendering:artist-transform l) td)))
   ;; Draw background patch if frameon
   (when (and (axes-base-frameon-p ax) (axes-base-patch ax))
     (%draw-axes-background ax renderer))

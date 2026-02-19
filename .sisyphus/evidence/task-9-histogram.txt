@@ -1,0 +1,2 @@
+Histogram center column std: 51.3
+PASS: histogram has visible bars

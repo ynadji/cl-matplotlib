@@ -66,11 +66,15 @@ Ported from matplotlib.patches.Patch."))
 ;;; ============================================================
 
 (defmethod draw ((p patch) renderer)
-  "Draw the patch using RENDERER."
+  "Draw the patch using RENDERER.
+Composes get-patch-transform (unit coords → data coords) with
+get-artist-transform (data coords → display coords)."
   (unless (artist-visible p)
     (return-from draw))
   (let* ((path (get-path p))
-         (transform (get-artist-transform p))
+         (patch-transform (get-patch-transform p))
+         (artist-transform (get-artist-transform p))
+         (transform (mpl.primitives:compose patch-transform artist-transform))
          (gc (make-gc :foreground (or (patch-edgecolor p) "black")
                       :linewidth (patch-linewidth p)
                       :linestyle (patch-linestyle p)
