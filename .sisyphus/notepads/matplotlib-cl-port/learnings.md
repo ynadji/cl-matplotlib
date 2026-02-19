@@ -1265,3 +1265,20 @@ Canvas creation must be format-aware, not just the print method.
 - 55 baseline images generated in `tests/baseline_images/{suite-name}/`
 - Tests registered as `cl-matplotlib-testing/ported` ASDF system
 - Baseline images are deterministic — second run confirms all comparisons pass
+
+## Task 4 — Python Reference Scripts (2026-02-19)
+
+### Key Details
+- All 7 CL examples successfully mirrored as Python scripts
+- LCG PRNG: a=1103515245, c=12345, m=2^31 — scatter uses seed=42, histogram uses seed=7
+- Box-Muller: u1=max(1e-10, rng()), u2=rng(), result=sqrt(-2*log(u1))*cos(2*pi*u2)
+- CL `(loop for x from -10 to 10 ...)` produces 21 values (-10 through +10 inclusive)
+- CL subplots uses `mpl.containers:plot` (method on axes object), not pyplot-style
+- bar-chart figsize is (8,5) not (8,6); histogram also (8,5); pie-chart (7,7); subplots (10,8)
+- filled-contour xs/ys: `6.0*i/(n-1) - 3.0` for i in 0..49, giving range [-3, 3]
+- rcParams: savefig.dpi=100, text.hinting='none' for reproducibility
+- NO bbox_inches='tight' — preserves exact figsize*dpi geometry
+
+### Image Dimensions (figsize × 100 dpi)
+- simple-line: 800×600, scatter: 800×600, bar-chart: 800×500
+- histogram: 800×500, pie-chart: 700×700, filled-contour: 800×600, subplots: 1000×800
