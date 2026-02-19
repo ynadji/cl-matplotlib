@@ -26,14 +26,16 @@ IM is a flat (simple-array (unsigned-byte 8) (*)) in RGBA row-major order.
 The image dimensions must be provided as (width . height) in the image metadata
 or passed alongside. X, Y are in display coordinates."))
 
-(defgeneric draw-text (renderer gc x y s prop angle &optional ismath)
+(defgeneric draw-text (renderer gc x y s prop angle &optional ismath ha va)
   (:documentation
    "Draw text string S at position (X, Y).
 
 GC — graphics context.
 PROP — font properties (or path to TTF file).
 ANGLE — rotation angle in degrees.
-ISMATH — whether the string uses mathtext (default NIL)."))
+ISMATH — whether the string uses mathtext (default NIL).
+HA — horizontal alignment (:left, :center, :right). Default :left.
+VA — vertical alignment (:baseline, :bottom, :center, :top). Default :baseline."))
 
 (defgeneric draw-markers (renderer gc marker-path marker-trans path trans &optional rgbface)
   (:documentation

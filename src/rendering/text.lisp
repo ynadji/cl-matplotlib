@@ -89,7 +89,9 @@ Ported from matplotlib.text.Text."))
     (renderer-draw-text renderer gc
                         px py
                         (text-text txt)
-                        :angle (text-rotation txt)))
+                        :angle (text-rotation txt)
+                        :ha (or (text-horizontalalignment txt) :left)
+                        :va (or (text-verticalalignment txt) :baseline)))
   (setf (artist-stale txt) nil))
 
 ;;; ============================================================

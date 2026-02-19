@@ -285,9 +285,9 @@ STROKE can be T (use gc-foreground) or nil."
 ;;; ============================================================
 
 (defmethod mpl.rendering:renderer-draw-text ((renderer renderer-vecto) gc x y text
-                                             &key angle)
+                                             &key angle (ha :left) (va :baseline))
   "Bridge from artist draw text protocol to backend draw-text."
-  (draw-text renderer gc (float x 1.0d0) (float y 1.0d0) text nil (or angle 0.0)))
+  (draw-text renderer gc (float x 1.0d0) (float y 1.0d0) text nil (or angle 0.0) nil ha va))
 
 ;;; ============================================================
 ;;; draw-image — Blit RGBA image into canvas
@@ -360,39 +360,64 @@ IM should be a plist with :data (flat RGBA bytes), :width, :height."
         (setf (gethash font-path cache)
               (vecto:get-font font-path)))))
 
-(defmethod draw-text ((renderer renderer-vecto) gc x y s prop angle &optional ismath)
+(defmethod draw-text ((renderer renderer-vecto) gc x y s prop angle &optional ismath ha va)
   "Draw text string S at position (X, Y) using Vecto's text rendering.
 PROP is a font path string or NIL (uses default font).
-ANGLE is rotation in degrees (currently only 0 supported by Vecto)."
+ANGLE is rotation in degrees (currently only 0 supported by Vecto).
+HA is horizontal alignment (:left, :center, :right). Default :left.
+VA is vertical alignment (:baseline, :bottom, :center, :top). Default :baseline."
   (declare (ignore ismath))
-  (vecto:with-graphics-state
-    (let* ((font-path (or (and (stringp prop) prop) *default-font-path*))
-           (font (%get-font renderer font-path))
-           (fontsize (or (and gc (mpl.rendering:gc-linewidth gc)) 12.0))
-           (edge-color (%gc-edge-color gc))
-           (alpha (if gc (mpl.rendering:gc-alpha gc) 1.0)))
-      ;; Reset clip to full figure for text labels (axis labels go outside axes clip)
-      (unless (and gc (mpl.rendering:gc-clip-rectangle gc))
-        (vecto:rectangle 0 0
-                         (float (renderer-width renderer) 1.0)
-                         (float (renderer-height renderer) 1.0))
-        (vecto:clip-path)
-        (vecto:end-path-no-op))
-      (vecto:set-font font (float fontsize 1.0))
-      ;; Set text fill color
-      (if edge-color
-          (vecto:set-rgba-fill (float (first edge-color) 1.0)
-                               (float (second edge-color) 1.0)
-                               (float (third edge-color) 1.0)
-                               (float (* (fourth edge-color) alpha) 1.0))
-          (vecto:set-rgba-fill 0.0 0.0 0.0 (float alpha 1.0)))
-      ;; Apply rotation transform for text (e.g., ylabel needs 90°)
-      (if (and (numberp angle) (not (zerop (float angle 1.0))))
-          (progn
-            (vecto:translate (float x 1.0) (float y 1.0))
-            (vecto:rotate-degrees (float angle 1.0))
-            (vecto:draw-string 0.0 0.0 s))
-          (vecto:draw-string (float x 1.0) (float y 1.0) s)))))
+  (let ((ha (or ha :left))
+        (va (or va :baseline)))
+    (vecto:with-graphics-state
+      (let* ((font-path (or (and (stringp prop) prop) *default-font-path*))
+             (font (%get-font renderer font-path))
+             (fontsize (or (and gc (mpl.rendering:gc-linewidth gc)) 12.0))
+             (edge-color (%gc-edge-color gc))
+             (alpha (if gc (mpl.rendering:gc-alpha gc) 1.0)))
+        ;; Reset clip to full figure for text labels (axis labels go outside axes clip)
+        (unless (and gc (mpl.rendering:gc-clip-rectangle gc))
+          (vecto:rectangle 0 0
+                           (float (renderer-width renderer) 1.0)
+                           (float (renderer-height renderer) 1.0))
+          (vecto:clip-path)
+          (vecto:end-path-no-op))
+        (vecto:set-font font (float fontsize 1.0))
+        ;; Set text fill color
+        (if edge-color
+            (vecto:set-rgba-fill (float (first edge-color) 1.0)
+                                 (float (second edge-color) 1.0)
+                                 (float (third edge-color) 1.0)
+                                 (float (* (fourth edge-color) alpha) 1.0))
+            (vecto:set-rgba-fill 0.0 0.0 0.0 (float alpha 1.0)))
+        ;; Compute vertical alignment offset using font metrics
+        ;; font from %get-font is already a zpb-ttf font-loader
+        (let ((y-offset 0.0))
+          (unless (eq va :baseline)
+            (let* ((bbox (vecto:string-bounding-box s (float fontsize 1.0) font))
+                   (ymin (aref bbox 1))
+                   (ymax (aref bbox 3)))
+              (ecase va
+                (:bottom  (setf y-offset (- (abs ymin))))
+                (:center  (setf y-offset (- (/ (+ ymax ymin) 2.0))))
+                (:top     (setf y-offset (- ymax))))))
+          ;; Apply rotation transform for text (e.g., ylabel needs 90°)
+          (if (and (numberp angle) (not (zerop (float angle 1.0))))
+              (progn
+                (vecto:translate (float x 1.0) (float y 1.0))
+                (vecto:rotate-degrees (float angle 1.0))
+                (if (eq ha :center)
+                    (vecto:draw-centered-string 0.0 (float y-offset 1.0) s)
+                    (vecto:draw-string 0.0 (float y-offset 1.0) s)))
+              (let ((dx (float x 1.0))
+                    (dy (+ (float y 1.0) y-offset)))
+                (ecase ha
+                  (:left   (vecto:draw-string dx (float dy 1.0) s))
+                  (:center (vecto:draw-centered-string dx (float dy 1.0) s))
+                   (:right
+                    (let* ((bbox (vecto:string-bounding-box s (float fontsize 1.0) font))
+                           (width (- (aref bbox 2) (aref bbox 0))))
+                      (vecto:draw-string (float (- dx width) 1.0) (float dy 1.0) s)))))))))))
 
 ;;; ============================================================
 ;;; draw-markers — Optimized repeated path drawing

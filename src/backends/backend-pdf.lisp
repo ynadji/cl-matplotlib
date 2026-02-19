@@ -306,11 +306,11 @@ PROP can be a font-properties object, a string path, or NIL."
        (t "Helvetica")))
     (t "Helvetica")))
 
-(defmethod draw-text ((renderer renderer-pdf) gc x y s prop angle &optional ismath)
+(defmethod draw-text ((renderer renderer-pdf) gc x y s prop angle &optional ismath ha va)
   "Draw text string S at position (X, Y) using cl-pdf's text rendering.
 PROP is a font path string or NIL (uses Helvetica).
 ANGLE is rotation in degrees."
-  (declare (ignore ismath))
+  (declare (ignore ismath ha va))
   (pdf:with-saved-state
     (let* ((font-name (%resolve-pdf-font-name prop))
            (font (%get-pdf-font renderer font-name))
