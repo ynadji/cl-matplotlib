@@ -74,8 +74,8 @@
                         :accessor tick-grid-linestyle
                         :documentation "Grid line style.")
    (tick-grid-alpha :initarg :grid-alpha
-                    :initform 0.7
-                    :accessor tick-grid-alpha
+                     :initform 1.0
+                     :accessor tick-grid-alpha
                     :documentation "Grid line alpha."))
   (:default-initargs :zorder 2.01)
   (:documentation "Represents a single tick mark with its label and gridline.
@@ -152,8 +152,8 @@ Ported from matplotlib.axis.Tick."))
                    :accessor axis-grid-linewidth)
    (grid-linestyle :initform :solid
                    :accessor axis-grid-linestyle)
-   (grid-alpha :initform 0.7
-               :accessor axis-grid-alpha))
+    (grid-alpha :initform 1.0
+                :accessor axis-grid-alpha))
   (:default-initargs :zorder 1.5)
   (:documentation "Base class for axes axis objects.
 Ported from matplotlib.axis.Axis."))
