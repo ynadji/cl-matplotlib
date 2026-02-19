@@ -1,0 +1,32 @@
+Total examples: 27
+Passed (>0.90): 1
+Failed: 26
+Mean SSIM: 0.8110
+
+✓ pie-chart                     : SSIM=0.9405  PASS
+✗ figure-sizes                  : SSIM=0.8849  FAIL
+✗ simple-line                   : SSIM=0.8815  FAIL
+✗ gridspec-custom               : SSIM=0.8814  FAIL
+✗ legend-styles                 : SSIM=0.8762  FAIL
+✗ subplots                      : SSIM=0.8758  FAIL
+✗ step-plot                     : SSIM=0.8692  FAIL
+✗ errorbar                      : SSIM=0.8678  FAIL
+✗ fill-between                  : SSIM=0.8650  FAIL
+✗ log-scale                     : SSIM=0.8621  FAIL
+✗ scatter                       : SSIM=0.8504  FAIL
+✗ custom-markers                : SSIM=0.8490  FAIL
+✗ multi-line                    : SSIM=0.8415  FAIL
+✗ color-cycle                   : SSIM=0.8360  FAIL
+✗ twin-axes                     : SSIM=0.8272  FAIL
+✗ stem-plot                     : SSIM=0.8265  FAIL
+✗ shared-axes                   : SSIM=0.8262  FAIL
+✗ bar-chart                     : SSIM=0.8207  FAIL
+✗ barh                          : SSIM=0.8193  FAIL
+✗ stackplot                     : SSIM=0.7986  FAIL
+✗ boxplot                       : SSIM=0.7963  FAIL
+✗ histogram                     : SSIM=0.7780  FAIL
+✗ contour-lines                 : SSIM=0.7234  FAIL
+✗ imshow-heatmap                : SSIM=0.6837  FAIL
+✗ annotations                   : SSIM=0.6753  FAIL
+✗ colorbar-custom               : SSIM=0.6205  FAIL
+✗ filled-contour                : SSIM=0.5198  FAIL
