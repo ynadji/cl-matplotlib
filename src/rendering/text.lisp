@@ -75,11 +75,19 @@ Ported from matplotlib.text.Text."))
     (return-from draw))
   (when (zerop (length (text-text txt)))
     (return-from draw))
-  (let ((gc (make-gc :foreground (text-color txt)
-                     :linewidth (text-fontsize txt)
-                     :alpha (or (artist-alpha txt) 1.0))))
+  (let* ((gc (make-gc :foreground (text-color txt)
+                      :linewidth (text-fontsize txt)
+                      :alpha (or (artist-alpha txt) 1.0)))
+         ;; Apply transform to convert from axes/data coords to pixel coords
+         (transform (get-artist-transform txt))
+         (px (text-x txt))
+         (py (text-y txt)))
+    (when transform
+      (let ((pt (mpl.primitives:transform-point transform (list px py))))
+        (setf px (aref pt 0)
+              py (aref pt 1))))
     (renderer-draw-text renderer gc
-                        (text-x txt) (text-y txt)
+                        px py
                         (text-text txt)
                         :angle (text-rotation txt)))
   (setf (artist-stale txt) nil))
