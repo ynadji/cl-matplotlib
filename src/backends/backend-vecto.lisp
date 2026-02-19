@@ -87,12 +87,14 @@ COLOR-SPEC can be:
 ;;; Graphics context → Vecto state mapping
 ;;; ============================================================
 
-(defun %apply-gc-to-vecto (gc)
+(defun %apply-gc-to-vecto (gc renderer)
   "Apply a graphics-context's properties to the current Vecto state.
-Must be called within a vecto:with-canvas or vecto:with-graphics-state."
-  ;; Line width: convert from points. We apply DPI conversion elsewhere if needed.
+Must be called within a vecto:with-canvas or vecto:with-graphics-state.
+RENDERER is needed to convert linewidth from points to pixels via DPI."
+  ;; Line width: convert from points to pixels (points * dpi / 72.0)
   (let ((lw (mpl.rendering:gc-linewidth gc)))
-    (when lw (vecto:set-line-width (float lw 1.0))))
+    (when lw (vecto:set-line-width
+              (float (points-to-pixels renderer lw) 1.0))))
   ;; Line cap
   (let ((cap (mpl.rendering:gc-capstyle gc)))
     (when cap
@@ -223,7 +225,7 @@ Must be called within an active canvas context (see canvas-vecto)."
         (alpha (mpl.rendering:gc-alpha gc)))
     (vecto:with-graphics-state
       ;; Apply graphics context state
-      (%apply-gc-to-vecto gc)
+      (%apply-gc-to-vecto gc renderer)
       ;; Fill path if we have a face color
       (when face-color
         (let ((r (first face-color))
@@ -406,7 +408,7 @@ Optimized: applies gc once, then draws marker at each position."
     (when (zerop n) (return-from draw-markers nil))
     ;; Apply graphics state once for all markers
     (vecto:with-graphics-state
-      (%apply-gc-to-vecto gc)
+      (%apply-gc-to-vecto gc renderer)
       (dotimes (i n)
         (let ((code (if codes (aref codes i)
                         (if (zerop i) mpl.primitives:+moveto+ mpl.primitives:+lineto+))))
@@ -491,7 +493,7 @@ LINEWIDTHS, LINESTYLES, ANTIALIASEDS — per-item drawing properties."
                     (setf final-transform offset-tr))))
             ;; Set GC and draw
             (vecto:with-graphics-state
-              (vecto:set-line-width (float linewidth 1.0))
+              (vecto:set-line-width (float (points-to-pixels renderer linewidth) 1.0))
               (when (not antialiased)
                 ;; Vecto doesn't have AA toggle, but we track the intent
                 nil)
