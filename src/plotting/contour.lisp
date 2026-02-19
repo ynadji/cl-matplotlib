@@ -206,17 +206,17 @@ Returns list of PolyCollection instances."
           for hi = (float (elt levels (1+ i)) 1.0d0)
           for color = (elt colors i)
           do
-             (let* ((polygons (marching-squares-filled x y z lo hi))
-                    (pc (when polygons
-                          (let ((coll (make-instance 'mpl.rendering:poly-collection
-                                                     :verts polygons
-                                                     :facecolors (if (vectorp color)
-                                                                     (list color)
-                                                                     (list color))
-                                                     :edgecolors nil
-                                                     :linewidths '(0.0)
-                                                     :zorder (mpl.rendering:artist-zorder cs))))
-                            coll))))
+              (let* ((polygons (marching-squares-filled x y z lo hi))
+                     (pc (when polygons
+                           (let ((coll (make-instance 'mpl.rendering:poly-collection
+                                                      :verts polygons
+                                                      :facecolors (if (vectorp color)
+                                                                      (list color)
+                                                                      (list color))
+                                                      :edgecolors (list color)
+                                                      :linewidths '(0.5)
+                                                      :zorder (mpl.rendering:artist-zorder cs))))
+                             coll))))
                (push pc collections)))
     (nreverse collections)))
 
