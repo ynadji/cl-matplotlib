@@ -280,11 +280,12 @@ X ranges [0, nx-1], Y ranges [0, ny-1]."
     (is (= 1 (length levels)))))
 
 (test auto-levels-filled-basic
-  "Auto-select filled levels produces N+1 boundaries."
+  "Auto-select filled levels uses nice steps (may extend beyond data range)."
   (let ((levels (auto-select-levels-filled 0.0d0 10.0d0 5)))
-    (is (= 6 (length levels)))
+    ;; Nice step=2, levels=[0,2,4,6,8,10,12] — extends one step beyond zmax
+    (is (= 7 (length levels)))
     (is (approx= 0.0d0 (first levels)))
-    (is (approx= 10.0d0 (car (last levels))))))
+    (is (approx= 12.0d0 (car (last levels))))))
 
 (test auto-levels-filled-equal
   "Auto-select filled with equal range."

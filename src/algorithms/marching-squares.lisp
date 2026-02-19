@@ -314,11 +314,15 @@ Tries steps of the form k × 10^m for k in {1, 1.5, 2, 2.5, 5} and
 picks the one that produces the closest to N levels."
   (let* ((magnitude (expt 10.0d0 (floor (log (/ data-range (float n 1.0d0)) 10.0d0))))
          (candidates (list (* 1.0d0 magnitude)
-                           (* 1.5d0 magnitude)
-                           (* 2.0d0 magnitude)
-                           (* 2.5d0 magnitude)
-                           (* 5.0d0 magnitude)
-                           (* 1.0d0 magnitude 10.0d0)))
+                            (* 1.5d0 magnitude)
+                            (* 2.0d0 magnitude)
+                            (* 2.5d0 magnitude)
+                            (* 3.0d0 magnitude)
+                            (* 4.0d0 magnitude)
+                            (* 5.0d0 magnitude)
+                            (* 6.0d0 magnitude)
+                            (* 8.0d0 magnitude)
+                            (* 1.0d0 magnitude 10.0d0)))
          (best-step (first candidates))
          (best-diff most-positive-fixnum))
     (dolist (step candidates)
@@ -360,9 +364,23 @@ Returns a list of level values."
 
 (defun auto-select-levels-filled (zmin zmax &optional (n 7))
   "Auto-select N+1 boundary levels for filled contours spanning [ZMIN, ZMAX].
-Returns a list of N+1 evenly-spaced boundary values."
+Uses 'nice' step sizes matching matplotlib's MaxNLocator(nbins=N+1) behavior.
+Returns a list of boundary values that may extend slightly beyond [ZMIN, ZMAX]."
   (when (= zmin zmax)
     (return-from auto-select-levels-filled (list zmin zmax)))
-  (let ((step (/ (- zmax zmin) (float n 1.0d0))))
-    (loop for i from 0 to n
-          collect (+ zmin (* i step)))))
+  (let* ((data-range (- zmax zmin))
+         ;; Use n+1 as target (matching Python's MaxNLocator(nbins=n+1))
+         (step (%nice-steps-for-range data-range (1+ n)))
+         ;; First level: largest multiple of step <= zmin (floor, extends below)
+         (first-level (* step (floor zmin step)))
+         ;; Collect levels: start at first-level, extend one step beyond zmax
+         (levels nil))
+    (loop for level = first-level then (+ level step)
+          while (<= level (+ zmax step))
+          do (push level levels))
+    (if levels
+        (nreverse levels)
+        ;; Fallback: simple linear spacing
+        (let ((s (/ data-range (float n 1.0d0))))
+          (loop for i from 0 to n
+                collect (+ zmin (* i s)))))))
