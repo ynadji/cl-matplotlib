@@ -368,7 +368,8 @@ ANGLE is rotation in degrees (currently only 0 supported by Vecto)."
   (vecto:with-graphics-state
     (let* ((font-path (or (and (stringp prop) prop) *default-font-path*))
            (font (%get-font renderer font-path))
-           (fontsize (or (and gc (mpl.rendering:gc-linewidth gc)) 12.0))
+           (fontsize-pt (or (and gc (mpl.rendering:gc-linewidth gc)) 12.0))
+           (fontsize (points-to-pixels renderer fontsize-pt))
            (edge-color (%gc-edge-color gc))
            (alpha (if gc (mpl.rendering:gc-alpha gc) 1.0)))
       ;; Reset clip to full figure for text labels (axis labels go outside axes clip)
