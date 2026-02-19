@@ -258,8 +258,9 @@ STROKE can be T (use gc-foreground) or nil."
 ;;; ============================================================
 
 (defmethod mpl.rendering:renderer-draw-text ((renderer renderer-pdf) gc x y text
-                                             &key angle)
+                                             &key angle ha va)
   "Bridge from artist draw text protocol to backend draw-text."
+  (declare (ignore ha va))
   (draw-text renderer gc (float x 1.0d0) (float y 1.0d0) text nil (or angle 0.0)))
 
 ;;; ============================================================

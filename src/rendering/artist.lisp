@@ -217,8 +217,10 @@ Example: (artist-set line :color \"red\" :linewidth 2.0)"
 (defgeneric renderer-draw-path (renderer gc path transform &key fill stroke)
   (:documentation "Draw a path on the renderer."))
 
-(defgeneric renderer-draw-text (renderer gc x y text &key angle)
-  (:documentation "Draw text on the renderer."))
+(defgeneric renderer-draw-text (renderer gc x y text &key angle ha va)
+  (:documentation "Draw text on the renderer.
+HA — horizontal alignment (:left, :center, :right). Default :left.
+VA — vertical alignment (:baseline, :bottom, :center, :top). Default :baseline."))
 
 (defgeneric renderer-draw-image (renderer gc x y image)
   (:documentation "Draw an image on the renderer."))
@@ -226,7 +228,8 @@ Example: (artist-set line :color \"red\" :linewidth 2.0)"
 (defmethod renderer-draw-path ((r mock-renderer) gc path transform &key fill stroke)
   (mock-renderer-record r :draw-path gc path transform :fill fill :stroke stroke))
 
-(defmethod renderer-draw-text ((r mock-renderer) gc x y text &key angle)
+(defmethod renderer-draw-text ((r mock-renderer) gc x y text &key angle ha va)
+  (declare (ignore ha va))
   (mock-renderer-record r :draw-text gc x y text :angle angle))
 
 (defmethod renderer-draw-image ((r mock-renderer) gc x y image)
