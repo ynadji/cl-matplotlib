@@ -1,0 +1,12 @@
+=== Gallery Batch A Evidence ===
+Generated: 2026-02-19T13:50:04-05:00
+
+OK: errorbar.png (35909 bytes)
+OK: stem-plot.png (29901 bytes)
+OK: step-plot.png (33593 bytes)
+OK: barh.png (26838 bytes)
+OK: stackplot.png (46309 bytes)
+OK: boxplot.png (29834 bytes)
+OK: fill-between.png (64404 bytes)
+
+All 7 examples generated successfully. All PNGs > 5KB.
