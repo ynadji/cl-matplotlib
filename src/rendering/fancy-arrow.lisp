@@ -341,7 +341,7 @@ Returns (values shaft-path head-path) or just shaft-path for styles without head
            :documentation "Optional patch at start for clipping.")
    (patchB :initarg :patchB :initform nil :accessor fancy-arrow-patchB
            :documentation "Optional patch at end for clipping.")
-   (cached-path :initform nil :accessor fancy-arrow-cached-path))
+    (cached-path :initform nil :accessor fancy-arrow-cached-path))
   (:default-initargs :capstyle :round :joinstyle :round :zorder 2)
   (:documentation "A fancy arrow patch that draws an arrow using ArrowStyle.
 Ported from matplotlib.patches.FancyArrowPatch."))
@@ -401,8 +401,10 @@ Ported from matplotlib.patches.FancyArrowPatch."))
          (style-key (etypecase arrowstyle
                       (keyword arrowstyle)
                       (string (intern (string-upcase arrowstyle) :keyword))))
-         ;; Filled styles get facecolor
-         (filled-p (member style-key '(:simple :fancy :wedge :-> :<- :<->)))
+         ;; Only single-shape styles (:simple :fancy :wedge) should fill
+         ;; the entire compound path. Arrow styles (:-> :<- :<->) draw
+         ;; shaft + head as stroke-only to avoid filling the enclosed area.
+         (filled-p (member style-key '(:simple :fancy :wedge)))
          (gc (make-gc :foreground (or (patch-edgecolor fa) "black")
                       :linewidth (patch-linewidth fa)
                       :linestyle (patch-linestyle fa)
