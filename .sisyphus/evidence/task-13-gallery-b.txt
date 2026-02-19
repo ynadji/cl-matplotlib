@@ -1,0 +1,10 @@
+=== Gallery Batch B ===
+OK: imshow-heatmap.png (29635 bytes)
+OK: contour-lines.png (72922 bytes)
+OK: annotations.png (46623 bytes)
+OK: legend-styles.png (58926 bytes)
+OK: colorbar-custom.png (61125 bytes)
+OK: multi-line.png (86275 bytes)
+
+Note: colorbar function not usable (SM-NORM missing on AXES-IMAGE/QUAD-CONTOUR-SET).
+Fallback: imshow-heatmap uses imshow without colorbar; colorbar-custom uses contourf with plasma cmap.
