@@ -269,8 +269,8 @@ Returns the created Polygon."
                                :xy verts
                                :closed t
                                :facecolor effective-color
-                               :edgecolor "none"
-                               :linewidth 0.0
+                                           :edgecolor color
+                                           :linewidth 0.5
                                :label label
                                :zorder zorder)))
       (when alpha
