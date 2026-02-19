@@ -65,6 +65,14 @@ Contains one collection (LineCollection or PolyCollection) per level."))
   "Draw all contour collections and labels."
   (unless (mpl.rendering:artist-visible cs)
     (return-from mpl.rendering:draw))
+  ;; Propagate our own (up-to-date) transform to all child collections.
+  ;; The axes draw loop updates the contour-set's transform via artist-transform,
+  ;; but the child collections still hold the stale transform from creation time.
+  (let ((tr (mpl.rendering:get-artist-transform cs)))
+    (when tr
+      (dolist (coll (contourset-collections cs))
+        (when coll
+          (setf (mpl.rendering:artist-transform coll) tr)))))
   ;; Draw each collection
   (dolist (coll (contourset-collections cs))
     (when coll
