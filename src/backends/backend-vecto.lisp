@@ -43,6 +43,7 @@ and zpng for PNG output."))
   "Resolve a color specification to (r g b a) list of floats 0.0-1.0.
 COLOR-SPEC can be:
   - A list of 3-4 floats (RGBA)
+  - A vector of 3-4 floats (RGBA) — e.g. from colormap-call
   - A string (looked up via to-rgba)
   - NIL (returns NIL)"
   (when (null color-spec) (return-from %resolve-color nil))
@@ -52,6 +53,13 @@ COLOR-SPEC can be:
            (g (float (nth 1 color-spec) 1.0))
            (b (float (nth 2 color-spec) 1.0))
            (a (if (>= (length color-spec) 4) (float (nth 3 color-spec) 1.0) 1.0)))
+       (list r g b a)))
+    ((and (vectorp color-spec) (>= (length color-spec) 3)
+          (numberp (elt color-spec 0)))
+     (let ((r (float (elt color-spec 0) 1.0))
+           (g (float (elt color-spec 1) 1.0))
+           (b (float (elt color-spec 2) 1.0))
+           (a (if (>= (length color-spec) 4) (float (elt color-spec 3) 1.0) 1.0)))
        (list r g b a)))
     ((stringp color-spec)
       (let ((rgba (mpl.colors:to-rgba color-spec)))
