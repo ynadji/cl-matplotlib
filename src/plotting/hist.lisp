@@ -199,5 +199,7 @@ Returns (values counts bin-edges patches)."
            (all-y (cons 0.0d0 heights)))
       (axes-update-datalim ax all-x all-y))
     (axes-autoscale-view ax)
+    ;; Clamp y_min to 0 (matching matplotlib's hist behavior)
+    (axes-set-ylim ax :min 0.0d0)
     ;; Return values matching matplotlib
     (values counts bin-edges (nreverse patches))))

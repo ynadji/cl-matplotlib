@@ -314,12 +314,12 @@ Returns a QuadContourSet."
       (when coll
         (setf (mpl.rendering:artist-transform coll)
               (axes-base-trans-data ax))))
-    ;; Add to axes as artist
-    (axes-add-artist ax cs)
-    ;; Update data limits from X/Y range
-    (axes-update-datalim ax x y)
-    (axes-autoscale-view ax)
-    cs))
+     ;; Add to axes as artist
+     (axes-add-artist ax cs)
+     ;; Update data limits from X/Y range
+     (axes-update-datalim ax x y)
+     (axes-autoscale-view ax :tight t)
+     cs))
 
 ;;; ============================================================
 ;;; contourf — draw filled contours on axes
@@ -362,12 +362,12 @@ Returns a QuadContourSet."
       (when coll
         (setf (mpl.rendering:artist-transform coll)
               (axes-base-trans-data ax))))
-    ;; Add to axes as artist
-    (axes-add-artist ax cs)
-    ;; Update data limits from X/Y range
-    (axes-update-datalim ax x y)
-    (axes-autoscale-view ax)
-    cs))
+     ;; Add to axes as artist
+     (axes-add-artist ax cs)
+     ;; Update data limits from X/Y range
+     (axes-update-datalim ax x y)
+     (axes-autoscale-view ax :tight t)
+     cs))
 
 ;;; ============================================================
 ;;; clabel — add labels to contour lines
