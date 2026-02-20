@@ -350,6 +350,33 @@ Returns (values patches texts autotexts)."
   ;; (patches are refreshed in the draw method, but texts are not).
   (axes-set-xlim ax :min -1.25d0 :max 1.25d0)
   (axes-set-ylim ax :min -1.25d0 :max 1.25d0)
+  ;; Enforce equal aspect ratio (matplotlib's pie() calls set_aspect('equal')).
+  ;; Adjust axes position so display bbox is square, centering the shorter dimension.
+  (multiple-value-bind (dx dy dw dh) (%compute-display-bbox ax)
+    (declare (ignore dx dy))
+    (when (and (> dw 0) (> dh 0) (/= dw dh))
+      (let* ((fig (axes-base-figure ax))
+             (pos (axes-base-position ax))
+             (fig-w (if fig (float (figure-width-px fig) 1.0d0) 640.0d0))
+             (fig-h (if fig (float (figure-height-px fig) 1.0d0) 480.0d0))
+             (side (min dw dh)))
+        (if (> dw dh)
+            ;; Width > height: narrow the width, center horizontally
+            (let* ((new-width-frac (/ side fig-w))
+                   (old-left (first pos))
+                   (old-width (third pos))
+                   (new-left (+ old-left (/ (- old-width new-width-frac) 2.0d0))))
+              (setf (axes-base-position ax)
+                    (list new-left (second pos) new-width-frac (fourth pos))))
+            ;; Height > width: shorten the height, center vertically
+            (let* ((new-height-frac (/ side fig-h))
+                   (old-bottom (second pos))
+                   (old-height (fourth pos))
+                   (new-bottom (+ old-bottom (/ (- old-height new-height-frac) 2.0d0))))
+              (setf (axes-base-position ax)
+                    (list (first pos) new-bottom (third pos) new-height-frac))))
+        ;; Recompute transforms with new position
+        (%setup-transforms ax))))
   (let* ((data (mapcar (lambda (v) (float v 1.0d0)) (coerce x 'list)))
          (total (reduce #'+ data))
          (fractions (if (zerop total)
