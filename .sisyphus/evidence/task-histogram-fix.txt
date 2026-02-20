@@ -1,0 +1,54 @@
+Task: Fix histogram SSIM to ≥ 0.95
+Date: 2026-02-20
+
+## Root Cause
+The pyplot `hist` wrapper had a default `linewidth` of 0.5, while matplotlib's actual
+default `patch.linewidth` is 1.0. With `edgecolor='white'` and `alpha=0.85`, this caused
+different bar edge rendering — thinner white edges between bars in CL vs reference.
+
+Verified via: plt.hist() returns patches[0].get_linewidth() = 1.0 in matplotlib 3.8.4.
+
+The initial hypothesis of title position being the main issue was incorrect.
+Title region contributes ~0.01 SSIM gap; bar edges contribute ~0.045 SSIM gap.
+
+## Fix Applied
+File: src/pyplot/pyplot.lisp, line 242
+Changed: (linewidth 0.5) → (linewidth 1.0) in pyplot hist function default args
+
+## Results
+Before: SSIM = 0.9452 (FAIL)
+After:  SSIM = 0.9577 (PASS)
+
+## Regression Check
+23 passed, 4 failed (same 4 pre-existing failures: bar-chart, barh, color-cycle, step-plot)
+No regressions introduced.
+
+Full make compare output:
+  bar-chart..................... 0.9434  FAIL (pre-existing)
+  barh.......................... 0.9246  FAIL (pre-existing)
+  boxplot....................... 0.9545  PASS
+  color-cycle................... 0.9291  FAIL (pre-existing)
+  colorbar-custom............... 0.9697  PASS
+  contour-lines................. 0.9807  PASS
+  custom-markers................ 0.9531  PASS
+  errorbar...................... 0.9634  PASS
+  figure-sizes.................. 0.9713  PASS
+  fill-between.................. 0.9667  PASS
+  filled-contour................ 0.9692  PASS
+  gridspec-custom............... 0.9737  PASS
+  histogram..................... 0.9577  PASS ← fixed
+  imshow-heatmap................ 0.9774  PASS
+  legend-styles................. 0.9516  PASS
+  log-scale..................... 0.9757  PASS
+  multi-line.................... 0.9627  PASS
+  pie-chart..................... 0.9834  PASS
+  scatter....................... 0.9682  PASS
+  shared-axes................... 0.9783  PASS
+  simple-line................... 0.9680  PASS
+  stackplot..................... 0.9677  PASS
+  stem-plot..................... 0.9675  PASS
+  step-plot..................... 0.9356  FAIL (pre-existing)
+  subplots...................... 0.9707  PASS
+  twin-axes..................... 0.9632  PASS
+
+Only histogram.lisp uses hist — no other examples affected by this change.

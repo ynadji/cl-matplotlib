@@ -239,7 +239,7 @@ Returns a list of Rectangle patches."
 
 (defun hist (data &key (bins 10) (range nil) (density nil) (cumulative nil)
                        (histtype :bar) (color nil) (edgecolor "black")
-                       (linewidth 0.5) (alpha nil) (label "") (zorder 1))
+                       (linewidth 1.0) (alpha nil) (label "") (zorder 1))
   "Plot a histogram on the current axes.
 
 DATA — sequence of data values.
@@ -473,7 +473,7 @@ LOC — position: :center, :left, :right."
                               :text text
                               :fontsize fontsize-pts
                               :horizontalalignment :center
-                              :verticalalignment :baseline
+                               :verticalalignment :baseline
                               :zorder 3)))
     ;; Set transform to transAxes (title is in axes coordinates)
     (setf (mpl.rendering:artist-transform txt)
