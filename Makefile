@@ -6,7 +6,7 @@ REFERENCE_IMAGES_DIR := reference_images
 EXAMPLES_DIR := examples
 COMPARISON_REPORT_DIR := comparison_report
 COMPARISON_TOOL := tools/compare.py
-THRESHOLD := 0.90
+THRESHOLD := 0.95
 
 .PHONY: setup-python reference-images cl-images compare report clean all
 
