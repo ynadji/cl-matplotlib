@@ -85,7 +85,7 @@ Ported from matplotlib.axis.Tick."))
   "Set default tick size based on major/minor."
   (unless (tick-size tk)
     (setf (tick-size tk)
-          (if (tick-major-p tk) 6.0 3.0)))
+          (if (tick-major-p tk) 3.5 2.0)))
   (unless (tick-width tk)
     (setf (tick-width tk)
           (if (tick-major-p tk) 0.8 0.6))))
@@ -126,12 +126,12 @@ Ported from matplotlib.axis.Tick."))
                :accessor axis-scale
                :documentation "The scale object for this axis (LinearScale, LogScale, etc.).")
    ;; Tick parameters
-   (tick-size-major :initform 6.0
-                    :accessor axis-tick-size-major
-                    :type real)
-   (tick-size-minor :initform 3.0
-                    :accessor axis-tick-size-minor
-                    :type real)
+    (tick-size-major :initform 3.5
+                     :accessor axis-tick-size-major
+                     :type real)
+    (tick-size-minor :initform 2.0
+                     :accessor axis-tick-size-minor
+                     :type real)
    (tick-direction :initform :out
                    :accessor axis-tick-direction
                    :documentation "Tick direction: :out, :in, :inout.")
@@ -415,7 +415,9 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
          ;; Get axes bottom in display coords
          (axes-bottom (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 1))
          (axes-top (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 1.0d0)) 1))
-         (tick-len (float (or (tick-size tk) 6.0) 1.0d0))
+         (dpi (mpl.backends:renderer-dpi renderer))
+         (pts->px (/ dpi 72.0d0))
+         (tick-len (* (float (or (tick-size tk) 3.5) 1.0d0) pts->px))
          (tick-wid (float (or (tick-width tk) 0.8) 1.0d0))
          (direction (tick-direction tk))
          ;; Compute tick mark endpoints
@@ -444,7 +446,7 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
     (when (and labels-visible
                (tick-label-text tk)
                (> (length (tick-label-text tk)) 0))
-      (let* ((label-y (- y-end (float (tick-pad tk) 1.0d0)))
+      (let* ((label-y (- y-end (* (float (tick-pad tk) 1.0d0) pts->px)))
               (fontsize-px (* (tick-label-fontsize tk)
                               (/ (mpl.backends:renderer-dpi renderer) 72.0)))
               (gc (mpl.rendering:make-gc
@@ -584,7 +586,9 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
          ;; Get axes left edge in display coords
          (axes-left (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 0))
          (axes-right (aref (mpl.primitives:transform-point trans-axes (list 1.0d0 0.0d0)) 0))
-         (tick-len (float (or (tick-size tk) 6.0) 1.0d0))
+         (dpi (mpl.backends:renderer-dpi renderer))
+         (pts->px (/ dpi 72.0d0))
+         (tick-len (* (float (or (tick-size tk) 3.5) 1.0d0) pts->px))
          (tick-wid (float (or (tick-width tk) 0.8) 1.0d0))
          (direction (tick-direction tk))
          ;; Compute tick mark endpoints
@@ -613,7 +617,7 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
     (when (and labels-visible
                (tick-label-text tk)
                (> (length (tick-label-text tk)) 0))
-      (let* ((label-x (- x-end (float (tick-pad tk) 1.0d0)))
+      (let* ((label-x (- x-end (* (float (tick-pad tk) 1.0d0) pts->px)))
               (fontsize-px (* (tick-label-fontsize tk)
                               (/ (mpl.backends:renderer-dpi renderer) 72.0)))
               (gc (mpl.rendering:make-gc
