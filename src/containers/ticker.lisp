@@ -516,19 +516,34 @@ Handles appropriate decimal places based on magnitude."
                         (scalar-formatter-order-of-magnitude fmt)))
 
 (defmethod tick-formatter-format-ticks ((fmt scalar-formatter) values)
-  "Format a list of tick values, computing appropriate format first."
+  "Format a list of tick values with consistent decimal places.
+Matches matplotlib's ScalarFormatter: determines decimal places from tick spacing."
   (when (null values)
     (return-from tick-formatter-format-ticks nil))
-  ;; Compute the range to determine appropriate formatting
   (let* ((vals (mapcar (lambda (v) (float v 1.0d0)) values))
-         (vmin (reduce #'min vals))
-         (vmax (reduce #'max vals))
-         (vrange (- vmax vmin)))
-    (declare (ignore vrange))
-    ;; For now, use per-value formatting
+         (oom (scalar-formatter-order-of-magnitude fmt))
+         ;; Compute tick spacing to determine decimal places
+         (sorted (sort (copy-list vals) #'<))
+         (spacings (loop for (a b) on sorted while b
+                         collect (abs (- b a))))
+         (min-spacing (if spacings (reduce #'min spacings) 1.0d0))
+         (adjusted-spacing (if (zerop oom) min-spacing
+                               (/ min-spacing (expt 10.0d0 oom))))
+         ;; Determine number of decimal places needed
+         (decimals (cond
+                     ((<= adjusted-spacing 0) 0)
+                     ((>= adjusted-spacing 1.0d0)
+                      ;; Check if spacing has fractional part
+                      (if (< (abs (- adjusted-spacing (round adjusted-spacing))) 1.0d-9)
+                          0
+                          (max 1 (ceiling (- (log (/ 1.0d0 adjusted-spacing) 10.0d0))))))
+                     (t (max 1 (ceiling (- (log adjusted-spacing 10.0d0))))))))
+    ;; Format all values with consistent decimal places
     (loop for v in vals
-          for pos from 0
-          collect (tick-formatter-call fmt v pos))))
+          for adjusted = (if (zerop oom) v (/ v (expt 10.0d0 oom)))
+          collect (if (zerop decimals)
+                      (format nil "~D" (round adjusted))
+                      (format nil (format nil "~~,~DF" decimals) adjusted)))))
 
 ;;; ============================================================
 ;;; StrMethodFormatter — format using format string
