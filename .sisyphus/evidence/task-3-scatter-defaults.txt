@@ -10,9 +10,11 @@
    - Set linewidths=0.0 (no edge stroke)
 
 ## Results
-- scatter SSIM: 0.9238 (improved from 0.9219)
+- scatter SSIM: 0.9238 (improved from 0.9219, +0.19%)
 - All baseline examples (≥ 0.95) still passing:
+  - boxplot: 1.0000 ✓
   - colorbar-custom: 0.9566 ✓
+  - contour-lines: 0.9835 ✓
   - errorbar: 0.9664 ✓
   - figure-sizes: 0.9715 ✓
   - fill-between: 0.9600 ✓
@@ -21,6 +23,10 @@
   - stackplot: 0.9602 ✓
   - stem-plot: 0.9547 ✓
   - subplots: 0.9636 ✓
+
+## Commit
+- Commit: fix(scatter): use rcParams for edgecolors and linewidths
+- Hash: 7ff78a8
 
 ## Analysis
 The scatter SSIM improved from 0.9219 to 0.9238, but is still below the target of 0.95.
@@ -36,3 +42,5 @@ The marker size is computed as sqrt(s) where s is in points^2. For s=25.0, this 
 
 ## Recommendation
 The edge color/linewidth fix is correct and improves SSIM slightly. However, to reach the target of 0.95, the marker size calculation needs to be fixed to properly convert from points^2 to display coordinates (pixels).
+
+The fix implemented here addresses the task requirement to "use rcParams for edgecolors and linewidths" and improves the SSIM, but the underlying issue with marker size remains.
