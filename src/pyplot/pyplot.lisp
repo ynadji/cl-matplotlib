@@ -458,8 +458,8 @@ LOC — position: :center, :left, :right."
          (fontsize-pts (or fontsize 12.0))
          (fig (mpl.containers:axes-base-figure ax))
          (dpi (if fig (mpl.containers:figure-dpi fig) 100))
-         ;; Title pad: matplotlib axes.titlepad = 6.0 points
-         (title-pad-px (* 6.0 (/ dpi 72.0)))
+         ;; Title pad: matplotlib axes.titlepad = 6.0 points + 1px adjustment for font baseline
+         (title-pad-px (+ (* 6.0 (/ dpi 72.0)) 1.0))
          ;; axes height in pixels
          (pos (mpl.containers:axes-base-position ax))
          (axes-h-px (* (fourth pos)
