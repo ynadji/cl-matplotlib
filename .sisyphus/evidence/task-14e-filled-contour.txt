@@ -1,0 +1,46 @@
+Task 14e: filled-contour SSIM Fix
+===================================
+
+Before: SSIM = 0.9414 (FAIL)
+After:  SSIM = 0.9693 (PASS)
+
+Root Cause:
+-----------
+The filled contour (contourf) uses marching-squares which generates individual
+polygons per grid cell (3065 total polygons for a 50x50 grid with 13 levels).
+Each polygon has antialiased edges rendered by Vecto. At shared cell boundaries,
+the antialiased fill blending creates visible seam artifacts where partially-
+transparent edge pixels blend with the background instead of neighboring polygons.
+
+This resulted in ~43 color transitions per horizontal row vs ~25 in the reference,
+and significant pixel differences at polygon boundaries.
+
+Fix Applied:
+------------
+1. File: src/plotting/contour.lisp (%build-contourf-collections)
+   - Increased polygon edge linewidth from 0.5 to 1.0 (in the face color)
+   - Set antialiaseds to '(nil) on each PolyCollection
+   The thicker stroke in the matching face color covers up the antialiased
+   fill seam artifacts at polygon boundaries.
+
+2. File: src/rendering/collections.lisp (poly-collection draw method)  
+   - Changed hardcoded `:antialiased t` to use the collection's antialiaseds slot
+   - This allows per-collection control of antialiasing
+
+Note: Vecto doesn't actually support disabling antialiasing per draw call
+(line 553-555 says "Vecto doesn't have AA toggle"). The real fix is the
+increased linewidth which covers the seam artifacts.
+
+Key Analysis:
+-------------
+- 3065 cell-level polygons (vs matplotlib's merged contour paths)
+- Band 0 (outermost): 1920 polygons, Band 12 (innermost): 21 polygons
+- The antialiased edges of adjacent same-colored polygons create visible seams
+- Increasing linewidth from 0.5 to 1.0 (same color as fill) covers the seams
+- Transitions reduced from 43 to 35 per row (reference: 25)
+
+Regression Check:
+-----------------
+All 11 other previously-passing examples still PASS. The boxplot regression
+(0.9346) is pre-existing from committed codebase (confirmed: 0.9360 from
+committed code without any working directory changes).

@@ -1,0 +1,33 @@
+Task 13: imshow-heatmap SSIM Fix
+=================================
+
+Before: SSIM = 0.9379 (FAIL)
+After:  SSIM = 0.9796 (PASS)
+
+Root Cause:
+-----------
+The `draw-image` method in backend-vecto.lisp passed figure coordinates (y=0 at
+bottom) directly to `%blit-image-to-canvas`, which uses canvas coordinates (y=0 at
+top). This caused the heatmap image to render ~6px above its correct position,
+extending beyond the top spine of the axes.
+
+- Spine positions were correct (both CL and REF at row 72 top, 534 bottom)
+- But CL heatmap data extended to row 66 (6px ABOVE the top spine)
+- REF correctly starts data at row 73 (just below spine)
+- The positional offset caused per-pixel color mismatches throughout the heatmap
+
+Fix Applied:
+------------
+File: src/backends/backend-vecto.lisp (draw-image method)
+
+Added Y-coordinate conversion from figure coords to canvas coords:
+  canvas_y = canvas_height - figure_y - image_height
+
+This maps the bottom-up figure coordinates to top-down canvas row indices,
+aligning the image correctly within the axes bounding box.
+
+Regression Check:
+-----------------
+All 11 other previously-passing examples still PASS (boxplot regression is
+pre-existing from committed codebase, confirmed by testing committed code
+without any working directory changes: boxplot SSIM = 0.9360).

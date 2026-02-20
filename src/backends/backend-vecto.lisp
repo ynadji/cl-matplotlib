@@ -114,9 +114,16 @@ RENDERER is needed to convert linewidth from points to pixels via DPI."
          (:round :round)
          (:bevel :bevel)
          (otherwise :miter)))))
-  ;; Dash pattern
+  ;; Dash pattern — scale by linewidth like matplotlib
+  ;; matplotlib base patterns (linewidth-relative):
+  ;;   dashed:  (3.7, 1.6)
+  ;;   dashdot: (6.4, 1.6, 1.0, 1.6)
+  ;;   dotted:  (1.0, 1.65)
+  ;; These are multiplied by linewidth_in_pixels to get the final dash pattern.
   (let ((dashes (mpl.rendering:gc-dashes gc))
-        (linestyle (mpl.rendering:gc-linestyle gc)))
+        (linestyle (mpl.rendering:gc-linestyle gc))
+        (lw-px (let ((lw (mpl.rendering:gc-linewidth gc)))
+                 (if lw (float (points-to-pixels renderer lw) 1.0) 1.0))))
     (cond
       ;; Explicit dash list
       ((and dashes (listp dashes) (not (null dashes)))
@@ -124,13 +131,22 @@ RENDERER is needed to convert linewidth from points to pixels via DPI."
                                   :element-type 'single-float
                                   :initial-contents (mapcar (lambda (d) (float d 1.0)) dashes))))
          (vecto:set-dash-pattern pattern 0)))
-      ;; Named line style
+      ;; Named line style — scale by linewidth in pixels
       ((and linestyle (not (eq linestyle :solid)))
-       (case linestyle
-         (:dashed (vecto:set-dash-pattern #(6.0 4.0) 0))
-         (:dashdot (vecto:set-dash-pattern #(6.0 3.0 2.0 3.0) 0))
-         (:dotted (vecto:set-dash-pattern #(2.0 4.0) 0))
-         (otherwise (vecto:set-dash-pattern #() 0))))
+       (let ((base-pattern (case linestyle
+                             (:dashed '(3.7 1.6))
+                             (:dashdot '(6.4 1.6 1.0 1.6))
+                             (:dotted '(1.0 1.65))
+                             (otherwise nil))))
+         (if base-pattern
+             (let ((scaled (make-array (length base-pattern)
+                                       :element-type 'single-float
+                                       :initial-contents
+                                       (mapcar (lambda (d)
+                                                 (float (max (* d lw-px) 1.0) 1.0))
+                                               base-pattern))))
+               (vecto:set-dash-pattern scaled 0))
+             (vecto:set-dash-pattern #() 0))))
       ;; Solid line
       (t (vecto:set-dash-pattern #() 0))))
   ;; Clip rectangle
@@ -333,13 +349,18 @@ Alpha-over compositing is performed."
 
 (defmethod draw-image ((renderer renderer-vecto) gc x y im)
   "Draw an RGBA image IM at position (X, Y).
-IM should be a plist with :data (flat RGBA bytes), :width, :height."
+IM should be a plist with :data (flat RGBA bytes), :width, :height.
+X, Y are in figure coordinates (y=0 at bottom).
+Canvas coordinates have y=0 at top, so we flip Y."
   (declare (ignore gc))
   (let ((data (getf im :data))
         (w (getf im :width))
         (h (getf im :height)))
     (when (and data w h)
-      (%blit-image-to-canvas data w h (round x) (round y)))))
+      ;; Convert Y from figure coords (y-up) to canvas coords (y-down):
+      ;; canvas_y = canvas_height - figure_y - image_height
+      (let ((canvas-y (- (renderer-height renderer) (round y) h)))
+        (%blit-image-to-canvas data w h (round x) canvas-y)))))
 
 ;;; ============================================================
 ;;; Bridge: renderer-draw-image from artist protocol → draw-image

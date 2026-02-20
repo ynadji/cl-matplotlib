@@ -287,7 +287,12 @@ SEGMENTS is a list of segments, where each segment is a list of (x y) points."
           :initform nil
           :accessor path-collection-sizes
           :documentation "Marker sizes in points^2 for each item.
-Each size controls the scaling of the path at that offset."))
+Each size controls the scaling of the path at that offset.")
+   (dpi :initarg :dpi
+        :initform 72.0
+        :accessor path-collection-dpi
+        :type real
+        :documentation "Figure DPI for converting sizes from points^2 to pixels."))
   (:documentation "A collection of paths drawn at offsets with per-item sizes.
 Ported from matplotlib.collections.PathCollection.
 Used by scatter() for efficient rendering of many markers."))
@@ -310,14 +315,16 @@ SIZES is a list of numbers (area in points^2)."
 
 (defmethod collection-get-transforms ((pc path-collection))
   "Return per-item scale transforms based on sizes.
-Each size (in points^2) is converted to a scale factor."
+Each size (in points^2) is converted to a scale factor.
+Includes DPI conversion: scale = sqrt(size) * dpi/72 (matching matplotlib)."
   (let ((sizes (path-collection-sizes pc))
-        (offsets (collection-offsets pc)))
+        (offsets (collection-offsets pc))
+        (dpi-scale (/ (float (path-collection-dpi pc) 1.0d0) 72.0d0)))
     (when (and sizes offsets)
       (let ((n (length offsets)))
         (loop for i from 0 below n
               for size = (or (%coll-nth sizes i) 36.0)
-              for scale = (sqrt (float size 1.0d0))
+              for scale = (* (sqrt (float size 1.0d0)) dpi-scale)
               collect (mpl.primitives:make-affine-2d
                        :scale (list scale scale)))))))
 
@@ -415,6 +422,7 @@ Vertices are already in correct winding order from marching squares."
          (edgecolors (collection-edgecolors pc))
          (linewidths (collection-linewidths pc))
          (linestyles (collection-linestyles pc))
+         (antialiaseds (collection-antialiaseds pc))
          (transform (get-artist-transform pc))
          (alpha (or (artist-alpha pc) 1.0d0))
          (n (length paths)))
@@ -425,13 +433,15 @@ Vertices are already in correct winding order from marching squares."
              (facecolor (or (%coll-nth facecolors i) "C0"))
              (edgecolor (%coll-nth edgecolors i))
              (linewidth (or (%coll-nth linewidths i) 1.0))
-             (linestyle (or (%coll-nth linestyles i) :solid)))
+             (linestyle (or (%coll-nth linestyles i) :solid))
+             (antialiased (let ((aa (%coll-nth antialiaseds i)))
+                            (if (null antialiaseds) t aa))))
         (let ((gc (make-gc :foreground edgecolor
                            :background facecolor
                            :linewidth linewidth
                            :linestyle linestyle
                            :alpha (float alpha 1.0)
-                           :antialiased t
+                           :antialiased antialiased
                            :capstyle (collection-capstyle pc)
                            :joinstyle (collection-joinstyle pc))))
           (renderer-draw-path renderer gc path transform
@@ -535,17 +545,19 @@ Each quad is defined by 4 corners: (i,j), (i,j+1), (i+1,j+1), (i+1,j)."
 
 (defun make-path-collection (&key paths offsets sizes facecolors edgecolors
                                   linewidths linestyles alpha transform
-                                  trans-offset zorder label)
+                                  trans-offset zorder label (dpi 72.0))
   "Create a PathCollection for scatter-like plots.
 PATHS — list of mpl-paths (marker shapes).
 OFFSETS — list of (x y) positions.
 SIZES — list of marker sizes in points^2.
 FACECOLORS — single color or list of colors.
-EDGECOLORS — single color or list of colors."
+EDGECOLORS — single color or list of colors.
+DPI — figure DPI for converting sizes to display pixels (default 72.0)."
   (let ((pc (make-instance 'path-collection
                            :paths paths
                            :offsets offsets
                            :sizes sizes
+                           :dpi (float dpi 1.0d0)
                            :facecolors (when facecolors
                                          (if (stringp facecolors)
                                              (list facecolors)
