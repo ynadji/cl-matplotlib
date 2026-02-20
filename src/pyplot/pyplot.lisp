@@ -454,15 +454,24 @@ COLOR — text color.
 LOC — position: :center, :left, :right."
   (declare (ignore loc color))
   (let* ((ax (gca))
-         ;; Convert fontsize from points to pixels (matplotlib default title size = 12pt)
+         ;; Fontsize in points (text-artist draw handles pt→px conversion)
          (fontsize-pts (or fontsize 12.0))
          (fig (mpl.containers:axes-base-figure ax))
          (dpi (if fig (mpl.containers:figure-dpi fig) 100))
-         (fontsize-px (* fontsize-pts (/ dpi 72.0)))
+         ;; Title pad: matplotlib axes.titlepad = 6.0 points
+         (title-pad-px (* 6.0 (/ dpi 72.0)))
+         ;; axes height in pixels
+         (pos (mpl.containers:axes-base-position ax))
+         (axes-h-px (* (fourth pos)
+                       (if fig
+                           (float (mpl.containers:figure-height-px fig) 1.0d0)
+                           500.0d0)))
+         ;; y in axes coords: 1.0 + pad_px / axes_h_px
+         (y-title (+ 1.0d0 (if (> axes-h-px 0.0d0) (/ title-pad-px axes-h-px) 0.02d0)))
          (txt (make-instance 'mpl.rendering:text-artist
-                               :x 0.5d0 :y 1.0d0
+                              :x 0.5d0 :y y-title
                               :text text
-                              :fontsize fontsize-px
+                              :fontsize fontsize-pts
                               :horizontalalignment :center
                               :verticalalignment :baseline
                               :zorder 3)))
