@@ -141,11 +141,16 @@ Ported from matplotlib.axis.Tick."))
    (tick-pad :initform 3.5d0
              :accessor axis-tick-pad
              :type double-float)
-   ;; Grid state
-   (grid-on-p :initform nil
-              :accessor axis-grid-on-p
-              :type boolean
-              :documentation "Whether grid is enabled for this axis.")
+    ;; Tick label visibility (for shared axes suppression)
+    (tick-labels-visible :initform t
+                         :accessor axis-tick-labels-visible-p
+                         :type boolean
+                         :documentation "Whether tick labels are drawn. Set to NIL to suppress (e.g. shared axes).")
+    ;; Grid state
+    (grid-on-p :initform nil
+               :accessor axis-grid-on-p
+               :type boolean
+               :documentation "Whether grid is enabled for this axis.")
    (grid-color :initform "#b0b0b0"
                :accessor axis-grid-color)
    (grid-linewidth :initform 0.8
@@ -334,32 +339,69 @@ Ported from matplotlib.axis.XAxis."))
         (values (mpl.primitives:bbox-x0 dl) (mpl.primitives:bbox-x1 dl))
         (values 0.0d0 1.0d0))))
 
-;;; XAxis drawing
+;;; XAxis grid drawing (called before data artists for correct z-ordering)
+
+(defun draw-x-axis-grid (axis renderer)
+  "Draw only the grid lines for the X axis.
+Called before data artists to ensure grid appears behind data (zorder=0.5 in matplotlib)."
+  (when (and (mpl.rendering:artist-visible axis)
+             (axis-grid-on-p axis))
+    (let* ((ax (axis-axes axis))
+           (trans-axes (when ax (axes-base-trans-axes ax)))
+           (trans-data (when ax (axes-base-trans-data ax))))
+      (when (and ax trans-axes trans-data)
+        (let* ((axes-bottom (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 1))
+               (axes-top (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 1.0d0)) 1))
+               (major-ticks (axis-get-major-ticks axis)))
+          (dolist (tk major-ticks)
+            (when (tick-gridline-visible-p tk)
+              (let* ((loc (tick-loc tk))
+                     (data-pt (mpl.primitives:transform-point trans-data (list loc 0.0d0)))
+                     (x-display (aref data-pt 0))
+                     (x-display-snapped (+ (round x-display) 0.5d0))
+                     (gc (mpl.rendering:make-gc
+                          :foreground (tick-grid-color tk)
+                          :linewidth (tick-grid-linewidth tk)
+                          :alpha (tick-grid-alpha tk)
+                          :linestyle (tick-grid-linestyle tk)))
+                     (path (mpl.primitives:make-path
+                            :vertices (make-array '(2 2) :element-type 'double-float
+                                                  :initial-contents
+                                                  (list (list x-display-snapped axes-bottom)
+                                                        (list x-display-snapped axes-top))))))
+                (mpl.rendering:renderer-draw-path renderer gc path nil :stroke t)))))))))
+
+;;; XAxis drawing (ticks, labels — grid drawn separately)
 
 (defmethod mpl.rendering:draw ((axis x-axis) renderer)
-  "Draw the X axis: tick marks, tick labels, and axis label."
+  "Draw the X axis: tick marks, tick labels, and axis label.
+Grid lines are NOT drawn here — they are drawn earlier by draw-x-axis-grid
+to ensure they appear behind data artists (matplotlib grid zorder=0.5)."
   (unless (mpl.rendering:artist-visible axis)
     (return-from mpl.rendering:draw))
   (let* ((ax (axis-axes axis))
          (trans-axes (when ax (axes-base-trans-axes ax)))
-         (trans-data (when ax (axes-base-trans-data ax))))
+         (trans-data (when ax (axes-base-trans-data ax)))
+         (labels-visible (axis-tick-labels-visible-p axis)))
     (when (and ax trans-axes trans-data)
-      ;; Draw major ticks
+      ;; Draw major ticks (skip-grid=t since grid was drawn in earlier pass)
       (let ((major-ticks (axis-get-major-ticks axis)))
         (dolist (tk major-ticks)
-          (%draw-x-tick renderer ax tk trans-data trans-axes))
+          (%draw-x-tick renderer ax tk trans-data trans-axes labels-visible t))
         ;; Draw minor ticks
         (let ((minor-ticks (axis-get-minor-ticks axis)))
           (dolist (tk minor-ticks)
-            (%draw-x-tick renderer ax tk trans-data trans-axes))))
-      ;; Draw axis label
-      (when (and (axis-label-text axis)
+            (%draw-x-tick renderer ax tk trans-data trans-axes labels-visible t))))
+      ;; Draw axis label (also suppressed when tick labels are hidden)
+      (when (and labels-visible
+                 (axis-label-text axis)
                  (> (length (axis-label-text axis)) 0))
         (%draw-x-axis-label renderer ax axis trans-axes))))
   (setf (mpl.rendering:artist-stale axis) nil))
 
-(defun %draw-x-tick (renderer ax tk trans-data trans-axes)
-  "Draw a single X axis tick mark, label, and optionally gridline."
+(defun %draw-x-tick (renderer ax tk trans-data trans-axes &optional (labels-visible t) (skip-grid nil))
+  "Draw a single X axis tick mark, label, and optionally gridline.
+When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
   (let* ((loc (tick-loc tk))
          ;; Transform tick location to display coords
          (data-pt (mpl.primitives:transform-point trans-data (list loc 0.0d0)))
@@ -393,8 +435,9 @@ Ported from matplotlib.axis.XAxis."))
                                          (list (list x-display-snapped y-start)
                                                (list x-display-snapped y-end))))))
         (mpl.rendering:renderer-draw-path renderer gc path nil :stroke t)))
-    ;; Draw tick label
-    (when (and (tick-label-text tk)
+    ;; Draw tick label (only when labels are visible)
+    (when (and labels-visible
+               (tick-label-text tk)
                (> (length (tick-label-text tk)) 0))
       (let* ((label-y (- y-end (float (tick-pad tk) 1.0d0)))
               (gc (mpl.rendering:make-gc
@@ -407,8 +450,8 @@ Ported from matplotlib.axis.XAxis."))
                                           :angle 0.0
                                           :ha :center
                                           :va :top)))
-    ;; Draw gridline
-    (when (tick-gridline-visible-p tk)
+    ;; Draw gridline (unless already drawn in grid-only pass)
+    (when (and (not skip-grid) (tick-gridline-visible-p tk))
       (let ((gc (mpl.rendering:make-gc
                  :foreground (tick-grid-color tk)
                  :linewidth (tick-grid-linewidth tk)
@@ -455,32 +498,69 @@ Ported from matplotlib.axis.YAxis."))
         (values (mpl.primitives:bbox-y0 dl) (mpl.primitives:bbox-y1 dl))
         (values 0.0d0 1.0d0))))
 
-;;; YAxis drawing
+;;; YAxis grid drawing (called before data artists for correct z-ordering)
+
+(defun draw-y-axis-grid (axis renderer)
+  "Draw only the grid lines for the Y axis.
+Called before data artists to ensure grid appears behind data (zorder=0.5 in matplotlib)."
+  (when (and (mpl.rendering:artist-visible axis)
+             (axis-grid-on-p axis))
+    (let* ((ax (axis-axes axis))
+           (trans-axes (when ax (axes-base-trans-axes ax)))
+           (trans-data (when ax (axes-base-trans-data ax))))
+      (when (and ax trans-axes trans-data)
+        (let* ((axes-left (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 0))
+               (axes-right (aref (mpl.primitives:transform-point trans-axes (list 1.0d0 0.0d0)) 0))
+               (major-ticks (axis-get-major-ticks axis)))
+          (dolist (tk major-ticks)
+            (when (tick-gridline-visible-p tk)
+              (let* ((loc (tick-loc tk))
+                     (data-pt (mpl.primitives:transform-point trans-data (list 0.0d0 loc)))
+                     (y-display (aref data-pt 1))
+                     (y-display-snapped (- (round y-display) 0.5d0))
+                     (gc (mpl.rendering:make-gc
+                          :foreground (tick-grid-color tk)
+                          :linewidth (tick-grid-linewidth tk)
+                          :alpha (tick-grid-alpha tk)
+                          :linestyle (tick-grid-linestyle tk)))
+                     (path (mpl.primitives:make-path
+                            :vertices (make-array '(2 2) :element-type 'double-float
+                                                  :initial-contents
+                                                  (list (list axes-left y-display-snapped)
+                                                        (list axes-right y-display-snapped))))))
+                (mpl.rendering:renderer-draw-path renderer gc path nil :stroke t)))))))))
+
+;;; YAxis drawing (ticks, labels — grid drawn separately)
 
 (defmethod mpl.rendering:draw ((axis y-axis) renderer)
-  "Draw the Y axis: tick marks, tick labels, and axis label."
+  "Draw the Y axis: tick marks, tick labels, and axis label.
+Grid lines are NOT drawn here — they are drawn earlier by draw-y-axis-grid
+to ensure they appear behind data artists (matplotlib grid zorder=0.5)."
   (unless (mpl.rendering:artist-visible axis)
     (return-from mpl.rendering:draw))
   (let* ((ax (axis-axes axis))
          (trans-axes (when ax (axes-base-trans-axes ax)))
-         (trans-data (when ax (axes-base-trans-data ax))))
+         (trans-data (when ax (axes-base-trans-data ax)))
+         (labels-visible (axis-tick-labels-visible-p axis)))
     (when (and ax trans-axes trans-data)
-      ;; Draw major ticks
+      ;; Draw major ticks (skip-grid=t since grid was drawn in earlier pass)
       (let ((major-ticks (axis-get-major-ticks axis)))
         (dolist (tk major-ticks)
-          (%draw-y-tick renderer ax tk trans-data trans-axes))
+          (%draw-y-tick renderer ax tk trans-data trans-axes labels-visible t))
         ;; Draw minor ticks
         (let ((minor-ticks (axis-get-minor-ticks axis)))
           (dolist (tk minor-ticks)
-            (%draw-y-tick renderer ax tk trans-data trans-axes))))
-      ;; Draw axis label
-      (when (and (axis-label-text axis)
+            (%draw-y-tick renderer ax tk trans-data trans-axes labels-visible t))))
+      ;; Draw axis label (also suppressed when tick labels are hidden)
+      (when (and labels-visible
+                 (axis-label-text axis)
                  (> (length (axis-label-text axis)) 0))
         (%draw-y-axis-label renderer ax axis trans-axes))))
   (setf (mpl.rendering:artist-stale axis) nil))
 
-(defun %draw-y-tick (renderer ax tk trans-data trans-axes)
-  "Draw a single Y axis tick mark, label, and optionally gridline."
+(defun %draw-y-tick (renderer ax tk trans-data trans-axes &optional (labels-visible t) (skip-grid nil))
+  "Draw a single Y axis tick mark, label, and optionally gridline.
+When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
   (declare (ignore ax))
   (let* ((loc (tick-loc tk))
          ;; Transform tick location to display coords
@@ -515,8 +595,9 @@ Ported from matplotlib.axis.YAxis."))
                                          (list (list x-start y-display-snapped)
                                                (list x-end y-display-snapped))))))
         (mpl.rendering:renderer-draw-path renderer gc path nil :stroke t)))
-    ;; Draw tick label
-    (when (and (tick-label-text tk)
+    ;; Draw tick label (only when labels are visible)
+    (when (and labels-visible
+               (tick-label-text tk)
                (> (length (tick-label-text tk)) 0))
       (let* ((label-x (- x-end (float (tick-pad tk) 1.0d0) 2.0d0))
               (gc (mpl.rendering:make-gc
@@ -529,8 +610,8 @@ Ported from matplotlib.axis.YAxis."))
                                           :angle 0.0
                                           :ha :right
                                           :va :center)))
-    ;; Draw gridline
-    (when (tick-gridline-visible-p tk)
+    ;; Draw gridline (unless already drawn in grid-only pass)
+    (when (and (not skip-grid) (tick-gridline-visible-p tk))
       (let ((gc (mpl.rendering:make-gc
                  :foreground (tick-grid-color tk)
                  :linewidth (tick-grid-linewidth tk)

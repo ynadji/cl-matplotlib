@@ -389,6 +389,7 @@
              #:collection-set-segments #:make-line-collection
              ;; PathCollection
              #:path-collection #:path-collection-paths #:path-collection-sizes
+             #:path-collection-dpi
              #:collection-set-paths #:collection-set-sizes
              #:make-path-collection
              ;; PatchCollection
@@ -497,9 +498,10 @@
             #:axis-obj #:axis-axes #:axis-major-locator #:axis-minor-locator
             #:axis-major-formatter #:axis-minor-formatter
             #:axis-label-text #:axis-label-artist
-            #:axis-tick-size-major #:axis-tick-size-minor
-            #:axis-tick-direction #:axis-tick-label-fontsize
-            #:axis-grid-on-p #:axis-grid-color #:axis-grid-linewidth
+             #:axis-tick-size-major #:axis-tick-size-minor
+             #:axis-tick-direction #:axis-tick-label-fontsize
+             #:axis-tick-labels-visible-p
+             #:axis-grid-on-p #:axis-grid-color #:axis-grid-linewidth
             #:axis-grid-linestyle #:axis-grid-alpha
              #:axis-set-major-locator #:axis-set-minor-locator
              #:axis-set-major-formatter #:axis-set-minor-formatter

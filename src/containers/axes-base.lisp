@@ -429,15 +429,32 @@ If TIGHT is T, use exact data limits (no margin)."
   ;; Draw background patch if frameon
   (when (and (axes-base-frameon-p ax) (axes-base-patch ax))
     (%draw-axes-background ax renderer))
-  ;; Draw all artists in z-order
-  (let ((artists (axes-get-all-artists ax)))
+  ;; Draw all artists in z-order, with grid interleaved at zorder=1.5
+  ;; matplotlib default axes.axisbelow='line': grid above patches (zorder 1),
+  ;; below lines (zorder 2). Grid effective zorder = 1.5.
+  (let ((artists (axes-get-all-artists ax))
+        (grid-drawn nil))
     ;; Skip the background patch (already drawn)
     (when (axes-base-patch ax)
       (setf artists (remove (axes-base-patch ax) artists)))
     (dolist (artist artists)
       (when (and (typep artist 'mpl.rendering:artist)
                  (mpl.rendering:artist-visible artist))
-        (mpl.rendering:draw artist renderer))))
+        ;; Draw grid lines just before the first artist with zorder >= 1.5
+        (when (and (not grid-drawn)
+                   (>= (mpl.rendering:artist-zorder artist) 1.5))
+          (when (axes-base-xaxis ax)
+            (draw-x-axis-grid (axes-base-xaxis ax) renderer))
+          (when (axes-base-yaxis ax)
+            (draw-y-axis-grid (axes-base-yaxis ax) renderer))
+          (setf grid-drawn t))
+        (mpl.rendering:draw artist renderer)))
+    ;; If no artist had zorder >= 1.5, draw grid after all artists
+    (unless grid-drawn
+      (when (axes-base-xaxis ax)
+        (draw-x-axis-grid (axes-base-xaxis ax) renderer))
+      (when (axes-base-yaxis ax)
+        (draw-y-axis-grid (axes-base-yaxis ax) renderer))))
   ;; Draw xaxis and yaxis (tick marks, labels, grid)
   (when (axes-base-xaxis ax)
     (mpl.rendering:draw (axes-base-xaxis ax) renderer))

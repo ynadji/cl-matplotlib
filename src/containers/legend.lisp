@@ -206,27 +206,31 @@ Ported from matplotlib.legend.Legend."))
 (defun %legend-compute-bbox (leg renderer)
   "Compute the legend bounding box in display coordinates.
 Returns (values x y width height) in display space."
-  (declare (ignore renderer))
   (let* ((parent (legend-parent leg))
          (fontsize (legend-fontsize leg))
+         ;; DPI scale factor: convert points to pixels
+         (dpi-scale (if (and renderer (typep renderer 'mpl.backends:renderer-base))
+                        (/ (mpl.backends:renderer-dpi renderer) 72.0d0)
+                        1.0d0))
          (n-entries (length (legend-entry-artists leg)))
          (ncol (min (legend-ncol leg) (max 1 n-entries)))
          (nrow (ceiling n-entries ncol))
-         ;; Compute dimensions in points
-         (handle-len (* (legend-handlelength leg) fontsize))
-         (handle-height (* (legend-handleheight leg) fontsize))
-         (text-pad (* (legend-handletextpad leg) fontsize))
-         (border-pad (* (legend-borderpad leg) fontsize))
-         (label-spacing (* (legend-labelspacing leg) fontsize))
-         (col-spacing (* (legend-columnspacing leg) fontsize))
-         ;; Compute text width using actual glyph metrics
+         ;; Compute dimensions in points then convert to pixels
+         (handle-len (* (legend-handlelength leg) fontsize dpi-scale))
+         (handle-height (* (legend-handleheight leg) fontsize dpi-scale))
+         (text-pad (* (legend-handletextpad leg) fontsize dpi-scale))
+         (border-pad (* (legend-borderpad leg) fontsize dpi-scale))
+         (label-spacing (* (legend-labelspacing leg) fontsize dpi-scale))
+         (col-spacing (* (legend-columnspacing leg) fontsize dpi-scale))
+         ;; Compute text width using actual glyph metrics (returns points, scale to px)
          (font-loader (mpl.rendering:load-font "sans-serif"))
-         (max-label-width (loop for entry in (legend-entry-artists leg)
-                                maximize (let ((txt (cdr entry)))
-                                           (mpl.primitives:bbox-width
-                                            (mpl.rendering:get-text-extents
-                                             (mpl.rendering:text-text txt)
-                                             font-loader fontsize)))))
+         (max-label-width (* dpi-scale
+                             (loop for entry in (legend-entry-artists leg)
+                                   maximize (let ((txt (cdr entry)))
+                                              (mpl.primitives:bbox-width
+                                               (mpl.rendering:get-text-extents
+                                                (mpl.rendering:text-text txt)
+                                                font-loader fontsize))))))
          ;; Total column width = handle + pad + text
          (col-width (+ handle-len text-pad max-label-width))
          ;; Total legend width
@@ -234,14 +238,14 @@ Returns (values x y width height) in display space."
                           (* ncol col-width)
                           (* (max 0 (1- ncol)) col-spacing)))
          ;; Total legend height
-         (row-height (max handle-height fontsize))
+         (row-height (max handle-height (* fontsize dpi-scale)))
          (legend-height (+ (* 2 border-pad)
                            (* nrow row-height)
                            (* (max 0 (1- nrow)) label-spacing)))
          ;; Title adds to height
          (title (legend-title leg)))
     (when (and title (plusp (length title)))
-      (incf legend-height (* (legend-title-fontsize leg) 1.5d0)))
+      (incf legend-height (* (legend-title-fontsize leg) 1.5d0 dpi-scale)))
     ;; Compute position in display coordinates
     (let* ((loc-code (legend-loc leg))
            (position (%legend-get-loc-position
@@ -268,15 +272,23 @@ Returns (values x y width height) in display space."
                                      (aref (mpl.primitives:transform-point
                                             trans-axes (list 0.0d0 0.0d0)) 1)))
                      ;; Anchor position: adjust so legend box doesn't overflow
-                     ;; x-frac > 0.5 means right-aligned (anchor at right edge)
+                     ;; x-frac > 0.5 → right-aligned (right edge at frac)
+                     ;; x-frac = 0.5 → centered (center at frac)
+                     ;; x-frac < 0.5 → left-aligned (left edge at frac)
                      (x-display (+ dx
-                                   (if (> x-frac 0.5d0)
-                                       (- (* x-frac axes-width) legend-width)
-                                       (* x-frac axes-width))))
+                                   (cond ((> x-frac 0.5d0)
+                                          (- (* x-frac axes-width) legend-width))
+                                         ((< (abs (- x-frac 0.5d0)) 0.01d0)
+                                          (- (* x-frac axes-width) (/ legend-width 2.0d0)))
+                                         (t
+                                          (* x-frac axes-width)))))
                      (y-display (+ dy
-                                   (if (> y-frac 0.5d0)
-                                       (- (* y-frac axes-height) legend-height)
-                                       (* y-frac axes-height)))))
+                                   (cond ((> y-frac 0.5d0)
+                                          (- (* y-frac axes-height) legend-height))
+                                         ((< (abs (- y-frac 0.5d0)) 0.01d0)
+                                          (- (* y-frac axes-height) (/ legend-height 2.0d0)))
+                                         (t
+                                          (* y-frac axes-height))))))
                 (values x-display y-display legend-width legend-height))))
           ;; No parent — use figure-level positioning
           (values (* x-frac 640.0d0) (* y-frac 480.0d0)
@@ -288,42 +300,38 @@ Returns (values x y width height) in display space."
 
 (defun %legend-find-best-position (leg legend-width legend-height)
   "Find the best position for the legend by minimizing overlap with artists.
-Returns a position code (1-10)."
+Returns a position code (1-10).
+Uses point-level overlap counting (not bounding-box) for accuracy."
   (let* ((parent (legend-parent leg))
          (best-code 1)
          (best-overlap most-positive-double-float))
     (when (and parent (typep parent 'axes-base))
       (let ((trans (axes-base-trans-data parent))
-            (artist-bboxes nil))
-        ;; Collect bounding boxes of all data artists
+            (all-display-points nil))
+        ;; Collect transformed display coordinates of all data points
         (dolist (line (axes-base-lines parent))
           (let ((xdata (mpl.rendering:line-2d-xdata line))
                 (ydata (mpl.rendering:line-2d-ydata line)))
             (when (and (> (length xdata) 0) (> (length ydata) 0))
-              (let* ((n (min (length xdata) (length ydata)))
-                     (xmin most-positive-double-float) (xmax most-negative-double-float)
-                     (ymin most-positive-double-float) (ymax most-negative-double-float))
+              (let ((n (min (length xdata) (length ydata))))
                 (dotimes (i n)
                   (let ((pt (mpl.primitives:transform-point
                              trans (list (float (elt xdata i) 1.0d0)
                                         (float (elt ydata i) 1.0d0)))))
-                    (setf xmin (min xmin (aref pt 0))
-                          xmax (max xmax (aref pt 0))
-                          ymin (min ymin (aref pt 1))
-                          ymax (max ymax (aref pt 1)))))
-                (push (list xmin ymin xmax ymax) artist-bboxes)))))
+                    (push (cons (aref pt 0) (aref pt 1)) all-display-points)))))))
         ;; Test each of the 9 fixed positions (codes 1-9, skip 10/center as last resort)
         (loop for code from 1 to 9
               do (let* ((pos (%legend-get-loc-position code))
-                        (overlap (%compute-legend-overlap
-                                  parent pos legend-width legend-height artist-bboxes)))
+                        (overlap (%compute-legend-point-overlap
+                                  parent pos legend-width legend-height
+                                  all-display-points)))
                    (when (< overlap best-overlap)
                      (setf best-overlap overlap
                            best-code code))))))
     best-code))
 
-(defun %compute-legend-overlap (parent pos legend-width legend-height artist-bboxes)
-  "Compute overlap area between legend at POS and ARTIST-BBOXES."
+(defun %compute-legend-point-overlap (parent pos legend-width legend-height display-points)
+  "Count how many data points fall inside the legend box at POS."
   (multiple-value-bind (dx dy dw dh)
       (%compute-display-bbox parent)
     (declare (ignore dw dh))
@@ -338,30 +346,28 @@ Returns a position code (1-10)."
                                    trans-axes (list 0.0d0 0.0d0)) 1)))
            (x-frac (first pos))
            (y-frac (second pos))
-           ;; Legend bbox in display coords
-           (lx0 (+ dx (if (> x-frac 0.5d0)
-                           (- (* x-frac axes-width) legend-width)
-                           (* x-frac axes-width))))
-           (ly0 (+ dy (if (> y-frac 0.5d0)
-                           (- (* y-frac axes-height) legend-height)
-                           (* y-frac axes-height))))
+           ;; Legend bbox in display coords — match anchoring in %legend-compute-bbox
+           (lx0 (+ dx (cond ((> x-frac 0.5d0)
+                              (- (* x-frac axes-width) legend-width))
+                             ((< (abs (- x-frac 0.5d0)) 0.01d0)
+                              (- (* x-frac axes-width) (/ legend-width 2.0d0)))
+                             (t (* x-frac axes-width)))))
+           (ly0 (+ dy (cond ((> y-frac 0.5d0)
+                              (- (* y-frac axes-height) legend-height))
+                             ((< (abs (- y-frac 0.5d0)) 0.01d0)
+                              (- (* y-frac axes-height) (/ legend-height 2.0d0)))
+                             (t (* y-frac axes-height)))))
            (lx1 (+ lx0 legend-width))
            (ly1 (+ ly0 legend-height))
-           (total-overlap 0.0d0))
-      ;; Sum overlap with each artist bbox
-      (dolist (bbox artist-bboxes)
-        (let ((ax0 (first bbox))
-              (ay0 (second bbox))
-              (ax1 (third bbox))
-              (ay1 (fourth bbox)))
-          ;; Overlap rectangle
-          (let ((ox0 (max lx0 ax0))
-                (oy0 (max ly0 ay0))
-                (ox1 (min lx1 ax1))
-                (oy1 (min ly1 ay1)))
-            (when (and (< ox0 ox1) (< oy0 oy1))
-              (incf total-overlap (* (- ox1 ox0) (- oy1 oy0)))))))
-      total-overlap)))
+           (count 0))
+      ;; Count data points inside legend box
+      (dolist (pt display-points)
+        (let ((px (car pt))
+              (py (cdr pt)))
+          (when (and (>= px lx0) (<= px lx1)
+                     (>= py ly0) (<= py ly1))
+            (incf count))))
+      (float count 1.0d0))))
 
 ;;; ============================================================
 ;;; Legend draw method
@@ -378,21 +384,26 @@ Returns a position code (1-10)."
       (%legend-draw-frame leg renderer x y width height))
     ;; Draw title
     (let ((title (legend-title leg))
-          (current-y (+ y height)))
+          (current-y (+ y height))
+          ;; DPI scale factor: must match %legend-compute-bbox
+          (dpi-scale (if (and renderer (typep renderer 'mpl.backends:renderer-base))
+                         (/ (mpl.backends:renderer-dpi renderer) 72.0d0)
+                         1.0d0)))
       (when (and title (plusp (length title)))
         (let* ((title-fontsize (legend-title-fontsize leg))
-               (title-x (+ x (* (legend-borderpad leg) (legend-fontsize leg))))
-               (title-y (- current-y (* title-fontsize 1.2d0))))
+               (title-x (+ x (* (legend-borderpad leg) (legend-fontsize leg) dpi-scale)))
+               (title-y (- current-y (* title-fontsize 1.2d0 dpi-scale))))
           (%legend-draw-text renderer title title-x title-y
                              :fontsize title-fontsize :weight :bold)
-          (decf current-y (* title-fontsize 1.5d0))))
+          (decf current-y (* title-fontsize 1.5d0 dpi-scale))))
       ;; Draw entries
       (let* ((fontsize (legend-fontsize leg))
-             (border-pad (* (legend-borderpad leg) fontsize))
-             (handle-len (* (legend-handlelength leg) fontsize))
-             (text-pad (* (legend-handletextpad leg) fontsize))
-             (label-spacing (* (legend-labelspacing leg) fontsize))
-             (row-height (max (* (legend-handleheight leg) fontsize) fontsize))
+             (border-pad (* (legend-borderpad leg) fontsize dpi-scale))
+             (handle-len (* (legend-handlelength leg) fontsize dpi-scale))
+             (text-pad (* (legend-handletextpad leg) fontsize dpi-scale))
+             (label-spacing (* (legend-labelspacing leg) fontsize dpi-scale))
+             (row-height (max (* (legend-handleheight leg) fontsize dpi-scale)
+                              (* fontsize dpi-scale)))
              (entry-x (+ x border-pad))
              (entry-y (- current-y border-pad)))
         (loop for entry in (legend-entry-artists leg)
@@ -455,6 +466,7 @@ Returns a position code (1-10)."
     ((typep artist 'mpl.rendering:line-2d)
      (let* ((color (mpl.rendering:line-2d-color artist))
             (lw (mpl.rendering:line-2d-linewidth artist))
+            (linestyle (mpl.rendering:line-2d-linestyle artist))
             (rgba-color (%resolve-legend-color color 1.0d0)))
        (when (and rgba-color (typep renderer 'mpl.backends:renderer-base))
          (let* ((xdata (list x (+ x width)))
@@ -470,7 +482,8 @@ Returns a position code (1-10)."
                 (gc (mpl.backends:make-graphics-context
                      :facecolor nil
                      :edgecolor rgba-color
-                     :linewidth lw)))
+                     :linewidth lw
+                     :linestyle (or linestyle :solid))))
            (declare (ignore _))
            (mpl.backends:draw-path renderer gc path transform nil)))))
     ;; Rectangle/Patch handle

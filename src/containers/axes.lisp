@@ -92,7 +92,14 @@ Returns the PathCollection artist."
                           collect (float (elt s i) 1.0d0))))
          ;; Get edge color from rcParams
          (edge-color (mpl.rc:rc "scatter.edgecolors"))
+         ;; Get figure DPI for correct point-to-pixel conversion
+         (fig-dpi (let ((fig (axes-base-figure ax)))
+                    (if fig (figure-dpi fig) 100.0)))
          ;; Create PathCollection
+         ;; NOTE: Do NOT set :trans-offset here. axes-base-trans-data is recomputed
+         ;; by %update-trans-data after autoscaling, creating a new object.
+         ;; The axes draw method propagates the fresh transData to artist-transform,
+         ;; which collection's draw uses as fallback when trans-offset is nil.
          (pc (mpl.rendering:make-path-collection
               :paths (list marker-path)
               :offsets offsets
@@ -101,9 +108,9 @@ Returns the PathCollection artist."
               :edgecolors (if (string= edge-color "face") nil edge-color)
               :linewidths 0.0
               :alpha alpha
-              :trans-offset (axes-base-trans-data ax)
               :zorder zorder
-              :label label)))
+              :label label
+              :dpi fig-dpi)))
     ;; Add the collection as an artist to the axes
     (axes-add-artist ax pc)
     ;; Update data limits
@@ -117,7 +124,7 @@ Returns the PathCollection artist."
 ;;; ============================================================
 
 (defun bar (ax x height &key (width 0.8) (bottom 0) (color nil)
-                              (edgecolor "black") (linewidth 0.5)
+                              (edgecolor nil) (linewidth 0.0)
                               (label "") (zorder 1) (align :center))
   "Make a bar plot.
 
@@ -337,6 +344,12 @@ ZORDER — drawing order (default 1).
 
 Returns (values patches texts autotexts)."
   (declare (ignore wedgeprops textprops))
+  ;; Set view limits BEFORE creating artists so that transData is stable.
+  ;; Artists (patches + text labels) capture transData at creation time;
+  ;; setting limits afterwards would leave text artists with a stale transform
+  ;; (patches are refreshed in the draw method, but texts are not).
+  (axes-set-xlim ax :min -1.3d0 :max 1.3d0)
+  (axes-set-ylim ax :min -1.3d0 :max 1.3d0)
   (let* ((data (mapcar (lambda (v) (float v 1.0d0)) (coerce x 'list)))
          (total (reduce #'+ data))
          (fractions (if (zerop total)
@@ -357,15 +370,15 @@ Returns (values patches texts autotexts)."
                           (elt default-colors (mod i (length default-colors))))
           do
              ;; Create wedge patch
-             (let ((wedge-patch (make-instance 'mpl.rendering:wedge
-                                               :center '(0.0d0 0.0d0)
-                                               :r 1.0d0
-                                               :theta1 (min theta1 theta2)
-                                               :theta2 (max theta1 theta2)
-                                               :facecolor color
-                                               :edgecolor "white"
-                                               :linewidth 1.0
-                                               :zorder zorder)))
+              (let ((wedge-patch (make-instance 'mpl.rendering:wedge
+                                                :center '(0.0d0 0.0d0)
+                                                :r 1.0d0
+                                                :theta1 (min theta1 theta2)
+                                                :theta2 (max theta1 theta2)
+                                                :facecolor color
+                                                :edgecolor nil
+                                                :linewidth 0.0
+                                                :zorder zorder)))
                (setf (mpl.rendering:artist-transform wedge-patch)
                      (axes-base-trans-data ax))
                (axes-add-patch ax wedge-patch)
@@ -408,10 +421,8 @@ Returns (values patches texts autotexts)."
                  (push txt autotexts)))
              ;; Advance angle
              (setf angle theta2))
-    ;; Set equal aspect and limits for pie — match matplotlib behavior:
-    ;; 1. Explicit symmetric view limits for centering (no autoscale margin)
-    (axes-set-xlim ax :min -1.3d0 :max 1.3d0)
-    (axes-set-ylim ax :min -1.3d0 :max 1.3d0)
+    ;; Set up pie chart display — match matplotlib behavior:
+    ;; (view limits already set above, before artist creation)
     ;; 2. Hide ticks and tick labels (pie charts have no axes)
     (axis-set-major-locator (axes-base-xaxis ax) (make-instance 'null-locator))
     (axis-set-major-locator (axes-base-yaxis ax) (make-instance 'null-locator))

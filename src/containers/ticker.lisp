@@ -243,11 +243,43 @@ Matches matplotlib's _staircase method."
       (push (* 10.0d0 (second steps)) result))
     (sort (nreverse result) #'<)))
 
+(defun %axis-tick-space (axis)
+  "Compute the tick space (number of ticks that fit) based on axis pixel length.
+Matches matplotlib's Axis.get_tick_space():
+  X-axis: pixel_length / (fontsize * 4)
+  Y-axis: pixel_length / (fontsize * 2.5)
+where fontsize defaults to 10pt."
+  (when axis
+    (let ((ax (axis-axes axis)))
+      (when ax
+        (let* ((fig (axes-base-figure ax))
+               (pos (axes-base-position ax)))
+          (when (and fig pos)
+            (let ((fig-w-px (float (figure-width-px fig) 1.0d0))
+                  (fig-h-px (float (figure-height-px fig) 1.0d0))
+                  (ax-width-frac (third pos))
+                  (ax-height-frac (fourth pos))
+                  (fontsize 10.0d0))
+              (if (typep axis 'x-axis)
+                  ;; X axis: width / (fontsize * 4) — ~40px per tick
+                  (max 1 (floor (* ax-width-frac fig-w-px) (* fontsize 4.0d0)))
+                  ;; Y axis: height / (fontsize * 2.5) — ~25px per tick
+                  (max 1 (floor (* ax-height-frac fig-h-px) (* fontsize 2.5d0)))))))))))
+
+(defun %auto-nbins (loc)
+  "Compute auto nbins, matching matplotlib's behavior for nbins='auto'."
+  (let* ((axis (locator-axis loc))
+         (tick-space (%axis-tick-space axis))
+         (min-n-ticks (max-n-locator-min-n-ticks loc)))
+    (if tick-space
+        (max (1- min-n-ticks) (min tick-space 9))
+        9)))
+
 (defun %max-n-locator-raw-ticks (loc vmin vmax)
   "Generate raw tick locations spanning vmin to vmax.
 Ported from MaxNLocator._raw_ticks."
   (let* ((nbins (max-n-locator-nbins loc))
-         (nbins (if (eq nbins :auto) 9 nbins))
+         (nbins (if (eq nbins :auto) (%auto-nbins loc) nbins))
          (steps (max-n-locator-steps loc))
          (extended-steps (%max-n-locator-extended-steps steps))
          (min-n-ticks (max 1 (max-n-locator-min-n-ticks loc))))

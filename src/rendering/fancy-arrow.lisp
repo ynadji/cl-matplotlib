@@ -389,14 +389,12 @@ Ported from matplotlib.patches.FancyArrowPatch."))
              (mpl.primitives:make-path :vertices '())))))
 
 (defmethod draw ((fa fancy-arrow-patch) renderer)
-  "Draw the fancy arrow."
+  "Draw the fancy arrow.
+Like matplotlib, the arrow path is computed in display (pixel) coordinates
+so that arrowhead dimensions (points) are resolution-independent."
   (unless (artist-visible fa)
     (return-from draw))
-  ;; Recompute path
-  (setf (fancy-arrow-cached-path fa) nil)
-  (%recompute-arrow-path fa)
-  (let* ((path (fancy-arrow-cached-path fa))
-         (transform (get-artist-transform fa))
+  (let* ((transform (get-artist-transform fa))
          (arrowstyle (fancy-arrow-arrowstyle fa))
          (style-key (etypecase arrowstyle
                       (keyword arrowstyle)
@@ -412,11 +410,43 @@ Ported from matplotlib.patches.FancyArrowPatch."))
                       :antialiased (patch-antialiased fa)
                       :capstyle (patch-capstyle fa)
                       :joinstyle (patch-joinstyle fa))))
-    (when path
-      (renderer-draw-path renderer gc path transform
-                          :fill (when filled-p
-                                  (or (patch-facecolor fa) (patch-edgecolor fa) "black"))
-                          :stroke (patch-edgecolor fa))))
+    ;; Transform posA/posB from data coords to display (pixel) coords,
+    ;; compute the arrow path in display space, then draw without transform.
+    ;; This matches matplotlib's FancyArrowPatch.draw() behavior where
+    ;; arrowhead dimensions (10pt, 8pt) are in display units.
+    (when (and (fancy-arrow-posA fa) (fancy-arrow-posB fa))
+      (let* ((posA-data (fancy-arrow-posA fa))
+             (posB-data (fancy-arrow-posB fa))
+             (posA-display (if transform
+                               (let ((pt (mpl.primitives:transform-point
+                                          transform posA-data)))
+                                 (list (aref pt 0) (aref pt 1)))
+                               posA-data))
+             (posB-display (if transform
+                               (let ((pt (mpl.primitives:transform-point
+                                          transform posB-data)))
+                                 (list (aref pt 0) (aref pt 1)))
+                               posB-data))
+             ;; Compute connection path in display coords
+             (cs (fancy-arrow-connectionstyle fa))
+             (conn-path (when cs (connect cs posA-display posB-display))))
+        (multiple-value-bind (shaft-path head-path)
+            (%compute-arrow-path posA-display posB-display
+                                 arrowstyle conn-path
+                                 :mutation-scale (fancy-arrow-mutation-scale fa)
+                                 :shrinkA (fancy-arrow-shrinkA fa)
+                                 :shrinkB (fancy-arrow-shrinkB fa))
+          (let ((path (if head-path
+                          (mpl.primitives:path-make-compound-path
+                           (list shaft-path head-path))
+                          shaft-path)))
+            (when path
+              ;; Draw with nil transform — path is already in display coords
+              (renderer-draw-path renderer gc path nil
+                                  :fill (when filled-p
+                                          (or (patch-facecolor fa)
+                                              (patch-edgecolor fa) "black"))
+                                  :stroke (patch-edgecolor fa))))))))
   (setf (artist-stale fa) nil))
 
 ;;; ============================================================

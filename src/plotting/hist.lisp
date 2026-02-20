@@ -73,7 +73,7 @@ Result: sum of area (count * bin_width) = 1.0."
 
 (defun hist (ax data &key (bins 10) (range nil) (density nil) (cumulative nil)
                           (histtype :bar) (color nil) (edgecolor "black")
-                          (linewidth 0.5) (alpha nil) (label "") (zorder 1))
+                          (linewidth 1.0) (alpha nil) (label "") (zorder 1))
   "Plot a histogram.
 
 AX — an axes-base instance.

@@ -198,9 +198,10 @@ vertices and a marker at each vertex. Ported from matplotlib.lines.Line2D."))
                              (otherwise marker)))
                (marker-path (make-marker-path marker-key))
                (markersize (line-2d-markersize line))
+               ;; Convert markersize from points to pixels (matching matplotlib behavior)
+               (markersize-px (mpl.backends:points-to-pixels renderer (float markersize 1.0d0)))
                (marker-trans (mpl.primitives:make-affine-2d
-                              :scale (list (float markersize 1.0d0)
-                                           (float markersize 1.0d0))))
+                              :scale (list markersize-px markersize-px)))
                ;; Determine face color for filled markers
                ;; Inline list to avoid compile-time warning (markers.lisp loads after lines.lisp)
                (filled-p (member marker-key '(:point :o :v :^ :< :> :s :d :star)))
