@@ -75,8 +75,10 @@ Ported from matplotlib.text.Text."))
     (return-from draw))
   (when (zerop (length (text-text txt)))
     (return-from draw))
-  (let* ((gc (make-gc :foreground (text-color txt)
-                      :linewidth (text-fontsize txt)
+  (let* ((fontsize-px (* (text-fontsize txt)
+                       (/ (mpl.backends:renderer-dpi renderer) 72.0)))
+         (gc (make-gc :foreground (text-color txt)
+                      :linewidth fontsize-px
                       :alpha (or (artist-alpha txt) 1.0)))
          ;; Apply transform to convert from axes/data coords to pixel coords
          (transform (get-artist-transform txt))
