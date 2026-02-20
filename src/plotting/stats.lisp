@@ -258,6 +258,15 @@ Returns a plist with :boxes :medians :whiskers :caps :fliers."
           (axes-set-ylim ax :min (- pos-min 0.5d0) :max (+ pos-max 0.5d0))))
     (setf (mpl.containers::axes-base-sticky-y-min ax) t)
     (axes-autoscale-view ax)
+    ;; Set fixed tick locations and labels on the position axis (like matplotlib)
+    (let ((pos-axis (if vert (axes-base-xaxis ax) (axes-base-yaxis ax)))
+          (pos-labels (loop for p in pos
+                            collect (%scalar-format-value (float p 1.0d0)))))
+      (axis-set-major-locator pos-axis
+                               (make-instance 'fixed-locator
+                                              :locs (mapcar (lambda (p) (float p 1.0d0)) pos)))
+      (axis-set-major-formatter pos-axis
+                                 (make-instance 'fixed-formatter :seq pos-labels)))
     (list :boxes (nreverse all-boxes)
           :medians (nreverse all-medians)
           :whiskers (nreverse all-whiskers)

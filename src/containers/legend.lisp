@@ -246,18 +246,17 @@ Returns (values x y width height) in display space."
          (title (legend-title leg)))
     (when (and title (plusp (length title)))
       (incf legend-height (* (legend-title-fontsize leg) 1.5d0 dpi-scale)))
-    ;; Compute position in display coordinates
+    ;; Compute position in display coordinates using matplotlib's algorithm:
+    ;; borderaxespad (default 0.5 * fontsize) is the gap from axes edge to legend edge.
     (let* ((loc-code (legend-loc leg))
-           (position (%legend-get-loc-position
-                      (if (numberp loc-code)
-                          (if (= loc-code 0)
-                              ;; "best" — use auto-placement
-                              (%legend-find-best-position leg legend-width legend-height)
-                              loc-code)
-                          1)))  ; default upper-right
-           (x-frac (first position))
-           (y-frac (second position)))
-      ;; Convert from axes-fraction to display coordinates
+           (resolved-code (if (numberp loc-code)
+                              (if (= loc-code 0)
+                                  (%legend-find-best-position leg legend-width legend-height)
+                                  loc-code)
+                              1))
+           ;; borderaxespad: gap between axes edge and legend, in fontsize units
+           ;; matplotlib default is 0.5
+           (axes-pad (* 0.5d0 fontsize dpi-scale)))
       (if (and parent (typep parent 'axes-base))
           (let ((trans-axes (axes-base-trans-axes parent)))
             (multiple-value-bind (dx dy dw dh)
@@ -271,28 +270,30 @@ Returns (values x y width height) in display space."
                                             trans-axes (list 0.0d0 1.0d0)) 1)
                                      (aref (mpl.primitives:transform-point
                                             trans-axes (list 0.0d0 0.0d0)) 1)))
-                     ;; Anchor position: adjust so legend box doesn't overflow
-                     ;; x-frac > 0.5 → right-aligned (right edge at frac)
-                     ;; x-frac = 0.5 → centered (center at frac)
-                     ;; x-frac < 0.5 → left-aligned (left edge at frac)
-                     (x-display (+ dx
-                                   (cond ((> x-frac 0.5d0)
-                                          (- (* x-frac axes-width) legend-width))
-                                         ((< (abs (- x-frac 0.5d0)) 0.01d0)
-                                          (- (* x-frac axes-width) (/ legend-width 2.0d0)))
-                                         (t
-                                          (* x-frac axes-width)))))
-                     (y-display (+ dy
-                                   (cond ((> y-frac 0.5d0)
-                                          (- (* y-frac axes-height) legend-height))
-                                         ((< (abs (- y-frac 0.5d0)) 0.01d0)
-                                          (- (* y-frac axes-height) (/ legend-height 2.0d0)))
-                                         (t
-                                          (* y-frac axes-height))))))
+                     ;; Compute x,y based on loc code using borderaxespad
+                     ;; In display coords: dx=axes-left, dy=axes-bottom
+                     ;; axes-right = dx + axes-width, axes-top = dy + axes-height
+                     (x-display
+                      (case resolved-code
+                        ;; upper-right, lower-right, right, center-right
+                        ((1 4 5 7) (+ dx axes-width (- legend-width) (- axes-pad)))
+                        ;; upper-left, lower-left, center-left
+                        ((2 3 6) (+ dx axes-pad))
+                        ;; lower-center, upper-center, center
+                        ((8 9 10) (+ dx (/ (- axes-width legend-width) 2.0d0)))
+                        (otherwise (+ dx axes-width (- legend-width) (- axes-pad)))))
+                     (y-display
+                      (case resolved-code
+                        ;; upper-right, upper-left, upper-center
+                        ((1 2 9) (+ dy axes-height (- legend-height) (- axes-pad)))
+                        ;; lower-left, lower-right, lower-center
+                        ((3 4 8) (+ dy axes-pad))
+                        ;; right, center-left, center-right, center
+                        ((5 6 7 10) (+ dy (/ (- axes-height legend-height) 2.0d0)))
+                        (otherwise (+ dy axes-height (- legend-height) (- axes-pad))))))
                 (values x-display y-display legend-width legend-height))))
           ;; No parent — use figure-level positioning
-          (values (* x-frac 640.0d0) (* y-frac 480.0d0)
-                  legend-width legend-height)))))
+          (values 320.0d0 240.0d0 legend-width legend-height)))))
 
 ;;; ============================================================
 ;;; Legend auto-placement ("best" position)
@@ -303,8 +304,11 @@ Returns (values x y width height) in display space."
 Returns a position code (1-10).
 Uses point-level overlap counting (not bounding-box) for accuracy."
   (let* ((parent (legend-parent leg))
+         (fontsize (legend-fontsize leg))
          (best-code 1)
-         (best-overlap most-positive-double-float))
+         (best-overlap most-positive-double-float)
+         ;; axes-pad for overlap computation (approximate — no renderer here)
+         (axes-pad (* 0.5d0 fontsize)))
     (when (and parent (typep parent 'axes-base))
       (let ((trans (axes-base-trans-data parent))
             (all-display-points nil))
@@ -321,42 +325,41 @@ Uses point-level overlap counting (not bounding-box) for accuracy."
                     (push (cons (aref pt 0) (aref pt 1)) all-display-points)))))))
         ;; Test each of the 9 fixed positions (codes 1-9, skip 10/center as last resort)
         (loop for code from 1 to 9
-              do (let* ((pos (%legend-get-loc-position code))
-                        (overlap (%compute-legend-point-overlap
-                                  parent pos legend-width legend-height
-                                  all-display-points)))
+              do (let* ((overlap (%compute-legend-point-overlap
+                                  parent code legend-width legend-height
+                                  axes-pad all-display-points)))
                    (when (< overlap best-overlap)
                      (setf best-overlap overlap
                            best-code code))))))
     best-code))
 
-(defun %compute-legend-point-overlap (parent pos legend-width legend-height display-points)
-  "Count how many data points fall inside the legend box at POS."
+(defun %compute-legend-point-overlap (parent loc-code legend-width legend-height
+                                      axes-pad display-points)
+  "Count how many data points fall inside the legend box at LOC-CODE.
+AXES-PAD is the borderaxespad in pixels."
   (multiple-value-bind (dx dy dw dh)
       (%compute-display-bbox parent)
     (declare (ignore dw dh))
     (let* ((trans-axes (axes-base-trans-axes parent))
            (axes-width (- (aref (mpl.primitives:transform-point
-                                  trans-axes (list 1.0d0 0.0d0)) 0)
+                                   trans-axes (list 1.0d0 0.0d0)) 0)
                           (aref (mpl.primitives:transform-point
-                                  trans-axes (list 0.0d0 0.0d0)) 0)))
+                                   trans-axes (list 0.0d0 0.0d0)) 0)))
            (axes-height (- (aref (mpl.primitives:transform-point
-                                   trans-axes (list 0.0d0 1.0d0)) 1)
-                           (aref (mpl.primitives:transform-point
-                                   trans-axes (list 0.0d0 0.0d0)) 1)))
-           (x-frac (first pos))
-           (y-frac (second pos))
-           ;; Legend bbox in display coords — match anchoring in %legend-compute-bbox
-           (lx0 (+ dx (cond ((> x-frac 0.5d0)
-                              (- (* x-frac axes-width) legend-width))
-                             ((< (abs (- x-frac 0.5d0)) 0.01d0)
-                              (- (* x-frac axes-width) (/ legend-width 2.0d0)))
-                             (t (* x-frac axes-width)))))
-           (ly0 (+ dy (cond ((> y-frac 0.5d0)
-                              (- (* y-frac axes-height) legend-height))
-                             ((< (abs (- y-frac 0.5d0)) 0.01d0)
-                              (- (* y-frac axes-height) (/ legend-height 2.0d0)))
-                             (t (* y-frac axes-height)))))
+                                    trans-axes (list 0.0d0 1.0d0)) 1)
+                            (aref (mpl.primitives:transform-point
+                                    trans-axes (list 0.0d0 0.0d0)) 1)))
+           ;; Compute legend position matching %legend-compute-bbox
+           (lx0 (case loc-code
+                   ((1 4 5 7) (+ dx axes-width (- legend-width) (- axes-pad)))
+                   ((2 3 6) (+ dx axes-pad))
+                   ((8 9 10) (+ dx (/ (- axes-width legend-width) 2.0d0)))
+                   (otherwise (+ dx axes-width (- legend-width) (- axes-pad)))))
+           (ly0 (case loc-code
+                   ((1 2 9) (+ dy axes-height (- legend-height) (- axes-pad)))
+                   ((3 4 8) (+ dy axes-pad))
+                   ((5 6 7 10) (+ dy (/ (- axes-height legend-height) 2.0d0)))
+                   (otherwise (+ dy axes-height (- legend-height) (- axes-pad)))))
            (lx1 (+ lx0 legend-width))
            (ly1 (+ ly0 legend-height))
            (count 0))

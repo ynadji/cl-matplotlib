@@ -350,8 +350,12 @@ Called before data artists to ensure grid appears behind data (zorder=0.5 in mat
            (trans-axes (when ax (axes-base-trans-axes ax)))
            (trans-data (when ax (axes-base-trans-data ax))))
       (when (and ax trans-axes trans-data)
-        (let* ((axes-bottom (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 1))
+        (let* ((axes-left (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 0))
+               (axes-bottom (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 1))
+               (axes-right (aref (mpl.primitives:transform-point trans-axes (list 1.0d0 0.0d0)) 0))
                (axes-top (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 1.0d0)) 1))
+               ;; Clip grid to axes area so line-width doesn't bleed outside
+               (clip-rect (mpl.primitives:make-bbox axes-left axes-bottom axes-right axes-top))
                (major-ticks (axis-get-major-ticks axis)))
           (dolist (tk major-ticks)
             (when (tick-gridline-visible-p tk)
@@ -363,7 +367,8 @@ Called before data artists to ensure grid appears behind data (zorder=0.5 in mat
                           :foreground (tick-grid-color tk)
                           :linewidth (tick-grid-linewidth tk)
                           :alpha (tick-grid-alpha tk)
-                          :linestyle (tick-grid-linestyle tk)))
+                          :linestyle (tick-grid-linestyle tk)
+                          :clip-rectangle clip-rect))
                      (path (mpl.primitives:make-path
                             :vertices (make-array '(2 2) :element-type 'double-float
                                                   :initial-contents
@@ -510,7 +515,11 @@ Called before data artists to ensure grid appears behind data (zorder=0.5 in mat
            (trans-data (when ax (axes-base-trans-data ax))))
       (when (and ax trans-axes trans-data)
         (let* ((axes-left (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 0))
+               (axes-bottom (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 1))
                (axes-right (aref (mpl.primitives:transform-point trans-axes (list 1.0d0 0.0d0)) 0))
+               (axes-top (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 1.0d0)) 1))
+               ;; Clip grid to axes area so line-width doesn't bleed outside
+               (clip-rect (mpl.primitives:make-bbox axes-left axes-bottom axes-right axes-top))
                (major-ticks (axis-get-major-ticks axis)))
           (dolist (tk major-ticks)
             (when (tick-gridline-visible-p tk)
@@ -522,7 +531,8 @@ Called before data artists to ensure grid appears behind data (zorder=0.5 in mat
                           :foreground (tick-grid-color tk)
                           :linewidth (tick-grid-linewidth tk)
                           :alpha (tick-grid-alpha tk)
-                          :linestyle (tick-grid-linestyle tk)))
+                          :linestyle (tick-grid-linestyle tk)
+                          :clip-rectangle clip-rect))
                      (path (mpl.primitives:make-path
                             :vertices (make-array '(2 2) :element-type 'double-float
                                                   :initial-contents

@@ -1,0 +1,25 @@
+Task: Fix custom-markers SSIM to ≥ 0.95
+Date: 2026-02-19
+Result: PASS — SSIM 0.9538
+
+Root Cause:
+  Marker sizes were specified in points but used directly as pixel values
+  without DPI conversion (* dpi/72).
+
+Fix:
+  1. lines.lisp: Changed marker transform from scale(markersize) to
+     scale(points-to-pixels(renderer, markersize))
+  2. collections.lisp: Added `dpi` slot to path-collection, modified
+     collection-get-transforms to scale by dpi/72, passed figure DPI
+     from scatter function.
+
+Files Modified:
+  - src/rendering/lines.lisp (marker DPI conversion)
+  - src/rendering/collections.lisp (PathCollection DPI slot + transforms)
+  - src/containers/axes.lisp (DPI propagation from figure to PathCollection)
+  - src/packages.lisp (added path-collection-dpi export)
+
+Committed in: 8f1fe52 (Wave 3 fixes)
+
+SSIM Before: 0.9275
+SSIM After:  0.9538

@@ -1,0 +1,25 @@
+Task: Fix scatter SSIM to ≥ 0.95
+Date: 2026-02-19
+Result: PASS — SSIM 0.9693
+
+Root Cause:
+  scatter() in axes.lisp stored axes-base-trans-data in the collection's
+  trans-offset BEFORE axes-autoscale-view was called. After autoscaling,
+  a NEW transform was created but the collection still used the stale old
+  one, placing dots at completely wrong positions.
+
+Fix:
+  Removed :trans-offset from make-path-collection call in scatter. The
+  collection's draw method falls back to artist-transform, which gets
+  propagated fresh by the axes draw method at render time.
+
+Files Modified:
+  - src/containers/axes.lisp (removed stale :trans-offset from scatter)
+  - src/rendering/collections.lisp (DPI scaling in collection-get-transforms)
+  - src/rendering/lines.lisp (marker DPI conversion — shared fix with custom-markers)
+  - src/packages.lisp (added path-collection-dpi export)
+
+Committed in: 8f1fe52 (Wave 3 fixes)
+
+SSIM Before: 0.9238
+SSIM After:  0.9693

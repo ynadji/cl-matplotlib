@@ -243,3 +243,37 @@ Two regressions were introduced:
 - `%setup-transforms` should NOT reset trans-scale — use `unless nil` guard
 - `log-y-transform` needed as separate class since existing `log-transform` only transforms X
 - All non-affine transforms need `transform-path` methods for composite-generic-transform composition
+
+## [2026-02-19] imshow-heatmap + filled-contour Rendering Fixes
+
+### imshow-heatmap: Y-coordinate Flip in Image Blit
+- **Root cause**: `draw-image` in backend-vecto.lisp passed figure coords (y=0 at bottom)
+  directly to `%blit-image-to-canvas` which uses canvas coords (y=0 at top)
+- The transform chain correctly maps data → figure coordinates, but the blit function
+  works on raw canvas pixels where row 0 = top of image
+- **Fix**: `canvas_y = renderer_height - figure_y - image_height`
+- **Key insight**: Vecto internally handles the Y-flip for path rendering but the custom
+  blit function bypasses Vecto's rendering pipeline, so it needs explicit coordinate conversion
+- SSIM: 0.9379 → 0.9796
+
+### filled-contour: Polygon Seam Artifacts 
+- **Root cause**: marching-squares produces 3065 individual cell-level polygons for a 50x50 grid
+  with 13 levels. Each polygon has antialiased edges that blend with the background at shared
+  boundaries, creating visible seams.
+- Vecto does NOT support disabling antialiasing (line 553-555: "Vecto doesn't have AA toggle")
+- Setting `antialiaseds '(nil)` has no visual effect in Vecto
+- **What worked**: Increasing edge linewidth from 0.5 to 1.0 (in the face color) covers the
+  antialiased fill artifacts. The thicker stroke in matching color paints over the partial
+  coverage pixels at polygon edges.
+- **What didn't work**: Removing the stroke entirely (`edgecolors nil`) caused SSIM to DROP
+  to 0.62 because tiny gaps appeared between adjacent polygons
+- **Fundamental limitation**: The cell-level polygon approach can't match matplotlib's smooth
+  contour paths. Proper fix would require merging cell polygons into connected contour paths.
+- SSIM: 0.9414 → 0.9693
+
+### General Pattern
+- When investigating rendering issues, check coordinate system conventions at every interface:
+  figure coords (bottom-up) vs canvas coords (top-down) vs data coords
+- For polygon fill artifacts, increasing stroke linewidth in the face color is an effective
+  workaround when AA can't be controlled
+- Always verify the fasl cache state — stale fasls can mask bugs or create phantom regressions
