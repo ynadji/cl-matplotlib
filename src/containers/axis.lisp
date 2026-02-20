@@ -445,16 +445,18 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
                (tick-label-text tk)
                (> (length (tick-label-text tk)) 0))
       (let* ((label-y (- y-end (float (tick-pad tk) 1.0d0)))
+              (fontsize-px (* (tick-label-fontsize tk)
+                              (/ (mpl.backends:renderer-dpi renderer) 72.0)))
               (gc (mpl.rendering:make-gc
                    :foreground (tick-label-color tk)
-                   :linewidth (tick-label-fontsize tk)
+                   :linewidth fontsize-px
                    :alpha 1.0)))
         (mpl.rendering:renderer-draw-text renderer gc
-                                          x-display label-y
-                                          (tick-label-text tk)
-                                          :angle 0.0
-                                          :ha :center
-                                          :va :top)))
+                                           x-display label-y
+                                           (tick-label-text tk)
+                                           :angle 0.0
+                                           :ha :center
+                                           :va :top)))
     ;; Draw gridline (unless already drawn in grid-only pass)
     (when (and (not skip-grid) (tick-gridline-visible-p tk))
       (let ((gc (mpl.rendering:make-gc
@@ -474,12 +476,14 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
   (declare (ignore ax))
   (let* ((p-mid (mpl.primitives:transform-point trans-axes (list 0.5d0 0.0d0)))
          (x-mid (aref p-mid 0))
-         (y-bottom (- (aref p-mid 1) 35.0d0))  ;; Below tick labels
-         (gc (mpl.rendering:make-gc :foreground "black" :linewidth 12.0 :alpha 1.0)))
+         (y-bottom (- (aref p-mid 1) 35.0d0))
+         (fontsize-px (* 10.0 (/ (mpl.backends:renderer-dpi renderer) 72.0)))
+         (gc (mpl.rendering:make-gc :foreground "black" :linewidth fontsize-px :alpha 1.0)))
     (mpl.rendering:renderer-draw-text renderer gc
                                       x-mid y-bottom
                                       (axis-label-text axis)
-                                      :angle 0.0)))
+                                      :angle 0.0
+                                      :ha :center)))
 
 ;;; ============================================================
 ;;; YAxis — vertical axis
@@ -609,17 +613,19 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
     (when (and labels-visible
                (tick-label-text tk)
                (> (length (tick-label-text tk)) 0))
-      (let* ((label-x (- x-end (float (tick-pad tk) 1.0d0) 2.0d0))
+      (let* ((label-x (- x-end (float (tick-pad tk) 1.0d0)))
+              (fontsize-px (* (tick-label-fontsize tk)
+                              (/ (mpl.backends:renderer-dpi renderer) 72.0)))
               (gc (mpl.rendering:make-gc
                    :foreground (tick-label-color tk)
-                   :linewidth (tick-label-fontsize tk)
+                   :linewidth fontsize-px
                    :alpha 1.0)))
         (mpl.rendering:renderer-draw-text renderer gc
-                                          label-x y-display
-                                          (tick-label-text tk)
-                                          :angle 0.0
-                                          :ha :right
-                                          :va :center)))
+                                           label-x y-display
+                                           (tick-label-text tk)
+                                           :angle 0.0
+                                           :ha :right
+                                           :va :center)))
     ;; Draw gridline (unless already drawn in grid-only pass)
     (when (and (not skip-grid) (tick-gridline-visible-p tk))
       (let ((gc (mpl.rendering:make-gc
@@ -638,13 +644,15 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
   "Draw the Y axis label rotated 90° to the left of axes."
   (declare (ignore ax))
   (let* ((p-mid (mpl.primitives:transform-point trans-axes (list 0.0d0 0.5d0)))
-         (x-left (- (aref p-mid 0) 45.0d0))
+         (x-left (- (aref p-mid 0) 42.0d0))
          (y-mid (aref p-mid 1))
-         (gc (mpl.rendering:make-gc :foreground "black" :linewidth 12.0 :alpha 1.0)))
+         (fontsize-px (* 10.0 (/ (mpl.backends:renderer-dpi renderer) 72.0)))
+         (gc (mpl.rendering:make-gc :foreground "black" :linewidth fontsize-px :alpha 1.0)))
     (mpl.rendering:renderer-draw-text renderer gc
                                       x-left y-mid
                                       (axis-label-text axis)
-                                      :angle 90.0)))
+                                      :angle 90.0
+                                      :ha :center)))
 
 ;;; ============================================================
 ;;; Tick params helper

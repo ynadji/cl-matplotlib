@@ -424,7 +424,7 @@ VA is vertical alignment (:baseline, :bottom, :center, :top). Default :baseline.
                 ;; :bottom → bottom of text at y → shift y up by |ymin|
                 (:bottom  (setf y-offset (abs ymin)))
                 ;; :center → center of text at y → shift y up by (ymax+ymin)/2
-                (:center  (setf y-offset (/ (+ ymax ymin) 2.0)))
+                (:center  (setf y-offset (- (/ (+ ymax ymin) 2.0))))
                 ;; :top → top of text at y → shift y down by ymax
                 (:top     (setf y-offset (- ymax))))))
           ;; Apply rotation transform for text (e.g., ylabel needs 90°)

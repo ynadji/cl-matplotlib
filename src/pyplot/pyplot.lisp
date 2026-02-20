@@ -455,11 +455,11 @@ LOC — position: :center, :left, :right."
   (declare (ignore loc color))
   (let* ((ax (gca))
          (txt (make-instance 'mpl.rendering:text-artist
-                             :x 0.5d0 :y 1.02d0
+                             :x 0.5d0 :y 1.0d0
                              :text text
-                             :fontsize (or fontsize 14.0)
+                             :fontsize (or fontsize 12.0)
                              :horizontalalignment :center
-                             :verticalalignment :bottom
+                             :verticalalignment :baseline
                              :zorder 3)))
     ;; Set transform to transAxes (title is in axes coordinates)
     (setf (mpl.rendering:artist-transform txt)

@@ -348,8 +348,8 @@ Returns (values patches texts autotexts)."
   ;; Artists (patches + text labels) capture transData at creation time;
   ;; setting limits afterwards would leave text artists with a stale transform
   ;; (patches are refreshed in the draw method, but texts are not).
-  (axes-set-xlim ax :min -1.3d0 :max 1.3d0)
-  (axes-set-ylim ax :min -1.3d0 :max 1.3d0)
+  (axes-set-xlim ax :min -1.25d0 :max 1.25d0)
+  (axes-set-ylim ax :min -1.25d0 :max 1.25d0)
   (let* ((data (mapcar (lambda (v) (float v 1.0d0)) (coerce x 'list)))
          (total (reduce #'+ data))
          (fractions (if (zerop total)
