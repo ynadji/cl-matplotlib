@@ -168,7 +168,9 @@
             #:transformed-path-node #:transformed-path-get
             ;; Scale transforms
             #:log-transform #:log-transform-base #:log-transform-nonpositive
-            #:inverted-log-transform #:inverted-log-transform-base
+             #:inverted-log-transform #:inverted-log-transform-base
+             #:log-y-transform #:log-y-transform-base #:log-y-transform-nonpositive
+             #:inverted-log-y-transform #:inverted-log-y-transform-base
             #:symlog-transform #:symlog-transform-base #:symlog-transform-linthresh
             #:symlog-transform-linscale
             #:inverted-symlog-transform #:inverted-symlog-transform-base

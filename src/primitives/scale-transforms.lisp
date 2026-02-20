@@ -45,9 +45,122 @@ Ported from matplotlib.scale.LogTransform."))
     (setf (aref result 1) y)
     result))
 
+(defmethod transform-path ((tr log-transform) path)
+  "Transform all vertices in PATH by this log transform (X axis)."
+  (let* ((verts (mpl-path-vertices path))
+         (n (array-dimension verts 0))
+         (new-verts (make-array (list n 2) :element-type 'double-float)))
+    (dotimes (i n)
+      (let ((pt (transform-point tr (list (aref verts i 0) (aref verts i 1)))))
+        (setf (aref new-verts i 0) (aref pt 0)
+              (aref new-verts i 1) (aref pt 1))))
+    (make-path :vertices new-verts
+               :codes (mpl-path-codes path)
+               :interpolation-steps (mpl-path-interpolation-steps path))))
+
 (defmethod invert ((tr log-transform))
   "Return the inverse transform (InvertedLogTransform)."
   (make-instance 'inverted-log-transform :base (log-transform-base tr)))
+
+;;; ============================================================
+;;; LogYTransform — logarithmic transform on Y axis
+;;; ============================================================
+
+(defclass log-y-transform (transform)
+  ((base :initarg :base
+         :initform 10.0d0
+         :accessor log-y-transform-base
+         :type double-float
+         :documentation "Base of the logarithm.")
+   (nonpositive :initarg :nonpositive
+                :initform :clip
+                :accessor log-y-transform-nonpositive
+                :documentation "How to handle non-positive values: :clip or :mask."))
+  (:documentation "Logarithmic transform on Y axis: forward(x,y) = (x, log_base(y)).
+Ported from matplotlib.scale.LogTransform, applied to Y dimension."))
+
+(defmethod initialize-instance :after ((tr log-y-transform) &key base nonpositive)
+  (declare (ignore nonpositive))
+  (when base
+    (when (or (<= base 0.0d0) (= base 1.0d0))
+      (error "The log base cannot be <= 0 or == 1"))))
+
+(defmethod transform-point ((tr log-y-transform) point)
+  "Transform a point using logarithm on Y coordinate."
+  (let* ((x (float (if (listp point) (first point) (elt point 0)) 1.0d0))
+         (y (float (if (listp point) (second point) (elt point 1)) 1.0d0))
+         (base (log-y-transform-base tr))
+         (clip-p (eq (log-y-transform-nonpositive tr) :clip))
+         (result (make-array 2 :element-type 'double-float)))
+    ;; X coordinate passes through unchanged
+    (setf (aref result 0) x)
+    ;; Transform y coordinate
+    (setf (aref result 1)
+          (cond
+            ((<= y 0.0d0)
+             (if clip-p -1000.0d0 (/ 0.0d0 0.0d0))) ; NaN for mask
+            (t
+             (/ (log y) (log base)))))
+    result))
+
+(defmethod transform-path ((tr log-y-transform) path)
+  "Transform all vertices in PATH by this log-Y transform."
+  (let* ((verts (mpl-path-vertices path))
+         (n (array-dimension verts 0))
+         (new-verts (make-array (list n 2) :element-type 'double-float)))
+    (dotimes (i n)
+      (let ((pt (transform-point tr (list (aref verts i 0) (aref verts i 1)))))
+        (setf (aref new-verts i 0) (aref pt 0)
+              (aref new-verts i 1) (aref pt 1))))
+    (make-path :vertices new-verts
+               :codes (mpl-path-codes path)
+               :interpolation-steps (mpl-path-interpolation-steps path))))
+
+(defmethod invert ((tr log-y-transform))
+  "Return the inverse transform (InvertedLogYTransform)."
+  (make-instance 'inverted-log-y-transform :base (log-y-transform-base tr)))
+
+;;; ============================================================
+;;; InvertedLogYTransform — inverse of logarithmic Y transform
+;;; ============================================================
+
+(defclass inverted-log-y-transform (transform)
+  ((base :initarg :base
+         :initform 10.0d0
+         :accessor inverted-log-y-transform-base
+         :type double-float
+         :documentation "Base of the logarithm."))
+  (:documentation "Inverse logarithmic Y transform: forward(x,y) = (x, base^y).
+Ported from matplotlib.scale.InvertedLogTransform, applied to Y dimension."))
+
+(defmethod transform-point ((tr inverted-log-y-transform) point)
+  "Transform a point using exponentiation on Y coordinate."
+  (let* ((x (float (if (listp point) (first point) (elt point 0)) 1.0d0))
+         (y (float (if (listp point) (second point) (elt point 1)) 1.0d0))
+         (base (inverted-log-y-transform-base tr))
+         (result (make-array 2 :element-type 'double-float)))
+    ;; X coordinate passes through unchanged
+    (setf (aref result 0) x)
+    ;; Transform y coordinate: base^y
+    (setf (aref result 1) (expt base y))
+    result))
+
+(defmethod transform-path ((tr inverted-log-y-transform) path)
+  "Transform all vertices in PATH by this inverted log-Y transform."
+  (let* ((verts (mpl-path-vertices path))
+         (n (array-dimension verts 0))
+         (new-verts (make-array (list n 2) :element-type 'double-float)))
+    (dotimes (i n)
+      (let ((pt (transform-point tr (list (aref verts i 0) (aref verts i 1)))))
+        (setf (aref new-verts i 0) (aref pt 0)
+              (aref new-verts i 1) (aref pt 1))))
+    (make-path :vertices new-verts
+               :codes (mpl-path-codes path)
+               :interpolation-steps (mpl-path-interpolation-steps path))))
+
+(defmethod invert ((tr inverted-log-y-transform))
+  "Return the inverse transform (LogYTransform)."
+  (make-instance 'log-y-transform :base (inverted-log-y-transform-base tr)))
 
 ;;; ============================================================
 ;;; InvertedLogTransform — inverse of logarithmic transform

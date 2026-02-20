@@ -225,3 +225,11 @@ Two regressions were introduced:
 - `sbcl --load examples/simple-line.lisp` ✓ (no error)
 - `sbcl --load examples/bar-chart.lisp` ✓ (no error)
 - Commit: c3b8b3f fix(rendering): revert spine snap, fix sticky edge to bar-only
+
+## Task 5: Text Width Heuristic → Glyph Metrics
+- `get-text-extents` in font-manager.lisp returns a BBOX; use `bbox-width` to extract width
+- `load-font "sans-serif"` returns cached zpb-ttf font-loader via font-manager
+- The 0.6d0 heuristic was actually decent for DejaVu Sans — average advance width ≈ 0.6 em
+- Actual glyph metrics give per-string accuracy (kerning, variable-width chars)
+- SSIM improvement from this fix alone is marginal (+0.001-0.002) — legend sizing isn't the main SSIM bottleneck
+- Font-loader is in `cl-matplotlib.rendering` package; accessible from containers via `mpl.rendering:` prefix

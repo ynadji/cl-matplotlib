@@ -90,14 +90,16 @@ Returns the PathCollection artist."
                     (make-list n :initial-element (float s 1.0d0))
                     (loop for i from 0 below n
                           collect (float (elt s i) 1.0d0))))
+         ;; Get edge color from rcParams
+         (edge-color (mpl.rc:rc "scatter.edgecolors"))
          ;; Create PathCollection
          (pc (mpl.rendering:make-path-collection
               :paths (list marker-path)
               :offsets offsets
               :sizes sizes
               :facecolors effective-color
-              :edgecolors effective-color
-              :linewidths 0.5
+              :edgecolors (if (string= edge-color "face") nil edge-color)
+              :linewidths 0.0
               :alpha alpha
               :trans-offset (axes-base-trans-data ax)
               :zorder zorder

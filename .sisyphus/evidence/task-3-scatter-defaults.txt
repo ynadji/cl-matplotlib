@@ -1,0 +1,38 @@
+# Scatter Plot Defaults Fix - Evidence
+
+## Baseline
+- scatter SSIM: 0.9219 (target: ≥ 0.95)
+
+## Changes Made
+1. Modified src/containers/axes.lisp scatter function to:
+   - Use rcParams "scatter.edgecolors" instead of hardcoding effective-color
+   - When scatter.edgecolors="face", set edgecolors=nil (no edge rendering)
+   - Set linewidths=0.0 (no edge stroke)
+
+## Results
+- scatter SSIM: 0.9238 (improved from 0.9219)
+- All baseline examples (≥ 0.95) still passing:
+  - colorbar-custom: 0.9566 ✓
+  - errorbar: 0.9664 ✓
+  - figure-sizes: 0.9715 ✓
+  - fill-between: 0.9600 ✓
+  - gridspec-custom: 0.9681 ✓
+  - simple-line: 0.9593 ✓
+  - stackplot: 0.9602 ✓
+  - stem-plot: 0.9547 ✓
+  - subplots: 0.9636 ✓
+
+## Analysis
+The scatter SSIM improved from 0.9219 to 0.9238, but is still below the target of 0.95.
+
+Pixel analysis shows:
+- CL image has 1089 purple pixels
+- REF image has 8457 purple pixels
+- CL has only 12.88% of the purple pixels in REF
+
+This suggests the dots are being rendered much smaller than they should be. The issue appears to be with the marker size calculation, not the edge color/linewidth.
+
+The marker size is computed as sqrt(s) where s is in points^2. For s=25.0, this gives scale=5.0 in data coordinates. However, the data coordinates range from -2.2 to 2.2, so a circle with radius 5.0 would be huge. This suggests the scale factor is being applied in the wrong coordinate system.
+
+## Recommendation
+The edge color/linewidth fix is correct and improves SSIM slightly. However, to reach the target of 0.95, the marker size calculation needs to be fixed to properly convert from points^2 to display coordinates (pixels).

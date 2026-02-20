@@ -190,24 +190,46 @@ Ported from _AxesBase._set_lim_and_transforms."
            (unit-bbox (mpl.primitives:make-bbox 0.0d0 0.0d0 1.0d0 1.0d0)))
       (setf (axes-base-trans-axes ax)
             (mpl.primitives:make-bbox-transform unit-bbox display-bbox))))
-  ;; transScale: identity for linear (will be replaced for log scale)
-  (setf (axes-base-trans-scale ax)
-        (mpl.primitives:make-identity-transform))
+  ;; transScale: identity for linear; preserve if already set (e.g. log scale)
+  (unless (axes-base-trans-scale ax)
+    (setf (axes-base-trans-scale ax)
+          (mpl.primitives:make-identity-transform)))
   ;; transData: data coords → display coords
   ;; This is: transScale + (viewLim → unit bbox) + transAxes
   ;; i.e., data → scaled data → [0,1] → display
   (%update-trans-data ax))
 
 (defun %update-trans-data (ax)
-  "Recompute transData from current view limits and axes position.
-transData = viewLim→unitBbox ∘ transAxes"
+  "Recompute transData from current view limits, scale transform, and axes position.
+transData = transScale ∘ (scaledViewLim→unitBbox) ∘ transAxes
+For identity transScale (linear), this reduces to viewLim→unit ∘ transAxes."
   (let* ((view-lim (axes-base-view-lim ax))
          (unit-bbox (mpl.primitives:make-bbox 0.0d0 0.0d0 1.0d0 1.0d0))
-         ;; viewLim → unit bbox: maps view limits to [0,1]
-         (view-to-unit (mpl.primitives:make-bbox-transform view-lim unit-bbox))
-         ;; Compose: data → unit → display
-         (trans-data (mpl.primitives:compose view-to-unit
-                                             (axes-base-trans-axes ax))))
+         (trans-scale (or (axes-base-trans-scale ax)
+                          (mpl.primitives:make-identity-transform)))
+         ;; Transform view limits through trans-scale to get scaled view limits.
+         ;; For log-y: data viewLim [x0,y0,x1,y1] → [x0,log(y0),x1,log(y1)]
+         ;; For identity: scaled-view-lim = view-lim (no-op)
+         (scaled-view-lim
+           (if (typep trans-scale 'mpl.primitives:identity-transform)
+               view-lim
+               (let* ((p0 (mpl.primitives:transform-point
+                           trans-scale
+                           (list (mpl.primitives:bbox-x0 view-lim)
+                                 (mpl.primitives:bbox-y0 view-lim))))
+                      (p1 (mpl.primitives:transform-point
+                           trans-scale
+                           (list (mpl.primitives:bbox-x1 view-lim)
+                                 (mpl.primitives:bbox-y1 view-lim)))))
+                 (mpl.primitives:make-bbox (aref p0 0) (aref p0 1)
+                                           (aref p1 0) (aref p1 1)))))
+         ;; scaledViewLim → unit bbox: maps scaled view limits to [0,1]
+         (view-to-unit (mpl.primitives:make-bbox-transform scaled-view-lim unit-bbox))
+         ;; Compose: data → scale → unit → display
+         (trans-data (mpl.primitives:compose
+                      trans-scale
+                      (mpl.primitives:compose view-to-unit
+                                              (axes-base-trans-axes ax)))))
     (setf (axes-base-trans-data ax) trans-data)))
 
 ;;; ============================================================
@@ -476,6 +498,13 @@ SCALE-NAME is a keyword: :linear, :log, :symlog, :logit, or :function.
 Additional keyword arguments are passed to the scale constructor."
   (let ((scale (apply #'make-scale scale-name :axis (axes-base-xaxis ax) args)))
     (axis-set-scale (axes-base-xaxis ax) scale))
+  ;; Update trans-scale for the data→display pipeline
+  (setf (axes-base-trans-scale ax)
+        (if (eq scale-name :log)
+            (make-instance 'mpl.primitives:log-transform
+                           :base (float (or (getf args :base) 10.0d0) 1.0d0))
+            (mpl.primitives:make-identity-transform)))
+  (%update-trans-data ax)
   (setf (mpl.rendering:artist-stale ax) t))
 
 (defun axes-set-yscale (ax scale-name &rest args)
@@ -484,6 +513,13 @@ SCALE-NAME is a keyword: :linear, :log, :symlog, :logit, or :function.
 Additional keyword arguments are passed to the scale constructor."
   (let ((scale (apply #'make-scale scale-name :axis (axes-base-yaxis ax) args)))
     (axis-set-scale (axes-base-yaxis ax) scale))
+  ;; Update trans-scale for the data→display pipeline
+  (setf (axes-base-trans-scale ax)
+        (if (eq scale-name :log)
+            (make-instance 'mpl.primitives:log-y-transform
+                           :base (float (or (getf args :base) 10.0d0) 1.0d0))
+            (mpl.primitives:make-identity-transform)))
+  (%update-trans-data ax)
   (setf (mpl.rendering:artist-stale ax) t))
 
 ;;; ============================================================
