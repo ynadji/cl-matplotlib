@@ -219,11 +219,14 @@ Returns (values x y width height) in display space."
          (border-pad (* (legend-borderpad leg) fontsize))
          (label-spacing (* (legend-labelspacing leg) fontsize))
          (col-spacing (* (legend-columnspacing leg) fontsize))
-         ;; Estimate text width (approx 0.6 * fontsize per character)
+         ;; Compute text width using actual glyph metrics
+         (font-loader (mpl.rendering:load-font "sans-serif"))
          (max-label-width (loop for entry in (legend-entry-artists leg)
                                 maximize (let ((txt (cdr entry)))
-                                           (* 0.6d0 fontsize
-                                              (length (mpl.rendering:text-text txt))))))
+                                           (mpl.primitives:bbox-width
+                                            (mpl.rendering:get-text-extents
+                                             (mpl.rendering:text-text txt)
+                                             font-loader fontsize)))))
          ;; Total column width = handle + pad + text
          (col-width (+ handle-len text-pad max-label-width))
          ;; Total legend width

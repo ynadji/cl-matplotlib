@@ -1,0 +1,41 @@
+Task 5: Replace text width heuristic with actual glyph metrics
+================================================================
+
+Changes made:
+- src/containers/legend.lisp: Replaced (* 0.6d0 fontsize (length text)) with
+  (mpl.primitives:bbox-width (mpl.rendering:get-text-extents text font-loader fontsize))
+- src/rendering/annotation.lisp: Same replacement pattern
+- src/rendering/fancy-arrow.lisp: Same replacement pattern
+
+Font loading: Uses (load-font "sans-serif") which returns a cached zpb-ttf font-loader
+via font-manager's find-font → zpb-ttf:open-font-loader pipeline.
+
+SSIM Results (After):
+  legend-styles:  0.9389 (was 0.9384, +0.0005)
+  multi-line:     0.9315 (was 0.9312, +0.0003)
+  scatter:        0.9238 (was 0.9219, +0.0019)
+  custom-markers: 0.9275
+  histogram:      0.9375 (was 0.9375, same)
+  color-cycle:    0.9176 (was 0.9154, +0.0022)
+  annotations:    0.9336
+
+No regressions on high-scoring examples:
+  boxplot:        1.0000
+  contour-lines:  0.9835
+  figure-sizes:   0.9710
+  gridspec-custom:0.9681
+  errorbar:       0.9659
+  subplots:       0.9636
+  stackplot:      0.9601
+  fill-between:   0.9595
+  simple-line:    0.9590
+  colorbar-custom:0.9566
+  stem-plot:      0.9546
+
+Tests: 91/91 passing (100%)
+
+Analysis: The 0.6 heuristic was a reasonable approximation for DejaVu Sans
+(average char width ≈ 0.6 em). Actual glyph metrics provide per-string
+accuracy with kerning, giving correct widths for short vs. long labels,
+narrow (l,i) vs. wide (m,w) characters. Improvement is positive across
+all legend examples, most notable in scatter (+0.0019) and color-cycle (+0.0022).

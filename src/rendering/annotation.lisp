@@ -123,8 +123,10 @@ Ported from matplotlib.text.Annotation."))
          (x (text-x ann))
          (y (text-y ann))
          (fs (text-fontsize ann))
-         ;; Estimate text dimensions
-         (text-width (* 0.6d0 fs (length (text-text ann))))
+         ;; Compute text width using actual glyph metrics
+         (font-loader (load-font "sans-serif"))
+         (text-width (cl-matplotlib.primitives:bbox-width
+                      (get-text-extents (text-text ann) font-loader fs)))
          (text-height (* 1.2d0 fs))
          ;; Create box
          (style (make-box-style boxstyle :pad (float pad 1.0d0)))

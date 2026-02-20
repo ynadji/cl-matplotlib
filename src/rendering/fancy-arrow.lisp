@@ -609,8 +609,10 @@ PAD is the offset from edge in axes fraction."
     ;; Draw background box if frameon
     (when (anchored-text-frameon at)
       (let* ((fs (float (anchored-text-fontsize at) 1.0d0))
-             ;; Estimate text width (rough: ~0.6 * fontsize * nchars)
-             (text-width (* 0.6d0 fs (length (anchored-text-text at))))
+             ;; Compute text width using actual glyph metrics
+             (font-loader (load-font "sans-serif"))
+             (text-width (cl-matplotlib.primitives:bbox-width
+                          (get-text-extents (anchored-text-text at) font-loader fs)))
              (text-height (* 1.2d0 fs))
              (pad-pts (* (float (anchored-text-pad at) 1.0d0) fs))
              (box-x (- x pad-pts))
