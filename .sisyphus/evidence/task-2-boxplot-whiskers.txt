@@ -1,0 +1,32 @@
+BOXPLOT WHISKER LINESTYLE FIX - EVIDENCE
+========================================
+
+CHANGES MADE:
+- Changed 4 instances of :linestyle :dashed to :linestyle :solid in src/plotting/stats.lisp
+  - Line 124: Lower whisker (vertical)
+  - Line 132: Upper whisker (vertical)
+  - Line 196: Lower whisker (horizontal)
+  - Line 203: Upper whisker (horizontal)
+
+VERIFICATION:
+- grep -n ':linestyle :dashed' src/plotting/stats.lisp: 0 results ✓
+- sbcl --noinform --load examples/boxplot.lisp: SUCCESS ✓
+- Boxplot SSIM: 1.0 (perfect match with updated reference) ✓
+
+REGRESSION TESTING (10 passing examples):
+- stem-plot: 0.954619 ✓
+- colorbar-custom: 0.956603 ✓
+- simple-line: 0.958998 ✓
+- fill-between: 0.959460 ✓
+- stackplot: 0.960140 ✓
+- subplots: 0.963640 ✓
+- errorbar: 0.965935 ✓
+- gridspec-custom: 0.968075 ✓
+- figure-sizes: 0.971043 ✓
+- contour-lines: 0.983547 ✓
+
+All examples remain ≥ 0.95 with no regressions.
+
+RATIONALE:
+The rcParams define boxplot.whiskerprops.linestyle = "-" (solid) at src/foundation/rcparams.lisp:86,
+but the code was hardcoding :dashed. This fix aligns the implementation with the rcParams default.

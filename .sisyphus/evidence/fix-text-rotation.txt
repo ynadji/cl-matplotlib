@@ -1,0 +1,32 @@
+fix-text-rotation evidence
+=========================
+Date: 2026-02-19
+
+## Changes
+File: src/backends/backend-vecto.lisp (draw-text method)
+
+Fix 1 - Clip reset: Added clip-to-full-figure when GC has no clip-rectangle,
+so axis labels (ylabel) outside axes clip boundary are not clipped invisible.
+
+Fix 2 - Text rotation: Replaced no-op `(when angle != 0 nil)` with working
+translate+rotate-degrees transform, so ylabel renders vertically at 90°.
+
+## Verification
+
+### ylabel visibility (simple-line.png)
+ylabel region (rows 200-400, cols 0-60):
+  Variance: 63.4
+  Non-white pixels: 33
+  Result: PASS (variance > 50)
+
+### Test suite
+91/91 checks passed (100%), 0 failures
+
+### SSIM comparison (make compare)
+  simple-line: 0.8817
+  pie-chart:   0.9395 (PASS)
+  mean SSIM:   0.8235
+  1 passed, 26 failed (threshold 0.90)
+
+### Build
+make cl-images: All 27 examples generated successfully, no errors

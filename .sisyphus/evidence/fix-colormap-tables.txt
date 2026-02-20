@@ -1,0 +1,55 @@
+fix-colormap-tables evidence — 2026-02-19
+
+## Change
+Replaced 16-point interpolated colormap control points with full 256-entry
+lookup tables for viridis, plasma, inferno, magma, cividis in
+src/primitives/colormaps.lisp.
+
+Data extracted from Python matplotlib via:
+  .venv/bin/python -c "import matplotlib.cm as cm; cmap = cm.get_cmap(name); ..."
+
+## Verification: viridis at norm=0.524
+Python:  rgb=(31,150,139)
+CL:      rgb=(31,150,139)
+Diff:    R=0, G=0, B=0  (EXACT MATCH)
+
+## Test Suite
+91 checks, 91 pass (100%), 0 fail, 0 skip
+
+## SSIM Comparison (make compare)
+Key colormap-affected examples:
+  filled-contour:  0.5141 (was ~0.52 before — similar, geometry dominates)
+  colorbar-custom: 0.6245 (was ~0.62 before)
+  imshow-heatmap:  0.8245 (was ~0.75 before — IMPROVED +0.07)
+
+Overall: mean=0.8252, min=0.5141, max=0.9395
+1 passed, 26 failed (threshold-based)
+
+Full SSIM scores:
+  filled-contour: 0.5141
+  colorbar-custom: 0.6245
+  contour-lines: 0.7331
+  histogram: 0.7778
+  boxplot: 0.7968
+  stackplot: 0.8040
+  barh: 0.8181
+  bar-chart: 0.8207
+  shared-axes: 0.8243
+  imshow-heatmap: 0.8245
+  twin-axes: 0.8261
+  color-cycle: 0.8352
+  multi-line: 0.8419
+  custom-markers: 0.8500
+  scatter: 0.8503
+  annotations: 0.8562
+  stem-plot: 0.8577
+  log-scale: 0.8632
+  fill-between: 0.8652
+  step-plot: 0.8694
+  subplots: 0.8749
+  legend-styles: 0.8769
+  gridspec-custom: 0.8806
+  simple-line: 0.8817
+  figure-sizes: 0.8849
+  errorbar: 0.8877
+  pie-chart: 0.9395

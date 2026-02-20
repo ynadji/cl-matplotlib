@@ -115,22 +115,22 @@ Returns a plist with :boxes :medians :whiskers :caps :fliers."
                                                        :linewidth (* linewidth 1.5)
                                                        :linestyle :solid
                                                        :zorder (1+ zorder)))
-                              ;; Lower whisker
-                              (wlo-line (make-instance 'mpl.rendering:line-2d
-                                                       :xdata (list position position)
-                                                       :ydata (list wlo q1)
-                                                       :color effective-color
-                                                       :linewidth linewidth
-                                                       :linestyle :dashed
-                                                       :zorder zorder))
-                              ;; Upper whisker
-                              (whi-line (make-instance 'mpl.rendering:line-2d
-                                                       :xdata (list position position)
-                                                       :ydata (list q3 whi)
-                                                       :color effective-color
-                                                       :linewidth linewidth
-                                                       :linestyle :dashed
-                                                       :zorder zorder))
+                               ;; Lower whisker
+                               (wlo-line (make-instance 'mpl.rendering:line-2d
+                                                        :xdata (list position position)
+                                                        :ydata (list wlo q1)
+                                                        :color effective-color
+                                                        :linewidth linewidth
+                                                        :linestyle :solid
+                                                        :zorder zorder))
+                               ;; Upper whisker
+                               (whi-line (make-instance 'mpl.rendering:line-2d
+                                                        :xdata (list position position)
+                                                        :ydata (list q3 whi)
+                                                        :color effective-color
+                                                        :linewidth linewidth
+                                                        :linestyle :solid
+                                                        :zorder zorder))
                               ;; Caps
                               (cap-lo (make-instance 'mpl.rendering:line-2d
                                                      :xdata (list (- position half-w) (+ position half-w))
@@ -188,20 +188,20 @@ Returns a plist with :boxes :medians :whiskers :caps :fliers."
                                                        :linewidth (* linewidth 1.5)
                                                        :linestyle :solid
                                                        :zorder (1+ zorder)))
-                              (wlo-line (make-instance 'mpl.rendering:line-2d
-                                                       :xdata (list wlo q1)
-                                                       :ydata (list position position)
-                                                       :color effective-color
-                                                       :linewidth linewidth
-                                                       :linestyle :dashed
-                                                       :zorder zorder))
-                              (whi-line (make-instance 'mpl.rendering:line-2d
-                                                       :xdata (list q3 whi)
-                                                       :ydata (list position position)
-                                                       :color effective-color
-                                                       :linewidth linewidth
-                                                       :linestyle :dashed
-                                                       :zorder zorder))
+                               (wlo-line (make-instance 'mpl.rendering:line-2d
+                                                        :xdata (list wlo q1)
+                                                        :ydata (list position position)
+                                                        :color effective-color
+                                                        :linewidth linewidth
+                                                        :linestyle :solid
+                                                        :zorder zorder))
+                               (whi-line (make-instance 'mpl.rendering:line-2d
+                                                        :xdata (list q3 whi)
+                                                        :ydata (list position position)
+                                                        :color effective-color
+                                                        :linewidth linewidth
+                                                        :linestyle :solid
+                                                        :zorder zorder))
                               (cap-lo (make-instance 'mpl.rendering:line-2d
                                                      :xdata (list wlo wlo)
                                                      :ydata (list (- position half-w) (+ position half-w))

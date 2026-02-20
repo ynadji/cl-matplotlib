@@ -1,0 +1,37 @@
+=== SSIM BASELINE (0.95 threshold) ===
+Date: 2026-02-20
+Threshold: 0.95
+Passed: 10/27
+Failed: 17/27
+Mean SSIM: 0.9415
+Min SSIM:  0.9012
+Max SSIM:  0.9835
+
+=== PER-EXAMPLE SCORES ===
+log-scale                  0.9012  FAIL
+shared-axes                0.9056  FAIL
+color-cycle                0.9154  FAIL
+step-plot                  0.9177  FAIL
+scatter                    0.9219  FAIL
+barh                       0.9221  FAIL
+twin-axes                  0.9260  FAIL
+custom-markers             0.9266  FAIL
+multi-line                 0.9312  FAIL
+annotations                0.9333  FAIL
+boxplot                    0.9354  FAIL
+histogram                  0.9375  FAIL
+imshow-heatmap             0.9379  FAIL
+legend-styles              0.9384  FAIL
+pie-chart                  0.9390  FAIL
+filled-contour             0.9414  FAIL
+bar-chart                  0.9467  FAIL
+stem-plot                  0.9546  PASS
+colorbar-custom            0.9566  PASS
+simple-line                0.9590  PASS
+fill-between               0.9595  PASS
+stackplot                  0.9601  PASS
+subplots                   0.9636  PASS
+errorbar                   0.9659  PASS
+gridspec-custom            0.9681  PASS
+figure-sizes               0.9710  PASS
+contour-lines              0.9835  PASS
