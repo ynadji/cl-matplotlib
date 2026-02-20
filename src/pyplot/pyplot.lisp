@@ -454,13 +454,18 @@ COLOR — text color.
 LOC — position: :center, :left, :right."
   (declare (ignore loc color))
   (let* ((ax (gca))
+         ;; Convert fontsize from points to pixels (matplotlib default title size = 12pt)
+         (fontsize-pts (or fontsize 12.0))
+         (fig (mpl.containers:axes-base-figure ax))
+         (dpi (if fig (mpl.containers:figure-dpi fig) 100))
+         (fontsize-px (* fontsize-pts (/ dpi 72.0)))
          (txt (make-instance 'mpl.rendering:text-artist
                                :x 0.5d0 :y 1.0d0
-                             :text text
-                             :fontsize (or fontsize 12.0)
-                             :horizontalalignment :center
-                             :verticalalignment :baseline
-                             :zorder 3)))
+                              :text text
+                              :fontsize fontsize-px
+                              :horizontalalignment :center
+                              :verticalalignment :baseline
+                              :zorder 3)))
     ;; Set transform to transAxes (title is in axes coordinates)
     (setf (mpl.rendering:artist-transform txt)
           (mpl.containers:axes-base-trans-axes ax))
