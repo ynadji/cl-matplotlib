@@ -233,3 +233,13 @@ Two regressions were introduced:
 - Actual glyph metrics give per-string accuracy (kerning, variable-width chars)
 - SSIM improvement from this fix alone is marginal (+0.001-0.002) — legend sizing isn't the main SSIM bottleneck
 - Font-loader is in `cl-matplotlib.rendering` package; accessible from containers via `mpl.rendering:` prefix
+
+## Log-Scale Transform Pipeline (Task 4)
+- `trans-scale` must be incorporated in `%update-trans-data` pipeline
+- Pipeline: data → trans-scale → scaled-viewLim→unit → transAxes → display
+- View limits stay in DATA space; scaled-view-lim is computed by transforming view limits through trans-scale
+- For identity trans-scale (linear), `compose(identity, X) = X` — zero overhead
+- Autoscale margins must be computed in LOG space for log scale (linear margins create negative Y values that clip to -1000)
+- `%setup-transforms` should NOT reset trans-scale — use `unless nil` guard
+- `log-y-transform` needed as separate class since existing `log-transform` only transforms X
+- All non-affine transforms need `transform-path` methods for composite-generic-transform composition

@@ -497,7 +497,27 @@ If TIGHT is T, use exact data limits (no margin)."
 SCALE-NAME is a keyword: :linear, :log, :symlog, :logit, or :function.
 Additional keyword arguments are passed to the scale constructor."
   (let ((scale (apply #'make-scale scale-name :axis (axes-base-xaxis ax) args)))
-    (axis-set-scale (axes-base-xaxis ax) scale))
+    (axis-set-scale (axes-base-xaxis ax) scale)
+    ;; For log scale: recompute X view limits with margins in log space
+    (when (eq scale-name :log)
+      (let ((datalim (axes-base-data-lim ax))
+            (view-lim (axes-base-view-lim ax)))
+        (when (and view-lim datalim
+                   (not (mpl.primitives:bbox-null-p datalim)))
+          (let* ((base (float (or (getf args :base) 10.0d0) 1.0d0))
+                 (x0 (max (mpl.primitives:bbox-x0 datalim) 1.0d-300))
+                 (x1 (max (mpl.primitives:bbox-x1 datalim) 1.0d-300))
+                 (log-x0 (/ (log x0) (log base)))
+                 (log-x1 (/ (log x1) (log base)))
+                 (log-range (- log-x1 log-x0))
+                 (margin (axes-base-autoscale-margin ax))
+                 (log-margin (* log-range margin))
+                 (new-xmin (expt base (- log-x0 log-margin)))
+                 (new-xmax (expt base (+ log-x1 log-margin))))
+            (setf (axes-base-view-lim ax)
+                  (mpl.primitives:make-bbox
+                   new-xmin (mpl.primitives:bbox-y0 view-lim)
+                   new-xmax (mpl.primitives:bbox-y1 view-lim))))))))
   ;; Update trans-scale for the data→display pipeline
   (setf (axes-base-trans-scale ax)
         (if (eq scale-name :log)
@@ -512,7 +532,29 @@ Additional keyword arguments are passed to the scale constructor."
 SCALE-NAME is a keyword: :linear, :log, :symlog, :logit, or :function.
 Additional keyword arguments are passed to the scale constructor."
   (let ((scale (apply #'make-scale scale-name :axis (axes-base-yaxis ax) args)))
-    (axis-set-scale (axes-base-yaxis ax) scale))
+    (axis-set-scale (axes-base-yaxis ax) scale)
+    ;; For log scale: recompute Y view limits with margins in log space
+    ;; (linear-space margin creates negative values which break log)
+    (when (eq scale-name :log)
+      (let ((datalim (axes-base-data-lim ax))
+            (view-lim (axes-base-view-lim ax)))
+        (when (and view-lim datalim
+                   (not (mpl.primitives:bbox-null-p datalim)))
+          (let* ((base (float (or (getf args :base) 10.0d0) 1.0d0))
+                 (y0 (max (mpl.primitives:bbox-y0 datalim) 1.0d-300))
+                 (y1 (max (mpl.primitives:bbox-y1 datalim) 1.0d-300))
+                 (log-y0 (/ (log y0) (log base)))
+                 (log-y1 (/ (log y1) (log base)))
+                 (log-range (- log-y1 log-y0))
+                 (margin (axes-base-autoscale-margin ax))
+                 (log-margin (* log-range margin))
+                 ;; Apply margin in log space, convert back to data space
+                 (new-ymin (expt base (- log-y0 log-margin)))
+                 (new-ymax (expt base (+ log-y1 log-margin))))
+            (setf (axes-base-view-lim ax)
+                  (mpl.primitives:make-bbox
+                   (mpl.primitives:bbox-x0 view-lim) new-ymin
+                   (mpl.primitives:bbox-x1 view-lim) new-ymax)))))))
   ;; Update trans-scale for the data→display pipeline
   (setf (axes-base-trans-scale ax)
         (if (eq scale-name :log)

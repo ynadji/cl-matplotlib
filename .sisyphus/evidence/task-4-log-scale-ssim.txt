@@ -1,0 +1,44 @@
+Task 4: Fix log-scale rendering — Evidence
+==========================================
+
+BEFORE: log-scale SSIM = 0.9012 (worst example)
+AFTER:  log-scale SSIM = 0.9721 (above 0.95 target)
+
+Root Cause:
+- trans-scale field was initialized to identity and NEVER incorporated into data→display pipeline
+- %update-trans-data ignored trans-scale entirely
+- axes-set-yscale/axes-set-xscale did not set trans-scale
+- %setup-transforms reset trans-scale to identity on every draw
+- log-transform only transformed X axis, not Y axis
+- Autoscale margin applied in linear space created negative Y values for log scale
+
+Changes Made:
+1. src/primitives/scale-transforms.lisp:
+   - Added log-y-transform class (log on Y, pass X through)
+   - Added inverted-log-y-transform class  
+   - Added transform-path methods for log-transform, log-y-transform, and their inverses
+
+2. src/packages.lisp:
+   - Exported log-y-transform, inverted-log-y-transform and their accessors
+
+3. src/containers/axes-base.lisp:
+   - %setup-transforms: preserve existing trans-scale (don't reset to identity)
+   - %update-trans-data: incorporate trans-scale in pipeline
+     Pipeline: data → trans-scale → scaled-viewLim→unit → transAxes → display
+     For identity trans-scale (linear), reduces to original pipeline
+   - axes-set-yscale: set trans-scale to log-y-transform, recompute view limits with log-space margins
+   - axes-set-xscale: set trans-scale to log-transform, recompute view limits with log-space margins
+
+Regression Check — All examples ≥ 0.95 preserved:
+  boxplot:          1.0000 ✓
+  contour-lines:    0.9835 ✓
+  log-scale:        0.9721 ✓ (was 0.9012)
+  figure-sizes:     0.9715 ✓
+  gridspec-custom:  0.9681 ✓
+  errorbar:         0.9664 ✓
+  subplots:         0.9636 ✓
+  stackplot:        0.9602 ✓
+  fill-between:     0.9600 ✓
+  simple-line:      0.9593 ✓
+  colorbar-custom:  0.9566 ✓
+  stem-plot:        0.9547 ✓
