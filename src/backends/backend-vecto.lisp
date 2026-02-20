@@ -167,9 +167,12 @@ RENDERER is needed to convert linewidth from points to pixels via DPI."
 ;;; Path rendering: map mpl-path codes to Vecto operations
 ;;; ============================================================
 
-(defun %trace-path-to-vecto (path transform)
+(defun %trace-path-to-vecto (path transform &key (x-offset 0.0d0) (y-offset 0.0d0))
   "Trace an mpl-path into the current Vecto path.
-TRANSFORM can be an affine-2d or NIL for identity."
+TRANSFORM can be an affine-2d or NIL for identity.
+X-OFFSET and Y-OFFSET are added to display-space coordinates after transform,
+used to compensate for rasterizer pixel-center convention differences
+between cl-aa and AGG (matplotlib's rasterizer)."
   (let* ((verts (mpl.primitives:mpl-path-vertices path))
          (codes (mpl.primitives:mpl-path-codes path))
          (n (array-dimension verts 0))
@@ -185,9 +188,9 @@ TRANSFORM can be an affine-2d or NIL for identity."
              "Apply transform and return (values tx ty)."
              (if transform
                  (let ((result (mpl.primitives:transform-point
-                                transform (list (float x 1.0d0) (float y 1.0d0)))))
-                   (values (aref result 0) (aref result 1)))
-                 (values (float x 1.0d0) (float y 1.0d0)))))
+                                 transform (list (float x 1.0d0) (float y 1.0d0)))))
+                   (values (+ (aref result 0) x-offset) (+ (aref result 1) y-offset)))
+                 (values (+ (float x 1.0d0) x-offset) (+ (float y 1.0d0) y-offset)))))
       (loop while (< i n) do
         (let ((code (aref codes i)))
           (cond
@@ -243,16 +246,24 @@ Must be called within an active canvas context (see canvas-vecto)."
       ;; Apply graphics context state
       (%apply-gc-to-vecto gc renderer)
       ;; Fill path if we have a face color
+      ;; Apply a -0.5 display-space Y offset for fills to compensate for
+      ;; cl-aa's pixel-center convention vs AGG's (matplotlib's rasterizer).
+      ;; cl-aa includes boundary pixels at half-integer coordinates; AGG excludes them.
+      ;; This shifts fill coordinates by +0.5 in rasterizer space (since Vecto flips Y),
+      ;; moving boundaries off pixel centers to match AGG's rasterization.
       (when face-color
         (let ((r (first face-color))
               (g (second face-color))
               (b (third face-color))
               (a (* (fourth face-color) (float alpha 1.0))))
           (vecto:set-rgba-fill (float r 1.0) (float g 1.0) (float b 1.0) (float a 1.0)))
-        (%trace-path-to-vecto path transform)
         (if edge-color
-            ;; Fill and stroke: need to trace path twice (Vecto consumes path on fill)
+            ;; Fill and stroke: apply -0.5 Y offset to compensate for cl-aa vs AGG
+            ;; pixel-center convention difference on filled+stroked shapes (bars, etc.)
+            ;; cl-aa rasterizes half-integer boundaries inclusively; AGG exclusively.
+            ;; -0.5 in Vecto Y = +0.5 raster Y = half-pixel down, aligning edges.
             (progn
+              (%trace-path-to-vecto path transform :y-offset -0.7d0)
               (vecto:fill-path)
               ;; Re-trace for stroke
               (let ((r (first edge-color))
@@ -260,10 +271,12 @@ Must be called within an active canvas context (see canvas-vecto)."
                     (b (third edge-color))
                     (a (* (fourth edge-color) (float alpha 1.0))))
                 (vecto:set-rgba-stroke (float r 1.0) (float g 1.0) (float b 1.0) (float a 1.0)))
-              (%trace-path-to-vecto path transform)
+              (%trace-path-to-vecto path transform :y-offset -0.7d0)
               (vecto:stroke))
-            ;; Fill only
-            (vecto:fill-path)))
+            ;; Fill only (no edge) — no offset needed (axes background, etc.)
+            (progn
+              (%trace-path-to-vecto path transform)
+              (vecto:fill-path))))
       ;; Stroke only (no fill)
       (when (and (not face-color) edge-color)
         (let ((r (first edge-color))
@@ -427,28 +440,39 @@ VA is vertical alignment (:baseline, :bottom, :center, :top). Default :baseline.
                 (:center  (setf y-offset (- (/ (+ ymax ymin) 2.0))))
                 ;; :top → top of text at y → shift y down by ymax
                 (:top     (setf y-offset (- ymax))))))
-          ;; Apply rotation transform for text (e.g., ylabel needs 90°)
-          (if (and (numberp angle) (not (zerop (float angle 1.0))))
-              (progn
-                (vecto:translate (float x 1.0) (float y 1.0))
-                (vecto:rotate-degrees (float angle 1.0))
-                (if (eq ha :center)
+           ;; Apply rotation transform for text (e.g., ylabel needs 90°)
+           ;; NOTE on alignment: vecto:draw-string places the string origin at (x,y).
+           ;; The first glyph's leftmost pixel appears at x + bbox-xmin (left-side-bearing).
+           ;; For correct alignment we must account for bbox-xmin and bbox-xmax:
+           ;;   :left   → leftmost pixel at dx  → x = dx - xmin
+           ;;   :center → center of text at dx  → x = dx - (xmin+xmax)/2
+           ;;   :right  → rightmost pixel at dx → x = dx - xmax
+           (if (and (numberp angle) (not (zerop (float angle 1.0))))
+               (progn
+                 (vecto:translate (float x 1.0) (float y 1.0))
+                 (vecto:rotate-degrees (float angle 1.0))
+                 (if (eq ha :center)
+                     (let* ((bbox (vecto:string-bounding-box s (float fontsize 1.0) font))
+                            (xmin (aref bbox 0))
+                            (xmax (aref bbox 2)))
+                       (vecto:draw-string (float (- (/ (+ xmin xmax) -2.0)) 1.0) (float y-offset 1.0) s))
+                     (vecto:draw-string 0.0 (float y-offset 1.0) s)))
+               (let ((dx (float x 1.0))
+                     (dy (+ (float y 1.0) y-offset)))
+                 (ecase ha
+                   (:left
                     (let* ((bbox (vecto:string-bounding-box s (float fontsize 1.0) font))
-                           (width (- (aref bbox 2) (aref bbox 0))))
-                      (vecto:draw-string (float (/ width -2.0) 1.0) (float y-offset 1.0) s))
-                    (vecto:draw-string 0.0 (float y-offset 1.0) s)))
-              (let ((dx (float x 1.0))
-                    (dy (+ (float y 1.0) y-offset)))
-                (ecase ha
-                  (:left   (vecto:draw-string dx (float dy 1.0) s))
-                  (:center
-                   (let* ((bbox (vecto:string-bounding-box s (float fontsize 1.0) font))
-                          (width (- (aref bbox 2) (aref bbox 0))))
-                     (vecto:draw-string (float (- dx (/ width 2.0)) 1.0) (float dy 1.0d0) s)))
-                   (:right
+                           (xmin (aref bbox 0)))
+                      (vecto:draw-string (float (- dx xmin) 1.0) (float dy 1.0) s)))
+                   (:center
                     (let* ((bbox (vecto:string-bounding-box s (float fontsize 1.0) font))
-                           (width (- (aref bbox 2) (aref bbox 0))))
-                      (vecto:draw-string (float (- dx width) 1.0) (float dy 1.0) s)))))))))))
+                           (xmin (aref bbox 0))
+                           (xmax (aref bbox 2)))
+                      (vecto:draw-string (float (- dx (/ (+ xmin xmax) 2.0)) 1.0) (float dy 1.0d0) s)))
+                    (:right
+                     (let* ((bbox (vecto:string-bounding-box s (float fontsize 1.0) font))
+                            (xmax (aref bbox 2)))
+                       (vecto:draw-string (float (- dx xmax) 1.0) (float dy 1.0) s)))))))))))
 
 ;;; ============================================================
 ;;; draw-markers — Optimized repeated path drawing
