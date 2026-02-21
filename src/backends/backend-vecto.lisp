@@ -167,12 +167,15 @@ RENDERER is needed to convert linewidth from points to pixels via DPI."
 ;;; Path rendering: map mpl-path codes to Vecto operations
 ;;; ============================================================
 
-(defun %trace-path-to-vecto (path transform &key (x-offset 0.0d0) (y-offset 0.0d0))
+(defun %trace-path-to-vecto (path transform &key (x-offset 0.0d0) (y-offset 0.0d0) snap-to-half-pixels)
   "Trace an mpl-path into the current Vecto path.
 TRANSFORM can be an affine-2d or NIL for identity.
 X-OFFSET and Y-OFFSET are added to display-space coordinates after transform,
 used to compensate for rasterizer pixel-center convention differences
-between cl-aa and AGG (matplotlib's rasterizer)."
+between cl-aa and AGG (matplotlib's rasterizer).
+SNAP-TO-HALF-PIXELS: when T, snap each coordinate to the nearest half-integer
+pixel center (round(v)+0.5), matching AGG/matplotlib pixel-center convention.
+Coordinates already at half-integers (e.g. pre-snapped gridlines) are preserved."
   (let* ((verts (mpl.primitives:mpl-path-vertices path))
          (codes (mpl.primitives:mpl-path-codes path))
          (n (array-dimension verts 0))
@@ -186,11 +189,24 @@ between cl-aa and AGG (matplotlib's rasterizer)."
         (setf (aref codes j) mpl.primitives:+lineto+)))
     (flet ((xf (x y)
              "Apply transform and return (values tx ty)."
-             (if transform
-                 (let ((result (mpl.primitives:transform-point
-                                 transform (list (float x 1.0d0) (float y 1.0d0)))))
-                   (values (+ (aref result 0) x-offset) (+ (aref result 1) y-offset)))
-                 (values (+ (float x 1.0d0) x-offset) (+ (float y 1.0d0) y-offset)))))
+             (multiple-value-bind (tx ty)
+                 (if transform
+                     (let ((result (mpl.primitives:transform-point
+                                      transform (list (float x 1.0d0) (float y 1.0d0)))))
+                       (values (+ (aref result 0) x-offset) (+ (aref result 1) y-offset)))
+                     (values (+ (float x 1.0d0) x-offset) (+ (float y 1.0d0) y-offset)))
+               (if snap-to-half-pixels
+                   (flet ((snap-half (v)
+                            "Snap stroke coordinate to half-integer pixel center.
+Preserves coordinates already at half-pixels (gridlines, pre-snapped ticks).
+For other coordinates, applies +0.5 bias to compensate for cl-aa vs AGG
+pixel-center offset, then snaps to floor+0.5."
+                            (let ((frac (mod v 1.0d0)))
+                              (if (< (abs (- frac 0.5d0)) 0.02d0)
+                                  v ;; Already at half-pixel — preserve
+                                  (+ (float (floor (+ v 0.5d0)) 1.0d0) 0.5d0)))))
+                     (values (snap-half tx) (snap-half ty)))
+                   (values tx ty)))))
       (loop while (< i n) do
         (let ((code (aref codes i)))
           (cond
@@ -284,7 +300,7 @@ Must be called within an active canvas context (see canvas-vecto)."
               (b (third edge-color))
               (a (* (fourth edge-color) (float alpha 1.0))))
           (vecto:set-rgba-stroke (float r 1.0) (float g 1.0) (float b 1.0) (float a 1.0)))
-        (%trace-path-to-vecto path transform)
+        (%trace-path-to-vecto path transform :snap-to-half-pixels t)
         (vecto:stroke)))))
 
 ;;; ============================================================
