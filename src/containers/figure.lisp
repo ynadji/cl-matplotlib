@@ -241,6 +241,96 @@ Only non-nil values are updated."
     (setf (mpl.rendering:artist-stale figure) t)))
 
 ;;; ============================================================
+;;; Figure-level title and axis labels
+;;; ============================================================
+
+(defun suptitle (fig text &key (fontsize 12.0) (color "black") (alpha nil)
+                                (x 0.5) (y 0.98) (ha :center) (va :top))
+  "Set the figure super-title — centered text above all subplots.
+FIG — the mpl-figure instance.
+TEXT — the title string.
+FONTSIZE — font size in points (default 12.0).
+X, Y — figure coordinates (0-1 fraction). Default: (0.5, 0.98) = top center.
+HA — horizontal alignment (default :center).
+VA — vertical alignment (default :top).
+Returns the created text-artist."
+  (let* ((w (figure-width-px fig))
+         (h (figure-height-px fig))
+         (transform (mpl.primitives:make-affine-2d :scale (list (float w 1.0d0) (float h 1.0d0))))
+         (txt (make-instance 'mpl.rendering:text-artist
+                             :x (float x 1.0d0)
+                             :y (float y 1.0d0)
+                             :text text
+                             :fontsize (float fontsize 1.0d0)
+                             :color color
+                             :horizontalalignment ha
+                             :verticalalignment va
+                             :zorder 5)))
+    (when alpha (setf (mpl.rendering:artist-alpha txt) (float alpha 1.0d0)))
+    (setf (mpl.rendering:artist-transform txt) transform)
+    ;; Store in figure slot and add to fig-texts for rendering
+    (setf (figure-suptitle-artist fig) txt)
+    (push txt (figure-texts fig))
+    txt))
+
+(defun supxlabel (fig text &key (fontsize 12.0) (color "black") (alpha nil)
+                                 (x 0.5) (y 0.01) (ha :center) (va :bottom))
+  "Set the figure super-xlabel — centered text at the bottom of the figure.
+FIG — the mpl-figure instance.
+TEXT — the label string.
+FONTSIZE — font size in points (default 12.0).
+X, Y — figure coordinates (0-1 fraction). Default: (0.5, 0.01) = bottom center.
+HA — horizontal alignment (default :center).
+VA — vertical alignment (default :bottom).
+Returns the created text-artist."
+  (let* ((w (figure-width-px fig))
+         (h (figure-height-px fig))
+         (transform (mpl.primitives:make-affine-2d :scale (list (float w 1.0d0) (float h 1.0d0))))
+         (txt (make-instance 'mpl.rendering:text-artist
+                             :x (float x 1.0d0)
+                             :y (float y 1.0d0)
+                             :text text
+                             :fontsize (float fontsize 1.0d0)
+                             :color color
+                             :horizontalalignment ha
+                             :verticalalignment va
+                             :zorder 5)))
+    (when alpha (setf (mpl.rendering:artist-alpha txt) (float alpha 1.0d0)))
+    (setf (mpl.rendering:artist-transform txt) transform)
+    (push txt (figure-texts fig))
+    txt))
+
+(defun supylabel (fig text &key (fontsize 12.0) (color "black") (alpha nil)
+                                 (x 0.02) (y 0.5) (ha :center) (va :center)
+                                 (rotation 90.0))
+  "Set the figure super-ylabel — rotated text at the left of the figure.
+FIG — the mpl-figure instance.
+TEXT — the label string.
+FONTSIZE — font size in points (default 12.0).
+X, Y — figure coordinates (0-1 fraction). Default: (0.02, 0.5) = left center.
+HA — horizontal alignment (default :center).
+VA — vertical alignment (default :center).
+ROTATION — text rotation in degrees (default 90.0).
+Returns the created text-artist."
+  (let* ((w (figure-width-px fig))
+         (h (figure-height-px fig))
+         (transform (mpl.primitives:make-affine-2d :scale (list (float w 1.0d0) (float h 1.0d0))))
+         (txt (make-instance 'mpl.rendering:text-artist
+                             :x (float x 1.0d0)
+                             :y (float y 1.0d0)
+                             :text text
+                             :fontsize (float fontsize 1.0d0)
+                             :color color
+                             :horizontalalignment ha
+                             :verticalalignment va
+                             :rotation (float rotation 1.0d0)
+                             :zorder 5)))
+    (when alpha (setf (mpl.rendering:artist-alpha txt) (float alpha 1.0d0)))
+    (setf (mpl.rendering:artist-transform txt) transform)
+    (push txt (figure-texts fig))
+    txt))
+
+;;; ============================================================
 ;;; Figure draw method
 ;;; ============================================================
 

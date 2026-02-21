@@ -15,6 +15,8 @@
                 ;; Axes configuration
                 #:xlabel #:ylabel #:title #:xlim #:ylim #:grid #:legend
                 #:colorbar #:annotate #:text
+                #:suptitle #:supxlabel #:supylabel
+                #:invert-xaxis #:invert-yaxis
                 #:axhline #:axvline #:hlines #:vlines
                 ;; Output
                 #:savefig #:show
@@ -651,6 +653,88 @@
     (is (= 2 (length lines)))
     (is (string= "green" (mpl.rendering:line-2d-color (first lines))))
     (is (eq :dashdot (mpl.rendering:line-2d-linestyle (first lines))))))
+
+;;; ============================================================
+;;; Figure-level title/label tests
+;;; ============================================================
+
+(test suptitle-basic
+  "Test suptitle creates a text-artist and stores it on the figure."
+  (reset-pyplot-state)
+  (figure)
+  (let ((txt (suptitle "Main Title")))
+    (is (typep txt 'mpl.rendering:text-artist))
+    (is (string= "Main Title" (mpl.rendering:text-text txt)))
+    ;; Should be stored in figure's suptitle slot
+    (is (eq txt (mpl.containers:figure-suptitle-artist (gcf))))
+    ;; Should be in fig-texts
+    (is (member txt (mpl.containers:figure-texts (gcf))))))
+
+(test suptitle-with-fontsize
+  "Test suptitle with custom fontsize."
+  (reset-pyplot-state)
+  (figure)
+  (let ((txt (suptitle "Big Title" :fontsize 20.0)))
+    (is (= 20.0d0 (mpl.rendering:text-fontsize txt)))))
+
+(test supxlabel-basic
+  "Test supxlabel creates a text-artist at the bottom of the figure."
+  (reset-pyplot-state)
+  (figure)
+  (let ((txt (supxlabel "X Label")))
+    (is (typep txt 'mpl.rendering:text-artist))
+    (is (string= "X Label" (mpl.rendering:text-text txt)))
+    ;; Should be in fig-texts
+    (is (member txt (mpl.containers:figure-texts (gcf))))))
+
+(test supylabel-basic
+  "Test supylabel creates a rotated text-artist at the left of the figure."
+  (reset-pyplot-state)
+  (figure)
+  (let ((txt (supylabel "Y Label")))
+    (is (typep txt 'mpl.rendering:text-artist))
+    (is (string= "Y Label" (mpl.rendering:text-text txt)))
+    ;; Should be rotated 90 degrees
+    (is (= 90.0d0 (mpl.rendering:text-rotation txt)))
+    ;; Should be in fig-texts
+    (is (member txt (mpl.containers:figure-texts (gcf))))))
+
+;;; ============================================================
+;;; Axis inversion tests
+;;; ============================================================
+
+(test invert-xaxis-basic
+  "Test invert-xaxis swaps x-axis limits."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (xlim 0 10)
+  (invert-xaxis)
+  (multiple-value-bind (xmin xmax) (xlim)
+    ;; After inversion, old max is now min and old min is now max
+    (is (= 10.0d0 xmin))
+    (is (= 0.0d0 xmax))))
+
+(test invert-yaxis-basic
+  "Test invert-yaxis swaps y-axis limits."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (ylim 0 20)
+  (invert-yaxis)
+  (multiple-value-bind (ymin ymax) (ylim)
+    ;; After inversion, old max is now min and old min is now max
+    (is (= 20.0d0 ymin))
+    (is (= 0.0d0 ymax))))
+
+(test invert-xaxis-double-restores
+  "Test that inverting x-axis twice restores original limits."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (xlim 0 10)
+  (invert-xaxis)
+  (invert-xaxis)
+  (multiple-value-bind (xmin xmax) (xlim)
+    (is (= 0.0d0 xmin))
+    (is (= 10.0d0 xmax))))
 
 ;;; ============================================================
 ;;; Run all tests

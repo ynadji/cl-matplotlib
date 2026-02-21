@@ -361,6 +361,20 @@ If TIGHT is T, use exact data limits (no margin)."
     (values (mpl.primitives:bbox-y0 view)
             (mpl.primitives:bbox-y1 view))))
 
+(defun axes-invert-xaxis (ax)
+  "Invert the x-axis direction (high to low).
+Returns (values new-xmin new-xmax) after inversion."
+  (multiple-value-bind (x0 x1) (axes-get-xlim ax)
+    (axes-set-xlim ax :min x1 :max x0)
+    (values x1 x0)))
+
+(defun axes-invert-yaxis (ax)
+  "Invert the y-axis direction (high to low).
+Returns (values new-ymin new-ymax) after inversion."
+  (multiple-value-bind (y0 y1) (axes-get-ylim ax)
+    (axes-set-ylim ax :min y1 :max y0)
+    (values y1 y0)))
+
 ;;; ============================================================
 ;;; Artist management
 ;;; ============================================================

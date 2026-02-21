@@ -585,6 +585,34 @@ Returns the created text-artist."
                         :ha ha :va va :rotation rotation :zorder zorder))
 
 ;;; ============================================================
+;;; Figure-level title and axis labels
+;;; ============================================================
+
+(defun suptitle (text &key (fontsize 12.0) (color "black") (alpha nil))
+  "Set the figure super-title — centered text above all subplots."
+  (mpl.containers:suptitle (gcf) text :fontsize fontsize :color color :alpha alpha))
+
+(defun supxlabel (text &key (fontsize 12.0) (color "black") (alpha nil))
+  "Set the figure super-xlabel — centered text at the bottom of the figure."
+  (mpl.containers:supxlabel (gcf) text :fontsize fontsize :color color :alpha alpha))
+
+(defun supylabel (text &key (fontsize 12.0) (color "black") (alpha nil))
+  "Set the figure super-ylabel — rotated text at the left of the figure."
+  (mpl.containers:supylabel (gcf) text :fontsize fontsize :color color :alpha alpha))
+
+;;; ============================================================
+;;; Axis inversion
+;;; ============================================================
+
+(defun invert-xaxis ()
+  "Invert the x-axis of the current axes."
+  (mpl.containers:axes-invert-xaxis (gca)))
+
+(defun invert-yaxis ()
+  "Invert the y-axis of the current axes."
+  (mpl.containers:axes-invert-yaxis (gca)))
+
+;;; ============================================================
 ;;; Reference line wrappers
 ;;; ============================================================
 

@@ -430,8 +430,10 @@
            #:figure-add-artist #:figure-remove-artist #:figure-get-children
            #:figure-subplots-adjust #:figure-ensure-canvas
            #:draw-figure-background
-           ;; savefig pipeline
-           #:savefig #:detect-format #:print-figure
+            ;; Figure-level title and axis labels
+            #:suptitle #:supxlabel #:supylabel
+            ;; savefig pipeline
+            #:savefig #:detect-format #:print-figure
            ;; SubFigure
            #:sub-figure #:make-subfigure #:subfigure-parent #:subfigure-position
            ;; AxesBase class
@@ -446,8 +448,9 @@
            ;; AxesBase functions
            #:axes-update-datalim #:axes-autoscale-view
            #:axes-set-xlim #:axes-set-ylim
-           #:axes-get-xlim #:axes-get-ylim
-           #:axes-add-line #:axes-add-patch #:axes-add-artist
+            #:axes-get-xlim #:axes-get-ylim
+            #:axes-invert-xaxis #:axes-invert-yaxis
+            #:axes-add-line #:axes-add-patch #:axes-add-artist
            #:axes-get-all-artists
             ;; Axes class (rectilinear)
             #:mpl-axes
@@ -648,9 +651,11 @@ Manages global figure state for convenience.")
            #:pie #:errorbar #:stem #:step-plot #:stackplot #:barh #:boxplot
            #:fill-between
            ;; Axes configuration
-           #:xlabel #:ylabel #:title #:xlim #:ylim #:grid #:legend
-            #:colorbar #:annotate #:text
-            #:axhline #:axvline #:hlines #:vlines
+            #:xlabel #:ylabel #:title #:xlim #:ylim #:grid #:legend
+             #:colorbar #:annotate #:text
+             #:suptitle #:supxlabel #:supylabel
+             #:invert-xaxis #:invert-yaxis
+             #:axhline #:axvline #:hlines #:vlines
            ;; Output
            #:savefig #:show
            ;; State management
