@@ -1,0 +1,37 @@
+Task: fix(barh): correct bar Y position shift
+Date: 2026-02-20
+Status: PARTIAL — bar position fixed, SSIM improved but below 0.95 target
+
+== Change ==
+File: src/backends/backend-vecto.lisp
+- Added x-offset/y-offset parameters to %trace-path-to-vecto
+- Applied y-offset=-1.0 to filled+stroked paths in draw-path
+- Compensates for cl-aa vs AGG pixel-center convention difference
+
+== Root Cause ==
+cl-aa (Vecto's rasterizer) includes boundary pixels at half-integer
+coordinates; AGG (matplotlib's rasterizer) excludes them. This causes
+filled+stroked shapes (bars) to render 1 pixel too high.
+
+== SSIM Results (compare tool method, RGB composited on white) ==
+                Before (HEAD)   After (with offset)
+barh            0.9224          0.9387 (+0.016)
+bar-chart       ~0.938          0.9538 (PASS)
+annotations     ~0.948          0.9582 (PASS)
+Total passing   22              24
+Regressions     —               0
+
+== Why barh < 0.95 ==
+Plot area SSIM is 0.9519 (above 0.95). The bottleneck is text rendering:
+  Title SSIM:   0.8474 (glyph differences: zpb-ttf vs FreeType)
+  X-label SSIM: 0.9203
+  Y-label SSIM: 0.9249
+Reaching 0.95 requires font rendering improvements beyond coordinate offsets.
+
+== Regression Check ==
+make compare: 24 passed, 3 failed (barh 0.9387, color-cycle 0.9291, step-plot 0.9356)
+No regressions from HEAD (was 22 passed, gained bar-chart and annotations).
+
+== Verification Commands ==
+  Render:  setarch $(uname -m) -R sbcl --noinform --load examples/barh.lisp 2>/dev/null
+  Compare: make compare

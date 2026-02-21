@@ -1,8 +1,9 @@
 {
-  "active_plan": "/home/yacin/code/cl-matplotlib/.sisyphus/plans/ssim-095.md",
-  "started_at": "2026-02-20T03:38:27.705Z",
+  "active_plan": "/home/yacin/code/cl-matplotlib/.sisyphus/plans/gallery-expansion.md",
+  "started_at": "2026-02-21T17:16:28.763Z",
   "session_ids": [
-    "ses_38871a478ffelndVj0xX95vu1Y"
+    "ses_383b1abbdffeaEsvS36ri8MZk1"
   ],
-  "plan_name": "ssim-095"
+  "plan_name": "gallery-expansion",
+  "note": "ssim-095 plan superseded — all 27 examples already pass at 0.95 via direct commits (4b886b0, 5721ced)"
 }
