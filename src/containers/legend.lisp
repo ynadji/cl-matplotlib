@@ -232,7 +232,9 @@ Returns (values x y width height) in display space."
                                                 (mpl.rendering:text-text txt)
                                                 font-loader fontsize))))))
          ;; Total column width = handle + pad + text
-         (col-width (+ handle-len text-pad max-label-width))
+         ;; Scale text width by 1.05x to compensate for zpb-ttf vs FreeType metrics
+         ;; (zpb-ttf measures ~61px vs FreeType ~64px for same text at 10pt/100dpi)
+         (col-width (+ handle-len text-pad (* 1.05d0 max-label-width)))
          ;; Total legend width
          (legend-width (+ (* 2 border-pad)
                           (* ncol col-width)
@@ -302,17 +304,28 @@ Returns (values x y width height) in display space."
 (defun %legend-find-best-position (leg legend-width legend-height)
   "Find the best position for the legend by minimizing overlap with artists.
 Returns a position code (1-10).
-Uses point-level overlap counting (not bounding-box) for accuracy."
+Matches matplotlib's _find_best_position: counts data points (vertices) that
+fall inside the legend box for each candidate position, plus patch bbox overlaps.
+Tests positions 1-9; ties favor lower code (earlier in test order)."
   (let* ((parent (legend-parent leg))
          (fontsize (legend-fontsize leg))
          (best-code 1)
-         (best-overlap most-positive-double-float)
-         ;; axes-pad for overlap computation (approximate — no renderer here)
-         (axes-pad (* 0.5d0 fontsize)))
+         (best-badness most-positive-double-float)
+         ;; axes-pad: borderaxespad in pixels
+         (dpi (if (and parent (typep parent 'axes-base))
+                  (let ((fig (axes-base-figure parent)))
+                    (if fig (figure-dpi fig) 100.0d0))
+                  100.0d0))
+         (axes-pad (* 0.5d0 fontsize (/ dpi 72.0d0)))
+         ;; matplotlib tests positions in this order; ties favor earlier entries
+         (test-order '(1 2 3 4 5 6 7 8 9)))
     (when (and parent (typep parent 'axes-base))
-      (let ((trans (axes-base-trans-data parent))
-            (all-display-points nil))
-        ;; Collect transformed display coordinates of all data points
+      (let* ((trans (axes-base-trans-data parent))
+             ;; Collect all line vertices in display coordinates
+             (all-vertices nil)
+             ;; Collect patch bboxes in display coordinates
+             (patch-bboxes nil))
+        ;; Transform all line data points to display coordinates
         (dolist (line (axes-base-lines parent))
           (let ((xdata (mpl.rendering:line-2d-xdata line))
                 (ydata (mpl.rendering:line-2d-ydata line)))
@@ -322,21 +335,47 @@ Uses point-level overlap counting (not bounding-box) for accuracy."
                   (let ((pt (mpl.primitives:transform-point
                              trans (list (float (elt xdata i) 1.0d0)
                                         (float (elt ydata i) 1.0d0)))))
-                    (push (cons (aref pt 0) (aref pt 1)) all-display-points)))))))
-        ;; Test each of the 9 fixed positions (codes 1-9, skip 10/center as last resort)
-        (loop for code from 1 to 9
-              do (let* ((overlap (%compute-legend-point-overlap
-                                  parent code legend-width legend-height
-                                  axes-pad all-display-points)))
-                   (when (< overlap best-overlap)
-                     (setf best-overlap overlap
-                           best-code code))))))
+                    (push (cons (aref pt 0) (aref pt 1)) all-vertices)))))))
+        ;; Collect patch bboxes (bar charts etc.)
+        (dolist (patch (axes-base-patches parent))
+          (when (and (typep patch 'mpl.rendering:rectangle)
+                     (eq (mpl.rendering:get-artist-transform patch) trans))
+            (let* ((x0 (mpl.rendering:rectangle-x0 patch))
+                   (y0 (mpl.rendering:rectangle-y0 patch))
+                   (w  (mpl.rendering:rectangle-width patch))
+                   (h  (mpl.rendering:rectangle-height patch))
+                   (p0 (mpl.primitives:transform-point trans (list x0 y0)))
+                   (p1 (mpl.primitives:transform-point trans (list (+ x0 w) (+ y0 h)))))
+              (push (list (min (aref p0 0) (aref p1 0))
+                          (min (aref p0 1) (aref p1 1))
+                          (max (aref p0 0) (aref p1 0))
+                          (max (aref p0 1) (aref p1 1)))
+                    patch-bboxes))))
+        ;; Test each candidate position.
+        ;; Matches matplotlib: min over (badness, idx) tuples — idx only
+        ;; breaks exact ties (lexicographic comparison).
+        (let ((best-idx most-positive-fixnum))
+          (loop for code in test-order
+                for idx from 0
+                do (let ((badness (%compute-legend-point-overlap
+                                    parent code legend-width legend-height
+                                    axes-pad all-vertices patch-bboxes)))
+                     ;; If zero overlap, return immediately (matches matplotlib)
+                     (when (= badness 0)
+                       (return-from %legend-find-best-position code))
+                     ;; Lexicographic (badness, idx) comparison
+                     (when (or (< badness best-badness)
+                               (and (= badness best-badness) (< idx best-idx)))
+                       (setf best-badness badness
+                             best-idx idx
+                             best-code code)))))))
     best-code))
 
 (defun %compute-legend-point-overlap (parent loc-code legend-width legend-height
-                                      axes-pad display-points)
-  "Count how many data points fall inside the legend box at LOC-CODE.
-AXES-PAD is the borderaxespad in pixels."
+                                       axes-pad vertices patch-bboxes)
+  "Count data points inside legend box at LOC-CODE, plus patch bbox overlaps.
+Matches matplotlib's _find_best_position: counts vertices contained in the
+legend box and bboxes that overlap with it."
   (multiple-value-bind (dx dy dw dh)
       (%compute-display-bbox parent)
     (declare (ignore dw dh))
@@ -349,7 +388,7 @@ AXES-PAD is the borderaxespad in pixels."
                                     trans-axes (list 0.0d0 1.0d0)) 1)
                             (aref (mpl.primitives:transform-point
                                     trans-axes (list 0.0d0 0.0d0)) 1)))
-           ;; Compute legend position matching %legend-compute-bbox
+           ;; Legend position (same logic as %legend-compute-bbox)
            (lx0 (case loc-code
                    ((1 4 5 7) (+ dx axes-width (- legend-width) (- axes-pad)))
                    ((2 3 6) (+ dx axes-pad))
@@ -363,14 +402,20 @@ AXES-PAD is the borderaxespad in pixels."
            (lx1 (+ lx0 legend-width))
            (ly1 (+ ly0 legend-height))
            (count 0))
-      ;; Count data points inside legend box
-      (dolist (pt display-points)
-        (let ((px (car pt))
-              (py (cdr pt)))
-          (when (and (>= px lx0) (<= px lx1)
-                     (>= py ly0) (<= py ly1))
+      ;; Count vertices inside legend box
+      (dolist (v vertices)
+        (let ((vx (car v)) (vy (cdr v)))
+          (when (and (>= vx lx0) (<= vx lx1)
+                     (>= vy ly0) (<= vy ly1))
             (incf count))))
-      (float count 1.0d0))))
+      ;; Count patch bboxes that overlap with legend box
+      (dolist (bbox patch-bboxes)
+        (let* ((bx0 (first bbox)) (by0 (second bbox))
+               (bx1 (third bbox)) (by1 (fourth bbox)))
+          (when (and (< bx0 lx1) (> bx1 lx0)
+                     (< by0 ly1) (> by1 ly0))
+            (incf count))))
+      count)))
 
 ;;; ============================================================
 ;;; Legend draw method
@@ -397,7 +442,7 @@ AXES-PAD is the borderaxespad in pixels."
                (title-x (+ x (* (legend-borderpad leg) (legend-fontsize leg) dpi-scale)))
                (title-y (- current-y (* title-fontsize 1.2d0 dpi-scale))))
           (%legend-draw-text renderer title title-x title-y
-                             :fontsize title-fontsize :weight :bold)
+                              :fontsize (* title-fontsize dpi-scale) :weight :bold)
           (decf current-y (* title-fontsize 1.5d0 dpi-scale))))
       ;; Draw entries
       (let* ((fontsize (legend-fontsize leg))
@@ -421,12 +466,18 @@ AXES-PAD is the borderaxespad in pixels."
                    (dolist (artist handle-artists)
                      (%legend-draw-handle-artist
                       renderer artist ex ey handle-len row-height))
-                   ;; Draw label text
-                   (let ((text-x (+ ex handle-len text-pad)))
-                     (%legend-draw-text renderer
-                                        (mpl.rendering:text-text text-art)
-                                        text-x ey
-                                        :fontsize fontsize)))))))
+                    ;; Draw label text — use :center VA to match matplotlib's center_baseline
+                    (let ((text-x (+ ex handle-len text-pad)))
+                      (when (typep renderer 'mpl.backends:renderer-base)
+                        (let* ((rgba-color (%resolve-legend-color "black" 1.0d0))
+                               (gc (mpl.backends:make-graphics-context
+                                    :facecolor nil
+                                    :edgecolor rgba-color
+                                    :linewidth (* fontsize dpi-scale))))
+                          (mpl.backends:draw-text renderer gc
+                                                  (float text-x 1.0d0) (float ey 1.0d0)
+                                                  (mpl.rendering:text-text text-art)
+                                                  nil 0.0 nil :left :center)))))))))
   (setf (mpl.rendering:artist-stale leg) nil))
 
 ;;; ============================================================
@@ -494,7 +545,7 @@ AXES-PAD is the borderaxespad in pixels."
      (let* ((facecolor (or (mpl.rendering:patch-facecolor artist) "C0"))
             (edgecolor (or (mpl.rendering:patch-edgecolor artist) "black"))
             (face-rgba (%resolve-legend-color facecolor 1.0d0))
-            (edge-rgba (%resolve-legend-color edgecolor 1.0d0)))
+      (edge-rgba (%resolve-legend-color edgecolor 1.0d0)))
        (when (typep renderer 'mpl.backends:renderer-base)
          (let* ((path (mpl.primitives:path-unit-rectangle))
                 (transform (mpl.primitives:make-affine-2d
@@ -595,22 +646,23 @@ Returns the created mpl-legend."
 Returns (values handles labels) as two lists."
   (let ((handles nil)
         (labels nil))
-    ;; Collect from lines
-    (dolist (line (axes-base-lines ax))
+    ;; Collect from lines (axes-base-lines stores in reverse-add order via push,
+    ;; so reverse to get original insertion order matching matplotlib)
+    (dolist (line (reverse (axes-base-lines ax)))
       (let ((label (mpl.rendering:artist-label line)))
         (when (and label (stringp label) (plusp (length label))
                    (not (char= (char label 0) #\_)))
           (push line handles)
           (push label labels))))
     ;; Collect from patches (skip background patch)
-    (dolist (patch (axes-base-patches ax))
+    (dolist (patch (reverse (axes-base-patches ax)))
       (let ((label (mpl.rendering:artist-label patch)))
         (when (and label (stringp label) (plusp (length label))
                    (not (char= (char label 0) #\_)))
           (push patch handles)
           (push label labels))))
     ;; Collect from extra artists
-    (dolist (artist (axes-base-artists ax))
+    (dolist (artist (reverse (axes-base-artists ax)))
       (unless (typep artist 'mpl-legend)
         (let ((label (mpl.rendering:artist-label artist)))
           (when (and label (stringp label) (plusp (length label))

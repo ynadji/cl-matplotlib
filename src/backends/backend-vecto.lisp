@@ -164,6 +164,61 @@ RENDERER is needed to convert linewidth from points to pixels via DPI."
         (vecto:end-path-no-op)))))
 
 ;;; ============================================================
+;;; Path analysis helpers
+;;; ============================================================
+
+(defun %path-axis-aligned-p (path transform)
+  "Return T if PATH contains only axis-aligned (horizontal/vertical) LINETO segments
+after applying TRANSFORM. Paths with curves (CURVE3/CURVE4) return NIL.
+Used to decide whether to snap stroke coordinates to half-pixel centers."
+  (let* ((verts (mpl.primitives:mpl-path-vertices path))
+         (codes (mpl.primitives:mpl-path-codes path))
+         (n (array-dimension verts 0)))
+    (when (zerop n) (return-from %path-axis-aligned-p t))
+    ;; If no codes, synthesize MOVETO + LINETOs
+    (unless codes
+      (setf codes (make-array n :element-type '(unsigned-byte 8)))
+      (setf (aref codes 0) mpl.primitives:+moveto+)
+      (loop for j from 1 below n do
+        (setf (aref codes j) mpl.primitives:+lineto+)))
+    (let ((prev-tx 0.0d0)
+          (prev-ty 0.0d0)
+          (i 0)
+          (tolerance 0.5d0))  ; half-pixel tolerance for "axis-aligned"
+      (flet ((xf (x y)
+               (if transform
+                   (let ((result (mpl.primitives:transform-point
+                                  transform (list (float x 1.0d0) (float y 1.0d0)))))
+                     (values (aref result 0) (aref result 1)))
+                   (values (float x 1.0d0) (float y 1.0d0)))))
+        (loop while (< i n) do
+          (let ((code (aref codes i)))
+            (cond
+              ((= code mpl.primitives:+moveto+)
+               (multiple-value-bind (tx ty) (xf (aref verts i 0) (aref verts i 1))
+                 (setf prev-tx tx prev-ty ty))
+               (incf i))
+              ((= code mpl.primitives:+lineto+)
+               (multiple-value-bind (tx ty) (xf (aref verts i 0) (aref verts i 1))
+                 (let ((dx (abs (- tx prev-tx)))
+                       (dy (abs (- ty prev-ty))))
+                   ;; Must be horizontal (dy < tol) or vertical (dx < tol)
+                   (unless (or (< dx tolerance) (< dy tolerance))
+                     (return-from %path-axis-aligned-p nil)))
+                 (setf prev-tx tx prev-ty ty))
+               (incf i))
+              ;; Any curve segment → not axis-aligned
+              ((or (= code mpl.primitives:+curve3+)
+                   (= code mpl.primitives:+curve4+))
+               (return-from %path-axis-aligned-p nil))
+              ((= code mpl.primitives:+closepoly+)
+               (incf i))
+              ((= code mpl.primitives:+stop+)
+               (return))
+              (t (incf i)))))
+        t))))
+
+;;; ============================================================
 ;;; Path rendering: map mpl-path codes to Vecto operations
 ;;; ============================================================
 
@@ -300,7 +355,11 @@ Must be called within an active canvas context (see canvas-vecto)."
               (b (third edge-color))
               (a (* (fourth edge-color) (float alpha 1.0))))
           (vecto:set-rgba-stroke (float r 1.0) (float g 1.0) (float b 1.0) (float a 1.0)))
-        (%trace-path-to-vecto path transform :snap-to-half-pixels t)
+        ;; Snap axis-aligned paths (grid lines, spines, ticks, step-plot steps)
+        ;; to half-pixel centers for crisp rendering matching AGG.
+        ;; Leave smooth curves (sine waves, etc.) unsnapped to avoid distortion.
+        (%trace-path-to-vecto path transform
+                              :snap-to-half-pixels (%path-axis-aligned-p path transform))
         (vecto:stroke)))))
 
 ;;; ============================================================

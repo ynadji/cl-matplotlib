@@ -517,33 +517,44 @@ Handles appropriate decimal places based on magnitude."
 
 (defmethod tick-formatter-format-ticks ((fmt scalar-formatter) values)
   "Format a list of tick values with consistent decimal places.
-Matches matplotlib's ScalarFormatter: determines decimal places from tick spacing."
+Matches matplotlib's ScalarFormatter._set_format: uses loc_range to compute
+initial sigfigs, then refines by checking if rounding loses precision."
   (when (null values)
     (return-from tick-formatter-format-ticks nil))
   (let* ((vals (mapcar (lambda (v) (float v 1.0d0)) values))
          (oom (scalar-formatter-order-of-magnitude fmt))
-         ;; Compute tick spacing to determine decimal places
-         (sorted (sort (copy-list vals) #'<))
-         (spacings (loop for (a b) on sorted while b
-                         collect (abs (- b a))))
-         (min-spacing (if spacings (reduce #'min spacings) 1.0d0))
-         (adjusted-spacing (if (zerop oom) min-spacing
-                               (/ min-spacing (expt 10.0d0 oom))))
-         ;; Determine number of decimal places needed
-         (decimals (cond
-                     ((<= adjusted-spacing 0) 0)
-                     ((>= adjusted-spacing 1.0d0)
-                      ;; Check if spacing has fractional part
-                      (if (< (abs (- adjusted-spacing (round adjusted-spacing))) 1.0d-9)
-                          0
-                          (max 1 (ceiling (- (log (/ 1.0d0 adjusted-spacing) 10.0d0))))))
-                     (t (max 1 (ceiling (- (log adjusted-spacing 10.0d0))))))))
+         ;; Adjust values by order of magnitude
+         (locs (mapcar (lambda (v) (if (zerop oom) v (/ v (expt 10.0d0 oom)))) vals))
+         ;; Compute loc_range (peak-to-peak of adjusted locs)
+         (loc-min (reduce #'min locs))
+         (loc-max (reduce #'max locs))
+         (loc-range (- loc-max loc-min))
+         (loc-range (if (zerop loc-range)
+                        (let ((m (reduce #'max (mapcar #'abs locs))))
+                          (if (zerop m) 1.0d0 m))
+                        loc-range))
+         ;; matplotlib: loc_range_oom = floor(log10(loc_range))
+         (loc-range-oom (floor (log loc-range 10.0d0)))
+         ;; First estimate: sigfigs = max(0, 3 - loc_range_oom)
+         (sigfigs (max 0 (- 3 loc-range-oom)))
+         ;; Threshold for refinement
+         (thresh (* 1.0d-3 (expt 10.0d0 loc-range-oom))))
+    ;; Refine: reduce sigfigs while rounding doesn't lose precision
+    (loop while (>= sigfigs 0)
+          do (let* ((factor (expt 10.0d0 sigfigs))
+                    (rounded (mapcar (lambda (v) (/ (fround (* v factor)) factor)) locs))
+                    (max-diff (reduce #'max (mapcar (lambda (a b) (abs (- a b)))
+                                                    locs rounded))))
+               (if (< max-diff thresh)
+                   (decf sigfigs)
+                   (return))))
+    (incf sigfigs)
+    (setf sigfigs (max 0 sigfigs))
     ;; Format all values with consistent decimal places
-    (loop for v in vals
-          for adjusted = (if (zerop oom) v (/ v (expt 10.0d0 oom)))
-          collect (if (zerop decimals)
-                      (format nil "~D" (round adjusted))
-                      (format nil (format nil "~~,~DF" decimals) adjusted)))))
+    (loop for v in locs
+          collect (if (zerop sigfigs)
+                      (format nil "~D" (round v))
+                      (format nil (format nil "~~,~DF" sigfigs) v)))))
 
 ;;; ============================================================
 ;;; StrMethodFormatter — format using format string

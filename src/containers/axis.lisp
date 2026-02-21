@@ -474,18 +474,31 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
           (mpl.rendering:renderer-draw-path renderer gc path nil :stroke t))))))
 
 (defun %draw-x-axis-label (renderer ax axis trans-axes)
-  "Draw the X axis label centered below the axes."
+  "Draw the X axis label centered below the axes.
+Offset matches matplotlib: tick_size(3.5pt) + tick_pad(3.5pt) + tick_label_height + labelpad(4pt).
+The tick_label_height uses the font line-height ratio (0.9754) matching matplotlib's FT2Font metrics."
   (declare (ignore ax))
-  (let* ((p-mid (mpl.primitives:transform-point trans-axes (list 0.5d0 0.0d0)))
+  (let* ((dpi (mpl.backends:renderer-dpi renderer))
+         (pts->px (/ dpi 72.0d0))
+         (p-mid (mpl.primitives:transform-point trans-axes (list 0.5d0 0.0d0)))
          (x-mid (aref p-mid 0))
-         (y-bottom (- (aref p-mid 1) 35.0d0))
-         (fontsize-px (* 10.0 (/ (mpl.backends:renderer-dpi renderer) 72.0)))
+         ;; matplotlib xlabel offset = tick_size + tick_pad + tick_label_height + label_pad
+         ;; tick_label_height = fontsize_px * 0.9754 (empirical ratio from matplotlib's FT2Font)
+         (tick-fontsize-pts (float (axis-tick-label-fontsize axis) 1.0d0))
+         (tick-label-height (* tick-fontsize-pts pts->px 0.9754d0))
+         (tick-size-px (* (float (axis-tick-size-major axis) 1.0d0) pts->px))
+         (tick-pad-px (* (float (axis-tick-pad axis) 1.0d0) pts->px))
+         (label-pad-px (* 4.0d0 pts->px))
+         (offset (+ tick-size-px tick-pad-px tick-label-height label-pad-px))
+         (y-bottom (- (aref p-mid 1) offset))
+         (fontsize-px (* 10.0 pts->px))
          (gc (mpl.rendering:make-gc :foreground "black" :linewidth fontsize-px :alpha 1.0)))
     (mpl.rendering:renderer-draw-text renderer gc
                                       x-mid y-bottom
                                       (axis-label-text axis)
                                       :angle 0.0
-                                      :ha :center)))
+                                      :ha :center
+                                      :va :top)))
 
 ;;; ============================================================
 ;;; YAxis — vertical axis
@@ -529,22 +542,23 @@ Called before data artists to ensure grid appears behind data (zorder=0.5 in mat
                (major-ticks (axis-get-major-ticks axis)))
           (dolist (tk major-ticks)
             (when (tick-gridline-visible-p tk)
-              (let* ((loc (tick-loc tk))
-                     (data-pt (mpl.primitives:transform-point trans-data (list 0.0d0 loc)))
-                     (y-display (aref data-pt 1))
-                     (y-display-snapped (- (round y-display) 0.5d0))
-                     (gc (mpl.rendering:make-gc
-                          :foreground (tick-grid-color tk)
-                          :linewidth (tick-grid-linewidth tk)
-                          :alpha (tick-grid-alpha tk)
-                          :linestyle (tick-grid-linestyle tk)
-                          :clip-rectangle clip-rect))
-                     (path (mpl.primitives:make-path
-                            :vertices (make-array '(2 2) :element-type 'double-float
-                                                  :initial-contents
-                                                  (list (list axes-left y-display-snapped)
-                                                        (list axes-right y-display-snapped))))))
-                (mpl.rendering:renderer-draw-path renderer gc path nil :stroke t)))))))))
+               (let* ((loc (tick-loc tk))
+                      (data-pt (mpl.primitives:transform-point trans-data (list 0.0d0 loc)))
+                       (y-display (aref data-pt 1))
+                        (y-display-snapped (- (round y-display) 0.5d0))
+                       (gc (mpl.rendering:make-gc
+                            :foreground (tick-grid-color tk)
+                            :linewidth (tick-grid-linewidth tk)
+                            :alpha (tick-grid-alpha tk)
+                            :linestyle (tick-grid-linestyle tk)
+                            :clip-rectangle clip-rect))
+                      (path (mpl.primitives:make-path
+                              :vertices (make-array '(2 2) :element-type 'double-float
+                                                    :initial-contents
+                                                    (list (list axes-left y-display-snapped)
+                                                          (list axes-right y-display-snapped))))))
+                 (mpl.rendering:renderer-draw-path renderer gc path nil :stroke t)))))))))
+
 
 ;;; YAxis drawing (ticks, labels — grid drawn separately)
 
@@ -582,7 +596,7 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
          ;; Transform tick location to display coords
          (data-pt (mpl.primitives:transform-point trans-data (list 0.0d0 loc)))
          (y-display (aref data-pt 1))                              ; original position for labels/grid
-         (y-display-snapped (- (round y-display) 0.5d0))          ; snapped for tick line and grid (horizontal lines: y - 0.5)
+         (y-display-snapped (- (round y-display) 0.5d0))          ; snapped for tick line and grid
          ;; Get axes left edge in display coords
          (axes-left (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 0))
          (axes-right (aref (mpl.primitives:transform-point trans-axes (list 1.0d0 0.0d0)) 0))
@@ -645,13 +659,54 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
           (mpl.rendering:renderer-draw-path renderer gc path nil :stroke t))))))
 
 (defun %draw-y-axis-label (renderer ax axis trans-axes)
-  "Draw the Y axis label rotated 90° to the left of axes."
+  "Draw the Y axis label rotated 90° to the left of axes.
+Dynamically computes offset based on actual tick label widths."
   (declare (ignore ax))
-  (let* ((p-mid (mpl.primitives:transform-point trans-axes (list 0.0d0 0.5d0)))
-         (x-left (- (aref p-mid 0) 42.0d0))
+  (let* ((dpi (mpl.backends:renderer-dpi renderer))
+         (pts->px (/ dpi 72.0d0))
+         (p-mid (mpl.primitives:transform-point trans-axes (list 0.0d0 0.5d0)))
          (y-mid (aref p-mid 1))
-         (fontsize-px (* 10.0 (/ (mpl.backends:renderer-dpi renderer) 72.0)))
+         (axes-left (aref p-mid 0))
+         ;; Tick geometry in pixels
+         (tick-size-px (* (float (axis-tick-size-major axis) 1.0d0) pts->px))
+         (tick-pad-px (* (float (axis-tick-pad axis) 1.0d0) pts->px))
+         (label-pad-px (* 4.0d0 pts->px))  ; labelpad = 4pt (matplotlib default)
+         ;; Measure max tick label width using font metrics
+         ;; Account for matplotlib using Unicode minus (U+2212) which is wider than ASCII hyphen
+         (tick-fontsize-px (* (float (axis-tick-label-fontsize axis) 1.0d0) pts->px))
+         (font-loader (zpb-ttf:open-font-loader mpl.backends::*default-font-path*))
+         (font-scale-tick (/ tick-fontsize-px (float (zpb-ttf:units/em font-loader) 1.0d0)))
+         (minus-width-diff (* font-scale-tick
+                              (- (zpb-ttf:advance-width
+                                  (zpb-ttf:find-glyph (code-char #x2212) font-loader))
+                                 (zpb-ttf:advance-width
+                                  (zpb-ttf:find-glyph #\- font-loader)))))
+         (major-ticks (axis-get-major-ticks axis))
+         (max-label-width
+           (loop for tk in major-ticks
+                 for text = (tick-label-text tk)
+                 when (and text (> (length text) 0))
+                   maximize (let* ((bb (vecto:string-bounding-box text tick-fontsize-px font-loader))
+                                   (width (- (aref bb 2) (aref bb 0)))
+                                   ;; Add Unicode minus correction for negative labels
+                                   (correction (if (and (> (length text) 0)
+                                                        (char= (char text 0) #\-))
+                                                   minus-width-diff
+                                                   0.0d0)))
+                              (+ width correction))
+                 into max-w
+                 finally (return (or max-w 0.0d0))))
+         ;; Ylabel font height (rotated 90°, so height becomes x-extent)
+         (ylabel-fontsize-px (* 10.0d0 pts->px))
+         (font-scale (/ ylabel-fontsize-px (float (zpb-ttf:units/em font-loader) 1.0d0)))
+         (ylabel-half-height (* 0.5d0 (+ (* (zpb-ttf:ascender font-loader) font-scale)
+                                          (abs (* (zpb-ttf:descender font-loader) font-scale)))))
+         ;; Total offset from axes left edge to ylabel center
+         (offset (+ tick-size-px tick-pad-px max-label-width label-pad-px ylabel-half-height))
+         (x-left (- axes-left offset))
+         (fontsize-px ylabel-fontsize-px)
          (gc (mpl.rendering:make-gc :foreground "black" :linewidth fontsize-px :alpha 1.0)))
+    (zpb-ttf:close-font-loader font-loader)
     (mpl.rendering:renderer-draw-text renderer gc
                                       x-left y-mid
                                       (axis-label-text axis)
