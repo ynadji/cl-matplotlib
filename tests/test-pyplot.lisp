@@ -18,6 +18,7 @@
                 #:suptitle #:supxlabel #:supylabel
                 #:invert-xaxis #:invert-yaxis
                 #:axhline #:axvline #:hlines #:vlines
+                #:axhspan #:axvspan
                 #:set-xticks #:set-xticklabels #:set-yticks #:set-yticklabels
                 ;; Output
                 #:savefig #:show
@@ -819,6 +820,57 @@
   (plot '(1 2 3) '(1 2 3))
   (let ((result (mpl.containers:axes-set-xticks (gca) '(1 2 3))))
     (is (typep result 'mpl.containers:axes-base))))
+
+;;; ============================================================
+;;; axhspan / axvspan tests
+;;; ============================================================
+
+(test axhspan-basic
+  "Test axhspan draws a horizontal span and returns Polygon."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((poly (axhspan 2.0 4.0)))
+    (is (typep poly 'mpl.rendering:polygon))))
+
+(test axhspan-with-alpha
+  "Test axhspan sets alpha correctly."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((poly (axhspan 2.0 4.0 :alpha 0.5d0 :color "yellow")))
+    (is (typep poly 'mpl.rendering:polygon))
+    (is (= 0.5d0 (mpl.rendering:artist-alpha poly)))))
+
+(test axvspan-basic
+  "Test axvspan draws a vertical span and returns Polygon."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((poly (axvspan 1.0 3.0)))
+    (is (typep poly 'mpl.rendering:polygon))))
+
+(test axvspan-with-alpha
+  "Test axvspan sets alpha correctly."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((poly (axvspan 1.0 3.0 :alpha 0.5 :color "blue")))
+    (is (typep poly 'mpl.rendering:polygon))
+    (is (= 0.5d0 (mpl.rendering:artist-alpha poly)))))
+
+(test axhspan-no-autoscale
+  "Test that axhspan does not affect existing axes limits."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((ax (gca)))
+    (multiple-value-bind (x0 x1) (mpl.containers:axes-get-xlim ax)
+      (multiple-value-bind (y0 y1) (mpl.containers:axes-get-ylim ax)
+        ;; Add a span far outside original data range
+        (axhspan 100.0 200.0 :color "red")
+        ;; Limits should NOT have changed
+        (multiple-value-bind (nx0 nx1) (mpl.containers:axes-get-xlim ax)
+          (multiple-value-bind (ny0 ny1) (mpl.containers:axes-get-ylim ax)
+            (is (= x0 nx0))
+            (is (= x1 nx1))
+            (is (= y0 ny0))
+            (is (= y1 ny1))))))))
 
 ;;; ============================================================
 ;;; Run all tests

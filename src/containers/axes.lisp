@@ -299,6 +299,77 @@ Returns the created Polygon."
       poly)))
 
 ;;; ============================================================
+;;; axhspan / axvspan — shaded region spans
+;;; ============================================================
+
+(defun axhspan (ax ymin ymax &key (xmin 0.0) (xmax 1.0) (color "C0") (alpha nil)
+                                   (edgecolor "none") (linewidth 0.0) (label "") (zorder 1))
+  "Draw a horizontal span (shaded region) between YMIN and YMAX.
+YMIN, YMAX — y extent in DATA coordinates.
+XMIN, XMAX — x extent as AXES FRACTION (0=left, 1=right). Default: full width.
+Returns the created Polygon."
+  (multiple-value-bind (x0 x1) (axes-get-xlim ax)
+    (let* ((span (if (= x0 x1) 1.0d0 (- x1 x0)))
+           (xs (float (+ x0 (* (float xmin 1.0d0) span)) 1.0d0))
+           (xe (float (+ x0 (* (float xmax 1.0d0) span)) 1.0d0))
+           (ys (float ymin 1.0d0))
+           (ye (float ymax 1.0d0))
+           (verts (make-array '(4 2) :element-type 'double-float)))
+      ;; 4 vertices: bottom-left, bottom-right, top-right, top-left
+      (setf (aref verts 0 0) xs  (aref verts 0 1) ys)
+      (setf (aref verts 1 0) xe  (aref verts 1 1) ys)
+      (setf (aref verts 2 0) xe  (aref verts 2 1) ye)
+      (setf (aref verts 3 0) xs  (aref verts 3 1) ye)
+      (let ((poly (make-instance 'mpl.rendering:polygon
+                                 :xy verts
+                                 :closed t
+                                 :facecolor color
+                                 :edgecolor edgecolor
+                                 :linewidth linewidth
+                                 :label label
+                                 :zorder zorder)))
+        (when alpha
+          (setf (mpl.rendering:artist-alpha poly) (float alpha 1.0d0)))
+        (setf (mpl.rendering:artist-transform poly) (axes-base-trans-data ax))
+        ;; Add as patch — do NOT update datalim (reference spans)
+        (axes-add-patch ax poly)
+        (setf (mpl.rendering:artist-stale ax) t)
+        poly))))
+
+(defun axvspan (ax xmin xmax &key (ymin 0.0) (ymax 1.0) (color "C0") (alpha nil)
+                                   (edgecolor "none") (linewidth 0.0) (label "") (zorder 1))
+  "Draw a vertical span (shaded region) between XMIN and XMAX.
+XMIN, XMAX — x extent in DATA coordinates.
+YMIN, YMAX — y extent as AXES FRACTION (0=bottom, 1=top). Default: full height.
+Returns the created Polygon."
+  (multiple-value-bind (y0 y1) (axes-get-ylim ax)
+    (let* ((span (if (= y0 y1) 1.0d0 (- y1 y0)))
+           (ys (float (+ y0 (* (float ymin 1.0d0) span)) 1.0d0))
+           (ye (float (+ y0 (* (float ymax 1.0d0) span)) 1.0d0))
+           (xs (float xmin 1.0d0))
+           (xe (float xmax 1.0d0))
+           (verts (make-array '(4 2) :element-type 'double-float)))
+      ;; 4 vertices: bottom-left, bottom-right, top-right, top-left
+      (setf (aref verts 0 0) xs  (aref verts 0 1) ys)
+      (setf (aref verts 1 0) xe  (aref verts 1 1) ys)
+      (setf (aref verts 2 0) xe  (aref verts 2 1) ye)
+      (setf (aref verts 3 0) xs  (aref verts 3 1) ye)
+      (let ((poly (make-instance 'mpl.rendering:polygon
+                                 :xy verts
+                                 :closed t
+                                 :facecolor color
+                                 :edgecolor edgecolor
+                                 :linewidth linewidth
+                                 :label label
+                                 :zorder zorder)))
+        (when alpha
+          (setf (mpl.rendering:artist-alpha poly) (float alpha 1.0d0)))
+        (setf (mpl.rendering:artist-transform poly) (axes-base-trans-data ax))
+        (axes-add-patch ax poly)
+        (setf (mpl.rendering:artist-stale ax) t)
+        poly))))
+
+;;; ============================================================
 ;;; grid — enable/disable grid lines
 ;;; ============================================================
 

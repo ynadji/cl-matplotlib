@@ -466,6 +466,7 @@
                 #:annotate
                 #:text
                 #:axhline #:axvline #:hlines #:vlines
+                #:axhspan #:axvspan
              ;; Grid
             #:axes-grid-toggle
             ;; Ticker — Locator base
@@ -659,8 +660,9 @@ Manages global figure state for convenience.")
              #:colorbar #:annotate #:text
              #:suptitle #:supxlabel #:supylabel
              #:invert-xaxis #:invert-yaxis
-             #:axhline #:axvline #:hlines #:vlines
-           ;; Output
+              #:axhline #:axvline #:hlines #:vlines
+              #:axhspan #:axvspan
+            ;; Output
            #:savefig #:show
            ;; State management
            #:*figures* #:*current-figure* #:*figure-counter*))

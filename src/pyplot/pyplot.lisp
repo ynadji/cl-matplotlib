@@ -420,8 +420,22 @@ DATA — list of datasets or single dataset."
 
 Returns the created Polygon."
   (mpl.containers:fill-between (gca) xdata y1data y2data
-                                :color color :alpha alpha
-                                :label label :zorder zorder))
+                                 :color color :alpha alpha
+                                 :label label :zorder zorder))
+
+(defun axhspan (ymin ymax &key (xmin 0.0) (xmax 1.0) (color "C0") (alpha nil)
+                               (edgecolor "none") (label "") (zorder 1))
+  "Draw a horizontal span between YMIN and YMAX on the current axes."
+  (mpl.containers:axhspan (gca) ymin ymax
+                           :xmin xmin :xmax xmax :color color :alpha alpha
+                           :edgecolor edgecolor :label label :zorder zorder))
+
+(defun axvspan (xmin xmax &key (ymin 0.0) (ymax 1.0) (color "C0") (alpha nil)
+                               (edgecolor "none") (label "") (zorder 1))
+  "Draw a vertical span between XMIN and XMAX on the current axes."
+  (mpl.containers:axvspan (gca) xmin xmax
+                           :ymin ymin :ymax ymax :color color :alpha alpha
+                           :edgecolor edgecolor :label label :zorder zorder))
 
 ;;; ============================================================
 ;;; Axes configuration wrappers
