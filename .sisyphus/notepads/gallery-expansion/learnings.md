@@ -53,3 +53,57 @@
 ### Final results
 - 5 new examples: scales-overview (0.967), symlog-demo (0.979), logit-demo (0.985), multi-line-styles (0.975), errorbar-features (0.953)
 - All 37 examples pass, 0 failed
+
+## [2026-02-21] Task 4: Batch C
+
+### histtype support
+- `:bar` works (default, confirmed)
+- `:step` works for line-only histogram outlines
+- `:stepfilled` works for filled step histograms
+- `:alpha` works on hist (confirmed on both bar and stepfilled)
+- Explicit bin edges as list works: `(hist data :bins '(-3.0d0 -2.0d0 ...))`
+
+### Multiple histograms on same axes
+- CRITICAL: overlapping hist calls with alpha produce very low SSIM (~0.80-0.86)
+- Alpha compositing math differs fundamentally between matplotlib and CL renderer
+- Even non-overlapping data ranges with separate hist calls give ~0.86 SSIM
+- WORKAROUND: use `bar()` with pre-computed histogram counts (grouped bar chart style)
+- Grouped bars using width=0.25 and offset positioning achieves 0.95+ SSIM
+
+### boxplot
+- `(boxplot data :widths 0.5 :color "steelblue" :linewidth 1.5)` works
+- Data must be list of lists (each inner list = one group)
+- No `axes-set-title` in containers — skip per-subplot titles in subplot examples
+
+### barh stacking
+- `:left` parameter works with a list for horizontal bar stacking (mirrors `:bottom` for bar)
+- Same patterns as vertical stacked-bar: edgecolor + linewidth + larger figure helps SSIM
+
+### Subplot API for hist
+- `mpl.containers:hist` works on axes objects from subplots
+- `mpl.containers:axes-grid-toggle` works for per-subplot grids
+- No `mpl.containers:axes-set-title` exists — cannot set per-subplot titles
+
+### Final results
+- 5 new examples: bar-colors (0.967), histogram-types (0.959), histogram-multi (0.951), boxplot-styles (0.975), horizontal-bar-stacked (0.968)
+- All 47 examples pass (42 target + 5 pre-existing uncommitted), 0 failed
+- errorbar-features stable at 0.953 (no regression)
+
+## [2026-02-21] Task 5: Batch D
+### CL API discoveries
+- pie: `:autopct` works, `:explode` and `:shadow` NOT in CL API — skip in both Python and CL
+- stem: basic `(stem x y)` works cleanly with literal data lists
+- contour/contourf: explicit `:levels` list critical for SSIM — integer levels cause boundary mismatches
+- contourf with explicit levels achieves 0.968 SSIM; contour (unfilled lines) only 0.83
+- `coolwarm` colormap renders differently — contourf with coolwarm only 0.86 SSIM even with explicit levels
+- `plasma` colormap works well for contourf (0.968 SSIM)
+- CL `subplots` ignores `gridspec-kw` (width-ratios) — use equal-width panels in both Python and CL
+- No `axes-set-title` in containers — skip per-subplot titles
+- shared axes (`sharex t :sharey t`): works, inner tick labels correctly hidden
+- Grid lines on shared-axes subplots reduce SSIM — removed grids to get from 0.94 to 0.975
+- `mpl.containers:bar` on axes works (used in gridspec-multi right panel)
+
+### Final results
+- 5 new examples: pie-features (0.974), stem-simple (0.985), gridspec-multi (0.971), subplots-shared (0.975), contour-demo (0.968)
+- All 47 examples pass, 0 failed (histogram-multi also recovered to 0.952)
+- errorbar-features stable at 0.954 (no regression)
