@@ -1184,6 +1184,112 @@ Returns list of Line2D objects."
     (nreverse lines)))
 
 ;;; ============================================================
+;;; pcolormesh — pseudocolor mesh plot
+;;; ============================================================
+
+(defun axes-pcolormesh (ax c &key x y (cmap nil) (vmin nil) (vmax nil) (alpha nil)
+                                       (zorder 1))
+  "Create a pseudocolor mesh plot of 2D array C on axes AX.
+
+AX — an axes-base instance.
+C — 2D array of scalar values (H rows × W columns).
+X, Y — optional (H+1)×(W+1) arrays of corner coordinates. If nil, implicit grid.
+CMAP — colormap name (keyword or string) or nil for viridis.
+VMIN, VMAX — data range for colormap normalization.
+ALPHA — transparency.
+ZORDER — drawing order (default 1).
+
+Returns a scalar-mappable (for use with colorbar)."
+  (let* ((h (array-dimension c 0))
+         (w (array-dimension c 1))
+         ;; Resolve colormap
+         (effective-cmap (if cmap
+                             (if (or (keywordp cmap) (stringp cmap))
+                                 (mpl.primitives:get-colormap cmap)
+                                 cmap)
+                             (mpl.primitives:get-colormap :viridis)))
+         ;; Compute vmin/vmax from data if not specified
+         (data-min most-positive-double-float)
+         (data-max most-negative-double-float))
+    ;; Scan C for min/max
+    (dotimes (row h)
+      (dotimes (col w)
+        (let ((v (float (aref c row col) 1.0d0)))
+          (when (< v data-min) (setf data-min v))
+          (when (> v data-max) (setf data-max v)))))
+    (let* ((eff-vmin (float (or vmin data-min) 1.0d0))
+           (eff-vmax (float (or vmax data-max) 1.0d0))
+           ;; Build coordinates array: (H+1)×(W+1)×2
+           (coords (make-array (list (1+ h) (1+ w) 2) :element-type 'double-float
+                                                        :initial-element 0.0d0))
+           ;; Track data limits
+           (x-min most-positive-double-float)
+           (x-max most-negative-double-float)
+           (y-min most-positive-double-float)
+           (y-max most-negative-double-float))
+      ;; Fill coordinates
+      (if (and x y)
+          ;; Explicit X, Y grids
+          (dotimes (i (1+ h))
+            (dotimes (j (1+ w))
+              (let ((xv (float (aref x i j) 1.0d0))
+                    (yv (float (aref y i j) 1.0d0)))
+                (setf (aref coords i j 0) xv
+                      (aref coords i j 1) yv)
+                (when (< xv x-min) (setf x-min xv))
+                (when (> xv x-max) (setf x-max xv))
+                (when (< yv y-min) (setf y-min yv))
+                (when (> yv y-max) (setf y-max yv)))))
+          ;; Implicit grid: coords[i][j] = (j, i)
+          (progn
+            (dotimes (i (1+ h))
+              (dotimes (j (1+ w))
+                (setf (aref coords i j 0) (float j 1.0d0)
+                      (aref coords i j 1) (float i 1.0d0))))
+            (setf x-min 0.0d0 x-max (float w 1.0d0)
+                  y-min 0.0d0 y-max (float h 1.0d0))))
+      ;; Apply colormap to get per-cell facecolors
+      (let* ((range (- eff-vmax eff-vmin))
+             (facecolors
+               (let ((colors nil))
+                 (dotimes (row h)
+                   (dotimes (col w)
+                     (let* ((v (float (aref c row col) 1.0d0))
+                            (norm-v (if (zerop range) 0.5d0
+                                        (max 0.0d0 (min 1.0d0
+                                                        (/ (- v eff-vmin) range)))))
+                            (rgba (mpl.primitives:colormap-call effective-cmap norm-v))
+                            (hex (format nil "#~2,'0x~2,'0x~2,'0x"
+                                         (round (* (aref rgba 0) 255))
+                                         (round (* (aref rgba 1) 255))
+                                         (round (* (aref rgba 2) 255)))))
+                       (push hex colors))))
+                 (nreverse colors)))
+             ;; Create QuadMesh
+             (qm (make-instance 'mpl.rendering:quad-mesh
+                                :mesh-width w
+                                :mesh-height h
+                                :coordinates coords
+                                :facecolors facecolors
+                                :edgecolors '("none")
+                                :linewidths '(0.0)
+                                :zorder zorder)))
+        (when alpha
+          (setf (mpl.rendering:artist-alpha qm) (float alpha 1.0d0)))
+        ;; Set transform
+        (setf (mpl.rendering:artist-transform qm)
+              (axes-base-trans-data ax))
+        ;; Add to axes
+        (axes-add-artist ax qm)
+        ;; Update data limits
+        (axes-update-datalim ax (list x-min x-max) (list y-min y-max))
+        (axes-autoscale-view ax :tight t)
+        ;; Create scalar-mappable for colorbar integration
+        (let* ((norm (mpl.primitives:make-normalize :vmin eff-vmin :vmax eff-vmax))
+               (sm (mpl.primitives:make-scalar-mappable :norm norm :cmap effective-cmap)))
+          sm)))))
+
+;;; ============================================================
 ;;; add-subplot — create axes in figure at subplot position
 ;;; ============================================================
 
@@ -1235,3 +1341,81 @@ Returns the created mpl-axes."
       (setf (mpl.rendering:artist-axes ax) ax)
       (setf (mpl.rendering:artist-stale figure) t)
       ax)))
+
+;;; ============================================================
+;;; twinx / twiny — dual-axis overlaid axes
+;;; ============================================================
+
+(defun axes-twinx (ax)
+  "Create a twin axes overlaid on AX, sharing the x-axis but with an
+independent y-axis on the right side.
+Returns the new twin mpl-axes.
+Ported from matplotlib.axes.Axes.twinx."
+  (let* ((fig (axes-base-figure ax))
+         (pos (axes-base-position ax))
+         ;; Create new axes at the same position with transparent background
+         (twin (make-instance 'mpl-axes
+                              :figure fig
+                              :position (copy-list pos)
+                              :facecolor "none"
+                              :frameon nil
+                              :zorder 0)))
+    ;; Set artist references
+    (setf (mpl.rendering:artist-figure twin) fig)
+    (setf (mpl.rendering:artist-axes twin) twin)
+    ;; Share x-axis: twin's x-limits track parent's
+    (axes-share-x twin ax)
+    ;; Set twin's y-axis to draw on the right side
+    (setf (axis-side (axes-base-yaxis twin)) :right)
+    ;; Hide twin's x-axis tick labels (parent already has them on bottom)
+    (setf (axis-tick-labels-visible-p (axes-base-xaxis twin)) nil)
+    ;; Configure spines: hide left/top/bottom on twin, show right
+    (when (axes-base-spines twin)
+      (spine-set-visible (spines-ref (axes-base-spines twin) "left") nil)
+      (spine-set-visible (spines-ref (axes-base-spines twin) "top") nil)
+      (spine-set-visible (spines-ref (axes-base-spines twin) "bottom") nil)
+      (spine-set-visible (spines-ref (axes-base-spines twin) "right") t))
+    ;; Hide the right spine on the parent (twin owns it now)
+    (when (axes-base-spines ax)
+      (spine-set-visible (spines-ref (axes-base-spines ax) "right") nil))
+    ;; Add twin to figure's axes list (first position = current axes for gca)
+    (push twin (figure-axes fig))
+    (setf (mpl.rendering:artist-stale fig) t)
+    twin))
+
+(defun axes-twiny (ax)
+  "Create a twin axes overlaid on AX, sharing the y-axis but with an
+independent x-axis on the top side.
+Returns the new twin mpl-axes.
+Ported from matplotlib.axes.Axes.twiny."
+  (let* ((fig (axes-base-figure ax))
+         (pos (axes-base-position ax))
+         ;; Create new axes at the same position with transparent background
+         (twin (make-instance 'mpl-axes
+                              :figure fig
+                              :position (copy-list pos)
+                              :facecolor "none"
+                              :frameon nil
+                              :zorder 0)))
+    ;; Set artist references
+    (setf (mpl.rendering:artist-figure twin) fig)
+    (setf (mpl.rendering:artist-axes twin) twin)
+    ;; Share y-axis: twin's y-limits track parent's
+    (axes-share-y twin ax)
+    ;; Set twin's x-axis to draw on the top side
+    (setf (axis-side (axes-base-xaxis twin)) :top)
+    ;; Hide twin's y-axis tick labels (parent already has them on left)
+    (setf (axis-tick-labels-visible-p (axes-base-yaxis twin)) nil)
+    ;; Configure spines: hide left/bottom/right on twin, show top
+    (when (axes-base-spines twin)
+      (spine-set-visible (spines-ref (axes-base-spines twin) "left") nil)
+      (spine-set-visible (spines-ref (axes-base-spines twin) "bottom") nil)
+      (spine-set-visible (spines-ref (axes-base-spines twin) "right") nil)
+      (spine-set-visible (spines-ref (axes-base-spines twin) "top") t))
+    ;; Hide the top spine on the parent (twin owns it now)
+    (when (axes-base-spines ax)
+      (spine-set-visible (spines-ref (axes-base-spines ax) "top") nil))
+    ;; Add twin to figure's axes list (first position = current axes for gca)
+    (push twin (figure-axes fig))
+    (setf (mpl.rendering:artist-stale fig) t)
+    twin))

@@ -466,7 +466,8 @@
                 #:annotate
                 #:text
                 #:axhline #:axvline #:hlines #:vlines
-                #:axhspan #:axvspan
+                 #:axhspan #:axvspan
+                 #:axes-pcolormesh
              ;; Grid
             #:axes-grid-toggle
             ;; Ticker — Locator base
@@ -517,7 +518,7 @@
              ;; Axis scale
              #:axis-scale #:axis-set-scale
              ;; XAxis / YAxis
-             #:x-axis #:y-axis
+             #:x-axis #:y-axis #:axis-side
              ;; Scale base
              #:scale-base #:scale-name #:scale-axis
              #:scale-get-transform #:scale-set-default-locators-and-formatters
@@ -651,9 +652,9 @@ Manages global figure state for convenience.")
            ;; Subplot creation
            #:subplots
            ;; Plot functions
-           #:plot #:scatter #:bar #:hist #:imshow #:contour #:contourf
-           #:pie #:errorbar #:stem #:step-plot #:stackplot #:barh #:boxplot
-           #:fill-between
+            #:plot #:scatter #:bar #:hist #:imshow #:contour #:contourf
+            #:pie #:errorbar #:stem #:step-plot #:stackplot #:barh #:boxplot
+            #:fill-between #:pcolormesh
            ;; Axes configuration
             #:xlabel #:ylabel #:title #:xlim #:ylim #:grid #:legend
              #:set-xticks #:set-xticklabels #:set-yticks #:set-yticklabels

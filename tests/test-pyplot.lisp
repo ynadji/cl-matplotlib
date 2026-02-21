@@ -11,8 +11,8 @@
                 ;; Plot functions
                 #:plot #:scatter #:bar #:hist #:imshow #:contour #:contourf
                 #:pie #:errorbar #:stem #:step-plot #:stackplot #:barh #:boxplot
-                #:fill-between
-                ;; Axes configuration
+                 #:fill-between #:pcolormesh
+                 ;; Axes configuration
                 #:xlabel #:ylabel #:title #:xlim #:ylim #:grid #:legend
                 #:colorbar #:annotate #:text
                 #:suptitle #:supxlabel #:supylabel
@@ -871,6 +871,68 @@
             (is (= x1 nx1))
             (is (= y0 ny0))
             (is (= y1 ny1))))))))
+
+;;; ============================================================
+;;; pcolormesh tests
+;;; ============================================================
+
+(test pcolormesh-basic
+  "Test pcolormesh creates a scalar-mappable from a 2D array."
+  (reset-pyplot-state)
+  (let* ((data (make-array '(3 4) :element-type 'double-float :initial-element 0.5d0))
+         (sm (pcolormesh data)))
+    (is (typep sm 'mpl.primitives:scalar-mappable))
+    ;; Axes should have artists
+    (is (not (null (mpl.containers:axes-base-artists (gca)))))))
+
+(test pcolormesh-with-cmap
+  "Test pcolormesh with explicit colormap."
+  (reset-pyplot-state)
+  (let* ((data (make-array '(5 5) :element-type 'double-float))
+         (_ (dotimes (i 5)
+              (dotimes (j 5)
+                (setf (aref data i j) (float (* i j) 1.0d0)))))
+         (sm (pcolormesh data :cmap "plasma")))
+    (declare (ignore _))
+    (is (typep sm 'mpl.primitives:scalar-mappable))
+    (is (string= "plasma" (mpl.primitives:colormap-name (mpl.primitives:sm-cmap sm))))))
+
+(test pcolormesh-with-xy-coords
+  "Test pcolormesh with explicit X, Y grid coordinates."
+  (reset-pyplot-state)
+  (let* ((h 3) (w 4)
+         (c (make-array (list h w) :element-type 'double-float))
+         (x (make-array (list (1+ h) (1+ w)) :element-type 'double-float))
+         (y (make-array (list (1+ h) (1+ w)) :element-type 'double-float)))
+    ;; Fill C
+    (dotimes (i h) (dotimes (j w) (setf (aref c i j) (float (+ i j) 1.0d0))))
+    ;; Fill X, Y (uniform grid scaled by 2)
+    (dotimes (i (1+ h))
+      (dotimes (j (1+ w))
+        (setf (aref x i j) (float (* j 2.0d0) 1.0d0))
+        (setf (aref y i j) (float (* i 2.0d0) 1.0d0))))
+    (let ((sm (pcolormesh c :x x :y y)))
+      (is (typep sm 'mpl.primitives:scalar-mappable))
+      ;; Check axes limits reflect the explicit coords
+      (multiple-value-bind (xmin xmax) (mpl.containers:axes-get-xlim (gca))
+        (is (<= xmin 0.0d0))
+        (is (>= xmax 8.0d0))))))
+
+(test pcolormesh-colorbar-integration
+  "Test pcolormesh result works with colorbar."
+  (reset-pyplot-state)
+  (let* ((data (make-array '(4 4) :element-type 'double-float))
+         (_ (dotimes (i 4) (dotimes (j 4) (setf (aref data i j) (float (+ i j) 1.0d0)))))
+         (sm (pcolormesh data :cmap :viridis :vmin 0.0 :vmax 6.0)))
+    (declare (ignore _))
+    ;; colorbar should accept the scalar-mappable
+    (let ((cb (colorbar sm)))
+      (is (typep cb 'mpl.containers:mpl-colorbar))
+      ;; Check that colorbar has correct vmin/vmax
+      (let* ((mappable (mpl.containers:colorbar-mappable cb))
+             (norm (mpl.primitives:sm-norm mappable)))
+        (is (= 0.0d0 (mpl.primitives:norm-vmin norm)))
+        (is (= 6.0d0 (mpl.primitives:norm-vmax norm)))))))
 
 ;;; ============================================================
 ;;; Run all tests

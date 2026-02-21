@@ -423,8 +423,24 @@ Returns the created Polygon."
                                  :color color :alpha alpha
                                  :label label :zorder zorder))
 
+(defun pcolormesh (c &key x y (cmap nil) (vmin nil) (vmax nil) (alpha nil) (zorder 1))
+  "Create a pseudocolor mesh plot of 2D array C on the current axes.
+
+C — 2D array of scalar values (H rows × W columns).
+X, Y — optional (H+1)×(W+1) arrays of corner coordinates.
+CMAP — colormap name (keyword or string) or nil for viridis.
+VMIN, VMAX — data range for colormap normalization.
+ALPHA — transparency.
+ZORDER — drawing order.
+
+Returns a scalar-mappable (for use with colorbar)."
+  (mpl.containers:axes-pcolormesh (gca) c
+                                   :x x :y y :cmap cmap
+                                   :vmin vmin :vmax vmax
+                                   :alpha alpha :zorder zorder))
+
 (defun axhspan (ymin ymax &key (xmin 0.0) (xmax 1.0) (color "C0") (alpha nil)
-                               (edgecolor "none") (label "") (zorder 1))
+                                (edgecolor "none") (label "") (zorder 1))
   "Draw a horizontal span between YMIN and YMAX on the current axes."
   (mpl.containers:axhspan (gca) ymin ymax
                            :xmin xmin :xmax xmax :color color :alpha alpha
