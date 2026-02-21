@@ -981,6 +981,138 @@ Returns the created Annotation."
     ann))
 
 ;;; ============================================================
+;;; axhline — horizontal reference line
+;;; ============================================================
+
+(defun axhline (ax y &key (xmin 0.0) (xmax 1.0) (color "C0") (linewidth 1.5)
+                           (linestyle :solid) (alpha nil) (label "") (zorder 2))
+  "Draw a horizontal line at Y across the axes.
+Y — y position in DATA coordinates.
+XMIN, XMAX — fraction of x-axis span (0=left edge, 1=right edge). Default: full width.
+Returns the created Line2D."
+  (multiple-value-bind (x0 x1) (axes-get-xlim ax)
+    ;; If axes has no data yet, use xmin/xmax as data coords directly
+    (let* ((span (if (= x0 x1) 1.0d0 (- x1 x0)))
+           (xs (float (+ x0 (* (float xmin 1.0d0) span)) 1.0d0))
+           (xe (float (+ x0 (* (float xmax 1.0d0) span)) 1.0d0))
+           (line (make-instance 'mpl.rendering:line-2d
+                                :xdata (list xs xe)
+                                :ydata (list (float y 1.0d0) (float y 1.0d0))
+                                :color color
+                                :linewidth linewidth
+                                :linestyle linestyle
+                                :label label
+                                :zorder zorder)))
+      (when alpha
+        (setf (mpl.rendering:artist-alpha line) (float alpha 1.0d0)))
+      (setf (mpl.rendering:artist-transform line) (axes-base-trans-data ax))
+      ;; Add line WITHOUT updating datalim (axhline doesn't affect autoscaling)
+      (axes-add-line ax line)
+      (setf (mpl.rendering:artist-stale ax) t)
+      line)))
+
+;;; ============================================================
+;;; axvline — vertical reference line
+;;; ============================================================
+
+(defun axvline (ax x &key (ymin 0.0) (ymax 1.0) (color "C0") (linewidth 1.5)
+                           (linestyle :solid) (alpha nil) (label "") (zorder 2))
+  "Draw a vertical line at X across the axes.
+X — x position in DATA coordinates.
+YMIN, YMAX — fraction of y-axis span (0=bottom, 1=top). Default: full height.
+Returns the created Line2D."
+  (multiple-value-bind (y0 y1) (axes-get-ylim ax)
+    (let* ((span (if (= y0 y1) 1.0d0 (- y1 y0)))
+           (ys (float (+ y0 (* (float ymin 1.0d0) span)) 1.0d0))
+           (ye (float (+ y0 (* (float ymax 1.0d0) span)) 1.0d0))
+           (line (make-instance 'mpl.rendering:line-2d
+                                :xdata (list (float x 1.0d0) (float x 1.0d0))
+                                :ydata (list ys ye)
+                                :color color
+                                :linewidth linewidth
+                                :linestyle linestyle
+                                :label label
+                                :zorder zorder)))
+      (when alpha
+        (setf (mpl.rendering:artist-alpha line) (float alpha 1.0d0)))
+      (setf (mpl.rendering:artist-transform line) (axes-base-trans-data ax))
+      (axes-add-line ax line)
+      (setf (mpl.rendering:artist-stale ax) t)
+      line)))
+
+;;; ============================================================
+;;; hlines — multiple horizontal lines at data coordinates
+;;; ============================================================
+
+(defun hlines (ax y xmin xmax &key (colors "C0") (linestyles :solid)
+                                    (linewidth 1.5) (alpha nil) (label "") (zorder 2))
+  "Draw horizontal lines at each y in Y from xmin to xmax (all in DATA coordinates).
+Y — scalar or list of y values.
+XMIN, XMAX — x extent in data coordinates (scalar or list matching Y).
+Returns list of Line2D objects."
+  (let* ((ys (if (listp y) y (list y)))
+         (xmins (if (listp xmin) xmin (make-list (length ys) :initial-element xmin)))
+         (xmaxs (if (listp xmax) xmax (make-list (length ys) :initial-element xmax)))
+         (colorlist (if (listp colors) colors (make-list (length ys) :initial-element colors)))
+         (lines nil))
+    (loop for yi in ys
+          for x0 in xmins
+          for x1 in xmaxs
+          for col in colorlist
+          do (let ((line (make-instance 'mpl.rendering:line-2d
+                                        :xdata (list (float x0 1.0d0) (float x1 1.0d0))
+                                        :ydata (list (float yi 1.0d0) (float yi 1.0d0))
+                                        :color col
+                                        :linewidth linewidth
+                                        :linestyle linestyles
+                                        :label label
+                                        :zorder zorder)))
+               (when alpha (setf (mpl.rendering:artist-alpha line) (float alpha 1.0d0)))
+               (setf (mpl.rendering:artist-transform line) (axes-base-trans-data ax))
+               (axes-add-line ax line)
+               (axes-update-datalim ax (list x0 x1) (list yi yi))
+               (push line lines)))
+    (axes-autoscale-view ax)
+    (setf (mpl.rendering:artist-stale ax) t)
+    (nreverse lines)))
+
+;;; ============================================================
+;;; vlines — multiple vertical lines at data coordinates
+;;; ============================================================
+
+(defun vlines (ax x ymin ymax &key (colors "C0") (linestyles :solid)
+                                    (linewidth 1.5) (alpha nil) (label "") (zorder 2))
+  "Draw vertical lines at each x in X from ymin to ymax (all in DATA coordinates).
+X — scalar or list of x values.
+YMIN, YMAX — y extent in data coordinates (scalar or list matching X).
+Returns list of Line2D objects."
+  (let* ((xs (if (listp x) x (list x)))
+         (ymins (if (listp ymin) ymin (make-list (length xs) :initial-element ymin)))
+         (ymaxs (if (listp ymax) ymax (make-list (length xs) :initial-element ymax)))
+         (colorlist (if (listp colors) colors (make-list (length xs) :initial-element colors)))
+         (lines nil))
+    (loop for xi in xs
+          for y0 in ymins
+          for y1 in ymaxs
+          for col in colorlist
+          do (let ((line (make-instance 'mpl.rendering:line-2d
+                                        :xdata (list (float xi 1.0d0) (float xi 1.0d0))
+                                        :ydata (list (float y0 1.0d0) (float y1 1.0d0))
+                                        :color col
+                                        :linewidth linewidth
+                                        :linestyle linestyles
+                                        :label label
+                                        :zorder zorder)))
+               (when alpha (setf (mpl.rendering:artist-alpha line) (float alpha 1.0d0)))
+               (setf (mpl.rendering:artist-transform line) (axes-base-trans-data ax))
+               (axes-add-line ax line)
+               (axes-update-datalim ax (list xi xi) (list y0 y1))
+               (push line lines)))
+    (axes-autoscale-view ax)
+    (setf (mpl.rendering:artist-stale ax) t)
+    (nreverse lines)))
+
+;;; ============================================================
 ;;; add-subplot — create axes in figure at subplot position
 ;;; ============================================================
 

@@ -585,6 +585,48 @@ Returns the created text-artist."
                         :ha ha :va va :rotation rotation :zorder zorder))
 
 ;;; ============================================================
+;;; Reference line wrappers
+;;; ============================================================
+
+(defun axhline (y &key (xmin 0.0) (xmax 1.0) (color "C0") (linewidth 1.5)
+                       (linestyle :solid) (alpha nil) (label "") (zorder 2))
+  "Draw a horizontal line at Y across the current axes.
+XMIN, XMAX — fraction of axes width (0=left, 1=right).
+Returns the created Line2D."
+  (mpl.containers:axhline (gca) y
+                            :xmin xmin :xmax xmax :color color
+                            :linewidth linewidth :linestyle linestyle
+                            :alpha alpha :label label :zorder zorder))
+
+(defun axvline (x &key (ymin 0.0) (ymax 1.0) (color "C0") (linewidth 1.5)
+                       (linestyle :solid) (alpha nil) (label "") (zorder 2))
+  "Draw a vertical line at X across the current axes.
+YMIN, YMAX — fraction of axes height (0=bottom, 1=top).
+Returns the created Line2D."
+  (mpl.containers:axvline (gca) x
+                            :ymin ymin :ymax ymax :color color
+                            :linewidth linewidth :linestyle linestyle
+                            :alpha alpha :label label :zorder zorder))
+
+(defun hlines (y xmin xmax &key (colors "C0") (linestyles :solid)
+                                 (linewidth 1.5) (alpha nil) (label "") (zorder 2))
+  "Draw horizontal lines at each Y from XMIN to XMAX (data coordinates).
+Returns list of Line2D objects."
+  (mpl.containers:hlines (gca) y xmin xmax
+                           :colors colors :linestyles linestyles
+                           :linewidth linewidth :alpha alpha
+                           :label label :zorder zorder))
+
+(defun vlines (x ymin ymax &key (colors "C0") (linestyles :solid)
+                                 (linewidth 1.5) (alpha nil) (label "") (zorder 2))
+  "Draw vertical lines at each X from YMIN to YMAX (data coordinates).
+Returns list of Line2D objects."
+  (mpl.containers:vlines (gca) x ymin ymax
+                           :colors colors :linestyles linestyles
+                           :linewidth linewidth :alpha alpha
+                           :label label :zorder zorder))
+
+;;; ============================================================
 ;;; Output functions
 ;;; ============================================================
 

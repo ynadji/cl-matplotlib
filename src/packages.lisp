@@ -460,8 +460,9 @@
               ;; Additional plot types (Phase 6b)
               #:hist #:pie #:errorbar #:stem #:axes-step
                #:stackplot #:barh #:boxplot
-               #:annotate
-               #:text
+                #:annotate
+                #:text
+                #:axhline #:axvline #:hlines #:vlines
              ;; Grid
             #:axes-grid-toggle
             ;; Ticker — Locator base
@@ -649,6 +650,7 @@ Manages global figure state for convenience.")
            ;; Axes configuration
            #:xlabel #:ylabel #:title #:xlim #:ylim #:grid #:legend
             #:colorbar #:annotate #:text
+            #:axhline #:axvline #:hlines #:vlines
            ;; Output
            #:savefig #:show
            ;; State management

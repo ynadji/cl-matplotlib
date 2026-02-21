@@ -15,6 +15,7 @@
                 ;; Axes configuration
                 #:xlabel #:ylabel #:title #:xlim #:ylim #:grid #:legend
                 #:colorbar #:annotate #:text
+                #:axhline #:axvline #:hlines #:vlines
                 ;; Output
                 #:savefig #:show
                 ;; State management
@@ -546,6 +547,110 @@
                                     :initial-element 0.5d0)))
     (let ((img (imshow data)))
       (is (typep img 'mpl.rendering:axes-image)))))
+
+;;; ============================================================
+;;; Reference line tests
+;;; ============================================================
+
+(test axhline-basic
+  "Test axhline draws a horizontal line and returns Line2D."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((line (axhline 5.0)))
+    (is (typep line 'mpl.rendering:line-2d))
+    ;; Y data should be (5.0 5.0) — stored as vector
+    (is (= 2 (length (mpl.rendering:line-2d-ydata line))))
+    (is (= 5.0d0 (elt (mpl.rendering:line-2d-ydata line) 0)))
+    (is (= 5.0d0 (elt (mpl.rendering:line-2d-ydata line) 1)))))
+
+(test axhline-kwargs
+  "Test axhline accepts color, linestyle, linewidth, alpha kwargs."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((line (axhline 3.0 :color "red" :linestyle :dashed :linewidth 2.0 :alpha 0.5)))
+    (is (typep line 'mpl.rendering:line-2d))
+    (is (string= "red" (mpl.rendering:line-2d-color line)))
+    (is (eq :dashed (mpl.rendering:line-2d-linestyle line)))
+    (is (= 2.0 (mpl.rendering:line-2d-linewidth line)))
+    (is (= 0.5d0 (mpl.rendering:artist-alpha line)))))
+
+(test axvline-basic
+  "Test axvline draws a vertical line and returns Line2D."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((line (axvline 2.0)))
+    (is (typep line 'mpl.rendering:line-2d))
+    ;; X data should be (2.0 2.0) — stored as vector
+    (is (= 2 (length (mpl.rendering:line-2d-xdata line))))
+    (is (= 2.0d0 (elt (mpl.rendering:line-2d-xdata line) 0)))
+    (is (= 2.0d0 (elt (mpl.rendering:line-2d-xdata line) 1)))))
+
+(test axvline-kwargs
+  "Test axvline accepts color, linestyle, linewidth kwargs."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((line (axvline 7.0 :color "blue" :linestyle :dotted :linewidth 3.0)))
+    (is (typep line 'mpl.rendering:line-2d))
+    (is (string= "blue" (mpl.rendering:line-2d-color line)))
+    (is (eq :dotted (mpl.rendering:line-2d-linestyle line)))
+    (is (= 3.0 (mpl.rendering:line-2d-linewidth line)))))
+
+(test hlines-scalar
+  "Test hlines with a single y value."
+  (reset-pyplot-state)
+  (figure)
+  (let ((lines (hlines 5 0 10)))
+    (is (listp lines))
+    (is (= 1 (length lines)))
+    (is (typep (first lines) 'mpl.rendering:line-2d))))
+
+(test hlines-list
+  "Test hlines with a list of y values."
+  (reset-pyplot-state)
+  (figure)
+  (let ((lines (hlines '(1 2 3) 0 10)))
+    (is (listp lines))
+    (is (= 3 (length lines)))
+    (dolist (line lines)
+      (is (typep line 'mpl.rendering:line-2d)))))
+
+(test hlines-kwargs
+  "Test hlines with color and linestyle kwargs."
+  (reset-pyplot-state)
+  (figure)
+  (let ((lines (hlines '(1 2) 0 5 :colors "red" :linestyles :dashed :linewidth 2.0 :alpha 0.7)))
+    (is (= 2 (length lines)))
+    (is (string= "red" (mpl.rendering:line-2d-color (first lines))))
+    (is (eq :dashed (mpl.rendering:line-2d-linestyle (first lines))))
+    (is (= 2.0 (mpl.rendering:line-2d-linewidth (first lines))))))
+
+(test vlines-scalar
+  "Test vlines with a single x value."
+  (reset-pyplot-state)
+  (figure)
+  (let ((lines (vlines 5 0 10)))
+    (is (listp lines))
+    (is (= 1 (length lines)))
+    (is (typep (first lines) 'mpl.rendering:line-2d))))
+
+(test vlines-list
+  "Test vlines with a list of x values."
+  (reset-pyplot-state)
+  (figure)
+  (let ((lines (vlines '(1 2 3) 0 5)))
+    (is (listp lines))
+    (is (= 3 (length lines)))
+    (dolist (line lines)
+      (is (typep line 'mpl.rendering:line-2d)))))
+
+(test vlines-kwargs
+  "Test vlines with color and linestyle kwargs."
+  (reset-pyplot-state)
+  (figure)
+  (let ((lines (vlines '(1 2) 0 5 :colors "green" :linestyles :dashdot :linewidth 1.0)))
+    (is (= 2 (length lines)))
+    (is (string= "green" (mpl.rendering:line-2d-color (first lines))))
+    (is (eq :dashdot (mpl.rendering:line-2d-linestyle (first lines))))))
 
 ;;; ============================================================
 ;;; Run all tests
