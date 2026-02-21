@@ -1,5 +1,5 @@
 PYTHON := .venv/bin/python
-SBCL := sbcl
+SBCL := ros run --
 
 REFERENCE_SCRIPTS_DIR := reference_scripts
 REFERENCE_IMAGES_DIR := reference_images
@@ -33,7 +33,7 @@ cl-images:
 	done
 	@echo "CL images generated in $(EXAMPLES_DIR)/"
 
-compare:
+compare: cl-images
 	@echo "Running visual comparison..."
 	@mkdir -p $(COMPARISON_REPORT_DIR)
 	$(PYTHON) $(COMPARISON_TOOL) \
