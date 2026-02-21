@@ -1355,11 +1355,11 @@ Ported from matplotlib.axes.Axes.twinx."
          (pos (axes-base-position ax))
          ;; Create new axes at the same position with transparent background
          (twin (make-instance 'mpl-axes
-                              :figure fig
-                              :position (copy-list pos)
-                              :facecolor "none"
-                              :frameon nil
-                              :zorder 0)))
+                               :figure fig
+                               :position (copy-list pos)
+                               :facecolor "none"
+                               :frameon nil
+                               :zorder (1+ (mpl.rendering:artist-zorder ax)))))
     ;; Set artist references
     (setf (mpl.rendering:artist-figure twin) fig)
     (setf (mpl.rendering:artist-axes twin) twin)
@@ -1392,11 +1392,11 @@ Ported from matplotlib.axes.Axes.twiny."
          (pos (axes-base-position ax))
          ;; Create new axes at the same position with transparent background
          (twin (make-instance 'mpl-axes
-                              :figure fig
-                              :position (copy-list pos)
-                              :facecolor "none"
-                              :frameon nil
-                              :zorder 0)))
+                               :figure fig
+                               :position (copy-list pos)
+                               :facecolor "none"
+                               :frameon nil
+                               :zorder (1+ (mpl.rendering:artist-zorder ax)))))
     ;; Set artist references
     (setf (mpl.rendering:artist-figure twin) fig)
     (setf (mpl.rendering:artist-axes twin) twin)
