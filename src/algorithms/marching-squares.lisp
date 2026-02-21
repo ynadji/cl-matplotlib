@@ -260,7 +260,9 @@ and constructs filled regions from the grid cells that fall within the band."
 (defun %ms-cell-band-polygon (x0 y0 x1 y1 z-bl z-br z-tr z-tl lo hi)
   "Compute the polygon for a single cell clipped to the band [lo, hi].
 Walks around the cell boundary, including corner points that are in-band
-and interpolated crossing points where the contour crosses edges."
+and interpolated crossing points where the contour crosses edges.
+When both lo and hi cross the same edge, crossings are added in walk order
+\(sorted by interpolation parameter t) to avoid self-intersecting polygons."
   (declare (type double-float x0 y0 x1 y1 z-bl z-br z-tr z-tl lo hi))
   (let ((points nil)
         ;; Corners in CCW order: BL, BR, TR, TL
@@ -281,25 +283,39 @@ and interpolated crossing points where the contour crosses edges."
              ;; Add start corner if it's in-band
              (when (and (>= zs lo) (<= zs hi))
                (push (list (first c-start) (second c-start)) points))
-             ;; Add crossing with lo contour if edge crosses lo
-             (when (or (and (< zs lo) (> ze lo))
-                       (and (> zs lo) (< ze lo)))
-               (let ((t-val (/ (- lo zs) (- ze zs))))
-                 (push (list (+ (first c-start)
-                                (* t-val (- (first c-end) (first c-start))))
-                             (+ (second c-start)
-                                (* t-val (- (second c-end) (second c-start)))))
-                       points)))
-             ;; Add crossing with hi contour if edge crosses hi
-             (when (or (and (< zs hi) (> ze hi))
-                       (and (> zs hi) (< ze hi)))
-               (let ((t-val (/ (- hi zs) (- ze zs))))
-                 (push (list (+ (first c-start)
-                                (* t-val (- (first c-end) (first c-start))))
-                             (+ (second c-start)
-                                (* t-val (- (second c-end) (second c-start)))))
-                       points))))
-    ;; Remove duplicates and return
+             ;; Collect crossings on this edge with their t-parameter values,
+             ;; then add in order of increasing t (= walk direction along edge).
+             ;; This is critical when both lo and hi cross the same edge
+             ;; (e.g. zs > hi and ze < lo): the hi crossing has smaller t
+             ;; and must be added first to avoid a bowtie self-intersection.
+             (let ((crossings nil))
+               ;; Check lo crossing
+               (when (or (and (< zs lo) (> ze lo))
+                         (and (> zs lo) (< ze lo)))
+                 (let ((t-val (/ (- lo zs) (- ze zs))))
+                   (push (list t-val
+                               (+ (first c-start)
+                                  (* t-val (- (first c-end) (first c-start))))
+                               (+ (second c-start)
+                                  (* t-val (- (second c-end) (second c-start)))))
+                         crossings)))
+               ;; Check hi crossing
+               (when (or (and (< zs hi) (> ze hi))
+                         (and (> zs hi) (< ze hi)))
+                 (let ((t-val (/ (- hi zs) (- ze zs))))
+                   (push (list t-val
+                               (+ (first c-start)
+                                  (* t-val (- (first c-end) (first c-start))))
+                               (+ (second c-start)
+                                  (* t-val (- (second c-end) (second c-start)))))
+                         crossings)))
+               ;; Add crossings sorted by t-parameter (walk order along edge)
+               (when crossings
+                 (when (> (length crossings) 1)
+                   (setf crossings (sort crossings #'< :key #'first)))
+                 (dolist (c crossings)
+                   (push (list (second c) (third c)) points)))))
+    ;; Return vertices in CCW walk order
     (let ((result (nreverse points)))
       (when (and result (>= (length result) 3))
         result))))
