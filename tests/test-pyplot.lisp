@@ -18,8 +18,9 @@
                 #:suptitle #:supxlabel #:supylabel
                 #:invert-xaxis #:invert-yaxis
                 #:axhline #:axvline #:hlines #:vlines
-                #:axhspan #:axvspan
-                #:set-xticks #:set-xticklabels #:set-yticks #:set-yticklabels
+                 #:axhspan #:axvspan
+                 #:twinx #:twiny
+                 #:set-xticks #:set-xticklabels #:set-yticks #:set-yticklabels
                 ;; Output
                 #:savefig #:show
                 ;; State management
@@ -933,6 +934,96 @@
              (norm (mpl.primitives:sm-norm mappable)))
         (is (= 0.0d0 (mpl.primitives:norm-vmin norm)))
         (is (= 6.0d0 (mpl.primitives:norm-vmax norm)))))))
+
+;;; ============================================================
+;;; twinx / twiny tests
+;;; ============================================================
+
+(test twinx-creates-new-axes
+  "Test that twinx creates a new mpl-axes object."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (let ((parent (gca)))
+    (let ((twin (twinx)))
+      (is (typep twin 'mpl.containers:mpl-axes))
+      (is (not (eq twin parent)))
+      ;; Twin should now be the current axes (gca)
+      (is (eq twin (gca))))))
+
+(test twinx-shares-xlim
+  "Test that twinx shares x-axis limits with parent."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((parent (gca)))
+    (xlim 0 10)
+    (let ((twin (twinx)))
+      ;; Twin should have same x-limits as parent
+      (multiple-value-bind (tx0 tx1) (mpl.containers:axes-get-xlim twin)
+        (multiple-value-bind (px0 px1) (mpl.containers:axes-get-xlim parent)
+          (is (= px0 tx0))
+          (is (= px1 tx1)))))))
+
+(test twinx-independent-ylim
+  "Test that twinx has independent y-axis limits."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(10 20 30))
+  (let ((parent (gca)))
+    (let ((twin (twinx)))
+      ;; Plot different y-range data on twin
+      (mpl.containers:plot twin '(1 2 3) '(100 200 300))
+      ;; Twin y-limits should differ from parent
+      (multiple-value-bind (ty0 ty1) (mpl.containers:axes-get-ylim twin)
+        (multiple-value-bind (py0 py1) (mpl.containers:axes-get-ylim parent)
+          (is (not (and (= py0 ty0) (= py1 ty1)))))))))
+
+(test twiny-creates-new-axes
+  "Test that twiny creates a new mpl-axes object."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (let ((parent (gca)))
+    (let ((twin (twiny)))
+      (is (typep twin 'mpl.containers:mpl-axes))
+      (is (not (eq twin parent)))
+      ;; Twin should now be the current axes (gca)
+      (is (eq twin (gca))))))
+
+(test twiny-shares-ylim
+  "Test that twiny shares y-axis limits with parent."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((parent (gca)))
+    (ylim 0 20)
+    (let ((twin (twiny)))
+      ;; Twin should have same y-limits as parent
+      (multiple-value-bind (ty0 ty1) (mpl.containers:axes-get-ylim twin)
+        (multiple-value-bind (py0 py1) (mpl.containers:axes-get-ylim parent)
+          (is (= py0 ty0))
+          (is (= py1 ty1)))))))
+
+(test twinx-added-to-figure
+  "Test that twinx axes is added to the figure's axes list."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (let ((fig (gcf))
+        (n-before (length (mpl.containers:figure-axes (gcf)))))
+    (twinx)
+    (is (= (1+ n-before) (length (mpl.containers:figure-axes fig))))))
+
+(test twinx-yaxis-on-right
+  "Test that twinx y-axis is set to draw on the right side."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (let ((twin (twinx)))
+    (is (eq :right (mpl.containers:axis-side
+                     (mpl.containers:axes-base-yaxis twin))))))
+
+(test twiny-xaxis-on-top
+  "Test that twiny x-axis is set to draw on the top side."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (let ((twin (twiny)))
+    (is (eq :top (mpl.containers:axis-side
+                   (mpl.containers:axes-base-xaxis twin))))))
 
 ;;; ============================================================
 ;;; Run all tests

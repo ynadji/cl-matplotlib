@@ -701,6 +701,22 @@ Returns list of Line2D objects."
                            :label label :zorder zorder))
 
 ;;; ============================================================
+;;; Twin axes functions
+;;; ============================================================
+
+(defun twinx ()
+  "Create a twin axes sharing the x-axis with the current axes,
+with an independent y-axis on the right side.
+Returns the new twin axes (which becomes the current axes)."
+  (mpl.containers:axes-twinx (gca)))
+
+(defun twiny ()
+  "Create a twin axes sharing the y-axis with the current axes,
+with an independent x-axis on the top side.
+Returns the new twin axes (which becomes the current axes)."
+  (mpl.containers:axes-twiny (gca)))
+
+;;; ============================================================
 ;;; Output functions
 ;;; ============================================================
 

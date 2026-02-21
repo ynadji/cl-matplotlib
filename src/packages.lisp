@@ -467,6 +467,7 @@
                 #:text
                 #:axhline #:axvline #:hlines #:vlines
                  #:axhspan #:axvspan
+                 #:axes-twinx #:axes-twiny
                  #:axes-pcolormesh
              ;; Grid
             #:axes-grid-toggle
@@ -662,8 +663,9 @@ Manages global figure state for convenience.")
              #:suptitle #:supxlabel #:supylabel
              #:invert-xaxis #:invert-yaxis
               #:axhline #:axvline #:hlines #:vlines
-              #:axhspan #:axvspan
-            ;; Output
+               #:axhspan #:axvspan
+               #:twinx #:twiny
+             ;; Output
            #:savefig #:show
            ;; State management
            #:*figures* #:*current-figure* #:*figure-counter*))

@@ -322,7 +322,10 @@ The scale sets default locators and formatters."
 ;;; ============================================================
 
 (defclass x-axis (axis-obj)
-  ()
+  ((axis-side :initarg :side
+              :initform :bottom
+              :accessor axis-side
+              :documentation "Which side to draw ticks/labels: :bottom (default) or :top."))
   (:documentation "Horizontal axis for rectilinear axes.
 Ported from matplotlib.axis.XAxis."))
 
@@ -387,32 +390,34 @@ to ensure they appear behind data artists (matplotlib grid zorder=0.5)."
   (let* ((ax (axis-axes axis))
          (trans-axes (when ax (axes-base-trans-axes ax)))
          (trans-data (when ax (axes-base-trans-data ax)))
-         (labels-visible (axis-tick-labels-visible-p axis)))
+         (labels-visible (axis-tick-labels-visible-p axis))
+         (side (axis-side axis)))
     (when (and ax trans-axes trans-data)
       ;; Draw major ticks (skip-grid=t since grid was drawn in earlier pass)
       (let ((major-ticks (axis-get-major-ticks axis)))
         (dolist (tk major-ticks)
-          (%draw-x-tick renderer ax tk trans-data trans-axes labels-visible t))
+          (%draw-x-tick renderer ax tk trans-data trans-axes labels-visible t side))
         ;; Draw minor ticks
         (let ((minor-ticks (axis-get-minor-ticks axis)))
           (dolist (tk minor-ticks)
-            (%draw-x-tick renderer ax tk trans-data trans-axes labels-visible t))))
+            (%draw-x-tick renderer ax tk trans-data trans-axes labels-visible t side))))
       ;; Draw axis label (also suppressed when tick labels are hidden)
       (when (and labels-visible
                  (axis-label-text axis)
                  (> (length (axis-label-text axis)) 0))
-        (%draw-x-axis-label renderer ax axis trans-axes))))
+        (%draw-x-axis-label renderer ax axis trans-axes side))))
   (setf (mpl.rendering:artist-stale axis) nil))
 
-(defun %draw-x-tick (renderer ax tk trans-data trans-axes &optional (labels-visible t) (skip-grid nil))
+(defun %draw-x-tick (renderer ax tk trans-data trans-axes &optional (labels-visible t) (skip-grid nil) (side :bottom))
   "Draw a single X axis tick mark, label, and optionally gridline.
-When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
+When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier).
+SIDE is :bottom (default) or :top for twin axes."
   (let* ((loc (tick-loc tk))
          ;; Transform tick location to display coords
          (data-pt (mpl.primitives:transform-point trans-data (list loc 0.0d0)))
          (x-display (aref data-pt 0))                              ; original position for labels/grid
          (x-display-snapped (+ (round x-display) 0.5d0))          ; snapped for tick line and grid
-         ;; Get axes bottom in display coords
+         ;; Get axes bottom/top in display coords
          (axes-bottom (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 1))
          (axes-top (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 1.0d0)) 1))
          (dpi (mpl.backends:renderer-dpi renderer))
@@ -420,17 +425,31 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
          (tick-len (* (float (or (tick-size tk) 3.5) 1.0d0) pts->px))
          (tick-wid (float (or (tick-width tk) 0.8) 1.0d0))
          (direction (tick-direction tk))
-         ;; Compute tick mark endpoints
-         (y-start (case direction
-                    (:out axes-bottom)
-                    (:in (+ axes-bottom tick-len))
-                    (:inout (- axes-bottom (* tick-len 0.5d0)))
-                    (t axes-bottom)))
-         (y-end (case direction
-                  (:out (- axes-bottom tick-len))
-                  (:in axes-bottom)
-                  (:inout (+ axes-bottom (* tick-len 0.5d0)))
-                  (t (- axes-bottom tick-len)))))
+         ;; Compute tick mark endpoints based on side
+         (top-p (eq side :top))
+         (edge (if top-p axes-top axes-bottom))
+         (y-start (if top-p
+                      (case direction
+                        (:out edge)
+                        (:in (- edge tick-len))
+                        (:inout (+ edge (* tick-len 0.5d0)))
+                        (t edge))
+                      (case direction
+                        (:out edge)
+                        (:in (+ edge tick-len))
+                        (:inout (- edge (* tick-len 0.5d0)))
+                        (t edge))))
+         (y-end (if top-p
+                    (case direction
+                      (:out (+ edge tick-len))
+                      (:in edge)
+                      (:inout (+ edge (* tick-len 0.5d0)))
+                      (t (+ edge tick-len)))
+                    (case direction
+                      (:out (- edge tick-len))
+                      (:in edge)
+                      (:inout (+ edge (* tick-len 0.5d0)))
+                      (t (- edge tick-len))))))
     ;; Draw tick mark line
     (let ((gc (mpl.rendering:make-gc
                :foreground (tick-color tk)
@@ -446,7 +465,9 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
     (when (and labels-visible
                (tick-label-text tk)
                (> (length (tick-label-text tk)) 0))
-      (let* ((label-y (- y-end (* (float (tick-pad tk) 1.0d0) pts->px)))
+      (let* ((label-y (if top-p
+                          (+ y-end (* (float (tick-pad tk) 1.0d0) pts->px))
+                          (- y-end (* (float (tick-pad tk) 1.0d0) pts->px))))
               (fontsize-px (* (tick-label-fontsize tk)
                               (/ (mpl.backends:renderer-dpi renderer) 72.0)))
               (gc (mpl.rendering:make-gc
@@ -458,7 +479,7 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
                                            (tick-label-text tk)
                                            :angle 0.0
                                            :ha :center
-                                           :va :top)))
+                                           :va (if top-p :bottom :top))))
     ;; Draw gridline (unless already drawn in grid-only pass)
     (when (and (not skip-grid) (tick-gridline-visible-p tk))
       (let ((gc (mpl.rendering:make-gc
@@ -473,14 +494,17 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
                                                  (list x-display-snapped axes-top))))))
           (mpl.rendering:renderer-draw-path renderer gc path nil :stroke t))))))
 
-(defun %draw-x-axis-label (renderer ax axis trans-axes)
-  "Draw the X axis label centered below the axes.
+(defun %draw-x-axis-label (renderer ax axis trans-axes &optional (side :bottom))
+  "Draw the X axis label centered below (or above for :top) the axes.
 Offset matches matplotlib: tick_size(3.5pt) + tick_pad(3.5pt) + tick_label_height + labelpad(4pt).
-The tick_label_height uses the font line-height ratio (0.9754) matching matplotlib's FT2Font metrics."
+The tick_label_height uses the font line-height ratio (0.9754) matching matplotlib's FT2Font metrics.
+SIDE is :bottom (default) or :top for twin axes."
   (declare (ignore ax))
-  (let* ((dpi (mpl.backends:renderer-dpi renderer))
+  (let* ((top-p (eq side :top))
+         (dpi (mpl.backends:renderer-dpi renderer))
          (pts->px (/ dpi 72.0d0))
-         (p-mid (mpl.primitives:transform-point trans-axes (list 0.5d0 0.0d0)))
+         (p-mid (mpl.primitives:transform-point trans-axes
+                                                 (list 0.5d0 (if top-p 1.0d0 0.0d0))))
          (x-mid (aref p-mid 0))
          ;; matplotlib xlabel offset = tick_size + tick_pad + tick_label_height + label_pad
          ;; tick_label_height = fontsize_px * 0.9754 (empirical ratio from matplotlib's FT2Font)
@@ -490,22 +514,27 @@ The tick_label_height uses the font line-height ratio (0.9754) matching matplotl
          (tick-pad-px (* (float (axis-tick-pad axis) 1.0d0) pts->px))
          (label-pad-px (* 4.0d0 pts->px))
          (offset (+ tick-size-px tick-pad-px tick-label-height label-pad-px))
-         (y-bottom (- (aref p-mid 1) offset))
+         (y-pos (if top-p
+                    (+ (aref p-mid 1) offset)
+                    (- (aref p-mid 1) offset)))
          (fontsize-px (* 10.0 pts->px))
          (gc (mpl.rendering:make-gc :foreground "black" :linewidth fontsize-px :alpha 1.0)))
     (mpl.rendering:renderer-draw-text renderer gc
-                                      x-mid y-bottom
+                                      x-mid y-pos
                                       (axis-label-text axis)
                                       :angle 0.0
                                       :ha :center
-                                      :va :top)))
+                                      :va (if top-p :bottom :top))))
 
 ;;; ============================================================
 ;;; YAxis — vertical axis
 ;;; ============================================================
 
 (defclass y-axis (axis-obj)
-  ()
+  ((axis-side :initarg :side
+              :initform :left
+              :accessor axis-side
+              :documentation "Which side to draw ticks/labels: :left (default) or :right."))
   (:documentation "Vertical axis for rectilinear axes.
 Ported from matplotlib.axis.YAxis."))
 
@@ -571,33 +600,35 @@ to ensure they appear behind data artists (matplotlib grid zorder=0.5)."
   (let* ((ax (axis-axes axis))
          (trans-axes (when ax (axes-base-trans-axes ax)))
          (trans-data (when ax (axes-base-trans-data ax)))
-         (labels-visible (axis-tick-labels-visible-p axis)))
+         (labels-visible (axis-tick-labels-visible-p axis))
+         (side (axis-side axis)))
     (when (and ax trans-axes trans-data)
       ;; Draw major ticks (skip-grid=t since grid was drawn in earlier pass)
       (let ((major-ticks (axis-get-major-ticks axis)))
         (dolist (tk major-ticks)
-          (%draw-y-tick renderer ax tk trans-data trans-axes labels-visible t))
+          (%draw-y-tick renderer ax tk trans-data trans-axes labels-visible t side))
         ;; Draw minor ticks
         (let ((minor-ticks (axis-get-minor-ticks axis)))
           (dolist (tk minor-ticks)
-            (%draw-y-tick renderer ax tk trans-data trans-axes labels-visible t))))
+            (%draw-y-tick renderer ax tk trans-data trans-axes labels-visible t side))))
       ;; Draw axis label (also suppressed when tick labels are hidden)
       (when (and labels-visible
                  (axis-label-text axis)
                  (> (length (axis-label-text axis)) 0))
-        (%draw-y-axis-label renderer ax axis trans-axes))))
+        (%draw-y-axis-label renderer ax axis trans-axes side))))
   (setf (mpl.rendering:artist-stale axis) nil))
 
-(defun %draw-y-tick (renderer ax tk trans-data trans-axes &optional (labels-visible t) (skip-grid nil))
+(defun %draw-y-tick (renderer ax tk trans-data trans-axes &optional (labels-visible t) (skip-grid nil) (side :left))
   "Draw a single Y axis tick mark, label, and optionally gridline.
-When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
+When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier).
+SIDE is :left (default) or :right for twin axes."
   (declare (ignore ax))
   (let* ((loc (tick-loc tk))
          ;; Transform tick location to display coords
          (data-pt (mpl.primitives:transform-point trans-data (list 0.0d0 loc)))
          (y-display (aref data-pt 1))                              ; original position for labels/grid
          (y-display-snapped (- (round y-display) 0.5d0))          ; snapped for tick line and grid
-         ;; Get axes left edge in display coords
+         ;; Get axes left/right edge in display coords
          (axes-left (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 0))
          (axes-right (aref (mpl.primitives:transform-point trans-axes (list 1.0d0 0.0d0)) 0))
          (dpi (mpl.backends:renderer-dpi renderer))
@@ -605,17 +636,31 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
          (tick-len (* (float (or (tick-size tk) 3.5) 1.0d0) pts->px))
          (tick-wid (float (or (tick-width tk) 0.8) 1.0d0))
          (direction (tick-direction tk))
-         ;; Compute tick mark endpoints
-         (x-start (case direction
-                    (:out axes-left)
-                    (:in (- axes-left tick-len))
-                    (:inout (+ axes-left (* tick-len 0.5d0)))
-                    (t axes-left)))
-         (x-end (case direction
-                  (:out (- axes-left tick-len))
-                  (:in axes-left)
-                  (:inout (- axes-left (* tick-len 0.5d0)))
-                  (t (- axes-left tick-len)))))
+         ;; Compute tick mark endpoints based on side
+         (right-p (eq side :right))
+         (edge (if right-p axes-right axes-left))
+         (x-start (if right-p
+                      (case direction
+                        (:out edge)
+                        (:in (+ edge tick-len))
+                        (:inout (- edge (* tick-len 0.5d0)))
+                        (t edge))
+                      (case direction
+                        (:out edge)
+                        (:in (- edge tick-len))
+                        (:inout (+ edge (* tick-len 0.5d0)))
+                        (t edge))))
+         (x-end (if right-p
+                    (case direction
+                      (:out (+ edge tick-len))
+                      (:in edge)
+                      (:inout (+ edge (* tick-len 0.5d0)))
+                      (t (+ edge tick-len)))
+                    (case direction
+                      (:out (- edge tick-len))
+                      (:in edge)
+                      (:inout (- edge (* tick-len 0.5d0)))
+                      (t (- edge tick-len))))))
     ;; Draw tick mark line
     (let ((gc (mpl.rendering:make-gc
                :foreground (tick-color tk)
@@ -631,7 +676,9 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
     (when (and labels-visible
                (tick-label-text tk)
                (> (length (tick-label-text tk)) 0))
-      (let* ((label-x (- x-end (* (float (tick-pad tk) 1.0d0) pts->px)))
+      (let* ((label-x (if right-p
+                          (+ x-end (* (float (tick-pad tk) 1.0d0) pts->px))
+                          (- x-end (* (float (tick-pad tk) 1.0d0) pts->px))))
               (fontsize-px (* (tick-label-fontsize tk)
                               (/ (mpl.backends:renderer-dpi renderer) 72.0)))
               (gc (mpl.rendering:make-gc
@@ -642,7 +689,7 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
                                            label-x y-display
                                            (tick-label-text tk)
                                            :angle 0.0
-                                           :ha :right
+                                           :ha (if right-p :left :right)
                                            :va :center)))
     ;; Draw gridline (unless already drawn in grid-only pass)
     (when (and (not skip-grid) (tick-gridline-visible-p tk))
@@ -658,15 +705,18 @@ When SKIP-GRID is T, skip drawing the gridline (it was already drawn earlier)."
                                                  (list axes-right y-display-snapped))))))
           (mpl.rendering:renderer-draw-path renderer gc path nil :stroke t))))))
 
-(defun %draw-y-axis-label (renderer ax axis trans-axes)
-  "Draw the Y axis label rotated 90° to the left of axes.
-Dynamically computes offset based on actual tick label widths."
+(defun %draw-y-axis-label (renderer ax axis trans-axes &optional (side :left))
+  "Draw the Y axis label rotated 90° to the left (or 270° to the right) of axes.
+Dynamically computes offset based on actual tick label widths.
+SIDE is :left (default) or :right for twin axes."
   (declare (ignore ax))
-  (let* ((dpi (mpl.backends:renderer-dpi renderer))
+  (let* ((right-p (eq side :right))
+         (dpi (mpl.backends:renderer-dpi renderer))
          (pts->px (/ dpi 72.0d0))
-         (p-mid (mpl.primitives:transform-point trans-axes (list 0.0d0 0.5d0)))
+         (p-mid (mpl.primitives:transform-point trans-axes
+                                                 (list (if right-p 1.0d0 0.0d0) 0.5d0)))
          (y-mid (aref p-mid 1))
-         (axes-left (aref p-mid 0))
+         (axes-edge (aref p-mid 0))
          ;; Tick geometry in pixels
          (tick-size-px (* (float (axis-tick-size-major axis) 1.0d0) pts->px))
          (tick-pad-px (* (float (axis-tick-pad axis) 1.0d0) pts->px))
@@ -701,16 +751,16 @@ Dynamically computes offset based on actual tick label widths."
          (font-scale (/ ylabel-fontsize-px (float (zpb-ttf:units/em font-loader) 1.0d0)))
          (ylabel-half-height (* 0.5d0 (+ (* (zpb-ttf:ascender font-loader) font-scale)
                                           (abs (* (zpb-ttf:descender font-loader) font-scale)))))
-         ;; Total offset from axes left edge to ylabel center
+         ;; Total offset from axes edge to ylabel center
          (offset (+ tick-size-px tick-pad-px max-label-width label-pad-px ylabel-half-height))
-         (x-left (- axes-left offset))
+         (x-pos (if right-p (+ axes-edge offset) (- axes-edge offset)))
          (fontsize-px ylabel-fontsize-px)
          (gc (mpl.rendering:make-gc :foreground "black" :linewidth fontsize-px :alpha 1.0)))
     (zpb-ttf:close-font-loader font-loader)
     (mpl.rendering:renderer-draw-text renderer gc
-                                      x-left y-mid
+                                      x-pos y-mid
                                       (axis-label-text axis)
-                                      :angle 90.0
+                                      :angle (if right-p 270.0 90.0)
                                       :ha :center)))
 
 ;;; ============================================================
