@@ -503,6 +503,22 @@ If called with arguments, sets the limits."
         (mpl.containers:axes-get-ylim ax)
         (mpl.containers:axes-set-ylim ax :min ymin :max ymax))))
 
+(defun set-xticks (ticks &key (labels nil))
+  "Set x-axis major tick positions. LABELS optionally sets tick label strings."
+  (mpl.containers:axes-set-xticks (gca) ticks :labels labels))
+
+(defun set-xticklabels (labels)
+  "Set x-axis major tick label strings."
+  (mpl.containers:axes-set-xticklabels (gca) labels))
+
+(defun set-yticks (ticks &key (labels nil))
+  "Set y-axis major tick positions."
+  (mpl.containers:axes-set-yticks (gca) ticks :labels labels))
+
+(defun set-yticklabels (labels)
+  "Set y-axis major tick label strings."
+  (mpl.containers:axes-set-yticklabels (gca) labels))
+
 (defun grid (&key (visible t) (which :major) (axis :both)
                    (color nil) (linewidth nil) (linestyle nil) (alpha nil))
   "Toggle grid lines on the current axes.

@@ -18,6 +18,7 @@
                 #:suptitle #:supxlabel #:supylabel
                 #:invert-xaxis #:invert-yaxis
                 #:axhline #:axvline #:hlines #:vlines
+                #:set-xticks #:set-xticklabels #:set-yticks #:set-yticklabels
                 ;; Output
                 #:savefig #:show
                 ;; State management
@@ -735,6 +736,89 @@
   (multiple-value-bind (xmin xmax) (xlim)
     (is (= 0.0d0 xmin))
     (is (= 10.0d0 xmax))))
+
+;;; ============================================================
+;;; set-xticks / set-xticklabels / set-yticks / set-yticklabels
+;;; ============================================================
+
+(test set-xticks-basic
+  "Test set-xticks places fixed tick positions on x-axis."
+  (reset-pyplot-state)
+  (plot '(1 2 3 4 5) '(1 2 3 4 5))
+  (set-xticks '(1 2 3))
+  (let* ((ax (gca))
+         (xaxis (mpl.containers:axes-base-xaxis ax))
+         (loc (mpl.containers:axis-major-locator xaxis)))
+    (is (typep loc 'mpl.containers:fixed-locator))
+    (is (equal '(1.0d0 2.0d0 3.0d0)
+               (mpl.containers:fixed-locator-locs loc)))))
+
+(test set-xticks-with-labels
+  "Test set-xticks with :labels sets both locator and formatter."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (set-xticks '(1 2 3) :labels '("A" "B" "C"))
+  (let* ((ax (gca))
+         (xaxis (mpl.containers:axes-base-xaxis ax))
+         (loc (mpl.containers:axis-major-locator xaxis))
+         (fmt (mpl.containers:axis-major-formatter xaxis)))
+    (is (typep loc 'mpl.containers:fixed-locator))
+    (is (typep fmt 'mpl.containers:fixed-formatter))
+    (is (equal '("A" "B" "C") (mpl.containers:fixed-formatter-seq fmt)))))
+
+(test set-xticklabels-basic
+  "Test set-xticklabels sets formatter only."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (set-xticklabels '("Mon" "Tue" "Wed"))
+  (let* ((ax (gca))
+         (xaxis (mpl.containers:axes-base-xaxis ax))
+         (fmt (mpl.containers:axis-major-formatter xaxis)))
+    (is (typep fmt 'mpl.containers:fixed-formatter))
+    (is (equal '("Mon" "Tue" "Wed") (mpl.containers:fixed-formatter-seq fmt)))))
+
+(test set-yticks-basic
+  "Test set-yticks places fixed tick positions on y-axis."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(10 20 30))
+  (set-yticks '(10 20 30))
+  (let* ((ax (gca))
+         (yaxis (mpl.containers:axes-base-yaxis ax))
+         (loc (mpl.containers:axis-major-locator yaxis)))
+    (is (typep loc 'mpl.containers:fixed-locator))
+    (is (equal '(10.0d0 20.0d0 30.0d0)
+               (mpl.containers:fixed-locator-locs loc)))))
+
+(test set-yticks-with-labels
+  "Test set-yticks with :labels sets both locator and formatter."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(10 20 30))
+  (set-yticks '(10 20 30) :labels '("Low" "Mid" "High"))
+  (let* ((ax (gca))
+         (yaxis (mpl.containers:axes-base-yaxis ax))
+         (loc (mpl.containers:axis-major-locator yaxis))
+         (fmt (mpl.containers:axis-major-formatter yaxis)))
+    (is (typep loc 'mpl.containers:fixed-locator))
+    (is (typep fmt 'mpl.containers:fixed-formatter))
+    (is (equal '("Low" "Mid" "High") (mpl.containers:fixed-formatter-seq fmt)))))
+
+(test set-yticklabels-basic
+  "Test set-yticklabels sets formatter only."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(10 20 30))
+  (set-yticklabels '("X" "Y" "Z"))
+  (let* ((ax (gca))
+         (yaxis (mpl.containers:axes-base-yaxis ax))
+         (fmt (mpl.containers:axis-major-formatter yaxis)))
+    (is (typep fmt 'mpl.containers:fixed-formatter))
+    (is (equal '("X" "Y" "Z") (mpl.containers:fixed-formatter-seq fmt)))))
+
+(test set-xticks-returns-axes
+  "Test set-xticks returns the axes object."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (let ((result (mpl.containers:axes-set-xticks (gca) '(1 2 3))))
+    (is (typep result 'mpl.containers:axes-base))))
 
 ;;; ============================================================
 ;;; Run all tests

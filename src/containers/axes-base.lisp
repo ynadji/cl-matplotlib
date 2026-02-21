@@ -596,6 +596,51 @@ Additional keyword arguments are passed to the scale constructor."
   (setf (mpl.rendering:artist-stale ax) t))
 
 ;;; ============================================================
+;;; Set tick positions / labels
+;;; ============================================================
+
+(defun axes-set-xticks (ax ticks &key (labels nil))
+  "Set the x-axis major tick positions.
+TICKS — list of x positions for major ticks.
+LABELS — optional list of label strings (same length as TICKS).
+If LABELS is provided, also sets the tick label formatter.
+Returns AX."
+  (let ((locator (make-instance 'fixed-locator
+                                :locs (mapcar (lambda (v) (float v 1.0d0)) ticks))))
+    (axis-set-major-locator (axes-base-xaxis ax) locator))
+  (when labels
+    (let ((fmt (make-instance 'fixed-formatter :seq labels)))
+      (axis-set-major-formatter (axes-base-xaxis ax) fmt)))
+  ax)
+
+(defun axes-set-xticklabels (ax labels)
+  "Set the x-axis major tick label strings.
+LABELS — list of strings, one per current tick.
+Returns AX."
+  (let ((fmt (make-instance 'fixed-formatter :seq labels)))
+    (axis-set-major-formatter (axes-base-xaxis ax) fmt))
+  ax)
+
+(defun axes-set-yticks (ax ticks &key (labels nil))
+  "Set the y-axis major tick positions.
+TICKS — list of y positions for major ticks.
+LABELS — optional list of label strings.
+Returns AX."
+  (let ((locator (make-instance 'fixed-locator
+                                :locs (mapcar (lambda (v) (float v 1.0d0)) ticks))))
+    (axis-set-major-locator (axes-base-yaxis ax) locator))
+  (when labels
+    (let ((fmt (make-instance 'fixed-formatter :seq labels)))
+      (axis-set-major-formatter (axes-base-yaxis ax) fmt)))
+  ax)
+
+(defun axes-set-yticklabels (ax labels)
+  "Set the y-axis major tick label strings."
+  (let ((fmt (make-instance 'fixed-formatter :seq labels)))
+    (axis-set-major-formatter (axes-base-yaxis ax) fmt))
+  ax)
+
+;;; ============================================================
 ;;; Shared axes linking
 ;;; ============================================================
 

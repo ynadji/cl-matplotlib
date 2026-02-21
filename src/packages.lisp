@@ -532,6 +532,9 @@
              #:make-scale
              ;; Axes scale methods
              #:axes-set-xscale #:axes-set-yscale
+             ;; Tick position/label setters
+             #:axes-set-xticks #:axes-set-xticklabels
+             #:axes-set-yticks #:axes-set-yticklabels
              ;; Tick
              #:tick #:tick-loc #:tick-major-p #:tick-size #:tick-width
              #:tick-color #:tick-direction #:tick-pad
@@ -652,6 +655,7 @@ Manages global figure state for convenience.")
            #:fill-between
            ;; Axes configuration
             #:xlabel #:ylabel #:title #:xlim #:ylim #:grid #:legend
+             #:set-xticks #:set-xticklabels #:set-yticks #:set-yticklabels
              #:colorbar #:annotate #:text
              #:suptitle #:supxlabel #:supylabel
              #:invert-xaxis #:invert-yaxis
