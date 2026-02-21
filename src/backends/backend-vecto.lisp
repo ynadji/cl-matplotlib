@@ -530,7 +530,7 @@ VA is vertical alignment (:baseline, :bottom, :center, :top). Default :baseline.
                      (let* ((bbox (vecto:string-bounding-box s (float fontsize 1.0) font))
                             (xmin (aref bbox 0))
                             (xmax (aref bbox 2)))
-                       (vecto:draw-string (float (- (/ (+ xmin xmax) -2.0)) 1.0) (float y-offset 1.0) s))
+                       (vecto:draw-string (float (/ (+ xmin xmax) -2.0) 1.0) (float y-offset 1.0) s))
                      (vecto:draw-string 0.0 (float y-offset 1.0) s)))
                (let ((dx (float x 1.0))
                      (dy (+ (float y 1.0) y-offset)))
