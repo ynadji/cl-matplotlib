@@ -14,7 +14,7 @@
                 #:fill-between
                 ;; Axes configuration
                 #:xlabel #:ylabel #:title #:xlim #:ylim #:grid #:legend
-                #:colorbar #:annotate
+                #:colorbar #:annotate #:text
                 ;; Output
                 #:savefig #:show
                 ;; State management
@@ -370,6 +370,31 @@
   (plot '(1 2 3) '(1 4 9))
   (let ((ann (annotate "peak" '(3.0d0 9.0d0))))
     (is (typep ann 'mpl.rendering:annotation))))
+
+(test text-basic
+  "Test basic text placement returns a text-artist."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 4 9))
+  (let ((txt (text 0.5 0.5 "Hello")))
+    (is (typep txt 'mpl.rendering:text-artist))
+    (is (string= "Hello" (mpl.rendering:text-text txt)))))
+
+(test text-with-kwargs
+  "Test text with fontsize, color, alignment, rotation, and alpha."
+  (reset-pyplot-state)
+  (figure)
+  (let ((txt (text 1.0 2.0 "Styled"
+                   :fontsize 14 :color "red"
+                   :ha :center :va :top
+                   :rotation 45.0 :alpha 0.7d0)))
+    (is (typep txt 'mpl.rendering:text-artist))
+    (is (string= "Styled" (mpl.rendering:text-text txt)))
+    (is (= 14.0d0 (mpl.rendering:text-fontsize txt)))
+    (is (string= "red" (mpl.rendering:text-color txt)))
+    (is (eq :center (mpl.rendering:text-horizontalalignment txt)))
+    (is (eq :top (mpl.rendering:text-verticalalignment txt)))
+    (is (= 45.0d0 (mpl.rendering:text-rotation txt)))
+    (is (= 0.7d0 (mpl.rendering:artist-alpha txt)))))
 
 ;;; ============================================================
 ;;; Output tests

@@ -888,6 +888,40 @@ Returns a list of Rectangle patches."
     (nreverse rects)))
 
 ;;; ============================================================
+;;; text — place arbitrary text on axes
+;;; ============================================================
+
+(defun text (ax x y s &key (fontsize 12.0) (color "black") (alpha nil)
+                            (ha :left) (va :baseline) (rotation 0.0)
+                            (zorder 3))
+  "Place text S at position (X, Y) in data coordinates on AX.
+
+HA — horizontal alignment: :left, :center, :right.
+VA — vertical alignment: :top, :center, :bottom, :baseline.
+ROTATION — text rotation in degrees.
+Returns the created text-artist."
+  (let ((txt (make-instance 'mpl.rendering:text-artist
+                            :x (float x 1.0d0)
+                            :y (float y 1.0d0)
+                            :text s
+                            :fontsize (float fontsize 1.0d0)
+                            :color color
+                            :horizontalalignment ha
+                            :verticalalignment va
+                            :rotation (float rotation 1.0d0)
+                            :zorder zorder)))
+    (when alpha
+      (setf (mpl.rendering:artist-alpha txt) (float alpha 1.0d0)))
+    ;; Set transform to transData (data coordinates)
+    (setf (mpl.rendering:artist-transform txt)
+          (axes-base-trans-data ax))
+    ;; Add to axes texts list and artists
+    (push txt (axes-base-texts ax))
+    (axes-add-artist ax txt)
+    (setf (mpl.rendering:artist-stale ax) t)
+    txt))
+
+;;; ============================================================
 ;;; annotate — add text annotation with optional arrow
 ;;; ============================================================
 

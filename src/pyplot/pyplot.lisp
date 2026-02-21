@@ -570,6 +570,20 @@ Returns the created Annotation."
                             :verticalalignment verticalalignment
                             :zorder zorder))
 
+(defun text (x y s &key (fontsize 12.0) (color "black") (alpha nil)
+                        (ha :left) (va :baseline) (rotation 0.0)
+                        (zorder 3))
+  "Place text S at position (X, Y) in data coordinates on the current axes.
+
+HA — horizontal alignment: :left, :center, :right.
+VA — vertical alignment: :top, :center, :bottom, :baseline.
+ROTATION — text rotation in degrees.
+
+Returns the created text-artist."
+  (mpl.containers:text (gca) x y s
+                        :fontsize fontsize :color color :alpha alpha
+                        :ha ha :va va :rotation rotation :zorder zorder))
+
 ;;; ============================================================
 ;;; Output functions
 ;;; ============================================================

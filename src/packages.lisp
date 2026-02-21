@@ -461,7 +461,8 @@
               #:hist #:pie #:errorbar #:stem #:axes-step
                #:stackplot #:barh #:boxplot
                #:annotate
-            ;; Grid
+               #:text
+             ;; Grid
             #:axes-grid-toggle
             ;; Ticker — Locator base
             #:locator #:locator-axis #:locator-tick-values #:locator-call
@@ -647,7 +648,7 @@ Manages global figure state for convenience.")
            #:fill-between
            ;; Axes configuration
            #:xlabel #:ylabel #:title #:xlim #:ylim #:grid #:legend
-           #:colorbar #:annotate
+            #:colorbar #:annotate #:text
            ;; Output
            #:savefig #:show
            ;; State management
