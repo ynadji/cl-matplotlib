@@ -519,7 +519,7 @@ Max Concurrent: 5 (Wave 5)
   - Files: `reference_scripts/{5 new .py}`, `examples/{5 new .lisp}`, `examples/{5 new .png}`
   - Pre-commit: SSIM comparison passes with 0 failures
 
-- [ ] 4. Phase 1 Batch C — Bar + Histogram Variants (5 examples)
+- [x] 4. Phase 1 Batch C — Bar + Histogram Variants (5 examples)
 
   **What to do**:
   Write Python reference scripts and CL example scripts for these 5 gallery examples:
@@ -612,7 +612,7 @@ Max Concurrent: 5 (Wave 5)
   - Files: `reference_scripts/{5 new .py}`, `examples/{5 new .lisp}`, `examples/{5 new .png}`
   - Pre-commit: SSIM comparison passes with 0 failures
 
-- [ ] 5. Phase 1 Batch D — Contour, Subplot, and Misc Variants (5 examples)
+- [x] 5. Phase 1 Batch D — Contour, Subplot, and Misc Variants (5 examples)
 
   **What to do**:
   Write Python reference scripts and CL example scripts for these 5 gallery examples:
@@ -707,7 +707,7 @@ Max Concurrent: 5 (Wave 5)
   - Files: `reference_scripts/{5 new .py}`, `examples/{5 new .lisp}`, `examples/{5 new .png}`
   - Pre-commit: SSIM comparison passes with 0 failures
 
-- [ ] 6. Phase 1 Bug Fixes — Fix Any Failing Examples
+- [x] 6. Phase 1 Bug Fixes — Fix Any Failing Examples
 
   **What to do**:
   After all 4 batches (Tasks 2-5), some new examples may fail SSIM at 0.95. This task fixes the rendering bugs in `src/` to make them pass.
@@ -802,7 +802,7 @@ Max Concurrent: 5 (Wave 5)
   - Files: Specific `src/` files changed
   - Pre-commit: Full SSIM comparison passes with 0 failures
 
-- [ ] 7. Phase 1 Checkpoint — Final Regression + Tag
+- [x] 7. Phase 1 Checkpoint — Final Regression + Tag
 
   **What to do**:
   - Clear FASL cache completely
@@ -869,7 +869,7 @@ Max Concurrent: 5 (Wave 5)
   - Files: Any uncommitted files from Tasks 2-6
   - Pre-commit: Full SSIM + unit tests pass
 
-- [ ] 8. Phase 1 Review + Phase 2 Sign-Off Gate
+- [x] 8. Phase 1 Review + Phase 2 Sign-Off Gate (USER APPROVED: All 3 tiers)
 
   **What to do**:
   Present Phase 1 results and Phase 2 feature priorities to the user for review and sign-off.
@@ -940,7 +940,7 @@ Max Concurrent: 5 (Wave 5)
 
   **Commit**: NO (no code changes)
 
-- [ ] 9. Phase 2 Tier 1a — Implement text() pyplot wrapper
+- [x] 9. Phase 2 Tier 1a — Implement text() pyplot wrapper
 
   **What to do**:
   Implement `text()` as a pyplot function that places arbitrary text on the current axes.
@@ -1026,7 +1026,7 @@ Max Concurrent: 5 (Wave 5)
   - Files: `src/pyplot/pyplot.lisp`, `src/containers/axes.lisp` (if modified), test files
   - Pre-commit: Unit tests + SSIM regression pass
 
-- [ ] 10. Phase 2 Tier 1b — Implement axhline/axvline/hlines/vlines
+- [x] 10. Phase 2 Tier 1b — Implement axhline/axvline/hlines/vlines
 
   **What to do**:
   Implement reference line functions:
@@ -1102,7 +1102,7 @@ Max Concurrent: 5 (Wave 5)
   - Files: `src/pyplot/pyplot.lisp`, `src/containers/axes.lisp`, test files
   - Pre-commit: Unit tests + SSIM regression pass
 
-- [ ] 11. Phase 2 Tier 1c — Implement suptitle/supxlabel/supylabel
+- [x] 11. Phase 2 Tier 1c — Implement suptitle/supxlabel/supylabel
 
   **What to do**:
   Implement figure-level title and axis labels:
@@ -1165,7 +1165,7 @@ Max Concurrent: 5 (Wave 5)
   - Message: `feat(pyplot): add suptitle, supxlabel, supylabel figure-level labels`
   - Files: `src/pyplot/pyplot.lisp`, `src/containers/figure.lisp`, test files
 
-- [ ] 12. Phase 2 Tier 1d — Implement invert_xaxis/invert_yaxis
+- [x] 12. Phase 2 Tier 1d — Implement invert_xaxis/invert_yaxis
 
   **What to do**:
   Implement axis inversion methods:
@@ -1219,7 +1219,7 @@ Max Concurrent: 5 (Wave 5)
   - Message: `feat(axes): implement invert_xaxis and invert_yaxis`
   - Files: `src/containers/axes-base.lisp`, `src/pyplot/pyplot.lisp`, test files
 
-- [ ] 13. Phase 2 Tier 1e — Implement set_xticks/set_xticklabels/set_yticks/set_yticklabels
+- [x] 13. Phase 2 Tier 1e — Implement set_xticks/set_xticklabels/set_yticks/set_yticklabels
 
   **What to do**:
   Implement manual tick control methods:
@@ -1293,7 +1293,7 @@ Max Concurrent: 5 (Wave 5)
   - Message: `feat(axes): implement set_xticks, set_xticklabels, set_yticks, set_yticklabels`
   - Files: `src/containers/axes-base.lisp`, `src/pyplot/pyplot.lisp`, test files
 
-- [ ] 14. Phase 2 Tier 1 Gallery — Examples Using text()
+- [x] 14. Phase 2 Tier 1 Gallery — Examples Using text()
 
   **What to do**:
   Write Python reference scripts and CL example scripts for gallery examples that use `text()`:
@@ -1361,7 +1361,7 @@ Max Concurrent: 5 (Wave 5)
   - Message: `feat(examples): add gallery examples using text() — heatmap annotations, watermarks, labels`
   - Files: `reference_scripts/{5 .py}`, `examples/{5 .lisp}`, `examples/{5 .png}`
 
-- [ ] 15. Phase 2 Tier 1 Gallery — Examples Using axhline/axvline
+- [x] 15. Phase 2 Tier 1 Gallery — Examples Using axhline/axvline
 
   **What to do**:
   Write Python reference scripts and CL example scripts for gallery examples that use reference lines:
@@ -1411,7 +1411,7 @@ Max Concurrent: 5 (Wave 5)
   **Commit**: YES
   - Message: `feat(examples): add gallery examples using axhline/axvline/hlines/vlines`
 
-- [ ] 16. Phase 2 Tier 1 Gallery — Examples Using suptitle, invert_axis, set_xticks
+- [x] 16. Phase 2 Tier 1 Gallery — Examples Using suptitle, invert_axis, set_xticks
 
   **What to do**:
   Write examples using the remaining Tier 1 features:

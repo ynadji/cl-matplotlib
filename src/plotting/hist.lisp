@@ -114,7 +114,7 @@ Returns (values counts bin-edges patches)."
              for left = (float (elt bin-edges i) 1.0d0)
              for right = (float (elt bin-edges (1+ i)) 1.0d0)
              for width = (- right left)
-             do (let ((rect (make-instance 'mpl.rendering:rectangle
+              do (let ((rect (make-instance 'mpl.rendering:rectangle
                                            :x0 left
                                            :y0 0.0d0
                                            :width width
@@ -125,6 +125,9 @@ Returns (values counts bin-edges patches)."
                                            :zorder zorder)))
                   (when alpha
                     (setf (mpl.rendering:artist-alpha rect) (float alpha 1.0d0)))
+                  ;; Set label on first rect for legend auto-collect
+                  (when (and (= i 0) label (plusp (length label)))
+                    (setf (mpl.rendering:artist-label rect) label))
                   (setf (mpl.rendering:artist-transform rect)
                         (axes-base-trans-data ax))
                   (axes-add-patch ax rect)

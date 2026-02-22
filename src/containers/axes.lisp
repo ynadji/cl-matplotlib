@@ -170,6 +170,9 @@ Returns a list of Rectangle patches."
                                   :edgecolor edgecolor
                                   :linewidth linewidth
                                   :zorder zorder)))
+        ;; Set label on first rect for legend auto-collect
+        (when (and (= i 0) (stringp label) (plusp (length label)))
+          (setf (mpl.rendering:artist-label rect) label))
         ;; Set transform to transData
         (setf (mpl.rendering:artist-transform rect)
               (axes-base-trans-data ax))
@@ -393,6 +396,64 @@ AXIS: :both, :x, or :y."
   (setf (mpl.rendering:artist-stale ax) t))
 
 ;;; ============================================================
+;;; %apply-autopct — Python-to-CL format string conversion
+;;; ============================================================
+
+(defun %apply-autopct (autopct pct)
+  "Apply autopct format string to percentage value PCT.
+Supports both Python-style ('%1.1f%%') and CL FORMAT-style ('~,1F%').
+Returns the formatted string."
+  (if (find #\~ autopct)
+      ;; CL FORMAT style — use directly
+      (format nil autopct pct)
+      ;; Python %-format style — parse and convert
+      (let ((result (make-array 0 :element-type 'character :adjustable t :fill-pointer 0))
+            (i 0)
+            (len (length autopct)))
+        (loop while (< i len) do
+          (let ((ch (char autopct i)))
+            (cond
+              ;; %% → literal %
+              ((and (char= ch #\%) (< (1+ i) len) (char= (char autopct (1+ i)) #\%))
+               (vector-push-extend #\% result)
+               (incf i 2))
+              ;; % followed by format spec
+              ((char= ch #\%)
+               (incf i) ; skip %
+               ;; Skip optional width digits
+               (loop while (and (< i len) (digit-char-p (char autopct i)))
+                     do (incf i))
+               ;; Parse .precision
+               (let ((precision nil))
+                 (when (and (< i len) (char= (char autopct i) #\.))
+                   (incf i) ; skip .
+                   (setf precision 0)
+                   (loop while (and (< i len) (digit-char-p (char autopct i)))
+                         do (setf precision (+ (* precision 10)
+                                               (digit-char-p (char autopct i))))
+                            (incf i)))
+                 ;; Format specifier character
+                 (when (< i len)
+                   (let ((spec (char autopct i)))
+                     (incf i)
+                     (let ((formatted
+                             (cond
+                               ((char= spec #\f)
+                                (if precision
+                                    (format nil (format nil "~~,~DF" precision) pct)
+                                    (format nil "~F" pct)))
+                               ((char= spec #\d)
+                                (format nil "~D" (round pct)))
+                               (t (string spec)))))
+                       (loop for c across formatted
+                             do (vector-push-extend c result)))))))
+              ;; Regular character
+              (t
+               (vector-push-extend ch result)
+               (incf i)))))
+        (coerce result 'string))))
+
+;;; ============================================================
 ;;; pie — pie chart
 ;;; ============================================================
 
@@ -505,7 +566,7 @@ Returns (values patches texts autotexts)."
                       (pct-r 0.6d0)
                       (px (* pct-r (cos mid-angle)))
                       (py (* pct-r (sin mid-angle)))
-                      (pct-text (format nil autopct pct))
+                       (pct-text (%apply-autopct autopct pct))
                       (txt (make-instance 'mpl.rendering:text-artist
                                           :x px :y py
                                           :text pct-text
@@ -935,6 +996,9 @@ Returns a list of Rectangle patches."
                                   :edgecolor edgecolor
                                   :linewidth linewidth
                                   :zorder zorder)))
+        ;; Set label on first rect for legend auto-collect
+        (when (and (= i 0) (stringp label) (plusp (length label)))
+          (setf (mpl.rendering:artist-label rect) label))
         (setf (mpl.rendering:artist-transform rect)
               (axes-base-trans-data ax))
         (axes-add-patch ax rect)

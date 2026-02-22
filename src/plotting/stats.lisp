@@ -131,16 +131,17 @@ Returns a plist with :boxes :medians :whiskers :caps :fliers."
                                                         :linewidth linewidth
                                                         :linestyle :solid
                                                         :zorder zorder))
-                              ;; Caps
+                              ;; Caps — half box width (matching matplotlib default)
+                              (cap-hw (* half-w 0.5d0))
                               (cap-lo (make-instance 'mpl.rendering:line-2d
-                                                     :xdata (list (- position half-w) (+ position half-w))
+                                                     :xdata (list (- position cap-hw) (+ position cap-hw))
                                                      :ydata (list wlo wlo)
                                                      :color effective-color
                                                      :linewidth linewidth
                                                      :linestyle :solid
                                                      :zorder zorder))
                               (cap-hi (make-instance 'mpl.rendering:line-2d
-                                                     :xdata (list (- position half-w) (+ position half-w))
+                                                     :xdata (list (- position cap-hw) (+ position cap-hw))
                                                      :ydata (list whi whi)
                                                      :color effective-color
                                                      :linewidth linewidth
@@ -152,15 +153,17 @@ Returns a plist with :boxes :medians :whiskers :caps :fliers."
                          (dolist (line (list med-line wlo-line whi-line cap-lo cap-hi))
                            (setf (mpl.rendering:artist-transform line) (axes-base-trans-data ax))
                            (axes-add-line ax line))
-                         ;; Fliers (outlier markers)
+                         ;; Fliers (outlier markers) — unfilled circles with black edge
                          (when outliers
                            (let ((flier-line (make-instance 'mpl.rendering:line-2d
                                                             :xdata (make-list (length outliers) :initial-element position)
                                                             :ydata (mapcar (lambda (x) (float x 1.0d0)) outliers)
-                                                            :color effective-color
+                                                            :color "black"
                                                             :linewidth 0
                                                             :linestyle :solid
                                                             :marker :circle
+                                                            :markerfacecolor "none"
+                                                            :markeredgecolor "black"
                                                             :zorder (1+ zorder))))
                              (setf (mpl.rendering:artist-transform flier-line) (axes-base-trans-data ax))
                              (axes-add-line ax flier-line)
@@ -202,16 +205,18 @@ Returns a plist with :boxes :medians :whiskers :caps :fliers."
                                                         :linewidth linewidth
                                                         :linestyle :solid
                                                         :zorder zorder))
+                              ;; Caps — half box width (matching matplotlib default)
+                              (cap-hw (* half-w 0.5d0))
                               (cap-lo (make-instance 'mpl.rendering:line-2d
                                                      :xdata (list wlo wlo)
-                                                     :ydata (list (- position half-w) (+ position half-w))
+                                                     :ydata (list (- position cap-hw) (+ position cap-hw))
                                                      :color effective-color
                                                      :linewidth linewidth
                                                      :linestyle :solid
                                                      :zorder zorder))
                               (cap-hi (make-instance 'mpl.rendering:line-2d
                                                      :xdata (list whi whi)
-                                                     :ydata (list (- position half-w) (+ position half-w))
+                                                     :ydata (list (- position cap-hw) (+ position cap-hw))
                                                      :color effective-color
                                                      :linewidth linewidth
                                                      :linestyle :solid
@@ -225,10 +230,12 @@ Returns a plist with :boxes :medians :whiskers :caps :fliers."
                            (let ((flier-line (make-instance 'mpl.rendering:line-2d
                                                             :xdata (mapcar (lambda (x) (float x 1.0d0)) outliers)
                                                             :ydata (make-list (length outliers) :initial-element position)
-                                                            :color effective-color
+                                                            :color "black"
                                                             :linewidth 0
                                                             :linestyle :solid
                                                             :marker :circle
+                                                            :markerfacecolor "none"
+                                                            :markeredgecolor "black"
                                                             :zorder (1+ zorder))))
                              (setf (mpl.rendering:artist-transform flier-line) (axes-base-trans-data ax))
                              (axes-add-line ax flier-line)

@@ -271,12 +271,15 @@ The scale sets default locators and formatters."
     (let* ((locator (axis-major-locator axis))
            (formatter (axis-major-formatter axis))
            (locs (locator-tick-values locator vmin vmax))
-           ;; Filter to visible range (with small tolerance)
-           (range (- vmax vmin))
+            ;; Filter to visible range (with small tolerance)
+           ;; Use min/max to handle inverted axes (vmin > vmax)
+           (real-min (min vmin vmax))
+           (real-max (max vmin vmax))
+           (range (- real-max real-min))
            (tol (* range 0.001d0))
            (visible-locs (remove-if-not
-                          (lambda (l) (and (>= l (- vmin tol))
-                                           (<= l (+ vmax tol))))
+                          (lambda (l) (and (>= l (- real-min tol))
+                                           (<= l (+ real-max tol))))
                           locs))
            (labels (tick-formatter-format-ticks formatter visible-locs)))
       (loop for loc in visible-locs
@@ -300,12 +303,15 @@ The scale sets default locators and formatters."
   "Generate tick objects for minor ticks."
   (multiple-value-bind (vmin vmax) (axis-get-view-interval axis)
     (let* ((locator (axis-minor-locator axis))
-           (locs (locator-tick-values locator vmin vmax))
-           (range (- vmax vmin))
+            (locs (locator-tick-values locator vmin vmax))
+           ;; Use min/max to handle inverted axes (vmin > vmax)
+           (real-min (min vmin vmax))
+           (real-max (max vmin vmax))
+           (range (- real-max real-min))
            (tol (* range 0.001d0))
            (visible-locs (remove-if-not
-                          (lambda (l) (and (>= l (- vmin tol))
-                                           (<= l (+ vmax tol))))
+                          (lambda (l) (and (>= l (- real-min tol))
+                                           (<= l (+ real-max tol))))
                           locs)))
       (loop for loc in visible-locs
             collect (make-instance 'tick
