@@ -462,7 +462,8 @@
               #:imshow #:axes-add-image
               ;; Additional plot types (Phase 6b)
               #:hist #:pie #:errorbar #:stem #:axes-step
-               #:stackplot #:barh #:boxplot
+               #:stackplot #:barh #:boxplot #:violinplot
+                #:gaussian-kde
                 #:annotate
                 #:text
                 #:axhline #:axvline #:hlines #:vlines
@@ -653,9 +654,10 @@ Manages global figure state for convenience.")
            ;; Subplot creation
            #:subplots
            ;; Plot functions
-            #:plot #:scatter #:bar #:hist #:imshow #:contour #:contourf
-            #:pie #:errorbar #:stem #:step-plot #:stackplot #:barh #:boxplot
-            #:fill-between #:pcolormesh
+             #:plot #:scatter #:bar #:hist #:imshow #:contour #:contourf
+             #:pie #:errorbar #:stem #:step-plot #:stackplot #:barh #:boxplot
+             #:violinplot
+             #:fill-between #:pcolormesh
            ;; Axes configuration
             #:xlabel #:ylabel #:title #:xlim #:ylim #:grid #:legend
              #:set-xticks #:set-xticklabels #:set-yticks #:set-yticklabels

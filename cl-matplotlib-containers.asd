@@ -26,7 +26,8 @@
                  :components ((:file "contour")
                               (:file "image")
                               (:file "hist")
-                              (:file "stats"))))
+                              (:file "stats")
+                              (:file "violin"))))
   :in-order-to ((asdf:test-op (asdf:test-op #:cl-matplotlib-containers/tests))))
 
 (asdf:defsystem #:cl-matplotlib-containers/tests

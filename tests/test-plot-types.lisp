@@ -4,7 +4,7 @@
 
 (defpackage #:cl-matplotlib.tests.plot-types
   (:use #:cl #:fiveam)
-  (:import-from #:cl-matplotlib.containers
+   (:import-from #:cl-matplotlib.containers
                 ;; AxesBase
                 #:axes-base #:axes-base-lines #:axes-base-patches
                 #:axes-base-artists #:axes-base-texts
@@ -17,7 +17,8 @@
                 #:plot #:bar
                 ;; New plot types
                 #:hist #:pie #:errorbar #:stem #:axes-step
-                #:stackplot #:barh #:boxplot)
+                #:stackplot #:barh #:boxplot
+                #:violinplot #:gaussian-kde)
   (:export #:run-plot-types-tests))
 
 (in-package #:cl-matplotlib.tests.plot-types)
@@ -528,6 +529,128 @@
           (data2 (loop repeat 50 collect (+ 60.0 (* 15.0 (- (random 2.0) 1.0)))))
           (data3 (loop repeat 50 collect (+ 45.0 (* 8.0 (- (random 2.0) 1.0))))))
       (boxplot ax (list data1 data2 data3))
+      (savefig fig path)
+      (is-true (file-exists-and-valid-p path)))))
+
+;;; ============================================================
+;;; Violin plot / KDE tests
+;;; ============================================================
+
+(test violinplot-kde-peak
+  "Test KDE of N(0,1)-like data: peak density near 0.3989."
+  ;; Use a deterministic set of 1000 samples approximating N(0,1)
+  ;; via Box-Muller-style precomputed values won't work easily.
+  ;; Instead: test with a known single-point dataset where the answer is exact.
+  ;; For a single point at 0.0, bandwidth h = max(1e-3, n^(-1/5) * sigma)
+  ;; sigma=0 so h=1e-3, density at 0 = 1/(1*h) * (1/sqrt(2*pi)) * exp(0)
+  ;; = 1/(1e-3 * sqrt(2*pi)) = 1000/2.5066... ≈ 398.94
+  ;; That's the single-point case. Let's test with a larger dataset instead.
+  ;;
+  ;; Use 100 samples drawn uniformly between -3 and 3, plus extra near 0
+  ;; to simulate a bell shape. Better: just test the mathematical properties.
+  ;;
+  ;; Simplest reliable test: 1000 uniformly spaced points from N(0,1) CDF inverse
+  ;; would be ideal but complex. Instead, test that KDE of symmetric data
+  ;; has its peak near the center.
+  (let* ((data (loop for i from 0 below 1000
+                     collect (let* ((u (/ (+ i 0.5d0) 1000.0d0))
+                                    ;; Approximate inverse normal CDF using rational approx
+                                    ;; For u in (0,1), use Beasley-Springer-Moro algorithm
+                                    (a (- u 0.5d0)))
+                               ;; Simple approximation: use linear steps scaled by normal-ish shape
+                               ;; Actually, let's use a simpler approach:
+                               ;; Generate data as: x_i = tan(pi*(u_i - 0.5)) scaled
+                               ;; No — just use a precomputed-style approach.
+                               ;; Rational approximation of probit function:
+                               (if (< (abs a) 0.42d0)
+                                   ;; Central region
+                                   (let* ((r (* a a))
+                                          (p (* a (+ 2.50662823884d0
+                                                    (* r (+ -18.61500062529d0
+                                                            (* r (+ 41.39119773534d0
+                                                                    (* r -25.44106049637d0)))))))))
+                                     (/ p (+ 1.0d0
+                                             (* r (+ -8.47351093090d0
+                                                     (* r (+ 23.08336743743d0
+                                                             (* r (+ -21.06224101826d0
+                                                                     (* r 3.13082909833d0))))))))))
+                                   ;; Tail region
+                                   (let* ((r (if (> a 0.0d0) (- 1.0d0 u) u))
+                                          (r2 (sqrt (- (log r))))
+                                          (p (+ 0.3374754822726147d0
+                                                (* r2 (+ 0.9761690190917186d0
+                                                         (* r2 (+ 0.1607979714918209d0
+                                                                   (* r2 (+ 0.0276438810333863d0
+                                                                            (* r2 0.0038405729373609d0)))))))))
+                                          (q (+ 1.0d0
+                                                (* r2 (+ 0.7846733086024346d0
+                                                         (* r2 (+ 0.2549732539343734d0
+                                                                   (* r2 (+ 0.0421256838732559d0
+                                                                            (* r2 0.0030276323105590d0))))))))))
+                                     (if (< a 0.0d0) (- (/ p q)) (/ p q)))))))
+         ;; Evaluate KDE at 0
+         (kde-at-zero (first (gaussian-kde data '(0.0d0))))
+         ;; Expected: peak density of N(0,1) is 1/sqrt(2*pi) ≈ 0.3989
+         (expected 0.3989d0)
+         (error-pct (abs (/ (- kde-at-zero expected) expected))))
+    (is (< error-pct 0.05d0)
+        "KDE peak at x=0 should be within 5% of 0.3989, got ~F (error ~,1F%)"
+        kde-at-zero (* error-pct 100.0d0))))
+
+(test violinplot-kde-empty
+  "Test KDE with empty dataset doesn't crash."
+  (let ((result (gaussian-kde '() '(0.0d0 1.0d0 2.0d0))))
+    (is (= 3 (length result)))
+    (is (every (lambda (v) (= v 0.0d0)) result))))
+
+(test violinplot-kde-identical
+  "Test KDE with all identical values doesn't crash."
+  (let* ((data (make-list 100 :initial-element 5.0d0))
+         (result (gaussian-kde data '(5.0d0))))
+    (is (= 1 (length result)))
+    ;; Should return a valid positive density
+    (is (> (first result) 0.0d0))))
+
+(test violinplot-basic
+  "Test basic violinplot creation with 3 datasets."
+  (multiple-value-bind (ax fig) (make-test-axes)
+    (declare (ignore fig))
+    (let ((data1 '(1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0))
+          (data2 '(3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0))
+          (data3 '(2.0 5.0 8.0 3.0 6.0 9.0 4.0 7.0 10.0 1.0)))
+      (violinplot ax (list data1 data2 data3))
+      ;; Should have 3 polygon patches (violin bodies)
+      (is (>= (length (axes-base-patches ax)) 3))
+      ;; Should have lines for medians and extrema
+      (is (> (length (axes-base-lines ax)) 0)))))
+
+(test violinplot-horizontal
+  "Test horizontal violinplot."
+  (multiple-value-bind (ax fig) (make-test-axes)
+    (declare (ignore fig))
+    (let ((data '(1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0)))
+      (violinplot ax (list data) :vert nil)
+      ;; Should have at least 1 patch
+      (is (>= (length (axes-base-patches ax)) 1)))))
+
+(test violinplot-no-medians-extrema
+  "Test violinplot with medians and extrema disabled."
+  (multiple-value-bind (ax fig) (make-test-axes)
+    (declare (ignore fig))
+    (let ((data '(1.0 2.0 3.0 4.0 5.0)))
+      (violinplot ax (list data) :showmedians nil :showextrema nil)
+      ;; Should have 1 patch (the body) but no lines
+      (is (= 1 (length (axes-base-patches ax))))
+      (is (= 0 (length (axes-base-lines ax)))))))
+
+(test violinplot-savefig
+  "Test violinplot rendering to PNG."
+  (multiple-value-bind (ax fig) (make-test-axes)
+    (let ((path (tmp-path "violinplot-basic" "png"))
+          (data1 (loop repeat 50 collect (+ 50.0d0 (* 10.0d0 (- (random 2.0d0) 1.0d0)))))
+          (data2 (loop repeat 50 collect (+ 60.0d0 (* 15.0d0 (- (random 2.0d0) 1.0d0)))))
+          (data3 (loop repeat 50 collect (+ 45.0d0 (* 8.0d0 (- (random 2.0d0) 1.0d0))))))
+      (violinplot ax (list data1 data2 data3))
       (savefig fig path)
       (is-true (file-exists-and-valid-p path)))))
 

@@ -414,6 +414,23 @@ DATA — list of datasets or single dataset."
                            :positions positions :color color
                            :linewidth linewidth :zorder zorder))
 
+(defun violinplot (datasets &key (positions nil) (widths 0.5)
+                                  (vert t) (showmedians t) (showextrema t))
+  "Draw a violin plot on the current axes.
+
+DATASETS — list of datasets (each a list of numbers).
+POSITIONS — positions for violins (default 1, 2, 3, ...).
+WIDTHS — violin width (default 0.5).
+VERT — if T, vertical violins (default).
+SHOWMEDIANS — if T, draw median line (default T).
+SHOWEXTREMA — if T, draw extrema lines (default T).
+
+Returns NIL."
+  (mpl.containers:violinplot (gca) datasets
+                              :positions positions :widths widths
+                              :vert vert :showmedians showmedians
+                              :showextrema showextrema))
+
 (defun fill-between (xdata y1data y2data &key (color nil) (alpha nil)
                                                (label "") (zorder 1))
   "Fill area between two curves on the current axes.
