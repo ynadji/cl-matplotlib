@@ -22,12 +22,13 @@
                              (:file "gridspec")))
                (:module "src/algorithms"
                 :components ((:file "marching-squares")))
-                (:module "src/plotting"
-                 :components ((:file "contour")
-                              (:file "image")
-                              (:file "hist")
-                              (:file "stats")
-                              (:file "violin"))))
+                 (:module "src/plotting"
+                  :components ((:file "contour")
+                               (:file "image")
+                               (:file "hist")
+                               (:file "stats")
+                               (:file "violin")
+                               (:file "quiver"))))
   :in-order-to ((asdf:test-op (asdf:test-op #:cl-matplotlib-containers/tests))))
 
 (asdf:defsystem #:cl-matplotlib-containers/tests

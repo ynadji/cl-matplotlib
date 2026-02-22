@@ -18,7 +18,10 @@
                 ;; New plot types
                 #:hist #:pie #:errorbar #:stem #:axes-step
                 #:stackplot #:barh #:boxplot
-                #:violinplot #:gaussian-kde)
+                #:violinplot #:gaussian-kde
+                #:quiver)
+   (:import-from #:cl-matplotlib.rendering
+                 #:quiver-collection)
   (:export #:run-plot-types-tests))
 
 (in-package #:cl-matplotlib.tests.plot-types)
@@ -653,6 +656,49 @@
       (violinplot ax (list data1 data2 data3))
       (savefig fig path)
       (is-true (file-exists-and-valid-p path)))))
+
+;;; ============================================================
+;;; Quiver plot tests
+;;; ============================================================
+
+(test quiver-basic
+  "Basic quiver renders without crash"
+  (let* ((fig (make-figure))
+         (ax (add-subplot fig 1 1 1))
+         (u '((1.0d0 0.0d0) (1.0d0 0.0d0)))
+         (v '((0.0d0 1.0d0) (0.0d0 1.0d0))))
+    (quiver ax u v)
+    (is (not (null (axes-base-artists ax))))))
+
+(test quiver-with-positions
+  "Quiver with explicit X Y positions"
+  (let* ((fig (make-figure))
+         (ax (add-subplot fig 1 1 1))
+         (x '(0.0d0 1.0d0))
+         (y '(0.0d0 1.0d0))
+         (u '(1.0d0 0.0d0))
+         (v '(0.0d0 1.0d0)))
+    (quiver ax x y u v)
+    (is (not (null (axes-base-artists ax))))))
+
+(test quiver-zero-vectors
+  "Quiver skips zero-length vectors without crash"
+  (let* ((fig (make-figure))
+         (ax (add-subplot fig 1 1 1))
+         (u '(0.0d0 1.0d0 0.0d0))
+         (v '(0.0d0 0.0d0 1.0d0)))
+    (is-false (nth-value 1 (ignore-errors (quiver ax u v))))))
+
+(test quiver-savefig
+  "Quiver renders to PNG without error"
+  (let* ((fig (make-figure))
+         (ax (add-subplot fig 1 1 1))
+         (u '((1.0d0 0.0d0) (1.0d0 0.0d0)))
+         (v '((0.0d0 0.0d0) (0.0d0 0.0d0)))
+         (out "/tmp/test-quiver.png"))
+    (quiver ax u v)
+    (savefig fig out)
+    (is (probe-file out))))
 
 ;;; ============================================================
 ;;; Integration tests

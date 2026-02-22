@@ -431,6 +431,19 @@ Returns NIL."
                               :vert vert :showmedians showmedians
                               :showextrema showextrema))
 
+(defun quiver (&rest args &key (scale nil) (width nil) (color "C0")
+                                (alpha nil) (pivot :tail)
+                                &allow-other-keys)
+  "Draw a quiver (vector field) plot on the current axes.
+
+Call signatures:
+  (quiver u v)           — U, V as 2D arrays
+  (quiver x y u v)       — explicit X, Y positions
+
+Returns the quiver-collection."
+  (declare (ignore scale width color alpha pivot))
+  (apply #'mpl.containers:quiver (gca) args))
+
 (defun fill-between (xdata y1data y2data &key (color nil) (alpha nil)
                                                (label "") (zorder 1))
   "Fill area between two curves on the current axes.
