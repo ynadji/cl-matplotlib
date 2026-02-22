@@ -154,8 +154,8 @@ After closing, switches to the highest-numbered remaining figure."
 
 (defun subplots (&optional (nrows 1) (ncols 1) &key (sharex nil) (sharey nil)
                                                      (squeeze t) (figsize nil)
-                                                     (dpi nil))
-  "Create a figure with a grid of NROWSxNCOLS axes.
+                                                     (dpi nil) (projection nil))
+   "Create a figure with a grid of NROWSxNCOLS axes.
 
 NROWS — number of rows (default 1).
 NCOLS — number of columns (default 1).
@@ -164,15 +164,17 @@ SHAREY — share Y axis: T, NIL, :all, :row, :col, :none.
 SQUEEZE — if T, squeeze out dimensions of length 1.
 FIGSIZE — figure size (width height) in inches.
 DPI — resolution.
+PROJECTION — axes projection type (:polar for polar axes, NIL for rectangular).
 
 Returns (values figure axes) where axes is a single axes, 1D array, or 2D array."
-  (let* ((fig-args (append (when figsize (list :figsize figsize))
-                           (when dpi (list :dpi dpi))))
-         (fig (apply #'figure fig-args))
-         (axes (mpl.containers:subplots fig nrows ncols
-                                        :sharex sharex :sharey sharey
-                                        :squeeze squeeze)))
-    (values fig axes)))
+   (let* ((fig-args (append (when figsize (list :figsize figsize))
+                            (when dpi (list :dpi dpi))))
+          (fig (apply #'figure fig-args))
+          (axes (mpl.containers:subplots fig nrows ncols
+                                         :sharex sharex :sharey sharey
+                                         :squeeze squeeze
+                                         :projection projection)))
+     (values fig axes)))
 
 ;;; ============================================================
 ;;; Plot function wrappers — delegate to current axes

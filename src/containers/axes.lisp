@@ -1358,8 +1358,8 @@ Returns a scalar-mappable (for use with colorbar)."
 ;;; add-subplot — create axes in figure at subplot position
 ;;; ============================================================
 
-(defun add-subplot (figure nrows ncols index &key (facecolor "white") (frameon t))
-  "Add an Axes to FIGURE as part of a subplot arrangement.
+(defun add-subplot (figure nrows ncols index &key (facecolor "white") (frameon t) (projection nil))
+   "Add an Axes to FIGURE as part of a subplot arrangement.
 
 FIGURE — an mpl-figure instance.
 NROWS — number of rows in subplot grid.
@@ -1367,8 +1367,9 @@ NCOLS — number of columns in subplot grid.
 INDEX — 1-based index of the subplot position.
 FACECOLOR — axes background color (default white).
 FRAMEON — whether to draw axes frame (default T).
+PROJECTION — axes projection type (:polar for polar axes, NIL for rectangular).
 
-Returns the created mpl-axes."
+Returns the created mpl-axes or polar-axes."
   (let* ((params (figure-subplot-params figure))
          (left (getf params :left))
          (right (getf params :right))
@@ -1391,21 +1392,28 @@ Returns the created mpl-axes."
          (pos-bottom (- top (* (1+ row) subplot-h) (* row hspace)))
          (pos-width subplot-w)
          (pos-height subplot-h))
-    ;; Ensure position is within bounds
-    (let* ((position (list pos-left pos-bottom pos-width pos-height))
-           (ax (make-instance 'mpl-axes
-                              :figure figure
-                              :position position
-                              :facecolor facecolor
-                              :frameon frameon
-                              :zorder 0)))
-      ;; Add to figure's axes list
-      (push ax (figure-axes figure))
-      ;; Set artist references
-      (setf (mpl.rendering:artist-figure ax) figure)
-      (setf (mpl.rendering:artist-axes ax) ax)
-      (setf (mpl.rendering:artist-stale figure) t)
-      ax)))
+     ;; Ensure position is within bounds
+     (let* ((position (list pos-left pos-bottom pos-width pos-height))
+            (ax (case projection
+                  (:polar (make-instance 'polar-axes
+                                         :figure figure
+                                         :position position
+                                         :facecolor facecolor
+                                         :frameon frameon
+                                         :zorder 0))
+                  (otherwise (make-instance 'mpl-axes
+                                            :figure figure
+                                            :position position
+                                            :facecolor facecolor
+                                            :frameon frameon
+                                            :zorder 0)))))
+       ;; Add to figure's axes list
+       (push ax (figure-axes figure))
+       ;; Set artist references
+       (setf (mpl.rendering:artist-figure ax) figure)
+       (setf (mpl.rendering:artist-axes ax) ax)
+       (setf (mpl.rendering:artist-stale figure) t)
+       ax)))
 
 ;;; ============================================================
 ;;; twinx / twiny — dual-axis overlaid axes

@@ -361,14 +361,16 @@ The grid boundaries are determined by the parent SubplotSpec's position."
 ;;; ============================================================
 
 (defun subplots (figure nrows ncols &key (sharex nil) (sharey nil)
-                                         (squeeze t) subplot-kw gridspec-kw)
-  "Create a grid of NROWSxNCOLS axes in FIGURE.
+                                         (squeeze t) subplot-kw gridspec-kw
+                                         (projection nil))
+   "Create a grid of NROWSxNCOLS axes in FIGURE.
 
 SHAREX — axis sharing for X: :all, :row, :col, :none, T (=:all), NIL (=:none).
 SHAREY — axis sharing for Y: :all, :row, :col, :none, T (=:all), NIL (=:none).
 SQUEEZE — if T, remove dimensions of size 1. If 1x1, return single axes.
 SUBPLOT-KW — plist of extra args for axes creation.
 GRIDSPEC-KW — plist of extra args for GridSpec creation.
+PROJECTION — axes projection type (:polar for polar axes, NIL for rectangular).
 
 Returns a 2D array of axes (or squeezed version)."
   (declare (ignore subplot-kw gridspec-kw))
@@ -386,20 +388,27 @@ Returns a 2D array of axes (or squeezed version)."
     ;; Create axes for each cell
     (dotimes (row nrows)
       (dotimes (col ncols)
-        (let* ((ss (gridspec-subplotspec gs row col))
-               (pos (subplotspec-get-position ss figure))
-               (ax (make-instance 'mpl-axes
-                                  :figure figure
-                                  :position pos
-                                  :facecolor "white"
-                                  :frameon t
-                                  :zorder 0)))
-          ;; Add to figure
-          (push ax (figure-axes figure))
-          (setf (mpl.rendering:artist-figure ax) figure)
-          (setf (mpl.rendering:artist-axes ax) ax)
-          ;; Store in array
-          (setf (aref axarr row col) ax))))
+         (let* ((ss (gridspec-subplotspec gs row col))
+                (pos (subplotspec-get-position ss figure))
+                (ax (case projection
+                      (:polar (make-instance 'polar-axes
+                                             :figure figure
+                                             :position pos
+                                             :facecolor "white"
+                                             :frameon t
+                                             :zorder 0))
+                      (otherwise (make-instance 'mpl-axes
+                                                :figure figure
+                                                :position pos
+                                                :facecolor "white"
+                                                :frameon t
+                                                :zorder 0)))))
+           ;; Add to figure
+           (push ax (figure-axes figure))
+           (setf (mpl.rendering:artist-figure ax) figure)
+           (setf (mpl.rendering:artist-axes ax) ax)
+           ;; Store in array
+           (setf (aref axarr row col) ax))))
     ;; Set up shared axes
     (when (not (eq sx :none))
       (dotimes (row nrows)
