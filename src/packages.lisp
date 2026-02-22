@@ -617,8 +617,10 @@
                #:contourset-get-paths
                ;; QuadContourSet
                #:quad-contour-set #:qcs-x #:qcs-y #:qcs-z
-               ;; Contour plotting functions
-               #:contour #:contourf #:clabel))
+                ;; Contour plotting functions
+                #:contour #:contourf #:clabel
+                ;; Polar axes
+                #:polar-axes))
 
 (defpackage #:cl-matplotlib.backends
   (:use #:cl)
