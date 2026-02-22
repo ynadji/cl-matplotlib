@@ -774,3 +774,67 @@
          (result (transform-point tr #(1.0d0 1.0d0))))
     (is (transform-approx= 12.0d0 (aref result 0)))
     (is (transform-approx= 23.0d0 (aref result 1)))))
+
+;;; ============================================================
+;;; Test: Polar transforms
+;;; ============================================================
+
+(test polar-transform-basic
+  "polar-transform: (0, 1) → (1, 0)"
+  (let ((tr (make-instance 'polar-transform)))
+    (let ((result (transform-point tr '(0.0d0 1.0d0))))
+      (is (< (abs (- (aref result 0) 1.0d0)) 1.0d-10))
+      (is (< (abs (aref result 1)) 1.0d-10)))))
+
+(test polar-transform-pi-half
+  "polar-transform: (π/2, 1) → (0, 1)"
+  (let ((tr (make-instance 'polar-transform)))
+    (let ((result (transform-point tr (list (/ pi 2.0d0) 1.0d0))))
+      (is (< (abs (aref result 0)) 1.0d-10))
+      (is (< (abs (- (aref result 1) 1.0d0)) 1.0d-10)))))
+
+(test polar-transform-roundtrip
+  "polar-transform round-trip: transform then invert"
+  (let ((tr (make-instance 'polar-transform))
+        (inv (make-instance 'inverted-polar-transform)))
+    (dolist (pt '((0.0d0 1.0d0) (1.5707963267948966d0 1.0d0)
+                  (3.141592653589793d0 2.0d0) (4.71238898038469d0 0.5d0)))
+      (let* ((fwd (transform-point tr pt))
+             (back (transform-point inv (list (aref fwd 0) (aref fwd 1)))))
+        (is (< (abs (- (aref back 0) (first pt))) 1.0d-10))
+        (is (< (abs (- (aref back 1) (second pt))) 1.0d-10))))))
+
+(test polar-transform-invert-method
+  "polar-transform invert returns inverted-polar-transform"
+  (let* ((tr (make-instance 'polar-transform))
+         (inv (invert tr)))
+    (is (typep inv 'inverted-polar-transform))))
+
+(test inverted-polar-transform-invert-method
+  "inverted-polar-transform invert returns polar-transform"
+  (let* ((inv (make-instance 'inverted-polar-transform))
+         (tr (invert inv)))
+    (is (typep tr 'polar-transform))))
+
+(test polar-affine-center
+  "polar-affine: (0, 0) → (0.5, 0.5)"
+  (let ((pa (make-instance 'polar-affine :r-max 1.0d0)))
+    (let ((result (transform-point pa '(0.0d0 0.0d0))))
+      (is (< (abs (- (aref result 0) 0.5d0)) 1.0d-10))
+      (is (< (abs (- (aref result 1) 0.5d0)) 1.0d-10)))))
+
+(test polar-affine-unit-circle
+  "polar-affine: (1, 0) → (1.0, 0.5) for r-max=1"
+  (let ((pa (make-instance 'polar-affine :r-max 1.0d0)))
+    (let ((result (transform-point pa '(1.0d0 0.0d0))))
+      (is (< (abs (- (aref result 0) 1.0d0)) 1.0d-10))
+      (is (< (abs (- (aref result 1) 0.5d0)) 1.0d-10)))))
+
+(test polar-affine-update-rmax
+  "polar-affine-update changes scale"
+  (let ((pa (make-instance 'polar-affine :r-max 1.0d0)))
+    (polar-affine-update pa 2.0d0)
+    ;; scale = 0.5/2 = 0.25, so (1,0) → (0.25*1 + 0.5, 0.25*0 + 0.5) = (0.75, 0.5)
+    (let ((result (transform-point pa '(1.0d0 0.0d0))))
+      (is (< (abs (- (aref result 0) 0.75d0)) 1.0d-10))
+      (is (< (abs (- (aref result 1) 0.5d0)) 1.0d-10)))))

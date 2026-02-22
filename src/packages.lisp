@@ -175,9 +175,15 @@
             #:symlog-transform-linscale
             #:inverted-symlog-transform #:inverted-symlog-transform-base
             #:inverted-symlog-transform-linthresh #:inverted-symlog-transform-linscale
-            #:logit-transform #:logit-transform-nonpositive
-            #:logistic-transform #:logistic-transform-nonpositive
-            #:func-transform #:func-transform-forward #:func-transform-inverse
+             #:logit-transform #:logit-transform-nonpositive
+             #:logistic-transform #:logistic-transform-nonpositive
+             #:func-transform #:func-transform-forward #:func-transform-inverse
+             ;; Polar transforms
+             #:polar-transform
+             #:inverted-polar-transform
+             #:polar-affine
+             #:polar-affine-update
+             #:polar-affine-r-max
             ;; Color conversion (extends foundation)
             #:to-hex #:to-rgb
            ;; Colormap classes
