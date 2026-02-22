@@ -236,7 +236,7 @@ Returns (values x y width height) in display space."
                                                 (mpl.rendering:text-text txt)
                                                 font-loader fontsize))))))
          ;; Total column width = handle + pad + text
-         ;; Scale text width by 1.2x to compensate for zpb-ttf vs FreeType metrics
+         ;; Scale text width to compensate for zpb-ttf vs FreeType metrics
          ;; and ensure sufficient right-side padding for longer labels
          (col-width (+ handle-len text-pad (* 1.2d0 max-label-width)))
          ;; Total legend width

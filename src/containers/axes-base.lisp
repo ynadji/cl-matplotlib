@@ -387,9 +387,15 @@ Returns (values new-ymin new-ymax) after inversion."
   (setf (mpl.rendering:artist-stale ax) t)
   line)
 
-(defun axes-add-patch (ax patch)
-  "Add a Patch to the axes."
-  (push patch (axes-base-patches ax))
+(defun axes-add-patch (ax patch &key (at-end nil))
+  "Add a Patch to the axes.
+When AT-END is T, appends the patch to the end of the list (drawn last among
+same-zorder patches), preserving insertion order for overlapping transparent
+regions like axhspan/axvspan/fill-between."
+  (if at-end
+      (setf (axes-base-patches ax)
+            (nconc (axes-base-patches ax) (list patch)))
+      (push patch (axes-base-patches ax)))
   (setf (mpl.rendering:artist-axes patch) ax)
   (setf (mpl.rendering:artist-figure patch) (axes-base-figure ax))
   (setf (mpl.rendering:artist-stale ax) t)

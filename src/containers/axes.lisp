@@ -293,7 +293,7 @@ Returns the created Polygon."
       ;; Set transform to transData
       (setf (mpl.rendering:artist-transform poly)
             (axes-base-trans-data ax))
-      (axes-add-patch ax poly)
+      (axes-add-patch ax poly :at-end t)
       ;; Update data limits from both curves
       (let ((all-y (append (coerce y1data 'list)
                            (coerce y2data 'list))))
@@ -334,8 +334,8 @@ Returns the created Polygon."
         (when alpha
           (setf (mpl.rendering:artist-alpha poly) (float alpha 1.0d0)))
         (setf (mpl.rendering:artist-transform poly) (axes-base-trans-data ax))
-        ;; Add as patch — do NOT update datalim (reference spans)
-        (axes-add-patch ax poly)
+        ;; Add as patch at end — preserves insertion order for overlapping spans
+        (axes-add-patch ax poly :at-end t)
         (setf (mpl.rendering:artist-stale ax) t)
         poly))))
 
@@ -368,7 +368,8 @@ Returns the created Polygon."
         (when alpha
           (setf (mpl.rendering:artist-alpha poly) (float alpha 1.0d0)))
         (setf (mpl.rendering:artist-transform poly) (axes-base-trans-data ax))
-        (axes-add-patch ax poly)
+        ;; Add as patch at end — preserves insertion order for overlapping spans
+        (axes-add-patch ax poly :at-end t)
         (setf (mpl.rendering:artist-stale ax) t)
         poly))))
 
