@@ -384,4 +384,346 @@ VA — vertical alignment (accepted but not used for dominant-baseline)."
                 transform-str
                 (%svg-xml-escape s))))))
 
+;;; ============================================================
+;;; Base64 encoding (inline, no cl-base64 dependency)
+;;; ============================================================
 
+(defun %octets-to-base64 (octets)
+  "Encode a byte vector to a base64 string. No external dependency."
+  (let ((alphabet "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")
+        (len (length octets)))
+    (with-output-to-string (out)
+      (loop for i from 0 below len by 3 do
+        (let* ((b0 (aref octets i))
+               (b1 (if (< (+ i 1) len) (aref octets (+ i 1)) 0))
+               (b2 (if (< (+ i 2) len) (aref octets (+ i 2)) 0))
+               (n (logior (ash b0 16) (ash b1 8) b2)))
+          (write-char (char alphabet (logand (ash n -18) 63)) out)
+          (write-char (char alphabet (logand (ash n -12) 63)) out)
+          (write-char (if (< (+ i 1) len)
+                          (char alphabet (logand (ash n -6) 63))
+                          #\=)
+                      out)
+          (write-char (if (< (+ i 2) len)
+                          (char alphabet (logand n 63))
+                          #\=)
+                      out))))))
+
+;;; ============================================================
+;;; draw-image — Embed RGBA image as base64 PNG data URI
+;;; ============================================================
+
+(defmethod draw-image ((renderer renderer-svg) gc x y im)
+  "Draw an RGBA image IM at position (X, Y) as an embedded base64 PNG in SVG.
+IM is a plist with :data (flat RGBA bytes), :width, :height.
+Uses zpng to encode PNG via temp file, then base64-encodes the result."
+  (declare (ignore gc))
+  (let ((data (getf im :data))
+        (w (getf im :width))
+        (h (getf im :height)))
+    (when (and data w h)
+      (let* ((png (make-instance 'zpng:png
+                                 :color-type :truecolor-alpha
+                                 :width w :height h))
+             (tmp-path (format nil "/tmp/cl-mpl-svg-~A.png" (get-universal-time))))
+        ;; Copy RGBA data into zpng image buffer
+        (replace (zpng:image-data png) data)
+        ;; Write to temp file (zpng only accepts pathname)
+        (zpng:write-png png tmp-path)
+        ;; Read bytes back
+        (let ((bytes (with-open-file (f tmp-path :element-type '(unsigned-byte 8))
+                       (let ((buf (make-array (file-length f)
+                                              :element-type '(unsigned-byte 8))))
+                         (read-sequence buf f)
+                         buf))))
+          ;; Delete temp file
+          (ignore-errors (delete-file tmp-path))
+          ;; Base64 encode and emit <image> element
+          (let ((b64 (%octets-to-base64 bytes))
+                (out (renderer-svg-output-stream renderer)))
+            ;; Y-flip counter: global <g> has scale(1,-1), images render upside-down
+            ;; Fix: translate(x,-y) scale(1,-1) — same pattern as draw-text
+            (format out "<image x=\"0\" y=\"0\" width=\"~D\" height=\"~D\" xlink:href=\"data:image/png;base64,~A\" transform=\"translate(~A,~A) scale(1,-1)\"/>~%"
+                    w h b64
+                    (%format-float (coerce x 'double-float))
+                    (%format-float (- (coerce y 'double-float))))))))))
+
+;;; ============================================================
+;;; draw-markers — <symbol> + <use> optimization for repeated markers
+;;; ============================================================
+
+(defmethod draw-markers ((renderer renderer-svg) gc marker-path marker-trans
+                         path trans &optional rgbface)
+  "Draw a marker at each vertex of PATH using SVG <symbol>/<use> optimization.
+Emits one <symbol> definition in defs-stream, then one <use> per data point."
+  (let* ((verts (mpl.primitives:mpl-path-vertices path))
+         (codes (mpl.primitives:mpl-path-codes path))
+         (n (array-dimension verts 0)))
+    (when (zerop n) (return-from draw-markers nil))
+    ;; Generate marker shape as SVG d-string
+    (let* ((marker-d (%trace-path-to-svg marker-path marker-trans))
+           (marker-id (%next-id renderer "marker"))
+           ;; Resolve colors
+           (face-color (%gc-face-color gc rgbface))
+           (edge-color (%gc-edge-color gc))
+           (gc-alpha (or (mpl.rendering:gc-alpha gc) 1.0d0))
+           (gc-attrs (%apply-gc-to-svg-attrs gc renderer))
+           (defs (renderer-svg-defs-stream renderer))
+           (out (renderer-svg-output-stream renderer)))
+      ;; Emit <symbol> with marker path into defs
+      (multiple-value-bind (fill-hex fill-op) (%color-to-svg face-color)
+        (multiple-value-bind (stroke-hex stroke-op) (%color-to-svg edge-color)
+          (let ((fill-opacity (* fill-op (coerce gc-alpha 'double-float)))
+                (stroke-opacity (* stroke-op (coerce gc-alpha 'double-float))))
+            (format defs "<symbol id=\"~A\" overflow=\"visible\">~%" marker-id)
+            (format defs "<path d=\"~A\" fill=\"~A\" fill-opacity=\"~A\" stroke=\"~A\" stroke-opacity=\"~A\""
+                    marker-d fill-hex (%format-float fill-opacity)
+                    stroke-hex (%format-float stroke-opacity))
+            ;; Stroke width
+            (let ((sw (getf gc-attrs :stroke-width)))
+              (when sw (format defs " stroke-width=\"~A\"" sw)))
+            ;; Stroke line cap
+            (let ((cap (getf gc-attrs :stroke-linecap)))
+              (when cap (format defs " stroke-linecap=\"~A\"" cap)))
+            ;; Stroke line join
+            (let ((join (getf gc-attrs :stroke-linejoin)))
+              (when join (format defs " stroke-linejoin=\"~A\"" join)))
+            (format defs "/>~%")
+            (format defs "</symbol>~%"))))
+      ;; Emit <use> for each data point vertex
+      (dotimes (i n)
+        (let ((code (if codes (aref codes i)
+                       (if (zerop i) mpl.primitives:+moveto+ mpl.primitives:+lineto+))))
+          (when (or (= code mpl.primitives:+moveto+)
+                    (= code mpl.primitives:+lineto+))
+            (let ((x (aref verts i 0))
+                  (y (aref verts i 1)))
+              (multiple-value-bind (tx ty)
+                  (if trans
+                      (let ((result (mpl.primitives:transform-point
+                                     trans (list (float x 1.0d0) (float y 1.0d0)))))
+                        (values (aref result 0) (aref result 1)))
+                      (values (float x 1.0d0) (float y 1.0d0)))
+                (format out "<use xlink:href=\"#~A\" x=\"~A\" y=\"~A\"/>~%"
+                        marker-id
+                        (%format-float tx)
+                        (%format-float ty))))))))))
+
+;;; ============================================================
+;;; draw-path-collection — Batch path drawing
+;;; ============================================================
+
+(defmethod draw-path-collection ((renderer renderer-svg) gc paths all-transforms
+                                 offsets offset-trans facecolors edgecolors
+                                 linewidths linestyles antialiaseds)
+  "Draw a collection of paths efficiently in SVG.
+Each item gets its own <path> element with per-item colors and linewidth."
+  (declare (ignore linestyles antialiaseds))
+  (let* ((n-offsets (if offsets (length offsets) 0))
+         (n-paths (if paths (length paths) 0))
+         (n-items (max n-offsets n-paths 0))
+         (alpha (or (mpl.rendering:gc-alpha gc) 1.0d0)))
+    (when (zerop n-items)
+      (return-from draw-path-collection))
+    (dotimes (i n-items)
+      (let* ((path-idx (if (zerop n-paths) 0 (mod i n-paths)))
+             (path (when (plusp n-paths) (elt paths path-idx)))
+             (item-transform (when all-transforms
+                               (elt all-transforms (mod i (length all-transforms)))))
+             (offset (when (plusp n-offsets) (elt offsets (mod i n-offsets))))
+             (face-color (when facecolors
+                           (elt facecolors (mod i (length facecolors)))))
+             (edge-color (when edgecolors
+                           (elt edgecolors (mod i (length edgecolors)))))
+             (linewidth (if linewidths
+                            (elt linewidths (mod i (length linewidths)))
+                            1.0)))
+        (when path
+          ;; Build final transform (item-transform + offset)
+          (let ((final-transform nil))
+            (when item-transform
+              (setf final-transform item-transform))
+            (when offset
+              (let* ((ox (float (first offset) 1.0d0))
+                     (oy (float (second offset) 1.0d0))
+                     (transformed-offset
+                       (if offset-trans
+                           (mpl.primitives:transform-point
+                            offset-trans (list ox oy))
+                           (vector ox oy)))
+                     (tx (aref transformed-offset 0))
+                     (ty (aref transformed-offset 1))
+                     (offset-tr (mpl.primitives:make-affine-2d
+                                 :translate (list tx ty))))
+                (if final-transform
+                    (setf final-transform
+                          (mpl.primitives:compose final-transform offset-tr))
+                    (setf final-transform offset-tr))))
+            ;; Trace the path
+            (let ((d (%trace-path-to-svg path final-transform)))
+              (unless (string= d "")
+                ;; Resolve per-item colors via %color-to-svg
+                (multiple-value-bind (fill-hex fill-op) (%color-to-svg face-color)
+                  (multiple-value-bind (stroke-hex stroke-op) (%color-to-svg edge-color)
+                    (let ((out (renderer-svg-output-stream renderer)))
+                      (format out "<path d=\"~A\" fill=\"~A\" fill-opacity=\"~A\" stroke=\"~A\" stroke-opacity=\"~A\" stroke-width=\"~A\"/>~%"
+                              d fill-hex
+                              (%format-float (* fill-op (coerce alpha 'double-float)))
+                              stroke-hex
+                              (%format-float (* stroke-op (coerce alpha 'double-float)))
+                              (%format-float (coerce linewidth 'double-float))))))))))))))
+
+;;; ============================================================
+;;; draw-gouraud-triangles — Flat-color average fallback
+;;; ============================================================
+
+(defmethod draw-gouraud-triangles ((renderer renderer-svg) gc triangles-array colors-array transform)
+  "Draw Gouraud-shaded triangles. Simplified flat-color fallback for SVG.
+Averages the 3 vertex colors per triangle and fills with that single color."
+  (declare (ignore gc))
+  (when (and triangles-array colors-array)
+    (let ((n (array-dimension triangles-array 0))
+          (out (renderer-svg-output-stream renderer)))
+      (dotimes (tri n)
+        ;; Average the colors of the 3 vertices (RGBA)
+        (let ((r 0.0d0) (g 0.0d0) (b 0.0d0) (a 0.0d0))
+          (dotimes (v 3)
+            (incf r (coerce (aref colors-array tri v 0) 'double-float))
+            (incf g (coerce (aref colors-array tri v 1) 'double-float))
+            (incf b (coerce (aref colors-array tri v 2) 'double-float))
+            (incf a (coerce (aref colors-array tri v 3) 'double-float)))
+          (setf r (/ r 3.0d0) g (/ g 3.0d0) b (/ b 3.0d0) a (/ a 3.0d0))
+          ;; Build SVG path: M x0 y0 L x1 y1 L x2 y2 Z
+          (flet ((xf (x y)
+                   (if transform
+                       (let ((result (mpl.primitives:transform-point
+                                      transform (list (float x 1.0d0) (float y 1.0d0)))))
+                         (values (aref result 0) (aref result 1)))
+                       (values (float x 1.0d0) (float y 1.0d0)))))
+            (multiple-value-bind (x0 y0) (xf (aref triangles-array tri 0 0)
+                                              (aref triangles-array tri 0 1))
+              (multiple-value-bind (x1 y1) (xf (aref triangles-array tri 1 0)
+                                                (aref triangles-array tri 1 1))
+                (multiple-value-bind (x2 y2) (xf (aref triangles-array tri 2 0)
+                                                  (aref triangles-array tri 2 1))
+                  ;; Convert averaged color to hex + opacity
+                  (multiple-value-bind (hex-color opacity)
+                      (%color-to-svg (list r g b a))
+                    (format out "<path d=\"M ~A ~A L ~A ~A L ~A ~A Z\" fill=\"~A\" fill-opacity=\"~A\" stroke=\"none\" stroke-opacity=\"0.00\"/>~%"
+                            (%format-float x0) (%format-float y0)
+                            (%format-float x1) (%format-float y1)
+                            (%format-float x2) (%format-float y2)
+                            hex-color (%format-float opacity))))))))))))
+
+;;; ============================================================
+;;; canvas-svg — Canvas implementation for SVG output
+;;; ============================================================
+
+(defclass canvas-svg (canvas-base)
+  ((render-fn :initform nil
+              :accessor canvas-render-fn-svg
+              :documentation "Optional render function called during print-svg."))
+  (:documentation "Canvas that renders to SVG via raw XML emission.
+Usage:
+  (let ((canvas (make-instance 'canvas-svg :width 640 :height 480 :dpi 100)))
+    (setf (canvas-render-fn-svg canvas)
+          (lambda (renderer) (draw-path renderer gc path nil)))
+    (print-svg canvas \"/tmp/test.svg\"))"))
+
+;;; ============================================================
+;;; print-svg generic function
+;;; ============================================================
+
+(defgeneric print-svg (canvas filename)
+  (:documentation "Render figure and save to SVG file at FILENAME."))
+
+;;; ============================================================
+;;; get-renderer
+;;; ============================================================
+
+(defmethod get-renderer ((canvas canvas-svg))
+  "Return or create the renderer for this canvas."
+  (or (canvas-renderer canvas)
+      (setf (canvas-renderer canvas)
+            (make-instance 'renderer-svg
+                           :width (canvas-width canvas)
+                           :height (canvas-height canvas)
+                           :dpi (canvas-dpi canvas)))))
+
+;;; ============================================================
+;;; canvas-draw
+;;; ============================================================
+
+(defmethod canvas-draw ((canvas canvas-svg))
+  "Clear canvas and invoke the figure's draw method if present."
+  (let ((renderer (get-renderer canvas)))
+    (renderer-clear renderer)
+    (when (canvas-figure canvas)
+      (mpl.rendering:draw (canvas-figure canvas) renderer))))
+
+;;; ============================================================
+;;; print-svg — Main output method
+;;; ============================================================
+
+(defmethod print-svg ((canvas canvas-svg) filename)
+  "Render figure to an SVG file.
+Assembles the SVG document from defs-stream and output-stream."
+  (let* ((w (canvas-width canvas))
+         (h (canvas-height canvas))
+         (renderer (get-renderer canvas)))
+    ;; Reset renderer streams for fresh render
+    (setf (renderer-svg-output-stream renderer) (make-string-output-stream))
+    (setf (renderer-svg-defs-stream renderer) (make-string-output-stream))
+    ;; Set height on renderer (needed for Y-flip counter in text/image)
+    (setf (renderer-svg-height renderer) h)
+    ;; Clear canvas (white background rect)
+    (renderer-clear renderer)
+    ;; Execute render function (for direct API usage)
+    (when (canvas-render-fn-svg canvas)
+      (funcall (canvas-render-fn-svg canvas) renderer))
+    ;; If there's a figure, draw it
+    (when (canvas-figure canvas)
+      (mpl.rendering:draw (canvas-figure canvas) renderer))
+    ;; Collect accumulated SVG content
+    (let ((defs-content (get-output-stream-string (renderer-svg-defs-stream renderer)))
+          (body-content (get-output-stream-string (renderer-svg-output-stream renderer))))
+      ;; Write complete SVG document to file
+      (with-open-file (s filename
+                         :direction :output
+                         :if-exists :supersede
+                         :external-format :utf-8)
+        ;; XML declaration
+        (format s "<?xml version=\"1.0\" encoding=\"UTF-8\"?>~%")
+        ;; SVG root element with namespaces
+        (format s "<svg xmlns=\"http://www.w3.org/2000/svg\"~%")
+        (format s "     xmlns:xlink=\"http://www.w3.org/1999/xlink\"~%")
+        (format s "     width=\"~D\" height=\"~D\" viewBox=\"0 0 ~D ~D\">~%" w h w h)
+        ;; Defs section (clip-paths, symbols)
+        (format s "<defs>~%")
+        (write-string defs-content s)
+        (format s "</defs>~%")
+        ;; Global Y-flip: SVG is y-down, figure is y-up
+        (format s "<g transform=\"translate(0,~D) scale(1,-1)\">~%" h)
+        ;; Body content
+        (write-string body-content s)
+        ;; Close Y-flip group and SVG
+        (format s "</g>~%")
+        (format s "</svg>~%"))))
+  filename)
+
+;;; ============================================================
+;;; Convenience: render-to-svg — functional interface
+;;; ============================================================
+
+(defun render-to-svg (filename &key (width 640) (height 480) (dpi 100) draw-fn)
+  "Convenience function: create a canvas, call DRAW-FN with the renderer, save SVG.
+Example:
+  (render-to-svg \"/tmp/test.svg\"
+    :width 400 :height 300
+    :draw-fn (lambda (renderer)
+               (let ((path (mpl.primitives:make-path ...))
+                     (gc (make-graphics-context :edgecolor \"red\")))
+                 (draw-path renderer gc path nil))))"
+  (let ((canvas (make-instance 'canvas-svg :width width :height height :dpi dpi)))
+    (setf (canvas-render-fn-svg canvas) draw-fn)
+    (print-svg canvas filename)))
