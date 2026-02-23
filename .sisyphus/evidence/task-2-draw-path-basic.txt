@@ -1,0 +1,9 @@
+This is SBCL 2.2.9.debian, an implementation of ANSI Common Lisp.
+More information about SBCL is available at <http://www.sbcl.org/>.
+
+SBCL is free software, provided as is, with absolutely no warranty.
+It is mostly in the public domain; some portions are provided under
+BSD-style licenses.  See the CREDITS and COPYING files in the
+distribution for more information.
+OUTPUT: <path d="M 0.00 0.00 L 100.00 0.00 L 50.00 86.60 Z " fill="#FF0000" fill-opacity="0.50" stroke="#0000FF" stroke-opacity="1.00" stroke-width="2.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+

@@ -1,0 +1,13 @@
+This is SBCL 2.2.9.debian, an implementation of ANSI Common Lisp.
+More information about SBCL is available at <http://www.sbcl.org/>.
+
+SBCL is free software, provided as is, with absolutely no warranty.
+It is mostly in the public domain; some portions are provided under
+BSD-style licenses.  See the CREDITS and COPYING files in the
+distribution for more information.
+OUTPUT: <path d="M 0.00 0.00 L 300.00 300.00 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+
+DEFS: <clipPath id="clip-1">
+<rect x="10.00" y="10.00" width="190.00" height="190.00"/>
+</clipPath>
+
