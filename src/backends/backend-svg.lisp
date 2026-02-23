@@ -296,5 +296,92 @@ Emits to renderer's output-stream; clip definitions go to defs-stream."
             ;; Clip path reference
             (when clip-id
               (format out " clip-path=\"url(#~A)\"" clip-id))
-            (format out "/>~%")))))))
+             (format out "/>~%")))))))
+
+;;; ============================================================
+;;; Bridge: renderer-draw-path from artist protocol → draw-path
+;;; ============================================================
+
+(defmethod mpl.rendering:renderer-draw-path ((renderer renderer-svg) gc path transform
+                                             &key fill stroke)
+  "Bridge from artist draw protocol to backend draw-path.
+FILL can be T (use gc-background), a color spec, or nil.
+STROKE can be T (use gc-foreground) or nil."
+  (declare (ignore stroke))
+  (let ((rgbface (cond
+                   ((and fill (not (eq fill t)))
+                    (%resolve-color fill))
+                   ((eq fill t)
+                    (or (%gc-face-color gc nil)
+                        (%gc-edge-color gc)))
+                   (t nil))))
+    (draw-path renderer gc path transform rgbface)))
+
+;;; ============================================================
+;;; Bridge: renderer-draw-text from artist protocol → draw-text
+;;; ============================================================
+
+(defmethod mpl.rendering:renderer-draw-text ((renderer renderer-svg) gc x y text
+                                             &key (angle 0) (ha :left) (va :baseline))
+  "Bridge from artist draw text protocol to backend draw-text."
+  (draw-text renderer gc (float x 1.0d0) (float y 1.0d0) text nil (or angle 0.0d0) nil ha va))
+
+;;; ============================================================
+;;; Bridge: renderer-draw-image from artist protocol → draw-image
+;;; ============================================================
+
+(defmethod mpl.rendering:renderer-draw-image ((renderer renderer-svg) gc x y image)
+  "Bridge from artist draw-image protocol to backend draw-image."
+  (draw-image renderer gc x y image))
+
+;;; ============================================================
+;;; draw-text — Emit <text> SVG element
+;;; ============================================================
+
+(defmethod draw-text ((renderer renderer-svg) gc x y s prop angle &optional ismath ha va)
+  "Draw text string S at position (X, Y) as an SVG <text> element.
+PROP is unused (font-family is always DejaVu Sans for SVG).
+ANGLE is rotation in degrees (counterclockwise).
+HA — horizontal alignment (:left, :center, :right) → SVG text-anchor.
+VA — vertical alignment (accepted but not used for dominant-baseline)."
+  (declare (ignore prop ismath va))
+  ;; Guard: nil or empty string → no output
+  (when (or (null s) (and (stringp s) (string= s "")))
+    (return-from draw-text nil))
+  (let* ((font-size (coerce (or (and gc (mpl.rendering:gc-linewidth gc)) 12.0) 'double-float))
+         ;; Text color from gc-foreground
+         (raw-color (when gc (%resolve-color (mpl.rendering:gc-foreground gc))))
+         (gc-alpha (or (and gc (mpl.rendering:gc-alpha gc)) 1.0d0))
+         ;; Horizontal alignment → SVG text-anchor
+         (text-anchor (case ha
+                        (:center "middle")
+                        (:right "end")
+                        (otherwise "start")))
+         ;; Y-flip counter: global <g> has scale(1,-1), so text appears upside-down.
+         ;; Fix: place at (x, -y) and add scale(1,-1) to un-flip.
+         ;; With rotation angle A (degrees, CCW): emit rotate(-A) in SVG.
+         (angle-d (if (numberp angle) (coerce angle 'double-float) 0.0d0))
+         (transform-str
+           (if (/= angle-d 0.0d0)
+               (format nil "translate(~A,~A) rotate(~A) scale(1,-1)"
+                       (%format-float x)
+                       (%format-float (- (coerce y 'double-float)))
+                       (%format-float (- angle-d)))
+               (format nil "translate(~A,~A) scale(1,-1)"
+                       (%format-float x)
+                       (%format-float (- (coerce y 'double-float)))))))
+    ;; Emit <text> element
+    (let ((out (renderer-svg-output-stream renderer)))
+      (multiple-value-bind (fill-hex fill-op)
+          (%color-to-svg (when raw-color
+                           (list (car raw-color) (cadr raw-color)
+                                 (caddr raw-color)
+                                 (* (cadddr raw-color) (coerce gc-alpha 'double-float)))))
+        (format out "<text font-family=\"DejaVu Sans\" font-size=\"~A\" fill=\"~A\" fill-opacity=\"~A\" text-anchor=\"~A\" transform=\"~A\">~A</text>~%"
+                (%format-float font-size)
+                fill-hex (%format-float fill-op)
+                text-anchor
+                transform-str
+                (%svg-xml-escape s))))))
+
 
