@@ -434,8 +434,8 @@ Returns NIL."
                               :showextrema showextrema))
 
 (defun quiver (&rest args &key (scale nil) (width nil) (color "C0")
-                                (alpha nil) (pivot :tail)
-                                &allow-other-keys)
+                                 (alpha nil) (pivot :tail)
+                                 &allow-other-keys)
   "Draw a quiver (vector field) plot on the current axes.
 
 Call signatures:
@@ -445,6 +445,22 @@ Call signatures:
 Returns the quiver-collection."
   (declare (ignore scale width color alpha pivot))
   (apply #'mpl.containers:quiver (gca) args))
+
+(defun streamplot (x-arr y-arr u-2d v-2d &key (density 1.0d0) (color "C0")
+                                               (linewidth 1.0d0) (arrowsize 1.0d0))
+  "Draw streamlines of a vector field on the current axes.
+
+X-ARR — 1D sequence of X coordinates.
+Y-ARR — 1D sequence of Y coordinates.
+U-2D — 2D array of horizontal velocity components.
+V-2D — 2D array of vertical velocity components.
+DENSITY — streamline density (default 1.0).
+COLOR — streamline color (default \"C0\").
+LINEWIDTH — line width (default 1.0).
+ARROWSIZE — arrow size multiplier (default 1.0)."
+  (mpl.containers:streamplot (gca) x-arr y-arr u-2d v-2d
+                              :density density :color color
+                              :linewidth linewidth :arrowsize arrowsize))
 
 (defun fill-between (xdata y1data y2data &key (color nil) (alpha nil)
                                                (label "") (zorder 1))

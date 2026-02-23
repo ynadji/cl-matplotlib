@@ -19,7 +19,7 @@
                 #:hist #:pie #:errorbar #:stem #:axes-step
                 #:stackplot #:barh #:boxplot
                 #:violinplot #:gaussian-kde
-                #:quiver)
+                #:quiver #:streamplot)
    (:import-from #:cl-matplotlib.rendering
                  #:quiver-collection)
   (:export #:run-plot-types-tests))
@@ -697,6 +697,50 @@
          (v '((0.0d0 0.0d0) (0.0d0 0.0d0)))
          (out "/tmp/test-quiver.png"))
     (quiver ax u v)
+    (savefig fig out)
+    (is (probe-file out))))
+
+;;; ============================================================
+;;; Streamplot tests
+;;; ============================================================
+
+(test streamplot-uniform-flow
+  "Streamplot with uniform rightward flow adds artists."
+  (let* ((fig (make-figure))
+         (ax (add-subplot fig 1 1 1))
+         (n 10)
+         (x (loop for i from 0 below n collect (float i 1.0d0)))
+         (y (loop for i from 0 below n collect (float i 1.0d0)))
+         (u (make-array (list n n) :element-type 'double-float :initial-element 1.0d0))
+         (v (make-array (list n n) :element-type 'double-float :initial-element 0.0d0)))
+    (streamplot ax x y u v)
+    ;; Should have added at least one artist (LineCollection + arrows)
+    (is (> (length (axes-base-artists ax)) 0))))
+
+(test streamplot-zero-velocity
+  "Streamplot with zero velocity field doesn't crash."
+  (let* ((fig (make-figure))
+         (ax (add-subplot fig 1 1 1))
+         (n 5)
+         (x (loop for i from 0 below n collect (float i 1.0d0)))
+         (y (loop for i from 0 below n collect (float i 1.0d0)))
+         (u (make-array (list n n) :element-type 'double-float :initial-element 0.0d0))
+         (v (make-array (list n n) :element-type 'double-float :initial-element 0.0d0)))
+    ;; Should not crash, and should produce no artists (no streamlines)
+    (streamplot ax x y u v)
+    (is (= 0 (length (axes-base-artists ax))))))
+
+(test streamplot-savefig
+  "Streamplot renders to PNG without error."
+  (let* ((fig (make-figure))
+         (ax (add-subplot fig 1 1 1))
+         (n 10)
+         (x (loop for i from 0 below n collect (float i 1.0d0)))
+         (y (loop for i from 0 below n collect (float i 1.0d0)))
+         (u (make-array (list n n) :element-type 'double-float :initial-element 1.0d0))
+         (v (make-array (list n n) :element-type 'double-float :initial-element 0.0d0))
+         (out "/tmp/test-streamplot-unit.png"))
+    (streamplot ax x y u v)
     (savefig fig out)
     (is (probe-file out))))
 

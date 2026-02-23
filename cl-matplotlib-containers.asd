@@ -22,7 +22,8 @@
                              (:file "gridspec")
                              (:file "polar")))
                (:module "src/algorithms"
-                :components ((:file "marching-squares")))
+                 :components ((:file "marching-squares")
+                              (:file "streamplot")))
                  (:module "src/plotting"
                   :components ((:file "contour")
                                (:file "image")
