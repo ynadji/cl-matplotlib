@@ -103,6 +103,8 @@ Ported from matplotlib.legend_handler.HandlerPatch."))
          (linewidth (if (typep orig-handle 'mpl.rendering:patch)
                         (mpl.rendering:patch-linewidth orig-handle)
                         1.0))
+         (alpha (when (typep orig-handle 'mpl.rendering:artist)
+                  (mpl.rendering:artist-alpha orig-handle)))
          (rect (make-instance 'mpl.rendering:rectangle
                               :x0 (- xdescent)
                               :y0 (- ydescent)
@@ -112,6 +114,9 @@ Ported from matplotlib.legend_handler.HandlerPatch."))
                               :edgecolor edgecolor
                               :linewidth linewidth
                               :zorder 0)))
+    ;; Preserve alpha from original patch (e.g., fill-between with alpha)
+    (when alpha
+      (setf (mpl.rendering:artist-alpha rect) alpha))
     (list rect)))
 
 ;;; ============================================================
@@ -169,12 +174,18 @@ Ported from matplotlib.legend_handler.HandlerPathCollection."))
   (declare (ignore legend ydescent transform))
   (let* ((numpoints (handler-pc-numpoints h))
          ;; Create marker circles
-         (facecolor (if (typep orig-handle 'mpl.rendering:patch)
-                        (or (mpl.rendering:patch-facecolor orig-handle) "C0")
-                        (if (and (typep orig-handle 'mpl.rendering:artist)
-                                 (slot-exists-p orig-handle 'mpl.rendering::color))
-                            (slot-value orig-handle 'mpl.rendering::color)
-                            "C0")))
+         (facecolor (cond
+                     ((typep orig-handle 'mpl.rendering:patch)
+                      (or (mpl.rendering:patch-facecolor orig-handle) "C0"))
+                     ;; PathCollection (scatter) stores colors in collection-facecolors
+                     ((and (typep orig-handle 'mpl.rendering:collection)
+                           (mpl.rendering:collection-facecolors orig-handle))
+                      (let ((fc (mpl.rendering:collection-facecolors orig-handle)))
+                        (if (listp fc) (or (first fc) "C0") (or fc "C0"))))
+                     ((and (typep orig-handle 'mpl.rendering:artist)
+                           (slot-exists-p orig-handle 'mpl.rendering::color))
+                      (slot-value orig-handle 'mpl.rendering::color))
+                     (t "C0")))
          (marker-size (* fontsize 0.3d0))
          (artists
            (loop for i below numpoints
@@ -201,7 +212,8 @@ Ported from matplotlib.legend_handler.HandlerPathCollection."))
         (cons 'mpl.rendering:patch (make-instance 'handler-patch))
         (cons 'mpl.rendering:rectangle (make-instance 'handler-patch))
         (cons 'mpl.rendering:circle (make-instance 'handler-path-collection))
-        (cons 'mpl.rendering:polygon (make-instance 'handler-patch)))
+        (cons 'mpl.rendering:polygon (make-instance 'handler-patch))
+        (cons 'mpl.rendering:path-collection (make-instance 'handler-path-collection)))
   "Default mapping from artist types to legend handlers.")
 
 (defun get-legend-handler (handle &optional (handler-map *default-handler-map*))

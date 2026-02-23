@@ -361,6 +361,20 @@ If TIGHT is T, use exact data limits (no margin)."
     (values (mpl.primitives:bbox-y0 view)
             (mpl.primitives:bbox-y1 view))))
 
+(defun axes-invert-xaxis (ax)
+  "Invert the x-axis direction (high to low).
+Returns (values new-xmin new-xmax) after inversion."
+  (multiple-value-bind (x0 x1) (axes-get-xlim ax)
+    (axes-set-xlim ax :min x1 :max x0)
+    (values x1 x0)))
+
+(defun axes-invert-yaxis (ax)
+  "Invert the y-axis direction (high to low).
+Returns (values new-ymin new-ymax) after inversion."
+  (multiple-value-bind (y0 y1) (axes-get-ylim ax)
+    (axes-set-ylim ax :min y1 :max y0)
+    (values y1 y0)))
+
 ;;; ============================================================
 ;;; Artist management
 ;;; ============================================================
@@ -373,9 +387,15 @@ If TIGHT is T, use exact data limits (no margin)."
   (setf (mpl.rendering:artist-stale ax) t)
   line)
 
-(defun axes-add-patch (ax patch)
-  "Add a Patch to the axes."
-  (push patch (axes-base-patches ax))
+(defun axes-add-patch (ax patch &key (at-end nil))
+  "Add a Patch to the axes.
+When AT-END is T, appends the patch to the end of the list (drawn last among
+same-zorder patches), preserving insertion order for overlapping transparent
+regions like axhspan/axvspan/fill-between."
+  (if at-end
+      (setf (axes-base-patches ax)
+            (nconc (axes-base-patches ax) (list patch)))
+      (push patch (axes-base-patches ax)))
   (setf (mpl.rendering:artist-axes patch) ax)
   (setf (mpl.rendering:artist-figure patch) (axes-base-figure ax))
   (setf (mpl.rendering:artist-stale ax) t)
@@ -580,6 +600,51 @@ Additional keyword arguments are passed to the scale constructor."
             (mpl.primitives:make-identity-transform)))
   (%update-trans-data ax)
   (setf (mpl.rendering:artist-stale ax) t))
+
+;;; ============================================================
+;;; Set tick positions / labels
+;;; ============================================================
+
+(defun axes-set-xticks (ax ticks &key (labels nil))
+  "Set the x-axis major tick positions.
+TICKS — list of x positions for major ticks.
+LABELS — optional list of label strings (same length as TICKS).
+If LABELS is provided, also sets the tick label formatter.
+Returns AX."
+  (let ((locator (make-instance 'fixed-locator
+                                :locs (mapcar (lambda (v) (float v 1.0d0)) ticks))))
+    (axis-set-major-locator (axes-base-xaxis ax) locator))
+  (when labels
+    (let ((fmt (make-instance 'fixed-formatter :seq labels)))
+      (axis-set-major-formatter (axes-base-xaxis ax) fmt)))
+  ax)
+
+(defun axes-set-xticklabels (ax labels)
+  "Set the x-axis major tick label strings.
+LABELS — list of strings, one per current tick.
+Returns AX."
+  (let ((fmt (make-instance 'fixed-formatter :seq labels)))
+    (axis-set-major-formatter (axes-base-xaxis ax) fmt))
+  ax)
+
+(defun axes-set-yticks (ax ticks &key (labels nil))
+  "Set the y-axis major tick positions.
+TICKS — list of y positions for major ticks.
+LABELS — optional list of label strings.
+Returns AX."
+  (let ((locator (make-instance 'fixed-locator
+                                :locs (mapcar (lambda (v) (float v 1.0d0)) ticks))))
+    (axis-set-major-locator (axes-base-yaxis ax) locator))
+  (when labels
+    (let ((fmt (make-instance 'fixed-formatter :seq labels)))
+      (axis-set-major-formatter (axes-base-yaxis ax) fmt)))
+  ax)
+
+(defun axes-set-yticklabels (ax labels)
+  "Set the y-axis major tick label strings."
+  (let ((fmt (make-instance 'fixed-formatter :seq labels)))
+    (axis-set-major-formatter (axes-base-yaxis ax) fmt))
+  ax)
 
 ;;; ============================================================
 ;;; Shared axes linking

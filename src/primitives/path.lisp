@@ -195,13 +195,27 @@ READONLY: If T, path is immutable."
                  Your first code is ~D"
                 +moveto+ (aref code-arr 0))))
       ;; Closed path without explicit codes
+      ;; All N original vertices get MOVETO/LINETO codes, then an extra
+      ;; CLOSEPOLY entry is appended (with a copy of the first vertex).
+      ;; CLOSEPOLY tells the renderer to draw back to the last MOVETO
+      ;; position, so putting it on an original vertex would skip that
+      ;; vertex (e.g. 4 vertices → triangle instead of rectangle).
       ((and closed (> n 0))
-       (setf code-arr (make-array n :element-type '(unsigned-byte 8)))
-       (setf (aref code-arr 0) +moveto+)
-       (loop for i from 1 below (1- n) do
-         (setf (aref code-arr i) +lineto+))
-       (when (> n 1)
-         (setf (aref code-arr (1- n)) +closepoly+))))
+       (let* ((n+1 (1+ n))
+              (new-verts (make-array (list n+1 2) :element-type 'double-float)))
+         ;; Copy original vertices
+         (dotimes (i n)
+           (setf (aref new-verts i 0) (aref verts i 0)
+                 (aref new-verts i 1) (aref verts i 1)))
+         ;; Closing vertex = copy of first vertex
+         (setf (aref new-verts n 0) (aref verts 0 0)
+               (aref new-verts n 1) (aref verts 0 1))
+         (setf verts new-verts)
+         (setf code-arr (make-array n+1 :element-type '(unsigned-byte 8)))
+         (setf (aref code-arr 0) +moveto+)
+         (loop for i from 1 below n do
+           (setf (aref code-arr i) +lineto+))
+         (setf (aref code-arr n) +closepoly+))))
     ;; Create the path
     (%make-mpl-path :vertices verts
                     :codes code-arr

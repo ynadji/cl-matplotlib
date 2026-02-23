@@ -154,8 +154,8 @@ After closing, switches to the highest-numbered remaining figure."
 
 (defun subplots (&optional (nrows 1) (ncols 1) &key (sharex nil) (sharey nil)
                                                      (squeeze t) (figsize nil)
-                                                     (dpi nil))
-  "Create a figure with a grid of NROWSxNCOLS axes.
+                                                     (dpi nil) (projection nil))
+   "Create a figure with a grid of NROWSxNCOLS axes.
 
 NROWS — number of rows (default 1).
 NCOLS — number of columns (default 1).
@@ -164,15 +164,17 @@ SHAREY — share Y axis: T, NIL, :all, :row, :col, :none.
 SQUEEZE — if T, squeeze out dimensions of length 1.
 FIGSIZE — figure size (width height) in inches.
 DPI — resolution.
+PROJECTION — axes projection type (:polar for polar axes, NIL for rectangular).
 
 Returns (values figure axes) where axes is a single axes, 1D array, or 2D array."
-  (let* ((fig-args (append (when figsize (list :figsize figsize))
-                           (when dpi (list :dpi dpi))))
-         (fig (apply #'figure fig-args))
-         (axes (mpl.containers:subplots fig nrows ncols
-                                        :sharex sharex :sharey sharey
-                                        :squeeze squeeze)))
-    (values fig axes)))
+   (let* ((fig-args (append (when figsize (list :figsize figsize))
+                            (when dpi (list :dpi dpi))))
+          (fig (apply #'figure fig-args))
+          (axes (mpl.containers:subplots fig nrows ncols
+                                         :sharex sharex :sharey sharey
+                                         :squeeze squeeze
+                                         :projection projection)))
+     (values fig axes)))
 
 ;;; ============================================================
 ;;; Plot function wrappers — delegate to current axes
@@ -414,14 +416,90 @@ DATA — list of datasets or single dataset."
                            :positions positions :color color
                            :linewidth linewidth :zorder zorder))
 
+(defun violinplot (datasets &key (positions nil) (widths 0.5)
+                                  (vert t) (showmedians t) (showextrema t))
+  "Draw a violin plot on the current axes.
+
+DATASETS — list of datasets (each a list of numbers).
+POSITIONS — positions for violins (default 1, 2, 3, ...).
+WIDTHS — violin width (default 0.5).
+VERT — if T, vertical violins (default).
+SHOWMEDIANS — if T, draw median line (default T).
+SHOWEXTREMA — if T, draw extrema lines (default T).
+
+Returns NIL."
+  (mpl.containers:violinplot (gca) datasets
+                              :positions positions :widths widths
+                              :vert vert :showmedians showmedians
+                              :showextrema showextrema))
+
+(defun quiver (&rest args &key (scale nil) (width nil) (color "C0")
+                                 (alpha nil) (pivot :tail)
+                                 &allow-other-keys)
+  "Draw a quiver (vector field) plot on the current axes.
+
+Call signatures:
+  (quiver u v)           — U, V as 2D arrays
+  (quiver x y u v)       — explicit X, Y positions
+
+Returns the quiver-collection."
+  (declare (ignore scale width color alpha pivot))
+  (apply #'mpl.containers:quiver (gca) args))
+
+(defun streamplot (x-arr y-arr u-2d v-2d &key (density 1.0d0) (color "C0")
+                                               (linewidth 1.0d0) (arrowsize 1.0d0))
+  "Draw streamlines of a vector field on the current axes.
+
+X-ARR — 1D sequence of X coordinates.
+Y-ARR — 1D sequence of Y coordinates.
+U-2D — 2D array of horizontal velocity components.
+V-2D — 2D array of vertical velocity components.
+DENSITY — streamline density (default 1.0).
+COLOR — streamline color (default \"C0\").
+LINEWIDTH — line width (default 1.0).
+ARROWSIZE — arrow size multiplier (default 1.0)."
+  (mpl.containers:streamplot (gca) x-arr y-arr u-2d v-2d
+                              :density density :color color
+                              :linewidth linewidth :arrowsize arrowsize))
+
 (defun fill-between (xdata y1data y2data &key (color nil) (alpha nil)
                                                (label "") (zorder 1))
   "Fill area between two curves on the current axes.
 
 Returns the created Polygon."
   (mpl.containers:fill-between (gca) xdata y1data y2data
-                                :color color :alpha alpha
-                                :label label :zorder zorder))
+                                 :color color :alpha alpha
+                                 :label label :zorder zorder))
+
+(defun pcolormesh (c &key x y (cmap nil) (vmin nil) (vmax nil) (alpha nil) (zorder 1))
+  "Create a pseudocolor mesh plot of 2D array C on the current axes.
+
+C — 2D array of scalar values (H rows × W columns).
+X, Y — optional (H+1)×(W+1) arrays of corner coordinates.
+CMAP — colormap name (keyword or string) or nil for viridis.
+VMIN, VMAX — data range for colormap normalization.
+ALPHA — transparency.
+ZORDER — drawing order.
+
+Returns a scalar-mappable (for use with colorbar)."
+  (mpl.containers:axes-pcolormesh (gca) c
+                                   :x x :y y :cmap cmap
+                                   :vmin vmin :vmax vmax
+                                   :alpha alpha :zorder zorder))
+
+(defun axhspan (ymin ymax &key (xmin 0.0) (xmax 1.0) (color "C0") (alpha nil)
+                                (edgecolor "none") (label "") (zorder 1))
+  "Draw a horizontal span between YMIN and YMAX on the current axes."
+  (mpl.containers:axhspan (gca) ymin ymax
+                           :xmin xmin :xmax xmax :color color :alpha alpha
+                           :edgecolor edgecolor :label label :zorder zorder))
+
+(defun axvspan (xmin xmax &key (ymin 0.0) (ymax 1.0) (color "C0") (alpha nil)
+                               (edgecolor "none") (label "") (zorder 1))
+  "Draw a vertical span between XMIN and XMAX on the current axes."
+  (mpl.containers:axvspan (gca) xmin xmax
+                           :ymin ymin :ymax ymax :color color :alpha alpha
+                           :edgecolor edgecolor :label label :zorder zorder))
 
 ;;; ============================================================
 ;;; Axes configuration wrappers
@@ -503,6 +581,22 @@ If called with arguments, sets the limits."
         (mpl.containers:axes-get-ylim ax)
         (mpl.containers:axes-set-ylim ax :min ymin :max ymax))))
 
+(defun set-xticks (ticks &key (labels nil))
+  "Set x-axis major tick positions. LABELS optionally sets tick label strings."
+  (mpl.containers:axes-set-xticks (gca) ticks :labels labels))
+
+(defun set-xticklabels (labels)
+  "Set x-axis major tick label strings."
+  (mpl.containers:axes-set-xticklabels (gca) labels))
+
+(defun set-yticks (ticks &key (labels nil))
+  "Set y-axis major tick positions."
+  (mpl.containers:axes-set-yticks (gca) ticks :labels labels))
+
+(defun set-yticklabels (labels)
+  "Set y-axis major tick label strings."
+  (mpl.containers:axes-set-yticklabels (gca) labels))
+
 (defun grid (&key (visible t) (which :major) (axis :both)
                    (color nil) (linewidth nil) (linestyle nil) (alpha nil))
   "Toggle grid lines on the current axes.
@@ -569,6 +663,106 @@ Returns the created Annotation."
                             :horizontalalignment horizontalalignment
                             :verticalalignment verticalalignment
                             :zorder zorder))
+
+(defun text (x y s &key (fontsize 12.0) (color "black") (alpha nil)
+                        (ha :left) (va :baseline) (rotation 0.0)
+                        (zorder 3))
+  "Place text S at position (X, Y) in data coordinates on the current axes.
+
+HA — horizontal alignment: :left, :center, :right.
+VA — vertical alignment: :top, :center, :bottom, :baseline.
+ROTATION — text rotation in degrees.
+
+Returns the created text-artist."
+  (mpl.containers:text (gca) x y s
+                        :fontsize fontsize :color color :alpha alpha
+                        :ha ha :va va :rotation rotation :zorder zorder))
+
+;;; ============================================================
+;;; Figure-level title and axis labels
+;;; ============================================================
+
+(defun suptitle (text &key (fontsize 12.0) (color "black") (alpha nil))
+  "Set the figure super-title — centered text above all subplots."
+  (mpl.containers:suptitle (gcf) text :fontsize fontsize :color color :alpha alpha))
+
+(defun supxlabel (text &key (fontsize 12.0) (color "black") (alpha nil))
+  "Set the figure super-xlabel — centered text at the bottom of the figure."
+  (mpl.containers:supxlabel (gcf) text :fontsize fontsize :color color :alpha alpha))
+
+(defun supylabel (text &key (fontsize 12.0) (color "black") (alpha nil))
+  "Set the figure super-ylabel — rotated text at the left of the figure."
+  (mpl.containers:supylabel (gcf) text :fontsize fontsize :color color :alpha alpha))
+
+;;; ============================================================
+;;; Axis inversion
+;;; ============================================================
+
+(defun invert-xaxis ()
+  "Invert the x-axis of the current axes."
+  (mpl.containers:axes-invert-xaxis (gca)))
+
+(defun invert-yaxis ()
+  "Invert the y-axis of the current axes."
+  (mpl.containers:axes-invert-yaxis (gca)))
+
+;;; ============================================================
+;;; Reference line wrappers
+;;; ============================================================
+
+(defun axhline (y &key (xmin 0.0) (xmax 1.0) (color "C0") (linewidth 1.5)
+                       (linestyle :solid) (alpha nil) (label "") (zorder 2))
+  "Draw a horizontal line at Y across the current axes.
+XMIN, XMAX — fraction of axes width (0=left, 1=right).
+Returns the created Line2D."
+  (mpl.containers:axhline (gca) y
+                            :xmin xmin :xmax xmax :color color
+                            :linewidth linewidth :linestyle linestyle
+                            :alpha alpha :label label :zorder zorder))
+
+(defun axvline (x &key (ymin 0.0) (ymax 1.0) (color "C0") (linewidth 1.5)
+                       (linestyle :solid) (alpha nil) (label "") (zorder 2))
+  "Draw a vertical line at X across the current axes.
+YMIN, YMAX — fraction of axes height (0=bottom, 1=top).
+Returns the created Line2D."
+  (mpl.containers:axvline (gca) x
+                            :ymin ymin :ymax ymax :color color
+                            :linewidth linewidth :linestyle linestyle
+                            :alpha alpha :label label :zorder zorder))
+
+(defun hlines (y xmin xmax &key (colors "C0") (linestyles :solid)
+                                 (linewidth 1.5) (alpha nil) (label "") (zorder 2))
+  "Draw horizontal lines at each Y from XMIN to XMAX (data coordinates).
+Returns list of Line2D objects."
+  (mpl.containers:hlines (gca) y xmin xmax
+                           :colors colors :linestyles linestyles
+                           :linewidth linewidth :alpha alpha
+                           :label label :zorder zorder))
+
+(defun vlines (x ymin ymax &key (colors "C0") (linestyles :solid)
+                                 (linewidth 1.5) (alpha nil) (label "") (zorder 2))
+  "Draw vertical lines at each X from YMIN to YMAX (data coordinates).
+Returns list of Line2D objects."
+  (mpl.containers:vlines (gca) x ymin ymax
+                           :colors colors :linestyles linestyles
+                           :linewidth linewidth :alpha alpha
+                           :label label :zorder zorder))
+
+;;; ============================================================
+;;; Twin axes functions
+;;; ============================================================
+
+(defun twinx ()
+  "Create a twin axes sharing the x-axis with the current axes,
+with an independent y-axis on the right side.
+Returns the new twin axes (which becomes the current axes)."
+  (mpl.containers:axes-twinx (gca)))
+
+(defun twiny ()
+  "Create a twin axes sharing the y-axis with the current axes,
+with an independent x-axis on the top side.
+Returns the new twin axes (which becomes the current axes)."
+  (mpl.containers:axes-twiny (gca)))
 
 ;;; ============================================================
 ;;; Output functions

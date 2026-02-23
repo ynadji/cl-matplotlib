@@ -11,10 +11,16 @@
                 ;; Plot functions
                 #:plot #:scatter #:bar #:hist #:imshow #:contour #:contourf
                 #:pie #:errorbar #:stem #:step-plot #:stackplot #:barh #:boxplot
-                #:fill-between
-                ;; Axes configuration
+                 #:fill-between #:pcolormesh
+                 ;; Axes configuration
                 #:xlabel #:ylabel #:title #:xlim #:ylim #:grid #:legend
-                #:colorbar #:annotate
+                #:colorbar #:annotate #:text
+                #:suptitle #:supxlabel #:supylabel
+                #:invert-xaxis #:invert-yaxis
+                #:axhline #:axvline #:hlines #:vlines
+                 #:axhspan #:axvspan
+                 #:twinx #:twiny
+                 #:set-xticks #:set-xticklabels #:set-yticks #:set-yticklabels
                 ;; Output
                 #:savefig #:show
                 ;; State management
@@ -371,6 +377,31 @@
   (let ((ann (annotate "peak" '(3.0d0 9.0d0))))
     (is (typep ann 'mpl.rendering:annotation))))
 
+(test text-basic
+  "Test basic text placement returns a text-artist."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 4 9))
+  (let ((txt (text 0.5 0.5 "Hello")))
+    (is (typep txt 'mpl.rendering:text-artist))
+    (is (string= "Hello" (mpl.rendering:text-text txt)))))
+
+(test text-with-kwargs
+  "Test text with fontsize, color, alignment, rotation, and alpha."
+  (reset-pyplot-state)
+  (figure)
+  (let ((txt (text 1.0 2.0 "Styled"
+                   :fontsize 14 :color "red"
+                   :ha :center :va :top
+                   :rotation 45.0 :alpha 0.7d0)))
+    (is (typep txt 'mpl.rendering:text-artist))
+    (is (string= "Styled" (mpl.rendering:text-text txt)))
+    (is (= 14.0d0 (mpl.rendering:text-fontsize txt)))
+    (is (string= "red" (mpl.rendering:text-color txt)))
+    (is (eq :center (mpl.rendering:text-horizontalalignment txt)))
+    (is (eq :top (mpl.rendering:text-verticalalignment txt)))
+    (is (= 45.0d0 (mpl.rendering:text-rotation txt)))
+    (is (= 0.7d0 (mpl.rendering:artist-alpha txt)))))
+
 ;;; ============================================================
 ;;; Output tests
 ;;; ============================================================
@@ -521,6 +552,478 @@
                                     :initial-element 0.5d0)))
     (let ((img (imshow data)))
       (is (typep img 'mpl.rendering:axes-image)))))
+
+;;; ============================================================
+;;; Reference line tests
+;;; ============================================================
+
+(test axhline-basic
+  "Test axhline draws a horizontal line and returns Line2D."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((line (axhline 5.0)))
+    (is (typep line 'mpl.rendering:line-2d))
+    ;; Y data should be (5.0 5.0) — stored as vector
+    (is (= 2 (length (mpl.rendering:line-2d-ydata line))))
+    (is (= 5.0d0 (elt (mpl.rendering:line-2d-ydata line) 0)))
+    (is (= 5.0d0 (elt (mpl.rendering:line-2d-ydata line) 1)))))
+
+(test axhline-kwargs
+  "Test axhline accepts color, linestyle, linewidth, alpha kwargs."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((line (axhline 3.0 :color "red" :linestyle :dashed :linewidth 2.0 :alpha 0.5)))
+    (is (typep line 'mpl.rendering:line-2d))
+    (is (string= "red" (mpl.rendering:line-2d-color line)))
+    (is (eq :dashed (mpl.rendering:line-2d-linestyle line)))
+    (is (= 2.0 (mpl.rendering:line-2d-linewidth line)))
+    (is (= 0.5d0 (mpl.rendering:artist-alpha line)))))
+
+(test axvline-basic
+  "Test axvline draws a vertical line and returns Line2D."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((line (axvline 2.0)))
+    (is (typep line 'mpl.rendering:line-2d))
+    ;; X data should be (2.0 2.0) — stored as vector
+    (is (= 2 (length (mpl.rendering:line-2d-xdata line))))
+    (is (= 2.0d0 (elt (mpl.rendering:line-2d-xdata line) 0)))
+    (is (= 2.0d0 (elt (mpl.rendering:line-2d-xdata line) 1)))))
+
+(test axvline-kwargs
+  "Test axvline accepts color, linestyle, linewidth kwargs."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((line (axvline 7.0 :color "blue" :linestyle :dotted :linewidth 3.0)))
+    (is (typep line 'mpl.rendering:line-2d))
+    (is (string= "blue" (mpl.rendering:line-2d-color line)))
+    (is (eq :dotted (mpl.rendering:line-2d-linestyle line)))
+    (is (= 3.0 (mpl.rendering:line-2d-linewidth line)))))
+
+(test hlines-scalar
+  "Test hlines with a single y value."
+  (reset-pyplot-state)
+  (figure)
+  (let ((lines (hlines 5 0 10)))
+    (is (listp lines))
+    (is (= 1 (length lines)))
+    (is (typep (first lines) 'mpl.rendering:line-2d))))
+
+(test hlines-list
+  "Test hlines with a list of y values."
+  (reset-pyplot-state)
+  (figure)
+  (let ((lines (hlines '(1 2 3) 0 10)))
+    (is (listp lines))
+    (is (= 3 (length lines)))
+    (dolist (line lines)
+      (is (typep line 'mpl.rendering:line-2d)))))
+
+(test hlines-kwargs
+  "Test hlines with color and linestyle kwargs."
+  (reset-pyplot-state)
+  (figure)
+  (let ((lines (hlines '(1 2) 0 5 :colors "red" :linestyles :dashed :linewidth 2.0 :alpha 0.7)))
+    (is (= 2 (length lines)))
+    (is (string= "red" (mpl.rendering:line-2d-color (first lines))))
+    (is (eq :dashed (mpl.rendering:line-2d-linestyle (first lines))))
+    (is (= 2.0 (mpl.rendering:line-2d-linewidth (first lines))))))
+
+(test vlines-scalar
+  "Test vlines with a single x value."
+  (reset-pyplot-state)
+  (figure)
+  (let ((lines (vlines 5 0 10)))
+    (is (listp lines))
+    (is (= 1 (length lines)))
+    (is (typep (first lines) 'mpl.rendering:line-2d))))
+
+(test vlines-list
+  "Test vlines with a list of x values."
+  (reset-pyplot-state)
+  (figure)
+  (let ((lines (vlines '(1 2 3) 0 5)))
+    (is (listp lines))
+    (is (= 3 (length lines)))
+    (dolist (line lines)
+      (is (typep line 'mpl.rendering:line-2d)))))
+
+(test vlines-kwargs
+  "Test vlines with color and linestyle kwargs."
+  (reset-pyplot-state)
+  (figure)
+  (let ((lines (vlines '(1 2) 0 5 :colors "green" :linestyles :dashdot :linewidth 1.0)))
+    (is (= 2 (length lines)))
+    (is (string= "green" (mpl.rendering:line-2d-color (first lines))))
+    (is (eq :dashdot (mpl.rendering:line-2d-linestyle (first lines))))))
+
+;;; ============================================================
+;;; Figure-level title/label tests
+;;; ============================================================
+
+(test suptitle-basic
+  "Test suptitle creates a text-artist and stores it on the figure."
+  (reset-pyplot-state)
+  (figure)
+  (let ((txt (suptitle "Main Title")))
+    (is (typep txt 'mpl.rendering:text-artist))
+    (is (string= "Main Title" (mpl.rendering:text-text txt)))
+    ;; Should be stored in figure's suptitle slot
+    (is (eq txt (mpl.containers:figure-suptitle-artist (gcf))))
+    ;; Should be in fig-texts
+    (is (member txt (mpl.containers:figure-texts (gcf))))))
+
+(test suptitle-with-fontsize
+  "Test suptitle with custom fontsize."
+  (reset-pyplot-state)
+  (figure)
+  (let ((txt (suptitle "Big Title" :fontsize 20.0)))
+    (is (= 20.0d0 (mpl.rendering:text-fontsize txt)))))
+
+(test supxlabel-basic
+  "Test supxlabel creates a text-artist at the bottom of the figure."
+  (reset-pyplot-state)
+  (figure)
+  (let ((txt (supxlabel "X Label")))
+    (is (typep txt 'mpl.rendering:text-artist))
+    (is (string= "X Label" (mpl.rendering:text-text txt)))
+    ;; Should be in fig-texts
+    (is (member txt (mpl.containers:figure-texts (gcf))))))
+
+(test supylabel-basic
+  "Test supylabel creates a rotated text-artist at the left of the figure."
+  (reset-pyplot-state)
+  (figure)
+  (let ((txt (supylabel "Y Label")))
+    (is (typep txt 'mpl.rendering:text-artist))
+    (is (string= "Y Label" (mpl.rendering:text-text txt)))
+    ;; Should be rotated 90 degrees
+    (is (= 90.0d0 (mpl.rendering:text-rotation txt)))
+    ;; Should be in fig-texts
+    (is (member txt (mpl.containers:figure-texts (gcf))))))
+
+;;; ============================================================
+;;; Axis inversion tests
+;;; ============================================================
+
+(test invert-xaxis-basic
+  "Test invert-xaxis swaps x-axis limits."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (xlim 0 10)
+  (invert-xaxis)
+  (multiple-value-bind (xmin xmax) (xlim)
+    ;; After inversion, old max is now min and old min is now max
+    (is (= 10.0d0 xmin))
+    (is (= 0.0d0 xmax))))
+
+(test invert-yaxis-basic
+  "Test invert-yaxis swaps y-axis limits."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (ylim 0 20)
+  (invert-yaxis)
+  (multiple-value-bind (ymin ymax) (ylim)
+    ;; After inversion, old max is now min and old min is now max
+    (is (= 20.0d0 ymin))
+    (is (= 0.0d0 ymax))))
+
+(test invert-xaxis-double-restores
+  "Test that inverting x-axis twice restores original limits."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (xlim 0 10)
+  (invert-xaxis)
+  (invert-xaxis)
+  (multiple-value-bind (xmin xmax) (xlim)
+    (is (= 0.0d0 xmin))
+    (is (= 10.0d0 xmax))))
+
+;;; ============================================================
+;;; set-xticks / set-xticklabels / set-yticks / set-yticklabels
+;;; ============================================================
+
+(test set-xticks-basic
+  "Test set-xticks places fixed tick positions on x-axis."
+  (reset-pyplot-state)
+  (plot '(1 2 3 4 5) '(1 2 3 4 5))
+  (set-xticks '(1 2 3))
+  (let* ((ax (gca))
+         (xaxis (mpl.containers:axes-base-xaxis ax))
+         (loc (mpl.containers:axis-major-locator xaxis)))
+    (is (typep loc 'mpl.containers:fixed-locator))
+    (is (equal '(1.0d0 2.0d0 3.0d0)
+               (mpl.containers:fixed-locator-locs loc)))))
+
+(test set-xticks-with-labels
+  "Test set-xticks with :labels sets both locator and formatter."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (set-xticks '(1 2 3) :labels '("A" "B" "C"))
+  (let* ((ax (gca))
+         (xaxis (mpl.containers:axes-base-xaxis ax))
+         (loc (mpl.containers:axis-major-locator xaxis))
+         (fmt (mpl.containers:axis-major-formatter xaxis)))
+    (is (typep loc 'mpl.containers:fixed-locator))
+    (is (typep fmt 'mpl.containers:fixed-formatter))
+    (is (equal '("A" "B" "C") (mpl.containers:fixed-formatter-seq fmt)))))
+
+(test set-xticklabels-basic
+  "Test set-xticklabels sets formatter only."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (set-xticklabels '("Mon" "Tue" "Wed"))
+  (let* ((ax (gca))
+         (xaxis (mpl.containers:axes-base-xaxis ax))
+         (fmt (mpl.containers:axis-major-formatter xaxis)))
+    (is (typep fmt 'mpl.containers:fixed-formatter))
+    (is (equal '("Mon" "Tue" "Wed") (mpl.containers:fixed-formatter-seq fmt)))))
+
+(test set-yticks-basic
+  "Test set-yticks places fixed tick positions on y-axis."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(10 20 30))
+  (set-yticks '(10 20 30))
+  (let* ((ax (gca))
+         (yaxis (mpl.containers:axes-base-yaxis ax))
+         (loc (mpl.containers:axis-major-locator yaxis)))
+    (is (typep loc 'mpl.containers:fixed-locator))
+    (is (equal '(10.0d0 20.0d0 30.0d0)
+               (mpl.containers:fixed-locator-locs loc)))))
+
+(test set-yticks-with-labels
+  "Test set-yticks with :labels sets both locator and formatter."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(10 20 30))
+  (set-yticks '(10 20 30) :labels '("Low" "Mid" "High"))
+  (let* ((ax (gca))
+         (yaxis (mpl.containers:axes-base-yaxis ax))
+         (loc (mpl.containers:axis-major-locator yaxis))
+         (fmt (mpl.containers:axis-major-formatter yaxis)))
+    (is (typep loc 'mpl.containers:fixed-locator))
+    (is (typep fmt 'mpl.containers:fixed-formatter))
+    (is (equal '("Low" "Mid" "High") (mpl.containers:fixed-formatter-seq fmt)))))
+
+(test set-yticklabels-basic
+  "Test set-yticklabels sets formatter only."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(10 20 30))
+  (set-yticklabels '("X" "Y" "Z"))
+  (let* ((ax (gca))
+         (yaxis (mpl.containers:axes-base-yaxis ax))
+         (fmt (mpl.containers:axis-major-formatter yaxis)))
+    (is (typep fmt 'mpl.containers:fixed-formatter))
+    (is (equal '("X" "Y" "Z") (mpl.containers:fixed-formatter-seq fmt)))))
+
+(test set-xticks-returns-axes
+  "Test set-xticks returns the axes object."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (let ((result (mpl.containers:axes-set-xticks (gca) '(1 2 3))))
+    (is (typep result 'mpl.containers:axes-base))))
+
+;;; ============================================================
+;;; axhspan / axvspan tests
+;;; ============================================================
+
+(test axhspan-basic
+  "Test axhspan draws a horizontal span and returns Polygon."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((poly (axhspan 2.0 4.0)))
+    (is (typep poly 'mpl.rendering:polygon))))
+
+(test axhspan-with-alpha
+  "Test axhspan sets alpha correctly."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((poly (axhspan 2.0 4.0 :alpha 0.5d0 :color "yellow")))
+    (is (typep poly 'mpl.rendering:polygon))
+    (is (= 0.5d0 (mpl.rendering:artist-alpha poly)))))
+
+(test axvspan-basic
+  "Test axvspan draws a vertical span and returns Polygon."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((poly (axvspan 1.0 3.0)))
+    (is (typep poly 'mpl.rendering:polygon))))
+
+(test axvspan-with-alpha
+  "Test axvspan sets alpha correctly."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((poly (axvspan 1.0 3.0 :alpha 0.5 :color "blue")))
+    (is (typep poly 'mpl.rendering:polygon))
+    (is (= 0.5d0 (mpl.rendering:artist-alpha poly)))))
+
+(test axhspan-no-autoscale
+  "Test that axhspan does not affect existing axes limits."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((ax (gca)))
+    (multiple-value-bind (x0 x1) (mpl.containers:axes-get-xlim ax)
+      (multiple-value-bind (y0 y1) (mpl.containers:axes-get-ylim ax)
+        ;; Add a span far outside original data range
+        (axhspan 100.0 200.0 :color "red")
+        ;; Limits should NOT have changed
+        (multiple-value-bind (nx0 nx1) (mpl.containers:axes-get-xlim ax)
+          (multiple-value-bind (ny0 ny1) (mpl.containers:axes-get-ylim ax)
+            (is (= x0 nx0))
+            (is (= x1 nx1))
+            (is (= y0 ny0))
+            (is (= y1 ny1))))))))
+
+;;; ============================================================
+;;; pcolormesh tests
+;;; ============================================================
+
+(test pcolormesh-basic
+  "Test pcolormesh creates a scalar-mappable from a 2D array."
+  (reset-pyplot-state)
+  (let* ((data (make-array '(3 4) :element-type 'double-float :initial-element 0.5d0))
+         (sm (pcolormesh data)))
+    (is (typep sm 'mpl.primitives:scalar-mappable))
+    ;; Axes should have artists
+    (is (not (null (mpl.containers:axes-base-artists (gca)))))))
+
+(test pcolormesh-with-cmap
+  "Test pcolormesh with explicit colormap."
+  (reset-pyplot-state)
+  (let* ((data (make-array '(5 5) :element-type 'double-float))
+         (_ (dotimes (i 5)
+              (dotimes (j 5)
+                (setf (aref data i j) (float (* i j) 1.0d0)))))
+         (sm (pcolormesh data :cmap "plasma")))
+    (declare (ignore _))
+    (is (typep sm 'mpl.primitives:scalar-mappable))
+    (is (string= "plasma" (mpl.primitives:colormap-name (mpl.primitives:sm-cmap sm))))))
+
+(test pcolormesh-with-xy-coords
+  "Test pcolormesh with explicit X, Y grid coordinates."
+  (reset-pyplot-state)
+  (let* ((h 3) (w 4)
+         (c (make-array (list h w) :element-type 'double-float))
+         (x (make-array (list (1+ h) (1+ w)) :element-type 'double-float))
+         (y (make-array (list (1+ h) (1+ w)) :element-type 'double-float)))
+    ;; Fill C
+    (dotimes (i h) (dotimes (j w) (setf (aref c i j) (float (+ i j) 1.0d0))))
+    ;; Fill X, Y (uniform grid scaled by 2)
+    (dotimes (i (1+ h))
+      (dotimes (j (1+ w))
+        (setf (aref x i j) (float (* j 2.0d0) 1.0d0))
+        (setf (aref y i j) (float (* i 2.0d0) 1.0d0))))
+    (let ((sm (pcolormesh c :x x :y y)))
+      (is (typep sm 'mpl.primitives:scalar-mappable))
+      ;; Check axes limits reflect the explicit coords
+      (multiple-value-bind (xmin xmax) (mpl.containers:axes-get-xlim (gca))
+        (is (<= xmin 0.0d0))
+        (is (>= xmax 8.0d0))))))
+
+(test pcolormesh-colorbar-integration
+  "Test pcolormesh result works with colorbar."
+  (reset-pyplot-state)
+  (let* ((data (make-array '(4 4) :element-type 'double-float))
+         (_ (dotimes (i 4) (dotimes (j 4) (setf (aref data i j) (float (+ i j) 1.0d0)))))
+         (sm (pcolormesh data :cmap :viridis :vmin 0.0 :vmax 6.0)))
+    (declare (ignore _))
+    ;; colorbar should accept the scalar-mappable
+    (let ((cb (colorbar sm)))
+      (is (typep cb 'mpl.containers:mpl-colorbar))
+      ;; Check that colorbar has correct vmin/vmax
+      (let* ((mappable (mpl.containers:colorbar-mappable cb))
+             (norm (mpl.primitives:sm-norm mappable)))
+        (is (= 0.0d0 (mpl.primitives:norm-vmin norm)))
+        (is (= 6.0d0 (mpl.primitives:norm-vmax norm)))))))
+
+;;; ============================================================
+;;; twinx / twiny tests
+;;; ============================================================
+
+(test twinx-creates-new-axes
+  "Test that twinx creates a new mpl-axes object."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (let ((parent (gca)))
+    (let ((twin (twinx)))
+      (is (typep twin 'mpl.containers:mpl-axes))
+      (is (not (eq twin parent)))
+      ;; Twin should now be the current axes (gca)
+      (is (eq twin (gca))))))
+
+(test twinx-shares-xlim
+  "Test that twinx shares x-axis limits with parent."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((parent (gca)))
+    (xlim 0 10)
+    (let ((twin (twinx)))
+      ;; Twin should have same x-limits as parent
+      (multiple-value-bind (tx0 tx1) (mpl.containers:axes-get-xlim twin)
+        (multiple-value-bind (px0 px1) (mpl.containers:axes-get-xlim parent)
+          (is (= px0 tx0))
+          (is (= px1 tx1)))))))
+
+(test twinx-independent-ylim
+  "Test that twinx has independent y-axis limits."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(10 20 30))
+  (let ((parent (gca)))
+    (let ((twin (twinx)))
+      ;; Plot different y-range data on twin
+      (mpl.containers:plot twin '(1 2 3) '(100 200 300))
+      ;; Twin y-limits should differ from parent
+      (multiple-value-bind (ty0 ty1) (mpl.containers:axes-get-ylim twin)
+        (multiple-value-bind (py0 py1) (mpl.containers:axes-get-ylim parent)
+          (is (not (and (= py0 ty0) (= py1 ty1)))))))))
+
+(test twiny-creates-new-axes
+  "Test that twiny creates a new mpl-axes object."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (let ((parent (gca)))
+    (let ((twin (twiny)))
+      (is (typep twin 'mpl.containers:mpl-axes))
+      (is (not (eq twin parent)))
+      ;; Twin should now be the current axes (gca)
+      (is (eq twin (gca))))))
+
+(test twiny-shares-ylim
+  "Test that twiny shares y-axis limits with parent."
+  (reset-pyplot-state)
+  (plot '(0 10) '(0 20))
+  (let ((parent (gca)))
+    (ylim 0 20)
+    (let ((twin (twiny)))
+      ;; Twin should have same y-limits as parent
+      (multiple-value-bind (ty0 ty1) (mpl.containers:axes-get-ylim twin)
+        (multiple-value-bind (py0 py1) (mpl.containers:axes-get-ylim parent)
+          (is (= py0 ty0))
+          (is (= py1 ty1)))))))
+
+(test twinx-added-to-figure
+  "Test that twinx axes is added to the figure's axes list."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (let ((fig (gcf))
+        (n-before (length (mpl.containers:figure-axes (gcf)))))
+    (twinx)
+    (is (= (1+ n-before) (length (mpl.containers:figure-axes fig))))))
+
+(test twinx-yaxis-on-right
+  "Test that twinx y-axis is set to draw on the right side."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (let ((twin (twinx)))
+    (is (eq :right (mpl.containers:axis-side
+                     (mpl.containers:axes-base-yaxis twin))))))
+
+(test twiny-xaxis-on-top
+  "Test that twiny x-axis is set to draw on the top side."
+  (reset-pyplot-state)
+  (plot '(1 2 3) '(1 2 3))
+  (let ((twin (twiny)))
+    (is (eq :top (mpl.containers:axis-side
+                   (mpl.containers:axes-base-xaxis twin))))))
 
 ;;; ============================================================
 ;;; Run all tests

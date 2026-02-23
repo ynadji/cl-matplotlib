@@ -175,9 +175,15 @@
             #:symlog-transform-linscale
             #:inverted-symlog-transform #:inverted-symlog-transform-base
             #:inverted-symlog-transform-linthresh #:inverted-symlog-transform-linscale
-            #:logit-transform #:logit-transform-nonpositive
-            #:logistic-transform #:logistic-transform-nonpositive
-            #:func-transform #:func-transform-forward #:func-transform-inverse
+             #:logit-transform #:logit-transform-nonpositive
+             #:logistic-transform #:logistic-transform-nonpositive
+             #:func-transform #:func-transform-forward #:func-transform-inverse
+             ;; Polar transforms
+             #:polar-transform
+             #:inverted-polar-transform
+             #:polar-affine
+             #:polar-affine-update
+             #:polar-affine-r-max
             ;; Color conversion (extends foundation)
             #:to-hex #:to-rgb
            ;; Colormap classes
@@ -395,9 +401,13 @@
              ;; PatchCollection
              #:patch-collection #:patch-collection-patches
              #:collection-set-patches
-             ;; PolyCollection
-             #:poly-collection #:poly-collection-verts
-             #:collection-set-verts
+              ;; PolyCollection
+              #:poly-collection #:poly-collection-verts
+              #:collection-set-verts
+              ;; QuiverCollection
+              #:quiver-collection #:quiver-x-data #:quiver-y-data
+              #:quiver-u-data #:quiver-v-data #:quiver-scale
+              #:quiver-width #:quiver-pivot #:quiver-axes-ref
              ;; QuadMesh
              #:quad-mesh #:quad-mesh-width #:quad-mesh-height
              #:quad-mesh-coordinates))
@@ -430,8 +440,10 @@
            #:figure-add-artist #:figure-remove-artist #:figure-get-children
            #:figure-subplots-adjust #:figure-ensure-canvas
            #:draw-figure-background
-           ;; savefig pipeline
-           #:savefig #:detect-format #:print-figure
+            ;; Figure-level title and axis labels
+            #:suptitle #:supxlabel #:supylabel
+            ;; savefig pipeline
+            #:savefig #:detect-format #:print-figure
            ;; SubFigure
            #:sub-figure #:make-subfigure #:subfigure-parent #:subfigure-position
            ;; AxesBase class
@@ -446,8 +458,9 @@
            ;; AxesBase functions
            #:axes-update-datalim #:axes-autoscale-view
            #:axes-set-xlim #:axes-set-ylim
-           #:axes-get-xlim #:axes-get-ylim
-           #:axes-add-line #:axes-add-patch #:axes-add-artist
+            #:axes-get-xlim #:axes-get-ylim
+            #:axes-invert-xaxis #:axes-invert-yaxis
+            #:axes-add-line #:axes-add-patch #:axes-add-artist
            #:axes-get-all-artists
             ;; Axes class (rectilinear)
             #:mpl-axes
@@ -459,9 +472,15 @@
               #:imshow #:axes-add-image
               ;; Additional plot types (Phase 6b)
               #:hist #:pie #:errorbar #:stem #:axes-step
-               #:stackplot #:barh #:boxplot
-               #:annotate
-            ;; Grid
+                 #:stackplot #:barh #:boxplot #:violinplot
+                  #:gaussian-kde #:quiver #:streamplot
+                #:annotate
+                #:text
+                #:axhline #:axvline #:hlines #:vlines
+                 #:axhspan #:axvspan
+                 #:axes-twinx #:axes-twiny
+                 #:axes-pcolormesh
+             ;; Grid
             #:axes-grid-toggle
             ;; Ticker — Locator base
             #:locator #:locator-axis #:locator-tick-values #:locator-call
@@ -511,7 +530,7 @@
              ;; Axis scale
              #:axis-scale #:axis-set-scale
              ;; XAxis / YAxis
-             #:x-axis #:y-axis
+             #:x-axis #:y-axis #:axis-side
              ;; Scale base
              #:scale-base #:scale-name #:scale-axis
              #:scale-get-transform #:scale-set-default-locators-and-formatters
@@ -527,6 +546,9 @@
              #:make-scale
              ;; Axes scale methods
              #:axes-set-xscale #:axes-set-yscale
+             ;; Tick position/label setters
+             #:axes-set-xticks #:axes-set-xticklabels
+             #:axes-set-yticks #:axes-set-yticklabels
              ;; Tick
              #:tick #:tick-loc #:tick-major-p #:tick-size #:tick-width
              #:tick-color #:tick-direction #:tick-pad
@@ -595,8 +617,10 @@
                #:contourset-get-paths
                ;; QuadContourSet
                #:quad-contour-set #:qcs-x #:qcs-y #:qcs-z
-               ;; Contour plotting functions
-               #:contour #:contourf #:clabel))
+                ;; Contour plotting functions
+                #:contour #:contourf #:clabel
+                ;; Polar axes
+                #:polar-axes))
 
 (defpackage #:cl-matplotlib.backends
   (:use #:cl)
@@ -642,13 +666,20 @@ Manages global figure state for convenience.")
            ;; Subplot creation
            #:subplots
            ;; Plot functions
-           #:plot #:scatter #:bar #:hist #:imshow #:contour #:contourf
-           #:pie #:errorbar #:stem #:step-plot #:stackplot #:barh #:boxplot
-           #:fill-between
+             #:plot #:scatter #:bar #:hist #:imshow #:contour #:contourf
+             #:pie #:errorbar #:stem #:step-plot #:stackplot #:barh #:boxplot
+              #:violinplot #:quiver #:streamplot
+               #:fill-between #:pcolormesh
            ;; Axes configuration
-           #:xlabel #:ylabel #:title #:xlim #:ylim #:grid #:legend
-           #:colorbar #:annotate
-           ;; Output
+            #:xlabel #:ylabel #:title #:xlim #:ylim #:grid #:legend
+             #:set-xticks #:set-xticklabels #:set-yticks #:set-yticklabels
+             #:colorbar #:annotate #:text
+             #:suptitle #:supxlabel #:supylabel
+             #:invert-xaxis #:invert-yaxis
+              #:axhline #:axvline #:hlines #:vlines
+               #:axhspan #:axvspan
+               #:twinx #:twiny
+             ;; Output
            #:savefig #:show
            ;; State management
            #:*figures* #:*current-figure* #:*figure-counter*))

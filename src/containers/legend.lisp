@@ -145,8 +145,12 @@ Ported from matplotlib.legend.Legend."))
     (setf (mpl.rendering:artist-axes leg) parent)
     (when (typep parent 'axes-base)
       (setf (mpl.rendering:artist-figure leg) (axes-base-figure parent))))
-  ;; Resolve loc keyword to numeric code
+  ;; Resolve loc keyword or string to numeric code
   (let ((loc (legend-loc leg)))
+    ;; Convert string loc (e.g., "upper left") to keyword (e.g., :upper-left)
+    (when (stringp loc)
+      (setf loc (intern (string-upcase (substitute #\- #\Space loc)) :keyword))
+      (setf (legend-loc leg) loc))
     (when (keywordp loc)
       (let ((entry (assoc loc *legend-codes*)))
         (when entry
@@ -232,9 +236,9 @@ Returns (values x y width height) in display space."
                                                 (mpl.rendering:text-text txt)
                                                 font-loader fontsize))))))
          ;; Total column width = handle + pad + text
-         ;; Scale text width by 1.05x to compensate for zpb-ttf vs FreeType metrics
-         ;; (zpb-ttf measures ~61px vs FreeType ~64px for same text at 10pt/100dpi)
-         (col-width (+ handle-len text-pad (* 1.05d0 max-label-width)))
+         ;; Scale text width to compensate for zpb-ttf vs FreeType metrics
+         ;; and ensure sufficient right-side padding for longer labels
+         (col-width (+ handle-len text-pad (* 1.2d0 max-label-width)))
          ;; Total legend width
          (legend-width (+ (* 2 border-pad)
                           (* ncol col-width)
@@ -544,7 +548,8 @@ legend box and bboxes that overlap with it."
     ((typep artist 'mpl.rendering:rectangle)
      (let* ((facecolor (or (mpl.rendering:patch-facecolor artist) "C0"))
             (edgecolor (or (mpl.rendering:patch-edgecolor artist) "black"))
-            (face-rgba (%resolve-legend-color facecolor 1.0d0))
+            (alpha (or (mpl.rendering:artist-alpha artist) 1.0d0))
+            (face-rgba (%resolve-legend-color facecolor alpha))
       (edge-rgba (%resolve-legend-color edgecolor 1.0d0)))
        (when (typep renderer 'mpl.backends:renderer-base)
          (let* ((path (mpl.primitives:path-unit-rectangle))

@@ -88,6 +88,13 @@ Returns the created AxesImage."
     ;; For imshow, use tight autoscale (no extra margin) since the extent
     ;; already includes the 0.5-pixel margin around each pixel center.
     (axes-autoscale-view ax :tight t)
+    ;; For origin='upper' (default), invert the y-axis so that row 0 is at the
+    ;; top of the image and y=0 maps to the top — matching matplotlib's behavior.
+    ;; This ensures text annotations placed at y=i align with data[i,*] pixels.
+    (when (eq origin :upper)
+      (multiple-value-bind (y0 y1) (axes-get-ylim ax)
+        (when (< y0 y1)  ; only invert if not already inverted
+          (axes-invert-yaxis ax))))
     ;; Handle aspect ratio (after autoscale so view-lim is set)
     (when (eq aspect :equal)
       ;; For equal aspect, matplotlib adjusts the AXES BOX (position) to be square.

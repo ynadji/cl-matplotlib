@@ -170,6 +170,9 @@ Returns a list of Rectangle patches."
                                   :edgecolor edgecolor
                                   :linewidth linewidth
                                   :zorder zorder)))
+        ;; Set label on first rect for legend auto-collect
+        (when (and (= i 0) (stringp label) (plusp (length label)))
+          (setf (mpl.rendering:artist-label rect) label))
         ;; Set transform to transData
         (setf (mpl.rendering:artist-transform rect)
               (axes-base-trans-data ax))
@@ -290,13 +293,85 @@ Returns the created Polygon."
       ;; Set transform to transData
       (setf (mpl.rendering:artist-transform poly)
             (axes-base-trans-data ax))
-      (axes-add-patch ax poly)
+      (axes-add-patch ax poly :at-end t)
       ;; Update data limits from both curves
       (let ((all-y (append (coerce y1data 'list)
                            (coerce y2data 'list))))
         (axes-update-datalim ax xdata all-y))
       (axes-autoscale-view ax)
       poly)))
+
+;;; ============================================================
+;;; axhspan / axvspan — shaded region spans
+;;; ============================================================
+
+(defun axhspan (ax ymin ymax &key (xmin 0.0) (xmax 1.0) (color "C0") (alpha nil)
+                                   (edgecolor "none") (linewidth 0.0) (label "") (zorder 1))
+  "Draw a horizontal span (shaded region) between YMIN and YMAX.
+YMIN, YMAX — y extent in DATA coordinates.
+XMIN, XMAX — x extent as AXES FRACTION (0=left, 1=right). Default: full width.
+Returns the created Polygon."
+  (multiple-value-bind (x0 x1) (axes-get-xlim ax)
+    (let* ((span (if (= x0 x1) 1.0d0 (- x1 x0)))
+           (xs (float (+ x0 (* (float xmin 1.0d0) span)) 1.0d0))
+           (xe (float (+ x0 (* (float xmax 1.0d0) span)) 1.0d0))
+           (ys (float ymin 1.0d0))
+           (ye (float ymax 1.0d0))
+           (verts (make-array '(4 2) :element-type 'double-float)))
+      ;; 4 vertices: bottom-left, bottom-right, top-right, top-left
+      (setf (aref verts 0 0) xs  (aref verts 0 1) ys)
+      (setf (aref verts 1 0) xe  (aref verts 1 1) ys)
+      (setf (aref verts 2 0) xe  (aref verts 2 1) ye)
+      (setf (aref verts 3 0) xs  (aref verts 3 1) ye)
+      (let ((poly (make-instance 'mpl.rendering:polygon
+                                 :xy verts
+                                 :closed t
+                                 :facecolor color
+                                 :edgecolor edgecolor
+                                 :linewidth linewidth
+                                 :label label
+                                 :zorder zorder)))
+        (when alpha
+          (setf (mpl.rendering:artist-alpha poly) (float alpha 1.0d0)))
+        (setf (mpl.rendering:artist-transform poly) (axes-base-trans-data ax))
+        ;; Add as patch at end — preserves insertion order for overlapping spans
+        (axes-add-patch ax poly :at-end t)
+        (setf (mpl.rendering:artist-stale ax) t)
+        poly))))
+
+(defun axvspan (ax xmin xmax &key (ymin 0.0) (ymax 1.0) (color "C0") (alpha nil)
+                                   (edgecolor "none") (linewidth 0.0) (label "") (zorder 1))
+  "Draw a vertical span (shaded region) between XMIN and XMAX.
+XMIN, XMAX — x extent in DATA coordinates.
+YMIN, YMAX — y extent as AXES FRACTION (0=bottom, 1=top). Default: full height.
+Returns the created Polygon."
+  (multiple-value-bind (y0 y1) (axes-get-ylim ax)
+    (let* ((span (if (= y0 y1) 1.0d0 (- y1 y0)))
+           (ys (float (+ y0 (* (float ymin 1.0d0) span)) 1.0d0))
+           (ye (float (+ y0 (* (float ymax 1.0d0) span)) 1.0d0))
+           (xs (float xmin 1.0d0))
+           (xe (float xmax 1.0d0))
+           (verts (make-array '(4 2) :element-type 'double-float)))
+      ;; 4 vertices: bottom-left, bottom-right, top-right, top-left
+      (setf (aref verts 0 0) xs  (aref verts 0 1) ys)
+      (setf (aref verts 1 0) xe  (aref verts 1 1) ys)
+      (setf (aref verts 2 0) xe  (aref verts 2 1) ye)
+      (setf (aref verts 3 0) xs  (aref verts 3 1) ye)
+      (let ((poly (make-instance 'mpl.rendering:polygon
+                                 :xy verts
+                                 :closed t
+                                 :facecolor color
+                                 :edgecolor edgecolor
+                                 :linewidth linewidth
+                                 :label label
+                                 :zorder zorder)))
+        (when alpha
+          (setf (mpl.rendering:artist-alpha poly) (float alpha 1.0d0)))
+        (setf (mpl.rendering:artist-transform poly) (axes-base-trans-data ax))
+        ;; Add as patch at end — preserves insertion order for overlapping spans
+        (axes-add-patch ax poly :at-end t)
+        (setf (mpl.rendering:artist-stale ax) t)
+        poly))))
 
 ;;; ============================================================
 ;;; grid — enable/disable grid lines
@@ -320,6 +395,64 @@ AXIS: :both, :x, or :y."
                  :color color :linewidth linewidth
                  :linestyle linestyle :alpha alpha)))
   (setf (mpl.rendering:artist-stale ax) t))
+
+;;; ============================================================
+;;; %apply-autopct — Python-to-CL format string conversion
+;;; ============================================================
+
+(defun %apply-autopct (autopct pct)
+  "Apply autopct format string to percentage value PCT.
+Supports both Python-style ('%1.1f%%') and CL FORMAT-style ('~,1F%').
+Returns the formatted string."
+  (if (find #\~ autopct)
+      ;; CL FORMAT style — use directly
+      (format nil autopct pct)
+      ;; Python %-format style — parse and convert
+      (let ((result (make-array 0 :element-type 'character :adjustable t :fill-pointer 0))
+            (i 0)
+            (len (length autopct)))
+        (loop while (< i len) do
+          (let ((ch (char autopct i)))
+            (cond
+              ;; %% → literal %
+              ((and (char= ch #\%) (< (1+ i) len) (char= (char autopct (1+ i)) #\%))
+               (vector-push-extend #\% result)
+               (incf i 2))
+              ;; % followed by format spec
+              ((char= ch #\%)
+               (incf i) ; skip %
+               ;; Skip optional width digits
+               (loop while (and (< i len) (digit-char-p (char autopct i)))
+                     do (incf i))
+               ;; Parse .precision
+               (let ((precision nil))
+                 (when (and (< i len) (char= (char autopct i) #\.))
+                   (incf i) ; skip .
+                   (setf precision 0)
+                   (loop while (and (< i len) (digit-char-p (char autopct i)))
+                         do (setf precision (+ (* precision 10)
+                                               (digit-char-p (char autopct i))))
+                            (incf i)))
+                 ;; Format specifier character
+                 (when (< i len)
+                   (let ((spec (char autopct i)))
+                     (incf i)
+                     (let ((formatted
+                             (cond
+                               ((char= spec #\f)
+                                (if precision
+                                    (format nil (format nil "~~,~DF" precision) pct)
+                                    (format nil "~F" pct)))
+                               ((char= spec #\d)
+                                (format nil "~D" (round pct)))
+                               (t (string spec)))))
+                       (loop for c across formatted
+                             do (vector-push-extend c result)))))))
+              ;; Regular character
+              (t
+               (vector-push-extend ch result)
+               (incf i)))))
+        (coerce result 'string))))
 
 ;;; ============================================================
 ;;; pie — pie chart
@@ -434,7 +567,7 @@ Returns (values patches texts autotexts)."
                       (pct-r 0.6d0)
                       (px (* pct-r (cos mid-angle)))
                       (py (* pct-r (sin mid-angle)))
-                      (pct-text (format nil autopct pct))
+                       (pct-text (%apply-autopct autopct pct))
                       (txt (make-instance 'mpl.rendering:text-artist
                                           :x px :y py
                                           :text pct-text
@@ -864,6 +997,9 @@ Returns a list of Rectangle patches."
                                   :edgecolor edgecolor
                                   :linewidth linewidth
                                   :zorder zorder)))
+        ;; Set label on first rect for legend auto-collect
+        (when (and (= i 0) (stringp label) (plusp (length label)))
+          (setf (mpl.rendering:artist-label rect) label))
         (setf (mpl.rendering:artist-transform rect)
               (axes-base-trans-data ax))
         (axes-add-patch ax rect)
@@ -886,6 +1022,40 @@ Returns a list of Rectangle patches."
     (setf (axes-base-sticky-x-min ax) t)
     (axes-autoscale-view ax)
     (nreverse rects)))
+
+;;; ============================================================
+;;; text — place arbitrary text on axes
+;;; ============================================================
+
+(defun text (ax x y s &key (fontsize 12.0) (color "black") (alpha nil)
+                            (ha :left) (va :baseline) (rotation 0.0)
+                            (zorder 3))
+  "Place text S at position (X, Y) in data coordinates on AX.
+
+HA — horizontal alignment: :left, :center, :right.
+VA — vertical alignment: :top, :center, :bottom, :baseline.
+ROTATION — text rotation in degrees.
+Returns the created text-artist."
+  (let ((txt (make-instance 'mpl.rendering:text-artist
+                            :x (float x 1.0d0)
+                            :y (float y 1.0d0)
+                            :text s
+                            :fontsize (float fontsize 1.0d0)
+                            :color color
+                            :horizontalalignment ha
+                            :verticalalignment va
+                            :rotation (float rotation 1.0d0)
+                            :zorder zorder)))
+    (when alpha
+      (setf (mpl.rendering:artist-alpha txt) (float alpha 1.0d0)))
+    ;; Set transform to transData (data coordinates)
+    (setf (mpl.rendering:artist-transform txt)
+          (axes-base-trans-data ax))
+    ;; Add to axes texts list and artists
+    (push txt (axes-base-texts ax))
+    (axes-add-artist ax txt)
+    (setf (mpl.rendering:artist-stale ax) t)
+    txt))
 
 ;;; ============================================================
 ;;; annotate — add text annotation with optional arrow
@@ -947,11 +1117,249 @@ Returns the created Annotation."
     ann))
 
 ;;; ============================================================
+;;; axhline — horizontal reference line
+;;; ============================================================
+
+(defun axhline (ax y &key (xmin 0.0) (xmax 1.0) (color "C0") (linewidth 1.5)
+                           (linestyle :solid) (alpha nil) (label "") (zorder 2))
+  "Draw a horizontal line at Y across the axes.
+Y — y position in DATA coordinates.
+XMIN, XMAX — fraction of x-axis span (0=left edge, 1=right edge). Default: full width.
+Returns the created Line2D."
+  (multiple-value-bind (x0 x1) (axes-get-xlim ax)
+    ;; If axes has no data yet, use xmin/xmax as data coords directly
+    (let* ((span (if (= x0 x1) 1.0d0 (- x1 x0)))
+           (xs (float (+ x0 (* (float xmin 1.0d0) span)) 1.0d0))
+           (xe (float (+ x0 (* (float xmax 1.0d0) span)) 1.0d0))
+           (line (make-instance 'mpl.rendering:line-2d
+                                :xdata (list xs xe)
+                                :ydata (list (float y 1.0d0) (float y 1.0d0))
+                                :color color
+                                :linewidth linewidth
+                                :linestyle linestyle
+                                :label label
+                                :zorder zorder)))
+      (when alpha
+        (setf (mpl.rendering:artist-alpha line) (float alpha 1.0d0)))
+      (setf (mpl.rendering:artist-transform line) (axes-base-trans-data ax))
+      ;; Add line WITHOUT updating datalim (axhline doesn't affect autoscaling)
+      (axes-add-line ax line)
+      (setf (mpl.rendering:artist-stale ax) t)
+      line)))
+
+;;; ============================================================
+;;; axvline — vertical reference line
+;;; ============================================================
+
+(defun axvline (ax x &key (ymin 0.0) (ymax 1.0) (color "C0") (linewidth 1.5)
+                           (linestyle :solid) (alpha nil) (label "") (zorder 2))
+  "Draw a vertical line at X across the axes.
+X — x position in DATA coordinates.
+YMIN, YMAX — fraction of y-axis span (0=bottom, 1=top). Default: full height.
+Returns the created Line2D."
+  (multiple-value-bind (y0 y1) (axes-get-ylim ax)
+    (let* ((span (if (= y0 y1) 1.0d0 (- y1 y0)))
+           (ys (float (+ y0 (* (float ymin 1.0d0) span)) 1.0d0))
+           (ye (float (+ y0 (* (float ymax 1.0d0) span)) 1.0d0))
+           (line (make-instance 'mpl.rendering:line-2d
+                                :xdata (list (float x 1.0d0) (float x 1.0d0))
+                                :ydata (list ys ye)
+                                :color color
+                                :linewidth linewidth
+                                :linestyle linestyle
+                                :label label
+                                :zorder zorder)))
+      (when alpha
+        (setf (mpl.rendering:artist-alpha line) (float alpha 1.0d0)))
+      (setf (mpl.rendering:artist-transform line) (axes-base-trans-data ax))
+      (axes-add-line ax line)
+      (setf (mpl.rendering:artist-stale ax) t)
+      line)))
+
+;;; ============================================================
+;;; hlines — multiple horizontal lines at data coordinates
+;;; ============================================================
+
+(defun hlines (ax y xmin xmax &key (colors "C0") (linestyles :solid)
+                                    (linewidth 1.5) (alpha nil) (label "") (zorder 2))
+  "Draw horizontal lines at each y in Y from xmin to xmax (all in DATA coordinates).
+Y — scalar or list of y values.
+XMIN, XMAX — x extent in data coordinates (scalar or list matching Y).
+Returns list of Line2D objects."
+  (let* ((ys (if (listp y) y (list y)))
+         (xmins (if (listp xmin) xmin (make-list (length ys) :initial-element xmin)))
+         (xmaxs (if (listp xmax) xmax (make-list (length ys) :initial-element xmax)))
+         (colorlist (if (listp colors) colors (make-list (length ys) :initial-element colors)))
+         (lines nil))
+    (loop for yi in ys
+          for x0 in xmins
+          for x1 in xmaxs
+          for col in colorlist
+          do (let ((line (make-instance 'mpl.rendering:line-2d
+                                        :xdata (list (float x0 1.0d0) (float x1 1.0d0))
+                                        :ydata (list (float yi 1.0d0) (float yi 1.0d0))
+                                        :color col
+                                        :linewidth linewidth
+                                        :linestyle linestyles
+                                        :label label
+                                        :zorder zorder)))
+               (when alpha (setf (mpl.rendering:artist-alpha line) (float alpha 1.0d0)))
+               (setf (mpl.rendering:artist-transform line) (axes-base-trans-data ax))
+               (axes-add-line ax line)
+               (axes-update-datalim ax (list x0 x1) (list yi yi))
+               (push line lines)))
+    (axes-autoscale-view ax)
+    (setf (mpl.rendering:artist-stale ax) t)
+    (nreverse lines)))
+
+;;; ============================================================
+;;; vlines — multiple vertical lines at data coordinates
+;;; ============================================================
+
+(defun vlines (ax x ymin ymax &key (colors "C0") (linestyles :solid)
+                                    (linewidth 1.5) (alpha nil) (label "") (zorder 2))
+  "Draw vertical lines at each x in X from ymin to ymax (all in DATA coordinates).
+X — scalar or list of x values.
+YMIN, YMAX — y extent in data coordinates (scalar or list matching X).
+Returns list of Line2D objects."
+  (let* ((xs (if (listp x) x (list x)))
+         (ymins (if (listp ymin) ymin (make-list (length xs) :initial-element ymin)))
+         (ymaxs (if (listp ymax) ymax (make-list (length xs) :initial-element ymax)))
+         (colorlist (if (listp colors) colors (make-list (length xs) :initial-element colors)))
+         (lines nil))
+    (loop for xi in xs
+          for y0 in ymins
+          for y1 in ymaxs
+          for col in colorlist
+          do (let ((line (make-instance 'mpl.rendering:line-2d
+                                        :xdata (list (float xi 1.0d0) (float xi 1.0d0))
+                                        :ydata (list (float y0 1.0d0) (float y1 1.0d0))
+                                        :color col
+                                        :linewidth linewidth
+                                        :linestyle linestyles
+                                        :label label
+                                        :zorder zorder)))
+               (when alpha (setf (mpl.rendering:artist-alpha line) (float alpha 1.0d0)))
+               (setf (mpl.rendering:artist-transform line) (axes-base-trans-data ax))
+               (axes-add-line ax line)
+               (axes-update-datalim ax (list xi xi) (list y0 y1))
+               (push line lines)))
+    (axes-autoscale-view ax)
+    (setf (mpl.rendering:artist-stale ax) t)
+    (nreverse lines)))
+
+;;; ============================================================
+;;; pcolormesh — pseudocolor mesh plot
+;;; ============================================================
+
+(defun axes-pcolormesh (ax c &key x y (cmap nil) (vmin nil) (vmax nil) (alpha nil)
+                                       (zorder 1))
+  "Create a pseudocolor mesh plot of 2D array C on axes AX.
+
+AX — an axes-base instance.
+C — 2D array of scalar values (H rows × W columns).
+X, Y — optional (H+1)×(W+1) arrays of corner coordinates. If nil, implicit grid.
+CMAP — colormap name (keyword or string) or nil for viridis.
+VMIN, VMAX — data range for colormap normalization.
+ALPHA — transparency.
+ZORDER — drawing order (default 1).
+
+Returns a scalar-mappable (for use with colorbar)."
+  (let* ((h (array-dimension c 0))
+         (w (array-dimension c 1))
+         ;; Resolve colormap
+         (effective-cmap (if cmap
+                             (if (or (keywordp cmap) (stringp cmap))
+                                 (mpl.primitives:get-colormap cmap)
+                                 cmap)
+                             (mpl.primitives:get-colormap :viridis)))
+         ;; Compute vmin/vmax from data if not specified
+         (data-min most-positive-double-float)
+         (data-max most-negative-double-float))
+    ;; Scan C for min/max
+    (dotimes (row h)
+      (dotimes (col w)
+        (let ((v (float (aref c row col) 1.0d0)))
+          (when (< v data-min) (setf data-min v))
+          (when (> v data-max) (setf data-max v)))))
+    (let* ((eff-vmin (float (or vmin data-min) 1.0d0))
+           (eff-vmax (float (or vmax data-max) 1.0d0))
+           ;; Build coordinates array: (H+1)×(W+1)×2
+           (coords (make-array (list (1+ h) (1+ w) 2) :element-type 'double-float
+                                                        :initial-element 0.0d0))
+           ;; Track data limits
+           (x-min most-positive-double-float)
+           (x-max most-negative-double-float)
+           (y-min most-positive-double-float)
+           (y-max most-negative-double-float))
+      ;; Fill coordinates
+      (if (and x y)
+          ;; Explicit X, Y grids
+          (dotimes (i (1+ h))
+            (dotimes (j (1+ w))
+              (let ((xv (float (aref x i j) 1.0d0))
+                    (yv (float (aref y i j) 1.0d0)))
+                (setf (aref coords i j 0) xv
+                      (aref coords i j 1) yv)
+                (when (< xv x-min) (setf x-min xv))
+                (when (> xv x-max) (setf x-max xv))
+                (when (< yv y-min) (setf y-min yv))
+                (when (> yv y-max) (setf y-max yv)))))
+          ;; Implicit grid: coords[i][j] = (j, i)
+          (progn
+            (dotimes (i (1+ h))
+              (dotimes (j (1+ w))
+                (setf (aref coords i j 0) (float j 1.0d0)
+                      (aref coords i j 1) (float i 1.0d0))))
+            (setf x-min 0.0d0 x-max (float w 1.0d0)
+                  y-min 0.0d0 y-max (float h 1.0d0))))
+      ;; Apply colormap to get per-cell facecolors
+      (let* ((range (- eff-vmax eff-vmin))
+             (facecolors
+               (let ((colors nil))
+                 (dotimes (row h)
+                   (dotimes (col w)
+                     (let* ((v (float (aref c row col) 1.0d0))
+                            (norm-v (if (zerop range) 0.5d0
+                                        (max 0.0d0 (min 1.0d0
+                                                        (/ (- v eff-vmin) range)))))
+                            (rgba (mpl.primitives:colormap-call effective-cmap norm-v))
+                            (hex (format nil "#~2,'0x~2,'0x~2,'0x"
+                                         (round (* (aref rgba 0) 255))
+                                         (round (* (aref rgba 1) 255))
+                                         (round (* (aref rgba 2) 255)))))
+                       (push hex colors))))
+                 (nreverse colors)))
+             ;; Create QuadMesh
+             (qm (make-instance 'mpl.rendering:quad-mesh
+                                :mesh-width w
+                                :mesh-height h
+                                :coordinates coords
+                                :facecolors facecolors
+                                :edgecolors '("none")
+                                :linewidths '(0.0)
+                                :zorder zorder)))
+        (when alpha
+          (setf (mpl.rendering:artist-alpha qm) (float alpha 1.0d0)))
+        ;; Set transform
+        (setf (mpl.rendering:artist-transform qm)
+              (axes-base-trans-data ax))
+        ;; Add to axes
+        (axes-add-artist ax qm)
+        ;; Update data limits
+        (axes-update-datalim ax (list x-min x-max) (list y-min y-max))
+        (axes-autoscale-view ax :tight t)
+        ;; Create scalar-mappable for colorbar integration
+        (let* ((norm (mpl.primitives:make-normalize :vmin eff-vmin :vmax eff-vmax))
+               (sm (mpl.primitives:make-scalar-mappable :norm norm :cmap effective-cmap)))
+          sm)))))
+
+;;; ============================================================
 ;;; add-subplot — create axes in figure at subplot position
 ;;; ============================================================
 
-(defun add-subplot (figure nrows ncols index &key (facecolor "white") (frameon t))
-  "Add an Axes to FIGURE as part of a subplot arrangement.
+(defun add-subplot (figure nrows ncols index &key (facecolor "white") (frameon t) (projection nil))
+   "Add an Axes to FIGURE as part of a subplot arrangement.
 
 FIGURE — an mpl-figure instance.
 NROWS — number of rows in subplot grid.
@@ -959,8 +1367,9 @@ NCOLS — number of columns in subplot grid.
 INDEX — 1-based index of the subplot position.
 FACECOLOR — axes background color (default white).
 FRAMEON — whether to draw axes frame (default T).
+PROJECTION — axes projection type (:polar for polar axes, NIL for rectangular).
 
-Returns the created mpl-axes."
+Returns the created mpl-axes or polar-axes."
   (let* ((params (figure-subplot-params figure))
          (left (getf params :left))
          (right (getf params :right))
@@ -983,18 +1392,103 @@ Returns the created mpl-axes."
          (pos-bottom (- top (* (1+ row) subplot-h) (* row hspace)))
          (pos-width subplot-w)
          (pos-height subplot-h))
-    ;; Ensure position is within bounds
-    (let* ((position (list pos-left pos-bottom pos-width pos-height))
-           (ax (make-instance 'mpl-axes
-                              :figure figure
-                              :position position
-                              :facecolor facecolor
-                              :frameon frameon
-                              :zorder 0)))
-      ;; Add to figure's axes list
-      (push ax (figure-axes figure))
-      ;; Set artist references
-      (setf (mpl.rendering:artist-figure ax) figure)
-      (setf (mpl.rendering:artist-axes ax) ax)
-      (setf (mpl.rendering:artist-stale figure) t)
-      ax)))
+     ;; Ensure position is within bounds
+     (let* ((position (list pos-left pos-bottom pos-width pos-height))
+            (ax (case projection
+                  (:polar (make-instance 'polar-axes
+                                         :figure figure
+                                         :position position
+                                         :facecolor facecolor
+                                         :frameon frameon
+                                         :zorder 0))
+                  (otherwise (make-instance 'mpl-axes
+                                            :figure figure
+                                            :position position
+                                            :facecolor facecolor
+                                            :frameon frameon
+                                            :zorder 0)))))
+       ;; Add to figure's axes list
+       (push ax (figure-axes figure))
+       ;; Set artist references
+       (setf (mpl.rendering:artist-figure ax) figure)
+       (setf (mpl.rendering:artist-axes ax) ax)
+       (setf (mpl.rendering:artist-stale figure) t)
+       ax)))
+
+;;; ============================================================
+;;; twinx / twiny — dual-axis overlaid axes
+;;; ============================================================
+
+(defun axes-twinx (ax)
+  "Create a twin axes overlaid on AX, sharing the x-axis but with an
+independent y-axis on the right side.
+Returns the new twin mpl-axes.
+Ported from matplotlib.axes.Axes.twinx."
+  (let* ((fig (axes-base-figure ax))
+         (pos (axes-base-position ax))
+         ;; Create new axes at the same position with transparent background
+         (twin (make-instance 'mpl-axes
+                               :figure fig
+                               :position (copy-list pos)
+                               :facecolor "none"
+                               :frameon nil
+                               :zorder (1+ (mpl.rendering:artist-zorder ax)))))
+    ;; Set artist references
+    (setf (mpl.rendering:artist-figure twin) fig)
+    (setf (mpl.rendering:artist-axes twin) twin)
+    ;; Share x-axis: twin's x-limits track parent's
+    (axes-share-x twin ax)
+    ;; Set twin's y-axis to draw on the right side
+    (setf (axis-side (axes-base-yaxis twin)) :right)
+    ;; Hide twin's x-axis tick labels (parent already has them on bottom)
+    (setf (axis-tick-labels-visible-p (axes-base-xaxis twin)) nil)
+    ;; Configure spines: hide left/top/bottom on twin, show right
+    (when (axes-base-spines twin)
+      (spine-set-visible (spines-ref (axes-base-spines twin) "left") nil)
+      (spine-set-visible (spines-ref (axes-base-spines twin) "top") nil)
+      (spine-set-visible (spines-ref (axes-base-spines twin) "bottom") nil)
+      (spine-set-visible (spines-ref (axes-base-spines twin) "right") t))
+    ;; Hide the right spine on the parent (twin owns it now)
+    (when (axes-base-spines ax)
+      (spine-set-visible (spines-ref (axes-base-spines ax) "right") nil))
+    ;; Add twin to figure's axes list (first position = current axes for gca)
+    (push twin (figure-axes fig))
+    (setf (mpl.rendering:artist-stale fig) t)
+    twin))
+
+(defun axes-twiny (ax)
+  "Create a twin axes overlaid on AX, sharing the y-axis but with an
+independent x-axis on the top side.
+Returns the new twin mpl-axes.
+Ported from matplotlib.axes.Axes.twiny."
+  (let* ((fig (axes-base-figure ax))
+         (pos (axes-base-position ax))
+         ;; Create new axes at the same position with transparent background
+         (twin (make-instance 'mpl-axes
+                               :figure fig
+                               :position (copy-list pos)
+                               :facecolor "none"
+                               :frameon nil
+                               :zorder (1+ (mpl.rendering:artist-zorder ax)))))
+    ;; Set artist references
+    (setf (mpl.rendering:artist-figure twin) fig)
+    (setf (mpl.rendering:artist-axes twin) twin)
+    ;; Share y-axis: twin's y-limits track parent's
+    (axes-share-y twin ax)
+    ;; Set twin's x-axis to draw on the top side
+    (setf (axis-side (axes-base-xaxis twin)) :top)
+    ;; Hide twin's y-axis tick labels (parent already has them on left)
+    (setf (axis-tick-labels-visible-p (axes-base-yaxis twin)) nil)
+    ;; Configure spines: hide left/bottom/right on twin, show top
+    (when (axes-base-spines twin)
+      (spine-set-visible (spines-ref (axes-base-spines twin) "left") nil)
+      (spine-set-visible (spines-ref (axes-base-spines twin) "bottom") nil)
+      (spine-set-visible (spines-ref (axes-base-spines twin) "right") nil)
+      (spine-set-visible (spines-ref (axes-base-spines twin) "top") t))
+    ;; Hide the top spine on the parent (twin owns it now)
+    (when (axes-base-spines ax)
+      (spine-set-visible (spines-ref (axes-base-spines ax) "top") nil))
+    ;; Add twin to figure's axes list (first position = current axes for gca)
+    (push twin (figure-axes fig))
+    (setf (mpl.rendering:artist-stale fig) t)
+    twin))
