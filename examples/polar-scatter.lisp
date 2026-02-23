@@ -15,6 +15,8 @@
          (r (mapcar (lambda (t_) (+ 0.5d0 (* 0.5d0 (sin t_)))) theta)))
     (plot theta r :marker :circle :linewidth 0 :color "C3"))
   (title "Polar Scatter")
-  (savefig "examples/polar-scatter.png"))
+  (savefig "examples/polar-scatter.png")
+  (savefig "examples/polar-scatter.svg")
+  (savefig "examples/polar-scatter.pdf"))
 
 (uiop:quit)

@@ -26,6 +26,8 @@
 
 (let ((out "examples/curve-error-band.png"))
   (savefig out)
+  (savefig "examples/curve-error-band.svg")
+  (savefig "examples/curve-error-band.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

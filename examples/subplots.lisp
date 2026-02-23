@@ -37,6 +37,8 @@
 
   (let ((out "examples/subplots.png"))
     (mpl.containers:savefig fig out)
+    (mpl.containers:savefig fig "examples/subplots.svg")
+    (mpl.containers:savefig fig "examples/subplots.pdf")
     (format t "~&Saved to ~A~%" out)))
 
 (uiop:quit)

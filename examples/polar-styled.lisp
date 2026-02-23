@@ -16,6 +16,8 @@
          (r (mapcar (lambda (t_) (+ 1.0d0 (cos t_))) theta)))
     (plot theta r :color "darkred" :linewidth 2.5))
   (title "Styled Polar Plot")
-  (savefig "examples/polar-styled.png"))
+  (savefig "examples/polar-styled.png")
+  (savefig "examples/polar-styled.svg")
+  (savefig "examples/polar-styled.pdf"))
 
 (uiop:quit)

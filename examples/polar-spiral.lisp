@@ -16,6 +16,8 @@
          (r (mapcar (lambda (t_) (/ t_ (* 2.0d0 pi))) theta)))
     (plot theta r :color "C2"))
   (title "Archimedean Spiral: r = θ/(2π)")
-  (savefig "examples/polar-spiral.png"))
+  (savefig "examples/polar-spiral.png")
+  (savefig "examples/polar-spiral.svg")
+  (savefig "examples/polar-spiral.pdf"))
 
 (uiop:quit)

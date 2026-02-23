@@ -27,6 +27,8 @@
 
 (let ((out "examples/hlines-vlines.png"))
   (savefig out)
+  (savefig "examples/hlines-vlines.svg")
+  (savefig "examples/hlines-vlines.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

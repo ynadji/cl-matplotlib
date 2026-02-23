@@ -29,6 +29,8 @@
 
 (let ((out "examples/threshold-lines.png"))
   (savefig out)
+  (savefig "examples/threshold-lines.svg")
+  (savefig "examples/threshold-lines.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

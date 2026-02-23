@@ -21,6 +21,8 @@
 
 (let ((out "examples/annotated-heatmap.png"))
   (savefig out)
+  (savefig "examples/annotated-heatmap.svg")
+  (savefig "examples/annotated-heatmap.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

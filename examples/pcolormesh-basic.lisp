@@ -27,6 +27,8 @@
 
 (let ((out "examples/pcolormesh-basic.png"))
   (savefig out)
+  (savefig "examples/pcolormesh-basic.svg")
+  (savefig "examples/pcolormesh-basic.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

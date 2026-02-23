@@ -29,6 +29,8 @@
 
 (let ((out "examples/reference-grid.png"))
   (savefig out)
+  (savefig "examples/reference-grid.svg")
+  (savefig "examples/reference-grid.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

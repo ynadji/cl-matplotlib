@@ -24,6 +24,8 @@
 
 (let ((out "examples/stem-plot.png"))
   (savefig out)
+  (savefig "examples/stem-plot.svg")
+  (savefig "examples/stem-plot.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

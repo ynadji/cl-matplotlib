@@ -21,6 +21,8 @@
 
 (let ((out "examples/bar-chart.png"))
   (savefig out)
+  (savefig "examples/bar-chart.svg")
+  (savefig "examples/bar-chart.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

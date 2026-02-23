@@ -23,6 +23,8 @@
 
 (let ((out "examples/symlog-demo.png"))
   (savefig out)
+  (savefig "examples/symlog-demo.svg")
+  (savefig "examples/symlog-demo.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

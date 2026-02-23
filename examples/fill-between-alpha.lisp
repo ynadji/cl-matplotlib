@@ -27,6 +27,8 @@
 
 (let ((out "examples/fill-between-alpha.png"))
   (savefig out)
+  (savefig "examples/fill-between-alpha.svg")
+  (savefig "examples/fill-between-alpha.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

@@ -23,6 +23,8 @@
 
 (let ((out "examples/errorbar-features.png"))
   (savefig out)
+  (savefig "examples/errorbar-features.svg")
+  (savefig "examples/errorbar-features.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

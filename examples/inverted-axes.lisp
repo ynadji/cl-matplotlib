@@ -19,6 +19,8 @@
 
 (let ((out "examples/inverted-axes.png"))
   (savefig out)
+  (savefig "examples/inverted-axes.svg")
+  (savefig "examples/inverted-axes.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

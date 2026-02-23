@@ -16,6 +16,8 @@
          (r (mapcar (lambda (t_) (+ 1.0d0 (cos t_))) theta)))
     (plot theta r))
   (title "Cardioid: r = 1 + cos(θ)")
-  (savefig "examples/polar-line.png"))
+  (savefig "examples/polar-line.png")
+  (savefig "examples/polar-line.svg")
+  (savefig "examples/polar-line.pdf"))
 
 (uiop:quit)

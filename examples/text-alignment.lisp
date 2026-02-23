@@ -20,6 +20,8 @@
 
 (let ((out "examples/text-alignment.png"))
   (savefig out)
+  (savefig "examples/text-alignment.svg")
+  (savefig "examples/text-alignment.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

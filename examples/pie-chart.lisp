@@ -18,6 +18,8 @@
 
 (let ((out "examples/pie-chart.png"))
   (savefig out)
+  (savefig "examples/pie-chart.svg")
+  (savefig "examples/pie-chart.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

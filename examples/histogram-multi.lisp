@@ -31,6 +31,8 @@
 
 (let ((out "examples/histogram-multi.png"))
   (savefig out)
+  (savefig "examples/histogram-multi.svg")
+  (savefig "examples/histogram-multi.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

@@ -17,6 +17,8 @@
     (suptitle "Trigonometric Functions" :fontsize 14.0)
     (supxlabel "Angle (radians)")
     (supylabel "Amplitude")
-    (mpl.containers:savefig fig "examples/figure-labels.png")))
+    (mpl.containers:savefig fig "examples/figure-labels.png")
+    (mpl.containers:savefig fig "examples/figure-labels.svg")
+    (mpl.containers:savefig fig "examples/figure-labels.pdf")))
 
 (uiop:quit)

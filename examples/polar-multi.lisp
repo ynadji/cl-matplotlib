@@ -20,6 +20,8 @@
     (plot theta r2 :color "C1")
     (plot theta r3 :color "C2"))
   (title "Multiple Polar Curves")
-  (savefig "examples/polar-multi.png"))
+  (savefig "examples/polar-multi.png")
+  (savefig "examples/polar-multi.svg")
+  (savefig "examples/polar-multi.pdf"))
 
 (uiop:quit)

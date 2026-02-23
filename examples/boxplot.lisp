@@ -28,6 +28,8 @@
 
 (let ((out "examples/boxplot.png"))
   (savefig out)
+  (savefig "examples/boxplot.svg")
+  (savefig "examples/boxplot.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

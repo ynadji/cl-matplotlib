@@ -28,6 +28,8 @@
 
 (let ((out "examples/twin-y-axis.png"))
   (savefig out)
+  (savefig "examples/twin-y-axis.svg")
+  (savefig "examples/twin-y-axis.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)
