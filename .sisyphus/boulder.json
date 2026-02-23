@@ -1,9 +1,9 @@
 {
-  "active_plan": "/home/yacin/code/cl-matplotlib/.sisyphus/plans/gallery-expansion.md",
-  "started_at": "2026-02-21T17:16:28.763Z",
+  "active_plan": "/home/yacin/code/cl-matplotlib/.sisyphus/plans/tier3-features.md",
+  "started_at": "2026-02-22T21:49:13.203Z",
   "session_ids": [
     "ses_383b1abbdffeaEsvS36ri8MZk1"
   ],
-  "plan_name": "gallery-expansion",
-  "note": "ssim-095 plan superseded — all 27 examples already pass at 0.95 via direct commits (4b886b0, 5721ced)"
+  "plan_name": "tier3-features",
+  "note": "gallery-expansion complete (Tasks 1-20 + fixes all committed). Starting Tier 3: violin, quiver, polar, streamplot."
 }
