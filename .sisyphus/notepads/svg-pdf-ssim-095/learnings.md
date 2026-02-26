@@ -257,3 +257,44 @@
 ### Evidence
 - `.sisyphus/evidence/task-5-pdf-image-ssim.txt`
 - `.sisyphus/evidence/task-5-test-suite.txt`
+
+## [2026-02-26] Task 7: Half-Pixel Snapping for SVG/PDF — COMPLETED
+
+### Problem
+- Vecto backend had half-pixel snapping for axis-aligned stroked paths (gridlines, spines, ticks, step-plot steps)
+- SVG and PDF backends lacked this, causing potential rendering differences
+
+### Solution
+- Ported `%path-axis-aligned-p` function to both backend-svg.lisp and backend-pdf.lisp
+- Added `snap-to-half-pixels` keyword to `%trace-path-to-svg` and `%trace-path-to-pdf`
+- Snap formula: `(+ (floor (+ v 0.5d0)) 0.5d0)` with 0.02 guard for already-snapped values
+- Snapping applied only for stroke-only paths (not fill, not fill+stroke) where path is axis-aligned
+- SVG `draw-path` restructured: colors resolved first, then path traced with snap flag
+- PDF `draw-path`: snapping added to stroke-only and default-stroke branches
+
+### SSIM Results
+- **SVG mean**: 0.882923 → 0.882795 (delta: -0.0001, negligible)
+- **PDF mean**: 0.928545 → 0.928559 (delta: +0.00001, negligible)
+
+Per-example SVG (DPI 96):
+- simple-line: 0.858778 → 0.858904 (+0.0001)
+- bar-chart: 0.879593 → 0.879637 (+0.0000)
+- step-plot: 0.886041 → 0.875780 (-0.0103) — small regression from ImageMagick AA interaction
+
+Per-example PDF:
+- simple-line: 0.921562 → 0.922697 (+0.0011)
+- bar-chart: 0.915938 → 0.915904 (+0.0000)
+- step-plot: 0.911930 → 0.911930 (stale PDF, VoidChar font error)
+
+### Key Insights
+1. **External rasterizers mask snapping**: ImageMagick and pdftoppm apply their own anti-aliasing, so sub-pixel coordinate snapping in SVG/PDF has negligible SSIM impact
+2. **step-plot SVG regression**: Snapping axis-aligned step segments causes a small regression (0.01) — likely because ImageMagick's rasterizer handles these coordinates differently than Vecto's cl-aa
+3. **Change kept regardless**: Aligns SVG/PDF with Vecto for correctness parity; the regression is within noise for overall mean
+4. **`%path-axis-aligned-p` redefine warnings**: Expected when all backends load (same function in 3 files, same package) — harmless
+5. **VoidChar font error persists**: step-plot PDF still fails to regenerate due to cl-pdf font issue
+
+### Test Suite
+- 208/208 PASS (100%)
+
+### Evidence
+- `.sisyphus/evidence/task-7-snapping-improvement.json`

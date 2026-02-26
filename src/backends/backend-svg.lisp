@@ -83,10 +83,65 @@ If COLOR is NIL, returns (values \"none\" 0.0)."
                 a))))
 
 ;;; ============================================================
+;;; Path analysis helpers
+;;; ============================================================
+
+(defun %path-axis-aligned-p (path transform)
+  "Return T if PATH contains only axis-aligned (horizontal/vertical) LINETO segments
+after applying TRANSFORM. Paths with curves (CURVE3/CURVE4) return NIL.
+Used to decide whether to snap stroke coordinates to half-pixel centers."
+  (let* ((verts (mpl.primitives:mpl-path-vertices path))
+         (codes (mpl.primitives:mpl-path-codes path))
+         (n (array-dimension verts 0)))
+    (when (zerop n) (return-from %path-axis-aligned-p t))
+    ;; If no codes, synthesize MOVETO + LINETOs
+    (unless codes
+      (setf codes (make-array n :element-type '(unsigned-byte 8)))
+      (setf (aref codes 0) mpl.primitives:+moveto+)
+      (loop for j from 1 below n do
+        (setf (aref codes j) mpl.primitives:+lineto+)))
+    (let ((prev-tx 0.0d0)
+          (prev-ty 0.0d0)
+          (i 0)
+          (tolerance 0.5d0))  ; half-pixel tolerance for "axis-aligned"
+      (flet ((xf (x y)
+               (if transform
+                   (let ((result (mpl.primitives:transform-point
+                                  transform (list (float x 1.0d0) (float y 1.0d0)))))
+                     (values (aref result 0) (aref result 1)))
+                   (values (float x 1.0d0) (float y 1.0d0)))))
+        (loop while (< i n) do
+          (let ((code (aref codes i)))
+            (cond
+              ((= code mpl.primitives:+moveto+)
+               (multiple-value-bind (tx ty) (xf (aref verts i 0) (aref verts i 1))
+                 (setf prev-tx tx prev-ty ty))
+               (incf i))
+              ((= code mpl.primitives:+lineto+)
+               (multiple-value-bind (tx ty) (xf (aref verts i 0) (aref verts i 1))
+                 (let ((dx (abs (- tx prev-tx)))
+                       (dy (abs (- ty prev-ty))))
+                   ;; Must be horizontal (dy < tol) or vertical (dx < tol)
+                   (unless (or (< dx tolerance) (< dy tolerance))
+                     (return-from %path-axis-aligned-p nil)))
+                 (setf prev-tx tx prev-ty ty))
+               (incf i))
+              ;; Any curve segment → not axis-aligned
+              ((or (= code mpl.primitives:+curve3+)
+                   (= code mpl.primitives:+curve4+))
+               (return-from %path-axis-aligned-p nil))
+              ((= code mpl.primitives:+closepoly+)
+               (incf i))
+              ((= code mpl.primitives:+stop+)
+               (return))
+              (t (incf i)))))
+        t))))
+
+;;; ============================================================
 ;;; Path tracing: map mpl-path codes to SVG path d-attribute
 ;;; ============================================================
 
-(defun %trace-path-to-svg (path transform)
+(defun %trace-path-to-svg (path transform &key snap-to-half-pixels)
   "Trace an mpl-path into an SVG path d-attribute string.
 TRANSFORM can be an affine transform or NIL for identity.
 Does NOT flip Y coordinates — the global <g> transform handles that."
@@ -103,11 +158,20 @@ Does NOT flip Y coordinates — the global <g> transform handles that."
         (setf (aref codes j) mpl.primitives:+lineto+)))
     (flet ((xf (x y)
              "Apply transform and return (values tx ty) as double-floats."
-             (if transform
-                 (let ((result (mpl.primitives:transform-point
-                                transform (list (float x 1.0d0) (float y 1.0d0)))))
-                   (values (aref result 0) (aref result 1)))
-                 (values (float x 1.0d0) (float y 1.0d0)))))
+             (multiple-value-bind (tx ty)
+                 (if transform
+                     (let ((result (mpl.primitives:transform-point
+                                    transform (list (float x 1.0d0) (float y 1.0d0)))))
+                       (values (aref result 0) (aref result 1)))
+                     (values (float x 1.0d0) (float y 1.0d0)))
+               (if snap-to-half-pixels
+                   (flet ((snap-half (v)
+                            (let ((frac (mod v 1.0d0)))
+                              (if (< (abs (- frac 0.5d0)) 0.02d0)
+                                  v  ;; Already at half-pixel — preserve
+                                  (+ (float (floor (+ v 0.5d0)) 1.0d0) 0.5d0)))))
+                     (values (snap-half tx) (snap-half ty)))
+                   (values tx ty)))))
       (with-output-to-string (out)
         (loop while (< i n) do
           (let ((code (aref codes i)))
@@ -255,14 +319,17 @@ Returns the clip ID string (e.g. \"clip-1\") or NIL if no clip rectangle."
 (defmethod draw-path ((renderer renderer-svg) gc path transform &optional rgbface)
   "Draw a path as an SVG <path> element. Handles fill, stroke, or both.
 Emits to renderer's output-stream; clip definitions go to defs-stream."
-  ;; Early exit for empty paths
-  (let ((d (%trace-path-to-svg path transform)))
+  ;; Resolve colors first to determine if snapping is appropriate
+  (let* ((face-color (%gc-face-color gc rgbface))
+         (edge-color (%gc-edge-color gc))
+         ;; Snap axis-aligned stroke-only paths to half-pixel centers
+         (snap (and edge-color (not face-color)
+                    (%path-axis-aligned-p path transform)))
+         (d (%trace-path-to-svg path transform :snap-to-half-pixels snap)))
+    ;; Early exit for empty paths
     (when (string= d "")
       (return-from draw-path nil))
-    ;; Resolve colors
-    (let* ((face-color (%gc-face-color gc rgbface))
-           (edge-color (%gc-edge-color gc))
-           (gc-alpha (or (mpl.rendering:gc-alpha gc) 1.0d0)))
+    (let* ((gc-alpha (or (mpl.rendering:gc-alpha gc) 1.0d0)))
       (multiple-value-bind (fill-hex fill-opacity) (%color-to-svg face-color)
         (multiple-value-bind (stroke-hex stroke-opacity) (%color-to-svg edge-color)
           ;; Apply overall gc-alpha to per-color opacities
