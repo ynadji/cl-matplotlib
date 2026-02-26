@@ -344,7 +344,7 @@ PROP is unused (font-family is always DejaVu Sans for SVG).
 ANGLE is rotation in degrees (counterclockwise).
 HA — horizontal alignment (:left, :center, :right) → SVG text-anchor.
 VA — vertical alignment (accepted but not used for dominant-baseline)."
-  (declare (ignore prop ismath va))
+  (declare (ignore prop ismath))
   ;; Guard: nil or empty string → no output
   (when (or (null s) (and (stringp s) (string= s "")))
     (return-from draw-text nil))
@@ -361,15 +361,24 @@ VA — vertical alignment (accepted but not used for dominant-baseline)."
          ;; Fix: place at (x, -y) and add scale(1,-1) to un-flip.
          ;; With rotation angle A (degrees, CCW): emit rotate(-A) in SVG.
          (angle-d (if (numberp angle) (coerce angle 'double-float) 0.0d0))
+         (dominant-baseline (case va
+                              (:bottom "text-after-edge")
+                              (:top "text-before-edge")
+                              (:center "central")
+                              (otherwise nil)))
          (transform-str
            (if (/= angle-d 0.0d0)
                (format nil "translate(~A,~A) rotate(~A) scale(1,-1)"
                        (%format-float x)
-                       (%format-float (- (coerce y 'double-float)))
+                       (%format-float (coerce y 'double-float))
                        (%format-float (- angle-d)))
                (format nil "translate(~A,~A) scale(1,-1)"
                        (%format-float x)
-                       (%format-float (- (coerce y 'double-float)))))))
+                       (%format-float (coerce y 'double-float)))))
+         (dominant-baseline-attr (if dominant-baseline
+                                      (format nil " dominant-baseline=\"~A\""
+                                              dominant-baseline)
+                                      "")))
     ;; Emit <text> element
     (let ((out (renderer-svg-output-stream renderer)))
       (multiple-value-bind (fill-hex fill-op)
@@ -377,10 +386,11 @@ VA — vertical alignment (accepted but not used for dominant-baseline)."
                            (list (car raw-color) (cadr raw-color)
                                  (caddr raw-color)
                                  (* (cadddr raw-color) (coerce gc-alpha 'double-float)))))
-        (format out "<text font-family=\"DejaVu Sans\" font-size=\"~A\" fill=\"~A\" fill-opacity=\"~A\" text-anchor=\"~A\" transform=\"~A\">~A</text>~%"
+        (format out "<text font-family=\"DejaVu Sans\" font-size=\"~A\" fill=\"~A\" fill-opacity=\"~A\" text-anchor=\"~A\"~A transform=\"~A\">~A</text>~%"
                 (%format-float font-size)
                 fill-hex (%format-float fill-op)
                 text-anchor
+                dominant-baseline-attr
                 transform-str
                 (%svg-xml-escape s))))))
 
