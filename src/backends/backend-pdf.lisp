@@ -60,20 +60,26 @@ Must be called within a pdf:with-page context."
          (:round 1)
          (:bevel 2)
          (otherwise 0)))))
-  ;; Dash pattern
+  ;; Dash pattern — scale by linewidth like SVG
+  ;; Base patterns (linewidth-relative):
+  ;;   dashed:  (3.7, 1.6)
+  ;;   dashdot: (6.4, 1.6, 1.0, 1.6)
+  ;;   dotted:  (1.0, 1.65)
   (let ((dashes (mpl.rendering:gc-dashes gc))
-        (linestyle (mpl.rendering:gc-linestyle gc)))
+        (linestyle (mpl.rendering:gc-linestyle gc))
+        (lw (or (mpl.rendering:gc-linewidth gc) 1.0)))
     (cond
       ;; Explicit dash list
       ((and dashes (listp dashes) (not (null dashes)))
        (pdf:set-dash-pattern dashes 0))
-      ;; Named line style
+      ;; Named line style — scale by linewidth
       ((and linestyle (not (eq linestyle :solid)))
-       (case linestyle
-         (:dashed (pdf:set-dash-pattern '(6 4) 0))
-         (:dashdot (pdf:set-dash-pattern '(6 3 2 3) 0))
-         (:dotted (pdf:set-dash-pattern '(2 4) 0))
-         (otherwise (pdf:set-dash-pattern '() 0))))
+       (let ((mult (max lw 1.0)))
+         (case linestyle
+           (:dashed (pdf:set-dash-pattern (list (* 3.7d0 mult) (* 1.6d0 mult)) 0))
+           (:dashdot (pdf:set-dash-pattern (list (* 6.4d0 mult) (* 1.6d0 mult) (* 1.0d0 mult) (* 1.6d0 mult)) 0))
+           (:dotted (pdf:set-dash-pattern (list (* 1.0d0 mult) (* 1.65d0 mult)) 0))
+           (otherwise (pdf:set-dash-pattern '() 0)))))
       ;; Solid line
       (t (pdf:set-dash-pattern '() 0))))
   ;; Clip rectangle
