@@ -1,0 +1,12 @@
+Task 5: Test Suite Results
+==========================
+
+Command: sbcl --eval '(ql:quickload :cl-matplotlib-pyplot)' --eval '(asdf:test-system :cl-matplotlib-pyplot)' --quit
+
+Result:
+  Did 208 checks.
+    Pass: 208 (100%)
+    Skip: 0 ( 0%)
+    Fail: 0 ( 0%)
+
+Status: ALL PASS ✓

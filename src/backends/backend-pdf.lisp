@@ -370,21 +370,33 @@ VA is vertical alignment (:baseline, :bottom, :center, :top). Default :baseline.
 (defmethod draw-image ((renderer renderer-pdf) gc x y im)
   "Draw an RGBA image IM at position (X, Y) in the PDF.
 IM should be a plist with :data (flat RGBA bytes), :width, :height.
-Note: cl-pdf image support is limited; this creates a simple colored rectangle
-as a placeholder for raster images in the PDF backend."
+Uses zpng to encode a PNG via temp file, then cl-pdf's make-image/draw-image API."
   (declare (ignore gc))
-  (let ((w (getf im :width))
+  (let ((data (getf im :data))
+        (w (getf im :width))
         (h (getf im :height)))
-    (when (and w h)
-      ;; PDF doesn't easily support inline RGBA bitmaps without encoding
-      ;; Draw a placeholder rectangle showing image bounds
-      (pdf:with-saved-state
-        (pdf:set-rgb-fill 0.9 0.9 0.9)
-        (pdf:set-rgb-stroke 0.5 0.5 0.5)
-        (pdf:set-line-width 0.5)
-        (pdf:basic-rect (float x 1.0) (float y 1.0)
-                        (float w 1.0) (float h 1.0))
-        (pdf:fill-and-stroke)))))
+    (when (and data w h)
+      (let* ((png (make-instance 'zpng:png
+                                 :color-type :truecolor-alpha
+                                 :width w :height h))
+             (tmp-path (format nil "/tmp/cl-mpl-pdf-~A-~A.png"
+                               (get-universal-time)
+                               (random 100000))))
+        ;; Copy RGBA data into zpng image buffer
+        (replace (zpng:image-data png) data)
+        ;; Write to temp file (zpng only accepts pathname)
+        (zpng:write-png png tmp-path)
+        ;; Load into cl-pdf, register with page, and draw; clean up temp file
+        (unwind-protect
+            (let ((pdf-image (pdf:make-image tmp-path)))
+              ;; Register image XObject with current page (required by cl-pdf)
+              (pdf:add-images-to-page pdf-image)
+              (pdf:with-saved-state
+                (pdf:draw-image pdf-image
+                                (float x 1.0) (float y 1.0)
+                                (float w 1.0) (float h 1.0)
+                                0)))
+          (ignore-errors (delete-file tmp-path)))))))
 
 ;;; ============================================================
 ;;; draw-markers — Repeated path drawing

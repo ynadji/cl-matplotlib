@@ -1,0 +1,24 @@
+Task 5: PDF Image Rendering — SSIM Results
+============================================
+
+Implementation: Replaced gray rectangle placeholder in draw-image (backend-pdf.lisp)
+with real image rendering via cl-pdf's make-image/draw-image API.
+
+SSIM Results (before → after):
+  imshow-heatmap:    0.8273 → 0.9707  (+0.1434)  TARGET: >0.90 ✓ PASS
+  annotated-heatmap: 0.8341 → 0.9255  (+0.0914)  TARGET: >0.87 ✓ PASS
+
+Key Implementation Details:
+  1. Extract RGBA data from im plist (:data, :width, :height)
+  2. Create zpng PNG with :truecolor-alpha (same as SVG backend)
+  3. Write to temp file (zpng only accepts pathname)
+  4. Load with (pdf:make-image tmp-path)
+  5. Register with (pdf:add-images-to-page pdf-image) — CRITICAL, without this XObjects are unknown
+  6. Draw with (pdf:draw-image pdf-image x y w h 0) — 6 args, rotation=0
+  7. Clean up temp file in unwind-protect
+
+Critical Discovery:
+  pdf:draw-image takes 6 arguments (image x y dx dy rotation), NOT 5
+  pdf:add-images-to-page MUST be called to register XObject with page
+  Without add-images-to-page: pdftoppm reports "XObject 'CLI101' is unknown"
+  RGBA PNGs are accepted by cl-pdf (no pre-compositing needed)
