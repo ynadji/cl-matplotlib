@@ -1,0 +1,330 @@
+{
+  "format": "svg",
+  "dpi": 100,
+  "timestamp": "2026-02-26T16:52:10.656161",
+  "mean": 0.8697,
+  "min": 0.6329,
+  "max": 0.9711,
+  "count_below_095": 70,
+  "count_below_090": 51,
+  "count_below_085": 26,
+  "count_below_080": 9,
+  "examples": [
+    {
+      "name": "pcolormesh",
+      "ssim": 0.6329
+    },
+    {
+      "name": "pcolormesh-basic",
+      "ssim": 0.6596
+    },
+    {
+      "name": "span-regions",
+      "ssim": 0.763
+    },
+    {
+      "name": "fill-between-alpha",
+      "ssim": 0.7632
+    },
+    {
+      "name": "curve-error-band",
+      "ssim": 0.7635
+    },
+    {
+      "name": "multi-line-styles",
+      "ssim": 0.7819
+    },
+    {
+      "name": "annotated-heatmap",
+      "ssim": 0.7907
+    },
+    {
+      "name": "stem-plot",
+      "ssim": 0.794
+    },
+    {
+      "name": "subplots",
+      "ssim": 0.7956
+    },
+    {
+      "name": "gridspec-multi",
+      "ssim": 0.8039
+    },
+    {
+      "name": "imshow-heatmap",
+      "ssim": 0.8041
+    },
+    {
+      "name": "color-cycle",
+      "ssim": 0.8127
+    },
+    {
+      "name": "gridspec-custom",
+      "ssim": 0.8152
+    },
+    {
+      "name": "histogram",
+      "ssim": 0.8158
+    },
+    {
+      "name": "histogram-types",
+      "ssim": 0.8169
+    },
+    {
+      "name": "scales-overview",
+      "ssim": 0.818
+    },
+    {
+      "name": "multi-line",
+      "ssim": 0.8262
+    },
+    {
+      "name": "twin-axes",
+      "ssim": 0.827
+    },
+    {
+      "name": "fill-between",
+      "ssim": 0.8288
+    },
+    {
+      "name": "figure-sizes",
+      "ssim": 0.8324
+    },
+    {
+      "name": "custom-markers",
+      "ssim": 0.8353
+    },
+    {
+      "name": "stem-simple",
+      "ssim": 0.8358
+    },
+    {
+      "name": "symlog-demo",
+      "ssim": 0.8359
+    },
+    {
+      "name": "shared-axes",
+      "ssim": 0.8374
+    },
+    {
+      "name": "logit-demo",
+      "ssim": 0.8448
+    },
+    {
+      "name": "annotations",
+      "ssim": 0.8495
+    },
+    {
+      "name": "quiver-basic",
+      "ssim": 0.8506
+    },
+    {
+      "name": "stacked-bar",
+      "ssim": 0.8534
+    },
+    {
+      "name": "simple-line",
+      "ssim": 0.8541
+    },
+    {
+      "name": "violin-basic",
+      "ssim": 0.8554
+    },
+    {
+      "name": "legend-styles",
+      "ssim": 0.8564
+    },
+    {
+      "name": "errorbar-features",
+      "ssim": 0.8567
+    },
+    {
+      "name": "step-plot",
+      "ssim": 0.8576
+    },
+    {
+      "name": "bar-chart",
+      "ssim": 0.8606
+    },
+    {
+      "name": "barh",
+      "ssim": 0.8633
+    },
+    {
+      "name": "scatter",
+      "ssim": 0.8651
+    },
+    {
+      "name": "scatter-legend",
+      "ssim": 0.8672
+    },
+    {
+      "name": "histogram-multi",
+      "ssim": 0.8687
+    },
+    {
+      "name": "quiver-gradient",
+      "ssim": 0.8727
+    },
+    {
+      "name": "quiver-colored",
+      "ssim": 0.8738
+    },
+    {
+      "name": "horizontal-bar-stacked",
+      "ssim": 0.8743
+    },
+    {
+      "name": "quiver-scaled",
+      "ssim": 0.8746
+    },
+    {
+      "name": "bar-colors",
+      "ssim": 0.8765
+    },
+    {
+      "name": "violin-styled",
+      "ssim": 0.8766
+    },
+    {
+      "name": "errorbar",
+      "ssim": 0.8767
+    },
+    {
+      "name": "stackplot",
+      "ssim": 0.8886
+    },
+    {
+      "name": "violin-comparison",
+      "ssim": 0.8897
+    },
+    {
+      "name": "boxplot-styles",
+      "ssim": 0.8902
+    },
+    {
+      "name": "threshold-lines",
+      "ssim": 0.8905
+    },
+    {
+      "name": "contour-lines",
+      "ssim": 0.8936
+    },
+    {
+      "name": "figure-labels",
+      "ssim": 0.8985
+    },
+    {
+      "name": "hlines-vlines",
+      "ssim": 0.9037
+    },
+    {
+      "name": "log-scale",
+      "ssim": 0.9039
+    },
+    {
+      "name": "polar-rose",
+      "ssim": 0.9058
+    },
+    {
+      "name": "polar-spiral",
+      "ssim": 0.907
+    },
+    {
+      "name": "polar-scatter",
+      "ssim": 0.9072
+    },
+    {
+      "name": "polar-multi",
+      "ssim": 0.9094
+    },
+    {
+      "name": "two-scales",
+      "ssim": 0.912
+    },
+    {
+      "name": "polar-line",
+      "ssim": 0.9161
+    },
+    {
+      "name": "text-watermark",
+      "ssim": 0.9167
+    },
+    {
+      "name": "polar-styled",
+      "ssim": 0.9168
+    },
+    {
+      "name": "boxplot",
+      "ssim": 0.918
+    },
+    {
+      "name": "reference-grid",
+      "ssim": 0.9194
+    },
+    {
+      "name": "categorical-bar",
+      "ssim": 0.9214
+    },
+    {
+      "name": "twin-y-axis",
+      "ssim": 0.922
+    },
+    {
+      "name": "custom-ticks",
+      "ssim": 0.9311
+    },
+    {
+      "name": "bar-labels",
+      "ssim": 0.9362
+    },
+    {
+      "name": "text-alignment",
+      "ssim": 0.937
+    },
+    {
+      "name": "subplots-shared",
+      "ssim": 0.9422
+    },
+    {
+      "name": "text-positions",
+      "ssim": 0.9472
+    },
+    {
+      "name": "inverted-axes",
+      "ssim": 0.9517
+    },
+    {
+      "name": "pie-features",
+      "ssim": 0.9564
+    },
+    {
+      "name": "contour-demo",
+      "ssim": 0.9601
+    },
+    {
+      "name": "pie-chart",
+      "ssim": 0.9611
+    },
+    {
+      "name": "colorbar-custom",
+      "ssim": 0.9624
+    },
+    {
+      "name": "scatter-sizes",
+      "ssim": 0.964
+    },
+    {
+      "name": "filled-contour",
+      "ssim": 0.9684
+    },
+    {
+      "name": "streamplot-styled",
+      "ssim": 0.9695
+    },
+    {
+      "name": "streamplot-basic",
+      "ssim": 0.9711
+    }
+  ]
+}

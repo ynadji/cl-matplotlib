@@ -8,7 +8,7 @@ COMPARISON_REPORT_DIR := comparison_report
 COMPARISON_TOOL := tools/compare.py
 THRESHOLD := 0.95
 
-.PHONY: setup-python reference-images cl-images compare report clean all
+.PHONY: setup-python reference-images cl-images compare compare-svg compare-pdf compare-all report clean all
 
 setup-python:
 	@echo "Setting up Python virtual environment..."
@@ -43,6 +43,34 @@ compare: cl-images
 		--output $(COMPARISON_REPORT_DIR)/
 	@echo "Comparison complete. Report: $(COMPARISON_REPORT_DIR)/index.html"
 
+compare-svg: cl-images
+	@echo "Running SVG visual comparison..."
+	@mkdir -p comparison_report_svg/
+	$(PYTHON) $(COMPARISON_TOOL) \
+		--reference $(EXAMPLES_DIR)/ \
+		--actual $(EXAMPLES_DIR)/ \
+		--format svg \
+		--dpi 96 \
+		--threshold $(THRESHOLD) \
+		--allowlist allowlist.json \
+		--output comparison_report_svg/
+	@echo "SVG comparison complete. Report: comparison_report_svg/index.html"
+
+compare-pdf: cl-images
+	@echo "Running PDF visual comparison..."
+	@mkdir -p comparison_report_pdf/
+	$(PYTHON) $(COMPARISON_TOOL) \
+		--reference $(EXAMPLES_DIR)/ \
+		--actual $(EXAMPLES_DIR)/ \
+		--format pdf \
+		--threshold $(THRESHOLD) \
+		--allowlist allowlist.json \
+		--output comparison_report_pdf/
+	@echo "PDF comparison complete. Report: comparison_report_pdf/index.html"
+
+compare-all: compare compare-svg compare-pdf
+	@echo "All comparisons complete."
+
 report: compare
 	@echo "Report generated at $(COMPARISON_REPORT_DIR)/index.html"
 
@@ -51,4 +79,4 @@ clean:
 	rm -rf $(COMPARISON_REPORT_DIR)
 	rm -f $(EXAMPLES_DIR)/*.png
 
-all: setup-python reference-images cl-images compare
+all: setup-python reference-images cl-images compare compare-svg compare-pdf

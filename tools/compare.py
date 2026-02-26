@@ -115,6 +115,7 @@ def generate_html_report(results, threshold, output_dir):
     passed = sum(1 for r in results if r['status'] == 'PASS')
     failed = sum(1 for r in results if r['status'] == 'FAIL')
     skipped = sum(1 for r in results if r['status'] == 'SKIP')
+    allowed = sum(1 for r in results if r['status'] == 'ALLOW')
     total = len(results)
     all_pass = failed == 0
 
@@ -125,6 +126,8 @@ def generate_html_report(results, threshold, output_dir):
             status_html = '<span style="color:#22c55e;font-weight:bold">PASS</span>'
         elif status == 'FAIL':
             status_html = '<span style="color:#ef4444;font-weight:bold">FAIL</span>'
+        elif status == 'ALLOW':
+            status_html = '<span style="color:#f59e0b;font-weight:bold">ALLOW</span>'
         else:
             status_html = '<span style="color:#a3a3a3;font-weight:bold">SKIP</span>'
 
@@ -197,6 +200,10 @@ def generate_html_report(results, threshold, output_dir):
       <div class="label">Failed</div>
     </div>
     <div class="summary-card">
+      <div class="value" style="color:#f59e0b">{allowed}</div>
+      <div class="label">Allowed</div>
+    </div>
+    <div class="summary-card">
       <div class="value" style="color:#a3a3a3">{skipped}</div>
       <div class="label">Skipped</div>
     </div>
@@ -245,6 +252,7 @@ def generate_summary_json(results, threshold, output_dir):
             "passed": sum(1 for r in results if r['status'] == 'PASS'),
             "failed": sum(1 for r in results if r['status'] == 'FAIL'),
             "skipped": sum(1 for r in results if r['status'] == 'SKIP'),
+            "allowed": sum(1 for r in results if r['status'] == 'ALLOW'),
             "mean_ssim": float(np.mean(ssim_values)) if ssim_values else 0.0,
             "min_ssim": float(np.min(ssim_values)) if ssim_values else 0.0,
             "max_ssim": float(np.max(ssim_values)) if ssim_values else 0.0,
@@ -339,10 +347,15 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""Examples:
   %(prog)s --reference reference_images/ --actual examples/ --output comparison_report/
-  %(prog)s --reference reference_images/ --actual examples/ --threshold 0.85 --output report/
+  %(prog)s --reference ref/ --actual examples/ --format svg --output report/
+  %(prog)s --reference ref/ --actual examples/ --allowlist allow.json --output report/
+
+SVG DPI note:
+  SVG rasterization defaults to 96 DPI (CSS px = 1/96 inch).
+  PDF rasterization defaults to 100 DPI. Override with --dpi N.
 
 Exit codes:
-  0  All compared examples pass the SSIM threshold
+  0  All compared examples pass or are allowlisted
   1  One or more examples fail the SSIM threshold
   2  No reference images found or other error
 """,
@@ -368,10 +381,32 @@ Exit codes:
         help='Format of actual images to compare (default: png). SVG/PDF are rasterized first.',
     )
     parser.add_argument(
-        '--dpi', type=int, default=100,
-        help='DPI for SVG/PDF rasterization (default: 100)',
+        '--dpi', type=int, default=None,
+        help='DPI for SVG/PDF rasterization (default: 96 for SVG, 100 for PDF)',
+    )
+    parser.add_argument(
+        '--allowlist', default=None,
+        help='JSON file mapping example names to allow reasons. Matched FAILs become ALLOW.',
     )
     args = parser.parse_args()
+
+    # Format-specific DPI defaults (SVG: 96 for CSS px; PDF/PNG: 100)
+    if args.dpi is None:
+        args.dpi = 96 if args.format == 'svg' else 100
+
+    # Load allowlist
+    allowlist = {}
+    if args.allowlist:
+        try:
+            with open(args.allowlist) as f:
+                allowlist = json.load(f)
+            if not isinstance(allowlist, dict):
+                print(f"ERROR: Allowlist must be a JSON object, got {type(allowlist).__name__}", file=sys.stderr)
+                sys.exit(2)
+            print(f"Allowlist: {len(allowlist)} entries from {args.allowlist}")
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"ERROR: Failed to load allowlist: {e}", file=sys.stderr)
+            sys.exit(2)
 
     ref_dir = Path(args.reference)
     act_dir = Path(args.actual)
@@ -455,11 +490,20 @@ Exit codes:
             passed = ssim_score >= args.threshold
             status = 'PASS' if passed else 'FAIL'
 
+            # Allowlist override: FAIL -> ALLOW
+            allow_reason = None
+            if status == 'FAIL' and name in allowlist:
+                status = 'ALLOW'
+                allow_reason = allowlist[name]
+
             generate_comparison_sheet(name, ref_arr, act_arr, ssim_score, out_dir)
 
             note = warning or ''
-            status_indicator = 'PASS' if passed else 'FAIL'
-            print(f"{ssim_score:.4f}  {status_indicator}", end='')
+            if allow_reason:
+                note = f"ALLOW: {allow_reason}" + (f" | {note}" if note else '')
+            print(f"{ssim_score:.4f}  {status}", end='')
+            if allow_reason:
+                print(f"  ({allow_reason})", end='')
             if warning:
                 print(f"  (warning: {warning})", end='')
             print()
@@ -485,9 +529,10 @@ Exit codes:
     scored = [r for r in results if r['ssim'] is not None]
     passed_count = sum(1 for r in results if r['status'] == 'PASS')
     failed_count = sum(1 for r in results if r['status'] == 'FAIL')
+    allowed_count = sum(1 for r in results if r['status'] == 'ALLOW')
     skipped_count = sum(1 for r in results if r['status'] == 'SKIP')
 
-    print(f"Results: {passed_count} passed, {failed_count} failed, {skipped_count} skipped")
+    print(f"Results: {passed_count} passed, {failed_count} failed, {allowed_count} allowed, {skipped_count} skipped")
     if scored:
         ssim_vals = [r['ssim'] for r in scored]
         print(f"SSIM: mean={np.mean(ssim_vals):.4f}  min={np.min(ssim_vals):.4f}  max={np.max(ssim_vals):.4f}")
