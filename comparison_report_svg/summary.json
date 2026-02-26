@@ -1,0 +1,646 @@
+{
+  "threshold": 0.7,
+  "overall": {
+    "total": 79,
+    "passed": 77,
+    "failed": 2,
+    "skipped": 0,
+    "mean_ssim": 0.8697153417721518,
+    "min_ssim": 0.632938,
+    "max_ssim": 0.971103
+  },
+  "examples": [
+    {
+      "name": "annotated-heatmap",
+      "reference": "examples/annotated-heatmap.png",
+      "actual": "examples/annotated-heatmap.svg",
+      "ssim": 0.790708,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 600) vs (520, 625); resized smaller to match larger"
+    },
+    {
+      "name": "annotations",
+      "reference": "examples/annotations.png",
+      "actual": "examples/annotations.svg",
+      "ssim": 0.84953,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 1000) vs (625, 1041); resized smaller to match larger"
+    },
+    {
+      "name": "bar-chart",
+      "reference": "examples/bar-chart.png",
+      "actual": "examples/bar-chart.svg",
+      "ssim": 0.860607,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 800) vs (520, 833); resized smaller to match larger"
+    },
+    {
+      "name": "bar-colors",
+      "reference": "examples/bar-colors.png",
+      "actual": "examples/bar-colors.svg",
+      "ssim": 0.876528,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 800) vs (520, 833); resized smaller to match larger"
+    },
+    {
+      "name": "bar-labels",
+      "reference": "examples/bar-labels.png",
+      "actual": "examples/bar-labels.svg",
+      "ssim": 0.936185,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 700) vs (520, 729); resized smaller to match larger"
+    },
+    {
+      "name": "barh",
+      "reference": "examples/barh.png",
+      "actual": "examples/barh.svg",
+      "ssim": 0.863306,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 800) vs (520, 833); resized smaller to match larger"
+    },
+    {
+      "name": "boxplot-styles",
+      "reference": "examples/boxplot-styles.png",
+      "actual": "examples/boxplot-styles.svg",
+      "ssim": 0.890213,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 800) vs (520, 833); resized smaller to match larger"
+    },
+    {
+      "name": "boxplot",
+      "reference": "examples/boxplot.png",
+      "actual": "examples/boxplot.svg",
+      "ssim": 0.917971,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "categorical-bar",
+      "reference": "examples/categorical-bar.png",
+      "actual": "examples/categorical-bar.svg",
+      "ssim": 0.921445,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 800) vs (520, 833); resized smaller to match larger"
+    },
+    {
+      "name": "color-cycle",
+      "reference": "examples/color-cycle.png",
+      "actual": "examples/color-cycle.svg",
+      "ssim": 0.812738,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "colorbar-custom",
+      "reference": "examples/colorbar-custom.png",
+      "actual": "examples/colorbar-custom.svg",
+      "ssim": 0.962408,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "contour-demo",
+      "reference": "examples/contour-demo.png",
+      "actual": "examples/contour-demo.svg",
+      "ssim": 0.960055,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "contour-lines",
+      "reference": "examples/contour-lines.png",
+      "actual": "examples/contour-lines.svg",
+      "ssim": 0.893643,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "curve-error-band",
+      "reference": "examples/curve-error-band.png",
+      "actual": "examples/curve-error-band.svg",
+      "ssim": 0.763505,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 800) vs (520, 833); resized smaller to match larger"
+    },
+    {
+      "name": "custom-markers",
+      "reference": "examples/custom-markers.png",
+      "actual": "examples/custom-markers.svg",
+      "ssim": 0.835348,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "custom-ticks",
+      "reference": "examples/custom-ticks.png",
+      "actual": "examples/custom-ticks.svg",
+      "ssim": 0.931096,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 800) vs (520, 833); resized smaller to match larger"
+    },
+    {
+      "name": "errorbar-features",
+      "reference": "examples/errorbar-features.png",
+      "actual": "examples/errorbar-features.svg",
+      "ssim": 0.856745,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 800) vs (520, 833); resized smaller to match larger"
+    },
+    {
+      "name": "errorbar",
+      "reference": "examples/errorbar.png",
+      "actual": "examples/errorbar.svg",
+      "ssim": 0.876726,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "figure-labels",
+      "reference": "examples/figure-labels.png",
+      "actual": "examples/figure-labels.svg",
+      "ssim": 0.898517,
+      "status": "PASS",
+      "note": "Dimension mismatch: (800, 1000) vs (833, 1041); resized smaller to match larger"
+    },
+    {
+      "name": "figure-sizes",
+      "reference": "examples/figure-sizes.png",
+      "actual": "examples/figure-sizes.svg",
+      "ssim": 0.832396,
+      "status": "PASS",
+      "note": "Dimension mismatch: (400, 1600) vs (416, 1666); resized smaller to match larger"
+    },
+    {
+      "name": "fill-between-alpha",
+      "reference": "examples/fill-between-alpha.png",
+      "actual": "examples/fill-between-alpha.svg",
+      "ssim": 0.763163,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 800) vs (520, 833); resized smaller to match larger"
+    },
+    {
+      "name": "fill-between",
+      "reference": "examples/fill-between.png",
+      "actual": "examples/fill-between.svg",
+      "ssim": 0.828797,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 1000) vs (625, 1041); resized smaller to match larger"
+    },
+    {
+      "name": "filled-contour",
+      "reference": "examples/filled-contour.png",
+      "actual": "examples/filled-contour.svg",
+      "ssim": 0.968443,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "gridspec-custom",
+      "reference": "examples/gridspec-custom.png",
+      "actual": "examples/gridspec-custom.svg",
+      "ssim": 0.815207,
+      "status": "PASS",
+      "note": "Dimension mismatch: (800, 1000) vs (833, 1041); resized smaller to match larger"
+    },
+    {
+      "name": "gridspec-multi",
+      "reference": "examples/gridspec-multi.png",
+      "actual": "examples/gridspec-multi.svg",
+      "ssim": 0.803857,
+      "status": "PASS",
+      "note": "Dimension mismatch: (400, 1200) vs (416, 1250); resized smaller to match larger"
+    },
+    {
+      "name": "histogram-multi",
+      "reference": "examples/histogram-multi.png",
+      "actual": "examples/histogram-multi.svg",
+      "ssim": 0.868675,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 1000) vs (625, 1041); resized smaller to match larger"
+    },
+    {
+      "name": "histogram-types",
+      "reference": "examples/histogram-types.png",
+      "actual": "examples/histogram-types.svg",
+      "ssim": 0.81689,
+      "status": "PASS",
+      "note": "Dimension mismatch: (800, 1000) vs (833, 1041); resized smaller to match larger"
+    },
+    {
+      "name": "histogram",
+      "reference": "examples/histogram.png",
+      "actual": "examples/histogram.svg",
+      "ssim": 0.815814,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 800) vs (520, 833); resized smaller to match larger"
+    },
+    {
+      "name": "hlines-vlines",
+      "reference": "examples/hlines-vlines.png",
+      "actual": "examples/hlines-vlines.svg",
+      "ssim": 0.903721,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 800) vs (520, 833); resized smaller to match larger"
+    },
+    {
+      "name": "horizontal-bar-stacked",
+      "reference": "examples/horizontal-bar-stacked.png",
+      "actual": "examples/horizontal-bar-stacked.svg",
+      "ssim": 0.874301,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 1000) vs (625, 1041); resized smaller to match larger"
+    },
+    {
+      "name": "imshow-heatmap",
+      "reference": "examples/imshow-heatmap.png",
+      "actual": "examples/imshow-heatmap.svg",
+      "ssim": 0.804136,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "inverted-axes",
+      "reference": "examples/inverted-axes.png",
+      "actual": "examples/inverted-axes.svg",
+      "ssim": 0.951677,
+      "status": "PASS",
+      "note": "Dimension mismatch: (700, 600) vs (729, 625); resized smaller to match larger"
+    },
+    {
+      "name": "legend-styles",
+      "reference": "examples/legend-styles.png",
+      "actual": "examples/legend-styles.svg",
+      "ssim": 0.856438,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 1000) vs (625, 1041); resized smaller to match larger"
+    },
+    {
+      "name": "log-scale",
+      "reference": "examples/log-scale.png",
+      "actual": "examples/log-scale.svg",
+      "ssim": 0.903912,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "logit-demo",
+      "reference": "examples/logit-demo.png",
+      "actual": "examples/logit-demo.svg",
+      "ssim": 0.84481,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 800) vs (520, 833); resized smaller to match larger"
+    },
+    {
+      "name": "multi-line-styles",
+      "reference": "examples/multi-line-styles.png",
+      "actual": "examples/multi-line-styles.svg",
+      "ssim": 0.781858,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 800) vs (520, 833); resized smaller to match larger"
+    },
+    {
+      "name": "multi-line",
+      "reference": "examples/multi-line.png",
+      "actual": "examples/multi-line.svg",
+      "ssim": 0.826189,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 1000) vs (625, 1041); resized smaller to match larger"
+    },
+    {
+      "name": "pcolormesh-basic",
+      "reference": "examples/pcolormesh-basic.png",
+      "actual": "examples/pcolormesh-basic.svg",
+      "ssim": 0.659589,
+      "status": "FAIL",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "pcolormesh",
+      "reference": "examples/pcolormesh.png",
+      "actual": "examples/pcolormesh.svg",
+      "ssim": 0.632938,
+      "status": "FAIL",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "pie-chart",
+      "reference": "examples/pie-chart.png",
+      "actual": "examples/pie-chart.svg",
+      "ssim": 0.96108,
+      "status": "PASS",
+      "note": "Dimension mismatch: (700, 700) vs (729, 729); resized smaller to match larger"
+    },
+    {
+      "name": "pie-features",
+      "reference": "examples/pie-features.png",
+      "actual": "examples/pie-features.svg",
+      "ssim": 0.956386,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "polar-line",
+      "reference": "examples/polar-line.png",
+      "actual": "examples/polar-line.svg",
+      "ssim": 0.916089,
+      "status": "PASS",
+      "note": "Dimension mismatch: (480, 640) vs (500, 666); resized smaller to match larger"
+    },
+    {
+      "name": "polar-multi",
+      "reference": "examples/polar-multi.png",
+      "actual": "examples/polar-multi.svg",
+      "ssim": 0.909406,
+      "status": "PASS",
+      "note": "Dimension mismatch: (480, 640) vs (500, 666); resized smaller to match larger"
+    },
+    {
+      "name": "polar-rose",
+      "reference": "examples/polar-rose.png",
+      "actual": "examples/polar-rose.svg",
+      "ssim": 0.905819,
+      "status": "PASS",
+      "note": "Dimension mismatch: (480, 640) vs (500, 666); resized smaller to match larger"
+    },
+    {
+      "name": "polar-scatter",
+      "reference": "examples/polar-scatter.png",
+      "actual": "examples/polar-scatter.svg",
+      "ssim": 0.907167,
+      "status": "PASS",
+      "note": "Dimension mismatch: (480, 640) vs (500, 666); resized smaller to match larger"
+    },
+    {
+      "name": "polar-spiral",
+      "reference": "examples/polar-spiral.png",
+      "actual": "examples/polar-spiral.svg",
+      "ssim": 0.906964,
+      "status": "PASS",
+      "note": "Dimension mismatch: (480, 640) vs (500, 666); resized smaller to match larger"
+    },
+    {
+      "name": "polar-styled",
+      "reference": "examples/polar-styled.png",
+      "actual": "examples/polar-styled.svg",
+      "ssim": 0.916811,
+      "status": "PASS",
+      "note": "Dimension mismatch: (480, 640) vs (500, 666); resized smaller to match larger"
+    },
+    {
+      "name": "quiver-basic",
+      "reference": "examples/quiver-basic.png",
+      "actual": "examples/quiver-basic.svg",
+      "ssim": 0.850599,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "quiver-colored",
+      "reference": "examples/quiver-colored.png",
+      "actual": "examples/quiver-colored.svg",
+      "ssim": 0.873822,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "quiver-gradient",
+      "reference": "examples/quiver-gradient.png",
+      "actual": "examples/quiver-gradient.svg",
+      "ssim": 0.872655,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "quiver-scaled",
+      "reference": "examples/quiver-scaled.png",
+      "actual": "examples/quiver-scaled.svg",
+      "ssim": 0.874599,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "reference-grid",
+      "reference": "examples/reference-grid.png",
+      "actual": "examples/reference-grid.svg",
+      "ssim": 0.919436,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 700) vs (520, 729); resized smaller to match larger"
+    },
+    {
+      "name": "scales-overview",
+      "reference": "examples/scales-overview.png",
+      "actual": "examples/scales-overview.svg",
+      "ssim": 0.817991,
+      "status": "PASS",
+      "note": "Dimension mismatch: (800, 1000) vs (833, 1041); resized smaller to match larger"
+    },
+    {
+      "name": "scatter-legend",
+      "reference": "examples/scatter-legend.png",
+      "actual": "examples/scatter-legend.svg",
+      "ssim": 0.867189,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "scatter-sizes",
+      "reference": "examples/scatter-sizes.png",
+      "actual": "examples/scatter-sizes.svg",
+      "ssim": 0.964008,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "scatter",
+      "reference": "examples/scatter.png",
+      "actual": "examples/scatter.svg",
+      "ssim": 0.865064,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "shared-axes",
+      "reference": "examples/shared-axes.png",
+      "actual": "examples/shared-axes.svg",
+      "ssim": 0.837392,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "simple-line",
+      "reference": "examples/simple-line.png",
+      "actual": "examples/simple-line.svg",
+      "ssim": 0.854129,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "span-regions",
+      "reference": "examples/span-regions.png",
+      "actual": "examples/span-regions.svg",
+      "ssim": 0.763,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 1000) vs (625, 1041); resized smaller to match larger"
+    },
+    {
+      "name": "stacked-bar",
+      "reference": "examples/stacked-bar.png",
+      "actual": "examples/stacked-bar.svg",
+      "ssim": 0.853406,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 1000) vs (625, 1041); resized smaller to match larger"
+    },
+    {
+      "name": "stackplot",
+      "reference": "examples/stackplot.png",
+      "actual": "examples/stackplot.svg",
+      "ssim": 0.888557,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 1000) vs (625, 1041); resized smaller to match larger"
+    },
+    {
+      "name": "stem-plot",
+      "reference": "examples/stem-plot.png",
+      "actual": "examples/stem-plot.svg",
+      "ssim": 0.793973,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 1000) vs (520, 1041); resized smaller to match larger"
+    },
+    {
+      "name": "stem-simple",
+      "reference": "examples/stem-simple.png",
+      "actual": "examples/stem-simple.svg",
+      "ssim": 0.835844,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 800) vs (520, 833); resized smaller to match larger"
+    },
+    {
+      "name": "step-plot",
+      "reference": "examples/step-plot.png",
+      "actual": "examples/step-plot.svg",
+      "ssim": 0.857558,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 1000) vs (520, 1041); resized smaller to match larger"
+    },
+    {
+      "name": "streamplot-basic",
+      "reference": "examples/streamplot-basic.png",
+      "actual": "examples/streamplot-basic.svg",
+      "ssim": 0.971103,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "streamplot-styled",
+      "reference": "examples/streamplot-styled.png",
+      "actual": "examples/streamplot-styled.svg",
+      "ssim": 0.969531,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "subplots-shared",
+      "reference": "examples/subplots-shared.png",
+      "actual": "examples/subplots-shared.svg",
+      "ssim": 0.942227,
+      "status": "PASS",
+      "note": "Dimension mismatch: (800, 1000) vs (833, 1041); resized smaller to match larger"
+    },
+    {
+      "name": "subplots",
+      "reference": "examples/subplots.png",
+      "actual": "examples/subplots.svg",
+      "ssim": 0.795558,
+      "status": "PASS",
+      "note": "Dimension mismatch: (800, 1000) vs (833, 1041); resized smaller to match larger"
+    },
+    {
+      "name": "symlog-demo",
+      "reference": "examples/symlog-demo.png",
+      "actual": "examples/symlog-demo.svg",
+      "ssim": 0.835854,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 800) vs (520, 833); resized smaller to match larger"
+    },
+    {
+      "name": "text-alignment",
+      "reference": "examples/text-alignment.png",
+      "actual": "examples/text-alignment.svg",
+      "ssim": 0.937012,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 700) vs (520, 729); resized smaller to match larger"
+    },
+    {
+      "name": "text-positions",
+      "reference": "examples/text-positions.png",
+      "actual": "examples/text-positions.svg",
+      "ssim": 0.94719,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 700) vs (520, 729); resized smaller to match larger"
+    },
+    {
+      "name": "text-watermark",
+      "reference": "examples/text-watermark.png",
+      "actual": "examples/text-watermark.svg",
+      "ssim": 0.916745,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 700) vs (520, 729); resized smaller to match larger"
+    },
+    {
+      "name": "threshold-lines",
+      "reference": "examples/threshold-lines.png",
+      "actual": "examples/threshold-lines.svg",
+      "ssim": 0.8905,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 800) vs (520, 833); resized smaller to match larger"
+    },
+    {
+      "name": "twin-axes",
+      "reference": "examples/twin-axes.png",
+      "actual": "examples/twin-axes.svg",
+      "ssim": 0.827019,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 1200) vs (520, 1250); resized smaller to match larger"
+    },
+    {
+      "name": "twin-y-axis",
+      "reference": "examples/twin-y-axis.png",
+      "actual": "examples/twin-y-axis.svg",
+      "ssim": 0.922023,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 800) vs (520, 833); resized smaller to match larger"
+    },
+    {
+      "name": "two-scales",
+      "reference": "examples/two-scales.png",
+      "actual": "examples/two-scales.svg",
+      "ssim": 0.911985,
+      "status": "PASS",
+      "note": "Dimension mismatch: (500, 800) vs (520, 833); resized smaller to match larger"
+    },
+    {
+      "name": "violin-basic",
+      "reference": "examples/violin-basic.png",
+      "actual": "examples/violin-basic.svg",
+      "ssim": 0.855403,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "violin-comparison",
+      "reference": "examples/violin-comparison.png",
+      "actual": "examples/violin-comparison.svg",
+      "ssim": 0.889728,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    },
+    {
+      "name": "violin-styled",
+      "reference": "examples/violin-styled.png",
+      "actual": "examples/violin-styled.svg",
+      "ssim": 0.876605,
+      "status": "PASS",
+      "note": "Dimension mismatch: (600, 800) vs (625, 833); resized smaller to match larger"
+    }
+  ]
+}

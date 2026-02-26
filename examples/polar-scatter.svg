@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="640" height="480" viewBox="0 0 640 480">
+<defs>
+<symbol id="marker-1" overflow="visible">
+<path d="M 0.00 -4.17 C 1.11 -4.17 2.16 -3.73 2.95 -2.95 C 3.73 -2.16 4.17 -1.11 4.17 0.00 C 4.17 1.11 3.73 2.16 2.95 2.95 C 2.16 3.73 1.11 4.17 0.00 4.17 C -1.11 4.17 -2.16 3.73 -2.95 2.95 C -3.73 2.16 -4.17 1.11 -4.17 0.00 C -4.17 -1.11 -3.73 -2.16 -2.95 -2.95 C -2.16 -3.73 -1.11 -4.17 0.00 -4.17 Z " fill="#D62728" fill-opacity="1.00" stroke="#D62728" stroke-opacity="1.00" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+</symbol>
+</defs>
+<g transform="translate(0,480) scale(1,-1)">
+<rect width="640" height="480" fill="white"/>
+<path d="M 0.00 0.00 L 640.00 0.00 L 640.00 480.00 L 0.00 480.00 L 0.00 0.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 512.80 237.60 C 512.80 261.87 508.02 285.90 498.73 308.32 C 489.45 330.74 475.83 351.11 458.67 368.27 C 441.51 385.43 421.14 399.05 398.72 408.33 C 376.30 417.62 352.27 422.40 328.00 422.40 C 303.73 422.40 279.70 417.62 257.28 408.33 C 234.86 399.05 214.49 385.43 197.33 368.27 C 180.17 351.11 166.55 330.74 157.27 308.32 C 147.98 285.90 143.20 261.87 143.20 237.60 C 143.20 213.33 147.98 189.30 157.27 166.88 C 166.55 144.46 180.17 124.09 197.33 106.93 C 214.49 89.77 234.86 76.15 257.28 66.87 C 279.70 57.58 303.73 52.80 328.00 52.80 C 352.27 52.80 376.30 57.58 398.72 66.87 C 421.14 76.15 441.51 89.77 458.67 106.93 C 475.83 124.09 489.45 144.46 498.73 166.88 C 508.02 189.30 512.80 213.33 512.80 237.60 " fill="#FFFFFF" fill-opacity="1.00" stroke="none" stroke-opacity="0.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 374.20 237.60 C 374.20 243.67 373.00 249.67 370.68 255.28 C 368.36 260.89 364.96 265.98 360.67 270.27 C 356.38 274.56 351.29 277.96 345.68 280.28 C 340.07 282.60 334.07 283.80 328.00 283.80 C 321.93 283.80 315.93 282.60 310.32 280.28 C 304.71 277.96 299.62 274.56 295.33 270.27 C 291.04 265.98 287.64 260.89 285.32 255.28 C 283.00 249.67 281.80 243.67 281.80 237.60 C 281.80 231.53 283.00 225.53 285.32 219.92 C 287.64 214.31 291.04 209.22 295.33 204.93 C 299.62 200.64 304.71 197.24 310.32 194.92 C 315.93 192.60 321.93 191.40 328.00 191.40 C 334.07 191.40 340.07 192.60 345.68 194.92 C 351.29 197.24 356.38 200.64 360.67 204.93 C 364.96 209.22 368.36 214.31 370.68 219.92 C 373.00 225.53 374.20 231.53 374.20 237.60 " fill="none" fill-opacity="0.00" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="0.50" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 420.40 237.60 C 420.40 249.73 418.01 261.75 413.37 272.96 C 408.72 284.17 401.92 294.36 393.34 302.94 C 384.76 311.52 374.57 318.32 363.36 322.97 C 352.15 327.61 340.13 330.00 328.00 330.00 C 315.87 330.00 303.85 327.61 292.64 322.97 C 281.43 318.32 271.24 311.52 262.66 302.94 C 254.08 294.36 247.28 284.17 242.63 272.96 C 237.99 261.75 235.60 249.73 235.60 237.60 C 235.60 225.47 237.99 213.45 242.63 202.24 C 247.28 191.03 254.08 180.84 262.66 172.26 C 271.24 163.68 281.43 156.88 292.64 152.23 C 303.85 147.59 315.87 145.20 328.00 145.20 C 340.13 145.20 352.15 147.59 363.36 152.23 C 374.57 156.88 384.76 163.68 393.34 172.26 C 401.92 180.84 408.72 191.03 413.37 202.24 C 418.01 213.45 420.40 225.47 420.40 237.60 " fill="none" fill-opacity="0.00" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="0.50" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 466.60 237.60 C 466.60 255.80 463.01 273.82 456.05 290.64 C 449.08 307.46 438.87 322.74 426.00 335.60 C 413.14 348.47 397.86 358.68 381.04 365.65 C 364.22 372.61 346.20 376.20 328.00 376.20 C 309.80 376.20 291.78 372.61 274.96 365.65 C 258.14 358.68 242.86 348.47 230.00 335.60 C 217.13 322.74 206.92 307.46 199.95 290.64 C 192.99 273.82 189.40 255.80 189.40 237.60 C 189.40 219.40 192.99 201.38 199.95 184.56 C 206.92 167.74 217.13 152.46 230.00 139.60 C 242.86 126.73 258.14 116.52 274.96 109.55 C 291.78 102.59 309.80 99.00 328.00 99.00 C 346.20 99.00 364.22 102.59 381.04 109.55 C 397.86 116.52 413.14 126.73 426.00 139.60 C 438.87 152.46 449.08 167.74 456.05 184.56 C 463.01 201.38 466.60 219.40 466.60 237.60 " fill="none" fill-opacity="0.00" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="0.50" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 512.80 237.60 C 512.80 261.87 508.02 285.90 498.73 308.32 C 489.45 330.74 475.83 351.11 458.67 368.27 C 441.51 385.43 421.14 399.05 398.72 408.33 C 376.30 417.62 352.27 422.40 328.00 422.40 C 303.73 422.40 279.70 417.62 257.28 408.33 C 234.86 399.05 214.49 385.43 197.33 368.27 C 180.17 351.11 166.55 330.74 157.27 308.32 C 147.98 285.90 143.20 261.87 143.20 237.60 C 143.20 213.33 147.98 189.30 157.27 166.88 C 166.55 144.46 180.17 124.09 197.33 106.93 C 214.49 89.77 234.86 76.15 257.28 66.87 C 279.70 57.58 303.73 52.80 328.00 52.80 C 352.27 52.80 376.30 57.58 398.72 66.87 C 421.14 76.15 441.51 89.77 458.67 106.93 C 475.83 124.09 489.45 144.46 498.73 166.88 C 508.02 189.30 512.80 213.33 512.80 237.60 " fill="none" fill-opacity="0.00" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="0.50" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 328.00 237.60 L 512.80 237.60 " fill="none" fill-opacity="0.00" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="0.50" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 328.00 237.60 L 458.67 368.27 " fill="none" fill-opacity="0.00" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="0.50" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 328.00 237.60 L 328.00 422.40 " fill="none" fill-opacity="0.00" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="0.50" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 328.00 237.60 L 197.33 368.27 " fill="none" fill-opacity="0.00" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="0.50" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 328.00 237.60 L 143.20 237.60 " fill="none" fill-opacity="0.00" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="0.50" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 328.00 237.60 L 197.33 106.93 " fill="none" fill-opacity="0.00" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="0.50" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 328.00 237.60 L 328.00 52.80 " fill="none" fill-opacity="0.00" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="0.50" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 328.00 237.60 L 458.67 106.93 " fill="none" fill-opacity="0.00" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="0.50" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 446.10 237.60 L 475.02 273.20 L 479.70 319.73 L 453.57 366.39 L 399.20 400.89 L 328.00 413.60 L 256.80 400.89 L 202.43 366.39 L 176.30 319.73 L 180.98 273.20 L 209.90 237.60 L 250.39 218.81 L 288.62 216.28 L 314.74 224.00 L 326.21 233.50 L 328.00 237.60 L 329.79 233.50 L 341.26 224.00 L 367.38 216.28 L 405.61 218.81 " fill="none" fill-opacity="0.00" stroke="#D62728" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="square" stroke-linejoin="round"/>
+<use xlink:href="#marker-1" x="446.10" y="237.60"/>
+<use xlink:href="#marker-1" x="475.02" y="273.20"/>
+<use xlink:href="#marker-1" x="479.70" y="319.73"/>
+<use xlink:href="#marker-1" x="453.57" y="366.39"/>
+<use xlink:href="#marker-1" x="399.20" y="400.89"/>
+<use xlink:href="#marker-1" x="328.00" y="413.60"/>
+<use xlink:href="#marker-1" x="256.80" y="400.89"/>
+<use xlink:href="#marker-1" x="202.43" y="366.39"/>
+<use xlink:href="#marker-1" x="176.30" y="319.73"/>
+<use xlink:href="#marker-1" x="180.98" y="273.20"/>
+<use xlink:href="#marker-1" x="209.90" y="237.60"/>
+<use xlink:href="#marker-1" x="250.39" y="218.81"/>
+<use xlink:href="#marker-1" x="288.62" y="216.28"/>
+<use xlink:href="#marker-1" x="314.74" y="224.00"/>
+<use xlink:href="#marker-1" x="326.21" y="233.50"/>
+<use xlink:href="#marker-1" x="328.00" y="237.60"/>
+<use xlink:href="#marker-1" x="329.79" y="233.50"/>
+<use xlink:href="#marker-1" x="341.26" y="224.00"/>
+<use xlink:href="#marker-1" x="367.38" y="216.28"/>
+<use xlink:href="#marker-1" x="405.61" y="218.81"/>
+<text font-family="DejaVu Sans" font-size="16.67" fill="#000000" fill-opacity="1.00" text-anchor="middle" transform="translate(328.00,431.73) scale(1,-1)">Polar Scatter</text>
+<path d="M 512.80 237.60 C 512.80 261.87 508.02 285.90 498.73 308.32 C 489.45 330.74 475.83 351.11 458.67 368.27 C 441.51 385.43 421.14 399.05 398.72 408.33 C 376.30 417.62 352.27 422.40 328.00 422.40 C 303.73 422.40 279.70 417.62 257.28 408.33 C 234.86 399.05 214.49 385.43 197.33 368.27 C 180.17 351.11 166.55 330.74 157.27 308.32 C 147.98 285.90 143.20 261.87 143.20 237.60 C 143.20 213.33 147.98 189.30 157.27 166.88 C 166.55 144.46 180.17 124.09 197.33 106.93 C 214.49 89.77 234.86 76.15 257.28 66.87 C 279.70 57.58 303.73 52.80 328.00 52.80 C 352.27 52.80 376.30 57.58 398.72 66.87 C 421.14 76.15 441.51 89.77 458.67 106.93 C 475.83 124.09 489.45 144.46 498.73 166.88 C 508.02 189.30 512.80 213.33 512.80 237.60 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<text font-family="DejaVu Sans" font-size="11.11" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(527.58,237.60) scale(1,-1)">0°</text>
+<text font-family="DejaVu Sans" font-size="11.11" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(469.13,378.73) scale(1,-1)">45°</text>
+<text font-family="DejaVu Sans" font-size="11.11" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(328.00,437.18) scale(1,-1)">90°</text>
+<text font-family="DejaVu Sans" font-size="11.11" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(186.87,378.73) scale(1,-1)">135°</text>
+<text font-family="DejaVu Sans" font-size="11.11" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(128.42,237.60) scale(1,-1)">180°</text>
+<text font-family="DejaVu Sans" font-size="11.11" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(186.87,96.47) scale(1,-1)">225°</text>
+<text font-family="DejaVu Sans" font-size="11.11" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(328.00,38.02) scale(1,-1)">270°</text>
+<text font-family="DejaVu Sans" font-size="11.11" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(469.13,96.47) scale(1,-1)">315°</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="text-after-edge" transform="translate(374.20,242.60) scale(1,-1)">0.26    </text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="text-after-edge" transform="translate(420.40,242.60) scale(1,-1)">0.53    </text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="text-after-edge" transform="translate(466.60,242.60) scale(1,-1)">0.79    </text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="text-after-edge" transform="translate(512.80,242.60) scale(1,-1)">1.1    </text>
+</g>
+</svg>
