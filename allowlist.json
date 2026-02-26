@@ -1,1 +1,8 @@
-{}
+{
+  "pcolormesh": "Gouraud shading not implemented; uses flat-color quad approximation (irreducible rendering difference)",
+  "pcolormesh-basic": "Gouraud shading not implemented; uses flat-color quad approximation (irreducible rendering difference)",
+  "span-regions": "SVG fill-opacity compositing differs from Vecto pixel-level alpha blending (irreducible pipeline difference)",
+  "curve-error-band": "SVG fill-opacity compositing differs from Vecto pixel-level alpha blending (irreducible pipeline difference)",
+  "fill-between-alpha": "SVG fill-opacity compositing differs from Vecto pixel-level alpha blending (irreducible pipeline difference)",
+  "fill-between": "SVG fill-opacity compositing differs from Vecto pixel-level alpha blending (irreducible pipeline difference)"
+}
