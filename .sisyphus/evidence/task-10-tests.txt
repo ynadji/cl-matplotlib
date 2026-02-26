@@ -1,0 +1,308 @@
+This is SBCL 2.2.9.debian, an implementation of ANSI Common Lisp.
+More information about SBCL is available at <http://www.sbcl.org/>.
+
+SBCL is free software, provided as is, with absolutely no warranty.
+It is mostly in the public domain; some portions are provided under
+BSD-style licenses.  See the CREDITS and COPYING files in the
+distribution for more information.
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/package.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/package-tmpGHU3ALSV.fasl
+; compilation finished in 0:00:00.001
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/definitions.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/definitions-tmpAAURSO1.fasl
+; compilation finished in 0:00:00.005
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/binding.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/binding-tmp5GEXGEG5.fasl
+; compilation finished in 0:00:00.006
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/strings.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/strings-tmpAR3FSGEY.fasl
+; compilation finished in 0:00:00.000
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/conditions.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/conditions-tmpJAIDFZTC.fasl
+; compilation finished in 0:00:00.007
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/symbols.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/symbols-tmp8V3J6PE9.fasl
+; compilation finished in 0:00:00.005
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/macros.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/macros-tmp9V47YWQF.fasl
+; compilation finished in 0:00:00.027
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/functions.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/functions-tmp9BN22RMA.fasl
+; compilation finished in 0:00:00.017
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/lists.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/lists-tmp1CXFJSK9.fasl
+; compilation finished in 0:00:00.088
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/types.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/types-tmpX4BRKI0R.fasl
+; compilation finished in 0:00:00.033
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/io.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; file: /home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/io.lisp
+; in: DEFUN READ-STREAM-CONTENT-INTO-STRING
+;     (WITH-OUTPUT-TO-STRING
+;         (ALEXANDRIA::DATUM NIL :ELEMENT-TYPE ALEXANDRIA::ELEMENT-TYPE)
+;       (LET ((ALEXANDRIA::BUFFER
+;              (MAKE-ARRAY ALEXANDRIA::BUFFER-SIZE :ELEMENT-TYPE
+;                          ALEXANDRIA::ELEMENT-TYPE)))
+;         (LOOP :FOR ALEXANDRIA::BYTES-READ = (READ-SEQUENCE ALEXANDRIA::BUFFER
+;                                                            STREAM)
+;               :DO (WRITE-SEQUENCE ALEXANDRIA::BUFFER ALEXANDRIA::DATUM :START 0
+;                                   :END ALEXANDRIA::BYTES-READ)
+;               :WHILE (= ALEXANDRIA::BYTES-READ ALEXANDRIA::BUFFER-SIZE))))
+; --> LET 
+; ==>
+;   (MAKE-STRING 31 :ELEMENT-TYPE ALEXANDRIA::ELEMENT-TYPE)
+; 
+; note: could not stack allocate:
+;        (WITH-OUTPUT-TO-STRING (DATUM NIL :ELEMENT-TYPE ELEMENT-TYPE)
+;          (LET ((BUFFER (MAKE-ARRAY BUFFER-SIZE :ELEMENT-TYPE ELEMENT-TYPE)))
+;            (LOOP :FOR BYTES-READ = (READ-SEQUENCE BUFFER STREAM)
+;                  :DO (WRITE-SEQUENCE BUFFER DATUM :START 0 :END BYTES-READ)
+;                  :WHILE (= BYTES-READ BUFFER-SIZE))))
+
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/io-tmpQ371UGST.fasl
+; compilation finished in 0:00:00.063
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/hash-tables.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/hash-tables-tmp2OWI3Q7U.fasl
+; compilation finished in 0:00:00.034
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/control-flow.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/control-flow-tmp9KKTJMYV.fasl
+; compilation finished in 0:00:00.016
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/arrays.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/arrays-tmpJU0JWO19.fasl
+; compilation finished in 0:00:00.004
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/sequences.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; file: /home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/sequences.lisp
+; in: DEFUN LENGTH=
+;     (LENGTH FIRST)
+; 
+; note: unable to
+;   optimize
+; due to type uncertainty:
+;   The first argument is a SEQUENCE, not a VECTOR.
+
+; in: DEFUN MAP-DERANGEMENTS
+;     (MAKE-ARRAY ALEXANDRIA::SIZE :ELEMENT-TYPE 'BIT :INITIAL-ELEMENT 0)
+; 
+; note: could not stack allocate:
+;        (MAKE-ARRAY SIZE :ELEMENT-TYPE 'BIT :INITIAL-ELEMENT 0)
+
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/sequences-tmpZX2WN8N4.fasl
+; compilation finished in 0:00:00.070
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/numbers.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/numbers-tmpOU81XRV0.fasl
+; compilation finished in 0:00:00.040
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/features.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-1/features-tmpY2ML9CFA.fasl
+; compilation finished in 0:00:00.004
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-2/package.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-2/package-tmpX2JYJDQE.fasl
+; compilation finished in 0:00:00.003
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-2/arrays.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-2/arrays-tmpOPCILR65.fasl
+; compilation finished in 0:00:00.007
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-2/control-flow.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-2/control-flow-tmpRV9F8A9A.fasl
+; compilation finished in 0:00:00.002
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-2/sequences.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-2/sequences-tmpK2ZAJT4I.fasl
+; compilation finished in 0:00:00.003
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-2/lists.lisp" (written 11 NOV 2024 05:44:48 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/alexandria-20231021-git/alexandria-2/lists-tmpUX5S4ADN.fasl
+; compilation finished in 0:00:00.002
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/asdf-flv-version-2.2/package.lisp" (written 12 DEC 2024 08:12:45 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/asdf-flv-version-2.2/package-tmp10401X32.fasl
+; compilation finished in 0:00:00.001
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/asdf-flv-version-2.2/asdf-flv.lisp" (written 12 DEC 2024 08:12:45 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/asdf-flv-version-2.2/asdf-flv-tmpZ7CBRM0G.fasl
+; compilation finished in 0:00:00.011
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/trivial-backtrace-20230214-git/dev/packages.lisp" (written 12 DEC 2024 08:12:45 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/trivial-backtrace-20230214-git/dev/packages-tmp9OZEQ0G2.fasl
+; compilation finished in 0:00:00.001
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/trivial-backtrace-20230214-git/dev/utilities.lisp" (written 12 DEC 2024 08:12:45 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/trivial-backtrace-20230214-git/dev/utilities-tmpB2JTL1W9.fasl
+; compilation finished in 0:00:00.031
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/trivial-backtrace-20230214-git/dev/backtrace.lisp" (written 12 DEC 2024 08:12:45 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/trivial-backtrace-20230214-git/dev/backtrace-tmpP3BI68WQ.fasl
+; compilation finished in 0:00:00.007
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/trivial-backtrace-20230214-git/dev/map-backtrace.lisp" (written 12 DEC 2024 08:12:45 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/trivial-backtrace-20230214-git/dev/map-backtrace-tmpQDARA81Z.fasl
+; compilation finished in 0:00:00.023
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/trivial-backtrace-20230214-git/dev/fallback.lisp" (written 12 DEC 2024 08:12:45 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/trivial-backtrace-20230214-git/dev/fallback-tmpYEMMM7SE.fasl
+; compilation finished in 0:00:00.001
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/package.lisp" (written 12 DEC 2024 08:12:45 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/package-tmp73HU0RPK.fasl
+; compilation finished in 0:00:00.002
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/utils.lisp" (written 12 DEC 2024 08:12:45 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/utils-tmpIO5N7K88.fasl
+; compilation finished in 0:00:00.024
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/check.lisp" (written 12 DEC 2024 08:12:45 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/check-tmpCM21U60Z.fasl
+; compilation finished in 0:00:00.053
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/fixture.lisp" (written 12 DEC 2024 08:12:45 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/fixture-tmp9DT7SEFG.fasl
+; compilation finished in 0:00:00.006
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/classes.lisp" (written 12 DEC 2024 08:12:45 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/classes-tmp8065ESJT.fasl
+; compilation finished in 0:00:00.005
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/random.lisp" (written 12 DEC 2024 08:12:45 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/random-tmp7S8Z6FGF.fasl
+; compilation finished in 0:00:00.036
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/test.lisp" (written 12 DEC 2024 08:12:45 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/test-tmpSIT3QPKP.fasl
+; compilation finished in 0:00:00.010
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/explain.lisp" (written 12 DEC 2024 08:12:45 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/explain-tmpE0PA0714.fasl
+; compilation finished in 0:00:00.025
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/suite.lisp" (written 12 DEC 2024 08:12:45 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/suite-tmpJRWHHVG0.fasl
+; compilation finished in 0:00:00.012
+; compiling file "/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/run.lisp" (written 12 DEC 2024 08:12:45 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/quicklisp/dists/quicklisp/software/fiveam-20231021-git/src/run-tmp4WZVROCX.fasl
+; compilation finished in 0:00:00.032
+; compiling file "/home/yacin/code/cl-matplotlib/tests/test-pyplot.lisp" (written 22 FEB 2026 08:04:00 PM):
+
+; wrote /home/yacin/.cache/common-lisp/sbcl-2.2.9.debian-linux-x64/home/yacin/code/cl-matplotlib/tests/test-pyplot-tmpA0I3UKX8.fasl
+; compilation finished in 0:00:00.015
+
+Running test suite PYPLOT-SUITE
+ Running test FIGURE-CREATION ...
+ Running test FIGURE-AUTO-NUMBERING ..
+ Running test FIGURE-EXPLICIT-NUMBER ....
+ Running test FIGURE-WITH-PARAMS ...
+ Running test GCF-AUTO-CREATES ...
+ Running test GCF-RETURNS-CURRENT .
+ Running test GCA-AUTO-CREATES ...
+ Running test GCA-RETURNS-EXISTING .
+ Running test CLOSE-CURRENT-FIGURE ...
+ Running test CLOSE-SPECIFIC-FIGURE ..
+ Running test CLOSE-ALL-FIGURES ..
+ Running test CLF-CLEARS-FIGURE ..
+ Running test CLA-CLEARS-AXES ..
+ Running test SUBPLOTS-DEFAULT ..
+ Running test SUBPLOTS-2X2 ....
+ Running test SUBPLOTS-1XN ..
+ Running test PLOT-BASIC ....
+ Running test PLOT-WITH-OPTIONS ...
+ Running test SCATTER-BASIC .
+ Running test BAR-BASIC ..
+ Running test HIST-BASIC .
+ Running test PIE-BASIC ...
+ Running test ERRORBAR-BASIC .
+ Running test STEM-BASIC .
+ Running test STEP-PLOT-BASIC .
+ Running test STACKPLOT-BASIC .
+ Running test BARH-BASIC .
+ Running test BOXPLOT-BASIC .
+ Running test FILL-BETWEEN-BASIC .
+ Running test XLABEL-YLABEL ..
+ Running test TITLE-SETTING ..
+ Running test XLIM-YLIM-SET ....
+ Running test GRID-TOGGLE ..
+ Running test LEGEND-CREATION .
+ Running test ANNOTATE-BASIC .
+ Running test TEXT-BASIC ..
+ Running test TEXT-WITH-KWARGS ........
+ Running test SAVEFIG-CREATES-PNG ..
+ Running test SHOW-NO-ERROR 
+; pyplot: Non-interactive backend — use (savefig "file.png") to save.
+.
+ Running test MULTIPLE-FIGURES-INDEPENDENT ..
+ Running test GCA-AFTER-CLF .
+ Running test FULL-PLOT-WORKFLOW ..
+ Running test SUBPLOTS-WORKFLOW .
+ Running test CLOSE-WITH-NO-FIGURES .
+ Running test FIGURE-COUNTER-TRACKS-EXPLICIT .
+ Running test XLIM-YLIM-GET-RETURNS-VALUES ......
+ Running test CONTOUR-BASIC .
+ Running test IMSHOW-BASIC .
+ Running test AXHLINE-BASIC ....
+ Running test AXHLINE-KWARGS .....
+ Running test AXVLINE-BASIC ....
+ Running test AXVLINE-KWARGS ....
+ Running test HLINES-SCALAR ...
+ Running test HLINES-LIST .....
+ Running test HLINES-KWARGS ....
+ Running test VLINES-SCALAR ...
+ Running test VLINES-LIST .....
+ Running test VLINES-KWARGS ...
+ Running test SUPTITLE-BASIC ....
+ Running test SUPTITLE-WITH-FONTSIZE .
+ Running test SUPXLABEL-BASIC ...
+ Running test SUPYLABEL-BASIC ....
+ Running test INVERT-XAXIS-BASIC ..
+ Running test INVERT-YAXIS-BASIC ..
+ Running test INVERT-XAXIS-DOUBLE-RESTORES ..
+ Running test SET-XTICKS-BASIC ..
+ Running test SET-XTICKS-WITH-LABELS ...
+ Running test SET-XTICKLABELS-BASIC ..
+ Running test SET-YTICKS-BASIC ..
+ Running test SET-YTICKS-WITH-LABELS ...
+ Running test SET-YTICKLABELS-BASIC ..
+ Running test SET-XTICKS-RETURNS-AXES .
+ Running test AXHSPAN-BASIC .
+ Running test AXHSPAN-WITH-ALPHA ..
+ Running test AXVSPAN-BASIC .
+ Running test AXVSPAN-WITH-ALPHA ..
+ Running test AXHSPAN-NO-AUTOSCALE ....
+ Running test PCOLORMESH-BASIC ..
+ Running test PCOLORMESH-WITH-CMAP ..
+ Running test PCOLORMESH-WITH-XY-COORDS ...
+ Running test PCOLORMESH-COLORBAR-INTEGRATION ...
+ Running test TWINX-CREATES-NEW-AXES ...
+ Running test TWINX-SHARES-XLIM ..
+ Running test TWINX-INDEPENDENT-YLIM .
+ Running test TWINY-CREATES-NEW-AXES ...
+ Running test TWINY-SHARES-YLIM ..
+ Running test TWINX-ADDED-TO-FIGURE .
+ Running test TWINX-YAXIS-ON-RIGHT .
+ Running test TWINY-XAXIS-ON-TOP .
+ Did 208 checks.
+    Pass: 208 (100%)
+    Skip: 0 ( 0%)
+    Fail: 0 ( 0%)
+
+; 
+; compilation unit finished
+;   printed 3 notes
