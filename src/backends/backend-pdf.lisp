@@ -260,8 +260,7 @@ STROKE can be T (use gc-foreground) or nil."
 (defmethod mpl.rendering:renderer-draw-text ((renderer renderer-pdf) gc x y text
                                              &key angle ha va)
   "Bridge from artist draw text protocol to backend draw-text."
-  (declare (ignore ha va))
-  (draw-text renderer gc (float x 1.0d0) (float y 1.0d0) text nil (or angle 0.0)))
+  (draw-text renderer gc (float x 1.0d0) (float y 1.0d0) text nil (or angle 0.0) nil ha va))
 
 ;;; ============================================================
 ;;; Bridge: renderer-draw-image from artist protocol → draw-image
@@ -310,34 +309,53 @@ PROP can be a font-properties object, a string path, or NIL."
 (defmethod draw-text ((renderer renderer-pdf) gc x y s prop angle &optional ismath ha va)
   "Draw text string S at position (X, Y) using cl-pdf's text rendering.
 PROP is a font path string or NIL (uses Helvetica).
-ANGLE is rotation in degrees."
-  (declare (ignore ismath ha va))
-  (pdf:with-saved-state
-    (let* ((font-name (%resolve-pdf-font-name prop))
-           (font (%get-pdf-font renderer font-name))
-           (fontsize (or (and gc (mpl.rendering:gc-linewidth gc)) 12.0))
-           (edge-color (%gc-edge-color gc))
-           (alpha (if gc (mpl.rendering:gc-alpha gc) 1.0)))
-      ;; Set text color
-      (if edge-color
-          (progn
-            (pdf:set-rgb-fill (float (first edge-color) 1.0)
-                              (float (second edge-color) 1.0)
-                              (float (third edge-color) 1.0))
-            (when (and (fourth edge-color) (< (* (fourth edge-color) alpha) 1.0))
-              (pdf:set-fill-transparency (float (* (fourth edge-color) alpha) 1.0))))
-          (pdf:set-rgb-fill 0.0 0.0 0.0))
-      ;; Handle rotation
-      (when (and (numberp angle) (/= angle 0))
-        (pdf:translate (float x 1.0) (float y 1.0))
-        (pdf:rotate (float angle 1.0)))
-      ;; Draw text
-      (pdf:in-text-mode
-        (pdf:set-font font (float fontsize 1.0))
-        (if (and (numberp angle) (/= angle 0))
-            (pdf:move-text 0 0)
-            (pdf:move-text (float x 1.0) (float y 1.0)))
-        (pdf:draw-text s)))))
+ANGLE is rotation in degrees.
+HA is horizontal alignment (:left, :center, :right). Default :left.
+VA is vertical alignment (:baseline, :bottom, :center, :top). Default :baseline."
+  (declare (ignore ismath))
+  (when (or (null s) (string= s ""))
+    (return-from draw-text nil))
+  (let ((ha (or ha :left))
+        (va (or va :baseline)))
+    (pdf:with-saved-state
+      (let* ((font-name (%resolve-pdf-font-name prop))
+             (font (%get-pdf-font renderer font-name))
+             (fontsize (or (and gc (mpl.rendering:gc-linewidth gc)) 12.0))
+             (edge-color (%gc-edge-color gc))
+             (alpha (if gc (mpl.rendering:gc-alpha gc) 1.0)))
+        ;; Set text color
+        (if edge-color
+            (progn
+              (pdf:set-rgb-fill (float (first edge-color) 1.0)
+                                (float (second edge-color) 1.0)
+                                (float (third edge-color) 1.0))
+              (when (and (fourth edge-color) (< (* (fourth edge-color) alpha) 1.0))
+                (pdf:set-fill-transparency (float (* (fourth edge-color) alpha) 1.0))))
+            (pdf:set-rgb-fill 0.0 0.0 0.0))
+        ;; Compute alignment offsets using cl-pdf font metrics
+        (let* ((text-w (pdf::text-width s font (float fontsize 1.0)))
+               (ascender (* (pdf::ascender (pdf:font-metrics font)) (float fontsize 1.0)))
+               (descender (pdf:get-font-descender font (float fontsize 1.0)))
+               (x-offset (ecase ha
+                           (:left 0.0)
+                           (:center (- (/ text-w 2.0)))
+                           (:right (- text-w))))
+               (y-offset (ecase va
+                           (:baseline 0.0)
+                           (:bottom (- descender))
+                           (:top (- ascender))
+                           (:center (- (/ (+ ascender descender) 2.0))))))
+          ;; Handle rotation
+          (when (and (numberp angle) (/= angle 0))
+            (pdf:translate (float x 1.0) (float y 1.0))
+            (pdf:rotate (float angle 1.0)))
+          ;; Draw text
+          (pdf:in-text-mode
+            (pdf:set-font font (float fontsize 1.0))
+            (if (and (numberp angle) (/= angle 0))
+                (pdf:move-text (float x-offset 1.0) (float y-offset 1.0))
+                (pdf:move-text (float (+ x x-offset) 1.0) (float (+ y y-offset) 1.0)))
+            (pdf:draw-text s)))))))
 
 ;;; ============================================================
 ;;; draw-image — Embed image into PDF
