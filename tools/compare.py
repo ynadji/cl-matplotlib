@@ -10,6 +10,9 @@ import argparse
 import json
 import os
 import sys
+import shutil
+import subprocess
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -254,17 +257,81 @@ def generate_summary_json(results, threshold, output_dir):
     return str(json_path)
 
 
-def find_matching_actual(name, actual_dir):
-    """Find the matching PNG in the actual directory.
+def find_matching_actual(name, actual_dir, fmt='png'):
+    """Find the matching file in the actual directory based on format.
 
-    Looks for exact name match: <name>.png
+    Looks for exact name match: <name>.<ext>
     Returns path if found, None otherwise.
     """
-    actual_path = Path(actual_dir) / f'{name}.png'
+    ext = fmt if fmt != 'png' else 'png'
+    actual_path = Path(actual_dir) / f'{name}.{ext}'
     if actual_path.exists():
         return actual_path
     return None
 
+
+def rasterize_to_png(src_path, dpi, fmt):
+    """Rasterize SVG or PDF to a temp PNG. Returns (temp_path, error_str_or_None).
+    Caller is responsible for deleting temp_path.
+    """
+    tmp = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
+    tmp.close()
+    tmp_path = tmp.name
+
+    if fmt == 'svg':
+        tool = shutil.which('convert')
+        if not tool:
+            try: os.unlink(tmp_path)
+            except OSError: pass
+            return None, "ImageMagick 'convert' not found; install imagemagick"
+        cmd = [tool, '-density', str(dpi), str(src_path), '-flatten', tmp_path]
+    elif fmt == 'pdf':
+        tool = shutil.which('pdftoppm')
+        if not tool:
+            try: os.unlink(tmp_path)
+            except OSError: pass
+            return None, "Poppler 'pdftoppm' not found; install poppler-utils"
+        # pdftoppm adds extension, so use a prefix and rename
+        prefix = tmp_path[:-4]  # remove .png
+        cmd = [tool, '-r', str(dpi), '-png', '-singlefile', str(src_path), prefix]
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, timeout=60)
+        except subprocess.CalledProcessError as e:
+            try: os.unlink(tmp_path)
+            except OSError: pass
+            return None, f"pdftoppm failed: {e.stderr.decode()[:200]}"
+        except FileNotFoundError:
+            try: os.unlink(tmp_path)
+            except OSError: pass
+            return None, "pdftoppm not found"
+        # pdftoppm creates prefix.png
+        result_path = prefix + '.png'
+        if not os.path.exists(result_path):
+            try: os.unlink(tmp_path)
+            except OSError: pass
+            return None, f"pdftoppm did not create {result_path}"
+        if result_path != tmp_path:
+            try: os.unlink(tmp_path)
+            except OSError: pass
+        return result_path, None
+    else:
+        try: os.unlink(tmp_path)
+        except OSError: pass
+        return None, f"Unsupported format for rasterization: {fmt}"
+
+    # For SVG
+    try:
+        subprocess.run(cmd, check=True, capture_output=True, timeout=60)
+    except subprocess.CalledProcessError as e:
+        try: os.unlink(tmp_path)
+        except OSError: pass
+        return None, f"convert failed: {e.stderr.decode()[:200]}"
+    except FileNotFoundError:
+        try: os.unlink(tmp_path)
+        except OSError: pass
+        return None, "'convert' not found"
+
+    return tmp_path, None
 
 def main():
     parser = argparse.ArgumentParser(
@@ -295,6 +362,14 @@ Exit codes:
     parser.add_argument(
         '--output', required=True,
         help='Output directory for comparison report',
+    )
+    parser.add_argument(
+        '--format', choices=['png', 'svg', 'pdf'], default='png',
+        help='Format of actual images to compare (default: png). SVG/PDF are rasterized first.',
+    )
+    parser.add_argument(
+        '--dpi', type=int, default=100,
+        help='DPI for SVG/PDF rasterization (default: 100)',
     )
     args = parser.parse_args()
 
@@ -327,7 +402,7 @@ Exit codes:
         name = ref_path.stem
         print(f"  {name:.<30s} ", end='', flush=True)
 
-        act_path = find_matching_actual(name, act_dir)
+        act_path = find_matching_actual(name, act_dir, fmt=args.format)
         if act_path is None:
             print("SKIP (no matching actual image)")
             results.append({
@@ -340,42 +415,67 @@ Exit codes:
             })
             continue
 
+        tmp_path = None
         try:
-            ref_arr = load_image_rgb(ref_path)
-            act_arr = load_image_rgb(act_path)
-        except Exception as e:
-            print(f"SKIP (load error: {e})")
+            # Rasterize SVG/PDF to temp PNG if needed
+            if args.format in ('svg', 'pdf'):
+                rast_path, rast_err = rasterize_to_png(act_path, args.dpi, args.format)
+                if rast_err:
+                    print(f"SKIP (rasterize: {rast_err})")
+                    results.append({
+                        'name': name,
+                        'reference': str(ref_path),
+                        'actual': str(act_path),
+                        'ssim': None,
+                        'status': 'SKIP',
+                        'note': f'Rasterization failed: {rast_err}',
+                    })
+                    continue
+                tmp_path = rast_path
+                load_path = rast_path
+            else:
+                load_path = act_path
+
+            try:
+                ref_arr = load_image_rgb(ref_path)
+                act_arr = load_image_rgb(load_path)
+            except Exception as e:
+                print(f"SKIP (load error: {e})")
+                results.append({
+                    'name': name,
+                    'reference': str(ref_path),
+                    'actual': str(act_path),
+                    'ssim': None,
+                    'status': 'SKIP',
+                    'note': f'Image load error: {e}',
+                })
+                continue
+
+            ssim_score, warning = compute_ssim(ref_arr, act_arr)
+            passed = ssim_score >= args.threshold
+            status = 'PASS' if passed else 'FAIL'
+
+            generate_comparison_sheet(name, ref_arr, act_arr, ssim_score, out_dir)
+
+            note = warning or ''
+            status_indicator = 'PASS' if passed else 'FAIL'
+            print(f"{ssim_score:.4f}  {status_indicator}", end='')
+            if warning:
+                print(f"  (warning: {warning})", end='')
+            print()
+
             results.append({
                 'name': name,
                 'reference': str(ref_path),
                 'actual': str(act_path),
-                'ssim': None,
-                'status': 'SKIP',
-                'note': f'Image load error: {e}',
+                'ssim': round(float(ssim_score), 6),
+                'status': status,
+                'note': note,
             })
-            continue
-
-        ssim_score, warning = compute_ssim(ref_arr, act_arr)
-        passed = ssim_score >= args.threshold
-        status = 'PASS' if passed else 'FAIL'
-
-        generate_comparison_sheet(name, ref_arr, act_arr, ssim_score, out_dir)
-
-        note = warning or ''
-        status_indicator = 'PASS' if passed else 'FAIL'
-        print(f"{ssim_score:.4f}  {status_indicator}", end='')
-        if warning:
-            print(f"  (warning: {warning})", end='')
-        print()
-
-        results.append({
-            'name': name,
-            'reference': str(ref_path),
-            'actual': str(act_path),
-            'ssim': round(float(ssim_score), 6),
-            'status': status,
-            'note': note,
-        })
+        finally:
+            if tmp_path:
+                try: os.unlink(tmp_path)
+                except OSError: pass
 
     print()
 
