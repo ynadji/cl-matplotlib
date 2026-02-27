@@ -47,7 +47,7 @@ compare-svg: cl-images
 	@echo "Running SVG visual comparison..."
 	@mkdir -p comparison_report_svg/
 	$(PYTHON) $(COMPARISON_TOOL) \
-		--reference $(EXAMPLES_DIR)/ \
+		--reference $(REFERENCE_IMAGES_DIR)/ \
 		--actual $(EXAMPLES_DIR)/ \
 		--format svg \
 		--dpi 96 \
@@ -60,7 +60,7 @@ compare-pdf: cl-images
 	@echo "Running PDF visual comparison..."
 	@mkdir -p comparison_report_pdf/
 	$(PYTHON) $(COMPARISON_TOOL) \
-		--reference $(EXAMPLES_DIR)/ \
+		--reference $(REFERENCE_IMAGES_DIR)/ \
 		--actual $(EXAMPLES_DIR)/ \
 		--format pdf \
 		--threshold $(THRESHOLD) \
@@ -76,7 +76,11 @@ report: compare
 
 clean:
 	rm -f $(REFERENCE_IMAGES_DIR)/*.png
+	rm -f $(REFERENCE_IMAGES_DIR)/*.svg
+	rm -f $(REFERENCE_IMAGES_DIR)/*.pdf
 	rm -rf $(COMPARISON_REPORT_DIR)
 	rm -f $(EXAMPLES_DIR)/*.png
+	rm -f $(EXAMPLES_DIR)/*.svg
+	rm -f $(EXAMPLES_DIR)/*.pdf
 
 all: setup-python reference-images cl-images compare compare-svg compare-pdf
