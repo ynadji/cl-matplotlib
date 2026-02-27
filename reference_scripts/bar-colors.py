@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(8, 5))
 
@@ -20,4 +22,8 @@ plt.title('Bar Chart with Individual Colors')
 plt.grid(visible=True, axis='y')
 
 plt.savefig('reference_images/bar-colors.png', dpi=100)
+plt.savefig('reference_images/bar-colors.svg')
+print('Saved reference_images/bar-colors.svg')
+plt.savefig('reference_images/bar-colors.pdf')
+print('Saved reference_images/bar-colors.pdf')
 print('Saved reference_images/bar-colors.png')

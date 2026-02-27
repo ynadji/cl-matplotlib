@@ -6,6 +6,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 data = np.array([[0.1, 0.2, 0.5, 0.3],
                  [0.4, 0.8, 0.1, 0.6],
@@ -21,4 +23,8 @@ for i in range(4):
 ax.set_title('Annotated Heatmap')
 
 plt.savefig('reference_images/annotated-heatmap.png', dpi=100)
+plt.savefig('reference_images/annotated-heatmap.svg')
+print('Saved reference_images/annotated-heatmap.svg')
+plt.savefig('reference_images/annotated-heatmap.pdf')
+print('Saved reference_images/annotated-heatmap.pdf')
 plt.close()

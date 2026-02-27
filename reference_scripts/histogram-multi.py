@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 centers = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]
 width = 0.25
@@ -31,4 +33,8 @@ plt.title('Multiple Histogram Groups')
 plt.grid(visible=True, axis='y')
 
 plt.savefig('reference_images/histogram-multi.png', dpi=100)
+plt.savefig('reference_images/histogram-multi.svg')
+print('Saved reference_images/histogram-multi.svg')
+plt.savefig('reference_images/histogram-multi.pdf')
+print('Saved reference_images/histogram-multi.pdf')
 print('Saved reference_images/histogram-multi.png')

@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig, axs = plt.subplots(1, 2, figsize=(12, 5))
 
@@ -26,4 +28,8 @@ axs[1].set_ylabel('Precipitation (mm)')
 axs[1].grid(visible=True)
 
 plt.savefig('reference_images/twin-axes.png', dpi=100)
+plt.savefig('reference_images/twin-axes.svg')
+print('Saved reference_images/twin-axes.svg')
+plt.savefig('reference_images/twin-axes.pdf')
+print('Saved reference_images/twin-axes.pdf')
 print('Saved reference_images/twin-axes.png')

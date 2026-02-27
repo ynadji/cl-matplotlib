@@ -7,6 +7,8 @@ from matplotlib.collections import PolyCollection
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 
 def draw_cl_quiver(ax, X, Y, U, V, color='C0'):
@@ -91,4 +93,8 @@ ax.set_title('Quiver Plot \u2014 Uniform Flow')
 ax.grid(True)
 
 fig.savefig('reference_images/quiver-basic.png', dpi=100)
+fig.savefig('reference_images/quiver-basic.svg')
+print('Saved reference_images/quiver-basic.svg')
+fig.savefig('reference_images/quiver-basic.pdf')
+print('Saved reference_images/quiver-basic.pdf')
 print('Saved reference_images/quiver-basic.png')

@@ -6,6 +6,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(10, 5))
 
@@ -25,4 +27,8 @@ plt.legend()
 plt.grid(visible=True)
 
 plt.savefig('reference_images/stem-plot.png', dpi=100)
+plt.savefig('reference_images/stem-plot.svg')
+print('Saved reference_images/stem-plot.svg')
+plt.savefig('reference_images/stem-plot.pdf')
+print('Saved reference_images/stem-plot.pdf')
 print('Saved reference_images/stem-plot.png')

@@ -5,6 +5,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -18,3 +20,7 @@ fig.colorbar(mesh, ax=ax)
 ax.set_title('Pseudocolor Mesh: sin(x/5)*cos(y/5)')
 
 plt.savefig('reference_images/pcolormesh.png')
+plt.savefig('reference_images/pcolormesh.svg')
+print('Saved reference_images/pcolormesh.svg')
+plt.savefig('reference_images/pcolormesh.pdf')
+print('Saved reference_images/pcolormesh.pdf')

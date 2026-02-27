@@ -6,6 +6,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(8, 5))
 x = list(range(11))
@@ -21,4 +23,8 @@ plt.title('Horizontal and Vertical Lines')
 plt.xlabel('X')
 plt.ylabel('Y')
 plt.savefig('reference_images/hlines-vlines.png')
+plt.savefig('reference_images/hlines-vlines.svg')
+print('Saved reference_images/hlines-vlines.svg')
+plt.savefig('reference_images/hlines-vlines.pdf')
+print('Saved reference_images/hlines-vlines.pdf')
 plt.close()

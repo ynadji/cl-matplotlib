@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig, ax1 = plt.subplots(figsize=(8, 5))
 
@@ -24,4 +26,8 @@ ax2.set_ylabel('Precipitation (mm)')
 
 plt.title('Monthly Temperature and Precipitation')
 plt.savefig('reference_images/twin-y-axis.png', dpi=100)
+plt.savefig('reference_images/twin-y-axis.svg')
+print('Saved reference_images/twin-y-axis.svg')
+plt.savefig('reference_images/twin-y-axis.pdf')
+print('Saved reference_images/twin-y-axis.pdf')
 print('Saved reference_images/twin-y-axis.png')

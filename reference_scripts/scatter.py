@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 # Replicate CL LCG exactly: seed=42, a=1103515245, c=12345, m=2^31
 class LCG:
@@ -40,4 +42,8 @@ plt.legend()
 plt.grid(visible=True)
 
 plt.savefig('reference_images/scatter.png', dpi=100)
+plt.savefig('reference_images/scatter.svg')
+print('Saved reference_images/scatter.svg')
+plt.savefig('reference_images/scatter.pdf')
+print('Saved reference_images/scatter.pdf')
 print('Saved reference_images/scatter.png')

@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(8, 6))
 
@@ -28,4 +30,8 @@ plt.ylabel('y')
 plt.title('Gaussian: exp(-(x^2+y^2))')
 
 plt.savefig('reference_images/filled-contour.png', dpi=100)
+plt.savefig('reference_images/filled-contour.svg')
+print('Saved reference_images/filled-contour.svg')
+plt.savefig('reference_images/filled-contour.pdf')
+print('Saved reference_images/filled-contour.pdf')
 print('Saved reference_images/filled-contour.png')

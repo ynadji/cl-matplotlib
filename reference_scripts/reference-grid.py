@@ -6,6 +6,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(7, 5))
 
@@ -22,4 +24,8 @@ plt.title('Scatter with Reference Lines')
 plt.xlabel('X')
 plt.ylabel('Y')
 plt.savefig('reference_images/reference-grid.png')
+plt.savefig('reference_images/reference-grid.svg')
+print('Saved reference_images/reference-grid.svg')
+plt.savefig('reference_images/reference-grid.pdf')
+print('Saved reference_images/reference-grid.pdf')
 plt.close()

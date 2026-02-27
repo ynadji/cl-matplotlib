@@ -7,6 +7,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 DW = 0.775 * 640
 DH = 0.77 * 480
@@ -66,4 +68,8 @@ ax.text(0.5, y_title, 'Archimedean Spiral: r = \u03b8/(2\u03c0)',
         transform=ax.transAxes, ha='center', va='baseline', fontsize=12)
 
 fig.savefig('reference_images/polar-spiral.png')
+fig.savefig('reference_images/polar-spiral.svg')
+print('Saved reference_images/polar-spiral.svg')
+fig.savefig('reference_images/polar-spiral.pdf')
+print('Saved reference_images/polar-spiral.pdf')
 print('Saved reference_images/polar-spiral.png')

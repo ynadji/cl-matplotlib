@@ -7,6 +7,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 DW = 0.775 * 640
 DH = 0.77 * 480
@@ -70,4 +72,8 @@ ax.text(0.5, y_title, 'Multiple Polar Curves',
         transform=ax.transAxes, ha='center', va='baseline', fontsize=12)
 
 fig.savefig('reference_images/polar-multi.png')
+fig.savefig('reference_images/polar-multi.svg')
+print('Saved reference_images/polar-multi.svg')
+fig.savefig('reference_images/polar-multi.pdf')
+print('Saved reference_images/polar-multi.pdf')
 print('Saved reference_images/polar-multi.png')

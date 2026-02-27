@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(8, 5))
 
@@ -21,4 +23,8 @@ plt.title('Programming Language Popularity (Horizontal)')
 plt.grid(visible=True)
 
 plt.savefig('reference_images/barh.png', dpi=100)
+plt.savefig('reference_images/barh.svg')
+print('Saved reference_images/barh.svg')
+plt.savefig('reference_images/barh.pdf')
+print('Saved reference_images/barh.pdf')
 print('Saved reference_images/barh.png')

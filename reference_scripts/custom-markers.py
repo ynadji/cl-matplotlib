@@ -6,6 +6,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(8, 6))
 
@@ -31,4 +33,8 @@ plt.legend()
 plt.grid(visible=True)
 
 plt.savefig('reference_images/custom-markers.png', dpi=100)
+plt.savefig('reference_images/custom-markers.svg')
+print('Saved reference_images/custom-markers.svg')
+plt.savefig('reference_images/custom-markers.pdf')
+print('Saved reference_images/custom-markers.pdf')
 print('Saved reference_images/custom-markers.png')

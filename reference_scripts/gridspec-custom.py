@@ -6,6 +6,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig, axs = plt.subplots(2, 2, figsize=(10, 8))
 
@@ -25,4 +27,8 @@ axs[1, 1].plot(xs, np.exp(-0.2 * xs) * np.sin(2.0 * xs),
 axs[1, 1].grid(visible=True)
 
 plt.savefig('reference_images/gridspec-custom.png', dpi=100)
+plt.savefig('reference_images/gridspec-custom.svg')
+print('Saved reference_images/gridspec-custom.svg')
+plt.savefig('reference_images/gridspec-custom.pdf')
+print('Saved reference_images/gridspec-custom.pdf')
 print('Saved reference_images/gridspec-custom.png')

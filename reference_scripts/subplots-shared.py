@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig, axs = plt.subplots(2, 2, figsize=(10, 8), sharex=True, sharey=True)
 
@@ -19,4 +21,8 @@ axs[1, 0].plot(x, [0.5, 0.9, 0.4, -0.4, -0.9, -0.4, 0.5], color='green', linewid
 axs[1, 1].plot(x, [-0.5, 0.3, 0.9, 0.9, 0.3, -0.5, -0.9], color='purple', linewidth=1.5)
 
 plt.savefig('reference_images/subplots-shared.png', dpi=100)
+plt.savefig('reference_images/subplots-shared.svg')
+print('Saved reference_images/subplots-shared.svg')
+plt.savefig('reference_images/subplots-shared.pdf')
+print('Saved reference_images/subplots-shared.pdf')
 print('Saved reference_images/subplots-shared.png')

@@ -6,6 +6,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig, ax1 = plt.subplots(figsize=(8, 5))
 
@@ -23,4 +25,8 @@ ax2.set_ylabel('exp(t/3)')
 
 plt.title('Two Scales: sin(t) and exp(t/3)')
 plt.savefig('reference_images/two-scales.png', dpi=100)
+plt.savefig('reference_images/two-scales.svg')
+print('Saved reference_images/two-scales.svg')
+plt.savefig('reference_images/two-scales.pdf')
+print('Saved reference_images/two-scales.pdf')
 print('Saved reference_images/two-scales.png')

@@ -8,6 +8,8 @@ from matplotlib.lines import Line2D
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 
 def cl_gaussian_kde(dataset, eval_points):
@@ -122,4 +124,8 @@ plt.ylabel('Group')
 plt.title('Violin Plot \u2014 Horizontal Orientation')
 
 plt.savefig('reference_images/violin-styled.png', dpi=100)
+plt.savefig('reference_images/violin-styled.svg')
+print('Saved reference_images/violin-styled.svg')
+plt.savefig('reference_images/violin-styled.pdf')
+print('Saved reference_images/violin-styled.pdf')
 print('Saved reference_images/violin-styled.png')

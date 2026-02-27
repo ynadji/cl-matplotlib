@@ -7,6 +7,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 # CL axes display bbox: position [0.125, 0.11, 0.775, 0.77] on 640x480
 DW = 0.775 * 640
@@ -66,4 +68,8 @@ ax.text(0.5, y_title, 'Rose Curve: r = |cos(4\u03b8)|',
         transform=ax.transAxes, ha='center', va='baseline', fontsize=12)
 
 fig.savefig('reference_images/polar-rose.png')
+fig.savefig('reference_images/polar-rose.svg')
+print('Saved reference_images/polar-rose.svg')
+fig.savefig('reference_images/polar-rose.pdf')
+print('Saved reference_images/polar-rose.pdf')
 print('Saved reference_images/polar-rose.png')

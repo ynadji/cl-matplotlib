@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 categories = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
 values = [42, 35, 51, 48, 63, 55]
@@ -17,4 +19,8 @@ ax.set_title('Monthly Sales')
 ax.set_ylabel('Sales (units)')
 ax.set_ylim(0, 80)
 plt.savefig('reference_images/categorical-bar.png')
+plt.savefig('reference_images/categorical-bar.svg')
+print('Saved reference_images/categorical-bar.svg')
+plt.savefig('reference_images/categorical-bar.pdf')
+print('Saved reference_images/categorical-bar.pdf')
 plt.close()

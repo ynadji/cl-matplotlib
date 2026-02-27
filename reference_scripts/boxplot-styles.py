@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(8, 5))
 
@@ -21,4 +23,8 @@ plt.title('Boxplot with Multiple Groups')
 plt.grid(visible=True, axis='y')
 
 plt.savefig('reference_images/boxplot-styles.png', dpi=100)
+plt.savefig('reference_images/boxplot-styles.svg')
+print('Saved reference_images/boxplot-styles.svg')
+plt.savefig('reference_images/boxplot-styles.pdf')
+print('Saved reference_images/boxplot-styles.pdf')
 print('Saved reference_images/boxplot-styles.png')
