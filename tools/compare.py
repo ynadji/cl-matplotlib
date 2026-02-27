@@ -421,9 +421,10 @@ Exit codes:
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    ref_images = sorted(ref_dir.glob('*.png'))
+    ref_ext = {'svg': '*.svg', 'pdf': '*.pdf', 'png': '*.png'}.get(args.format, '*.png')
+    ref_images = sorted(ref_dir.glob(ref_ext))
     if not ref_images:
-        print(f"ERROR: No PNG files found in {ref_dir}", file=sys.stderr)
+        print(f"ERROR: No {args.format.upper()} files found in {ref_dir}", file=sys.stderr)
         sys.exit(2)
 
     print(f"Found {len(ref_images)} reference images in {ref_dir}")
@@ -450,30 +451,49 @@ Exit codes:
             })
             continue
 
-        tmp_path = None
+        ref_tmp_path = None
+        act_tmp_path = None
         try:
-            # Rasterize SVG/PDF to temp PNG if needed
+            # Rasterize SVG/PDF to temp PNG if needed (both reference AND actual)
             if args.format in ('svg', 'pdf'):
-                rast_path, rast_err = rasterize_to_png(act_path, args.dpi, args.format)
-                if rast_err:
-                    print(f"SKIP (rasterize: {rast_err})")
+                # Rasterize reference
+                ref_rast_path, ref_rast_err = rasterize_to_png(ref_path, args.dpi, args.format)
+                if ref_rast_err:
+                    print(f"SKIP (rasterize ref: {ref_rast_err})")
+                    results.append({
+                        'name': name,
+                        'reference': str(ref_path),
+                        'actual': str(act_path) if act_path else None,
+                        'ssim': None,
+                        'status': 'SKIP',
+                        'note': f'Reference rasterization failed: {ref_rast_err}',
+                    })
+                    continue
+                ref_tmp_path = ref_rast_path
+                ref_load_path = ref_rast_path
+
+                # Rasterize actual
+                act_rast_path, act_rast_err = rasterize_to_png(act_path, args.dpi, args.format)
+                if act_rast_err:
+                    print(f"SKIP (rasterize actual: {act_rast_err})")
                     results.append({
                         'name': name,
                         'reference': str(ref_path),
                         'actual': str(act_path),
                         'ssim': None,
                         'status': 'SKIP',
-                        'note': f'Rasterization failed: {rast_err}',
+                        'note': f'Rasterization failed: {act_rast_err}',
                     })
                     continue
-                tmp_path = rast_path
-                load_path = rast_path
+                act_tmp_path = act_rast_path
+                act_load_path = act_rast_path
             else:
-                load_path = act_path
+                ref_load_path = ref_path
+                act_load_path = act_path
 
             try:
-                ref_arr = load_image_rgb(ref_path)
-                act_arr = load_image_rgb(load_path)
+                ref_arr = load_image_rgb(ref_load_path)
+                act_arr = load_image_rgb(act_load_path)
             except Exception as e:
                 print(f"SKIP (load error: {e})")
                 results.append({
@@ -517,9 +537,10 @@ Exit codes:
                 'note': note,
             })
         finally:
-            if tmp_path:
-                try: os.unlink(tmp_path)
-                except OSError: pass
+            for tmp in (ref_tmp_path, act_tmp_path):
+                if tmp:
+                    try: os.unlink(tmp)
+                    except OSError: pass
 
     print()
 
