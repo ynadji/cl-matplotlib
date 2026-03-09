@@ -35,6 +35,15 @@ Uses cl-pdf for path rendering, text, and graphics state management."))
 ;;; Graphics context → cl-pdf state mapping
 ;;; ============================================================
 
+(defun %pdf-set-dash-pattern (dash-list phase)
+  "Write PDF dash pattern with float-safe formatting.
+cl-pdf's set-dash-pattern uses ~d (integer format) which outputs invalid PDF
+when given Lisp double-floats (e.g. '3.7d0' instead of '3.7').  We bypass it
+and write the PDF 'd' operator directly with ~f formatting."
+  (format pdf::*page-stream* "[~{~,2f~^ ~}] ~d d~%"
+          (mapcar (lambda (x) (float x 1.0)) dash-list)
+          phase))
+
 (defun %apply-gc-to-pdf (gc)
   "Apply a graphics-context's properties to the current cl-pdf state.
 Must be called within a pdf:with-page context."
@@ -71,17 +80,17 @@ Must be called within a pdf:with-page context."
     (cond
       ;; Explicit dash list
       ((and dashes (listp dashes) (not (null dashes)))
-       (pdf:set-dash-pattern dashes 0))
+       (%pdf-set-dash-pattern dashes 0))
       ;; Named line style — scale by linewidth
       ((and linestyle (not (eq linestyle :solid)))
        (let ((mult (max lw 1.0)))
          (case linestyle
-           (:dashed (pdf:set-dash-pattern (list (* 3.7d0 mult) (* 1.6d0 mult)) 0))
-           (:dashdot (pdf:set-dash-pattern (list (* 6.4d0 mult) (* 1.6d0 mult) (* 1.0d0 mult) (* 1.6d0 mult)) 0))
-           (:dotted (pdf:set-dash-pattern (list (* 1.0d0 mult) (* 1.65d0 mult)) 0))
-           (otherwise (pdf:set-dash-pattern '() 0)))))
+           (:dashed (%pdf-set-dash-pattern (list (* 3.7 mult) (* 1.6 mult)) 0))
+           (:dashdot (%pdf-set-dash-pattern (list (* 6.4 mult) (* 1.6 mult) (* 1.0 mult) (* 1.6 mult)) 0))
+           (:dotted (%pdf-set-dash-pattern (list (* 1.0 mult) (* 1.65 mult)) 0))
+           (otherwise (%pdf-set-dash-pattern '() 0)))))
       ;; Solid line
-      (t (pdf:set-dash-pattern '() 0))))
+      (t (%pdf-set-dash-pattern '() 0))))
   ;; Clip rectangle
   (let ((clip-rect (mpl.rendering:gc-clip-rectangle gc)))
     (when clip-rect
