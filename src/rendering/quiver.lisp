@@ -140,6 +140,44 @@ Returns a list of 7 (x y) pairs defining the arrow polygon."
                                               shaft-width headwidth-factor
                                               headlength-factor scale-factor
                                               pivot))))
-      ;; Set verts and delegate to poly-collection draw
+      ;; Set verts and delegate to poly-collection draw with clipping
       (setf (poly-collection-verts qc) arrow-verts)
-      (call-next-method))))
+      ;; Compute clip rectangle from axes bounding box
+      (let ((clip-rect (let ((axes (quiver-axes-ref qc)))
+                        (if axes
+                            (multiple-value-bind (x0 y0 w h)
+                                (cl-matplotlib.containers::%compute-display-bbox axes)
+                              (mpl.primitives:make-bbox x0 y0 (+ x0 w) (+ y0 h)))
+                            nil))))
+        ;; Draw polygons with clipping
+        (let* ((paths (collection-get-paths qc))
+               (facecolors (collection-facecolors qc))
+               (edgecolors (collection-edgecolors qc))
+               (linewidths (collection-linewidths qc))
+               (linestyles (collection-linestyles qc))
+               (antialiaseds (collection-antialiaseds qc))
+               (transform (get-artist-transform qc))
+               (alpha (or (artist-alpha qc) 1.0d0))
+               (n (length paths)))
+          (when (plusp n)
+            (dotimes (i n)
+              (let* ((path (elt paths i))
+                     (facecolor (or (%coll-nth (collection-facecolors qc) i) "C0"))
+                     (edgecolor (%coll-nth (collection-edgecolors qc) i))
+                     (linewidth (or (%coll-nth (collection-linewidths qc) i) 1.0))
+                     (linestyle (or (%coll-nth (collection-linestyles qc) i) :solid))
+                     (antialiased (let ((aa (%coll-nth (collection-antialiaseds qc) i)))
+                                    (if (null (collection-antialiaseds qc)) t aa))))
+                (let ((gc (make-gc :foreground edgecolor
+                                   :background facecolor
+                                   :linewidth linewidth
+                                   :linestyle linestyle
+                                   :alpha (float alpha 1.0)
+                                   :antialiased antialiased
+                                   :capstyle (collection-capstyle qc)
+                                   :joinstyle (collection-joinstyle qc)
+                                   :clip-rectangle clip-rect)))
+                  (renderer-draw-path renderer gc path transform
+                                      :fill facecolor
+                                      :stroke edgecolor))))
+            (setf (artist-stale qc) nil)))))))
