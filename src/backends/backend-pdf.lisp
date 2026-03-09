@@ -695,10 +695,13 @@ This method establishes the cl-pdf document/page context, executes all
 drawing operations, and saves the result to FILENAME."
   (let* ((w (canvas-width canvas))
          (h (canvas-height canvas))
+         (dpi (canvas-dpi canvas))
          (renderer (get-renderer canvas))
-         (page-bounds (vector 0 0 w h)))
+         (page-bounds (vector 0 0 (* w (/ 72.0 dpi)) (* h (/ 72.0 dpi)))))
     (pdf:with-document ()
       (pdf:with-page (:bounds page-bounds)
+        ;; Scale coordinate system from pixels to PDF points
+        (pdf:set-transform-matrix (/ 72.0 dpi) 0 0 (/ 72.0 dpi) 0 0)
         ;; White background
         (pdf:set-rgb-fill 1.0 1.0 1.0)
         (pdf:basic-rect 0 0 w h)
