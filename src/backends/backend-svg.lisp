@@ -519,11 +519,11 @@ Uses zpng to encode PNG via temp file, then base64-encodes the result."
           (let ((b64 (%octets-to-base64 bytes))
                 (out (renderer-svg-output-stream renderer)))
             ;; Y-flip counter: global <g> has scale(1,-1), images render upside-down
-            ;; Fix: translate(x,-y) scale(1,-1) — same pattern as draw-text
+            ;; Fix: translate(x, y+h) scale(1,-1) — position at image top-left, then un-flip
             (format out "<image x=\"0\" y=\"0\" width=\"~D\" height=\"~D\" xlink:href=\"data:image/png;base64,~A\" transform=\"translate(~A,~A) scale(1,-1)\"/>~%"
                     w h b64
                     (%format-float (coerce x 'double-float))
-                    (%format-float (- (coerce y 'double-float))))))))))
+                    (%format-float (+ (coerce y 'double-float) h)))))))))
 
 ;;; ============================================================
 ;;; draw-markers — <symbol> + <use> optimization for repeated markers
