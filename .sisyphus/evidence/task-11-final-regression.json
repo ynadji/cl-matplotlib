@@ -1,0 +1,26 @@
+{
+  "overall": {
+    "total": 79,
+    "passed": 76,
+    "failed": 0,
+    "skipped": 0,
+    "allowed": 3,
+    "mean_ssim": 0.9640112025316454,
+    "min_ssim": 0.648285,
+    "max_ssim": 0.99249
+  },
+  "fragile_examples": {
+    "color-cycle": {
+      "ssim": 0.946187,
+      "status": "ALLOW"
+    },
+    "histogram-multi": {
+      "ssim": 0.950872,
+      "status": "PASS"
+    },
+    "step-plot": {
+      "ssim": 0.955024,
+      "status": "PASS"
+    }
+  }
+}
