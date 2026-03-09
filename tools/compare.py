@@ -287,12 +287,38 @@ def rasterize_to_png(src_path, dpi, fmt):
     tmp_path = tmp.name
 
     if fmt == 'svg':
-        tool = shutil.which('convert')
+        # Try resvg first (--dpi ensures pt-unit SVGs match reference PNG dimensions)
+        tool = shutil.which('resvg')
         if not tool:
+            cargo_path = os.path.expanduser('~/.cargo/bin/resvg')
+            if os.path.isfile(cargo_path):
+                tool = cargo_path
+        if tool:
+            cmd = [tool, '--dpi', str(dpi), str(src_path), tmp_path]
+        else:
+            # Fallback to headless Chrome
+            chrome = (shutil.which('google-chrome')
+                      or shutil.which('chromium-browser')
+                      or shutil.which('chromium'))
+            if not chrome:
+                try: os.unlink(tmp_path)
+                except OSError: pass
+                return None, "No SVG rasterizer found; install resvg (cargo install resvg)"
+            cmd = [chrome, '--headless', '--disable-gpu',
+                   f'--screenshot={tmp_path}',
+                   '--window-size=1920,1200',
+                   f'file://{os.path.abspath(src_path)}']
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, timeout=60)
+        except subprocess.CalledProcessError as e:
             try: os.unlink(tmp_path)
             except OSError: pass
-            return None, "ImageMagick 'convert' not found; install imagemagick"
-        cmd = [tool, '-density', str(dpi), str(src_path), '-flatten', tmp_path]
+            return None, f"SVG rasterization failed: {e.stderr.decode()[:200]}"
+        except FileNotFoundError:
+            try: os.unlink(tmp_path)
+            except OSError: pass
+            return None, "SVG rasterizer not found"
+        return tmp_path, None
     elif fmt == 'pdf':
         tool = shutil.which('pdftoppm')
         if not tool:
@@ -326,20 +352,6 @@ def rasterize_to_png(src_path, dpi, fmt):
         try: os.unlink(tmp_path)
         except OSError: pass
         return None, f"Unsupported format for rasterization: {fmt}"
-
-    # For SVG
-    try:
-        subprocess.run(cmd, check=True, capture_output=True, timeout=60)
-    except subprocess.CalledProcessError as e:
-        try: os.unlink(tmp_path)
-        except OSError: pass
-        return None, f"convert failed: {e.stderr.decode()[:200]}"
-    except FileNotFoundError:
-        try: os.unlink(tmp_path)
-        except OSError: pass
-        return None, "'convert' not found"
-
-    return tmp_path, None
 
 def main():
     parser = argparse.ArgumentParser(
@@ -390,9 +402,9 @@ Exit codes:
     )
     args = parser.parse_args()
 
-    # Format-specific DPI defaults (SVG: 96 for CSS px; PDF/PNG: 100)
+    # Format-specific DPI defaults (SVG/PDF/PNG: 100)
     if args.dpi is None:
-        args.dpi = 96 if args.format == 'svg' else 100
+        args.dpi = 100
 
     # Load allowlist
     allowlist = {}
