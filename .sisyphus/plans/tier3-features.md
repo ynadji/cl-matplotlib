@@ -1066,7 +1066,7 @@ Max Concurrent: 4 (Final wave)
   - Message: `feat(examples): add streamplot gallery examples`
   - Files: 2 × `reference_scripts/{name}.py` + 2 × `examples/{name}.lisp`
 
-- [ ] 11. Final Regression + Checkpoint Commit
+- [x] 11. Final Regression + Checkpoint Commit
 
   **What to do**:
   - Clear FASL cache: `rm -rf ~/.cache/common-lisp/`
@@ -1141,19 +1141,19 @@ Max Concurrent: 4 (Final wave)
 
 > 4 review agents run in PARALLEL. ALL must APPROVE. Rejection → fix → re-run.
 
-- [ ] F1. **Plan Compliance Audit** — `oracle`
+- [x] F1. **Plan Compliance Audit** — `oracle`
   Read the plan end-to-end. For each "Must Have": verify implementation exists. For each "Must NOT Have": search for violations. Check evidence files. Compare deliverables against plan.
   Output: `Must Have [N/N] | Must NOT Have [N/N] | Tasks [N/N] | VERDICT: APPROVE/REJECT`
 
-- [ ] F2. **Code Quality Review** — `unspecified-high`
+- [x] F2. **Code Quality Review** — `unspecified-high`
   Run full unit test suite. Review all new src/ files for: double-float usage, error handling for edge cases, consistent style, proper docstrings. Check examples follow defpackage pattern. Check reference scripts include required rcParams.
   Output: `Tests [N pass/N fail] | Style [N clean/N issues] | VERDICT`
 
-- [ ] F3. **Full SSIM QA — All Examples** — `unspecified-high`
+- [x] F3. **Full SSIM QA — All Examples** — `unspecified-high`
   Clear FASL cache. Re-render ALL examples. Run full SSIM comparison. Verify: ≤1 failure (color-cycle only), total ≥ 79, step-plot still ≥ 0.955.
   Output: `Total [N] | Passed [N] | Failed [N] | Min SSIM [X] | VERDICT`
 
-- [ ] F4. **Scope Fidelity Check** — `unspecified-high`
+- [x] F4. **Scope Fidelity Check** — `unspecified-high`
   For each task: verify deliverables match spec, nothing beyond spec was built. Check "Must NOT do" compliance. Verify no modifications to forbidden files. Detect cross-task contamination.
   Output: `Tasks [N/N compliant] | Contamination [CLEAN/N issues] | VERDICT`
 

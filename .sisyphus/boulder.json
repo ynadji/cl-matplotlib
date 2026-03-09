@@ -2,7 +2,8 @@
   "active_plan": "/home/yacin/code/cl-matplotlib/.sisyphus/plans/tier3-features.md",
   "started_at": "2026-02-22T21:49:13.203Z",
   "session_ids": [
-    "ses_383b1abbdffeaEsvS36ri8MZk1"
+    "ses_383b1abbdffeaEsvS36ri8MZk1",
+    "ses_32ca9e0d2ffezrC7bX74Ib21Te"
   ],
   "plan_name": "tier3-features",
   "note": "gallery-expansion complete (Tasks 1-20 + fixes all committed). Starting Tier 3: violin, quiver, polar, streamplot."
