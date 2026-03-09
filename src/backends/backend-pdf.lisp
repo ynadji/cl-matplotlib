@@ -248,7 +248,8 @@ TRANSFORM can be an affine-2d or NIL for identity."
 Must be called within an active PDF page context."
   (let ((edge-color (%gc-edge-color gc))
         (face-color (%gc-face-color gc rgbface))
-        (alpha (mpl.rendering:gc-alpha gc)))
+        (alpha (mpl.rendering:gc-alpha gc))
+        (linewidth (mpl.rendering:gc-linewidth gc)))
     (pdf:with-saved-state
       ;; Apply graphics context state
       (%apply-gc-to-pdf gc)
@@ -258,7 +259,7 @@ Must be called within an active PDF page context."
       ;; Fill + stroke
       (cond
         ;; Fill and stroke
-        ((and face-color edge-color)
+        ((and face-color edge-color (> (or linewidth 1.0) 0))
          (let ((fr (first face-color))
                (fg (second face-color))
                (fb (third face-color))
@@ -288,7 +289,7 @@ Must be called within an active PDF page context."
            (%trace-path-to-pdf path transform)
            (pdf:fill-path)))
         ;; Stroke only
-        (edge-color
+        ((and edge-color (> (or linewidth 1.0) 0))
          (let ((r (first edge-color))
                (g (second edge-color))
                (b (third edge-color))
@@ -299,8 +300,8 @@ Must be called within an active PDF page context."
            (%trace-path-to-pdf path transform
                                :snap-to-half-pixels (%path-axis-aligned-p path transform))
            (pdf:stroke)))
-        ;; No color at all — just stroke in black
-        (t
+        ;; No color at all — just stroke in black (only if linewidth > 0)
+        ((> (or linewidth 1.0) 0)
          (pdf:set-rgb-stroke 0.0 0.0 0.0)
          (%trace-path-to-pdf path transform
                              :snap-to-half-pixels (%path-axis-aligned-p path transform))
