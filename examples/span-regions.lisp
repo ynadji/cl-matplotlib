@@ -25,6 +25,8 @@
 
 (let ((out "examples/span-regions.png"))
   (savefig out)
+  (savefig "examples/span-regions.svg")
+  (savefig "examples/span-regions.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

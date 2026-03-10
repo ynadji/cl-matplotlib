@@ -7,6 +7,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 # CL axes display bbox: position [0.125, 0.11, 0.775, 0.77] on 640x480
 DW = 0.775 * 640   # 496.0 px
@@ -70,4 +72,8 @@ ax.text(0.5, y_title, 'Cardioid: r = 1 + cos(\u03b8)',
         transform=ax.transAxes, ha='center', va='baseline', fontsize=12)
 
 fig.savefig('reference_images/polar-line.png')
+fig.savefig('reference_images/polar-line.svg')
+print('Saved reference_images/polar-line.svg')
+fig.savefig('reference_images/polar-line.pdf')
+print('Saved reference_images/polar-line.pdf')
 print('Saved reference_images/polar-line.png')

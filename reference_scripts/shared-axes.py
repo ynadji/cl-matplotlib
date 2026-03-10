@@ -6,6 +6,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig, axs = plt.subplots(2, 1, sharex=True, figsize=(8, 6))
 
@@ -22,4 +24,8 @@ axs[1].set_ylabel('cos(x)')
 axs[1].grid(visible=True)
 
 plt.savefig('reference_images/shared-axes.png', dpi=100)
+plt.savefig('reference_images/shared-axes.svg')
+print('Saved reference_images/shared-axes.svg')
+plt.savefig('reference_images/shared-axes.pdf')
+print('Saved reference_images/shared-axes.pdf')
 print('Saved reference_images/shared-axes.png')

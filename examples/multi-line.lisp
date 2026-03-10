@@ -38,6 +38,8 @@
 
 (let ((out "examples/multi-line.png"))
   (savefig out)
+  (savefig "examples/multi-line.svg")
+  (savefig "examples/multi-line.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

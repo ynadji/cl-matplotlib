@@ -35,6 +35,15 @@ Uses cl-pdf for path rendering, text, and graphics state management."))
 ;;; Graphics context → cl-pdf state mapping
 ;;; ============================================================
 
+(defun %pdf-set-dash-pattern (dash-list phase)
+  "Write PDF dash pattern with float-safe formatting.
+cl-pdf's set-dash-pattern uses ~d (integer format) which outputs invalid PDF
+when given Lisp double-floats (e.g. '3.7d0' instead of '3.7').  We bypass it
+and write the PDF 'd' operator directly with ~f formatting."
+  (format pdf::*page-stream* "[~{~,2f~^ ~}] ~d d~%"
+          (mapcar (lambda (x) (float x 1.0)) dash-list)
+          phase))
+
 (defun %apply-gc-to-pdf (gc)
   "Apply a graphics-context's properties to the current cl-pdf state.
 Must be called within a pdf:with-page context."
@@ -60,22 +69,28 @@ Must be called within a pdf:with-page context."
          (:round 1)
          (:bevel 2)
          (otherwise 0)))))
-  ;; Dash pattern
+  ;; Dash pattern — scale by linewidth like SVG
+  ;; Base patterns (linewidth-relative):
+  ;;   dashed:  (3.7, 1.6)
+  ;;   dashdot: (6.4, 1.6, 1.0, 1.6)
+  ;;   dotted:  (1.0, 1.65)
   (let ((dashes (mpl.rendering:gc-dashes gc))
-        (linestyle (mpl.rendering:gc-linestyle gc)))
+        (linestyle (mpl.rendering:gc-linestyle gc))
+        (lw (or (mpl.rendering:gc-linewidth gc) 1.0)))
     (cond
       ;; Explicit dash list
       ((and dashes (listp dashes) (not (null dashes)))
-       (pdf:set-dash-pattern dashes 0))
-      ;; Named line style
+       (%pdf-set-dash-pattern dashes 0))
+      ;; Named line style — scale by linewidth
       ((and linestyle (not (eq linestyle :solid)))
-       (case linestyle
-         (:dashed (pdf:set-dash-pattern '(6 4) 0))
-         (:dashdot (pdf:set-dash-pattern '(6 3 2 3) 0))
-         (:dotted (pdf:set-dash-pattern '(2 4) 0))
-         (otherwise (pdf:set-dash-pattern '() 0))))
+       (let ((mult (max lw 1.0)))
+         (case linestyle
+           (:dashed (%pdf-set-dash-pattern (list (* 3.7 mult) (* 1.6 mult)) 0))
+           (:dashdot (%pdf-set-dash-pattern (list (* 6.4 mult) (* 1.6 mult) (* 1.0 mult) (* 1.6 mult)) 0))
+           (:dotted (%pdf-set-dash-pattern (list (* 1.0 mult) (* 1.65 mult)) 0))
+           (otherwise (%pdf-set-dash-pattern '() 0)))))
       ;; Solid line
-      (t (pdf:set-dash-pattern '() 0))))
+      (t (%pdf-set-dash-pattern '() 0))))
   ;; Clip rectangle
   (let ((clip-rect (mpl.rendering:gc-clip-rectangle gc)))
     (when clip-rect
@@ -90,10 +105,65 @@ Must be called within a pdf:with-page context."
         (pdf:end-path-no-op)))))
 
 ;;; ============================================================
+;;; Path analysis helpers
+;;; ============================================================
+
+(defun %path-axis-aligned-p (path transform)
+  "Return T if PATH contains only axis-aligned (horizontal/vertical) LINETO segments
+after applying TRANSFORM. Paths with curves (CURVE3/CURVE4) return NIL.
+Used to decide whether to snap stroke coordinates to half-pixel centers."
+  (let* ((verts (mpl.primitives:mpl-path-vertices path))
+         (codes (mpl.primitives:mpl-path-codes path))
+         (n (array-dimension verts 0)))
+    (when (zerop n) (return-from %path-axis-aligned-p t))
+    ;; If no codes, synthesize MOVETO + LINETOs
+    (unless codes
+      (setf codes (make-array n :element-type '(unsigned-byte 8)))
+      (setf (aref codes 0) mpl.primitives:+moveto+)
+      (loop for j from 1 below n do
+        (setf (aref codes j) mpl.primitives:+lineto+)))
+    (let ((prev-tx 0.0d0)
+          (prev-ty 0.0d0)
+          (i 0)
+          (tolerance 0.5d0))  ; half-pixel tolerance for "axis-aligned"
+      (flet ((xf (x y)
+               (if transform
+                   (let ((result (mpl.primitives:transform-point
+                                  transform (list (float x 1.0d0) (float y 1.0d0)))))
+                     (values (aref result 0) (aref result 1)))
+                   (values (float x 1.0d0) (float y 1.0d0)))))
+        (loop while (< i n) do
+          (let ((code (aref codes i)))
+            (cond
+              ((= code mpl.primitives:+moveto+)
+               (multiple-value-bind (tx ty) (xf (aref verts i 0) (aref verts i 1))
+                 (setf prev-tx tx prev-ty ty))
+               (incf i))
+              ((= code mpl.primitives:+lineto+)
+               (multiple-value-bind (tx ty) (xf (aref verts i 0) (aref verts i 1))
+                 (let ((dx (abs (- tx prev-tx)))
+                       (dy (abs (- ty prev-ty))))
+                   ;; Must be horizontal (dy < tol) or vertical (dx < tol)
+                   (unless (or (< dx tolerance) (< dy tolerance))
+                     (return-from %path-axis-aligned-p nil)))
+                 (setf prev-tx tx prev-ty ty))
+               (incf i))
+              ;; Any curve segment → not axis-aligned
+              ((or (= code mpl.primitives:+curve3+)
+                   (= code mpl.primitives:+curve4+))
+               (return-from %path-axis-aligned-p nil))
+              ((= code mpl.primitives:+closepoly+)
+               (incf i))
+              ((= code mpl.primitives:+stop+)
+               (return))
+              (t (incf i)))))
+        t))))
+
+;;; ============================================================
 ;;; Path rendering: map mpl-path codes to cl-pdf operations
 ;;; ============================================================
 
-(defun %trace-path-to-pdf (path transform)
+(defun %trace-path-to-pdf (path transform &key snap-to-half-pixels)
   "Trace an mpl-path into the current cl-pdf path.
 TRANSFORM can be an affine-2d or NIL for identity."
   (let* ((verts (mpl.primitives:mpl-path-vertices path))
@@ -109,11 +179,20 @@ TRANSFORM can be an affine-2d or NIL for identity."
         (setf (aref codes j) mpl.primitives:+lineto+)))
     (flet ((xf (x y)
              "Apply transform and return (values tx ty)."
-             (if transform
-                 (let ((result (mpl.primitives:transform-point
-                                transform (list (float x 1.0d0) (float y 1.0d0)))))
-                   (values (aref result 0) (aref result 1)))
-                 (values (float x 1.0d0) (float y 1.0d0)))))
+             (multiple-value-bind (tx ty)
+                 (if transform
+                     (let ((result (mpl.primitives:transform-point
+                                    transform (list (float x 1.0d0) (float y 1.0d0)))))
+                       (values (aref result 0) (aref result 1)))
+                     (values (float x 1.0d0) (float y 1.0d0)))
+               (if snap-to-half-pixels
+                   (flet ((snap-half (v)
+                            (let ((frac (mod v 1.0d0)))
+                              (if (< (abs (- frac 0.5d0)) 0.02d0)
+                                  v  ;; Already at half-pixel — preserve
+                                  (+ (float (floor (+ v 0.5d0)) 1.0d0) 0.5d0)))))
+                     (values (snap-half tx) (snap-half ty)))
+                   (values tx ty)))))
       (loop while (< i n) do
         (let ((code (aref codes i)))
           (cond
@@ -178,7 +257,8 @@ TRANSFORM can be an affine-2d or NIL for identity."
 Must be called within an active PDF page context."
   (let ((edge-color (%gc-edge-color gc))
         (face-color (%gc-face-color gc rgbface))
-        (alpha (mpl.rendering:gc-alpha gc)))
+        (alpha (mpl.rendering:gc-alpha gc))
+        (linewidth (mpl.rendering:gc-linewidth gc)))
     (pdf:with-saved-state
       ;; Apply graphics context state
       (%apply-gc-to-pdf gc)
@@ -188,7 +268,7 @@ Must be called within an active PDF page context."
       ;; Fill + stroke
       (cond
         ;; Fill and stroke
-        ((and face-color edge-color)
+        ((and face-color edge-color (> (or linewidth 1.0) 0))
          (let ((fr (first face-color))
                (fg (second face-color))
                (fb (third face-color))
@@ -218,7 +298,7 @@ Must be called within an active PDF page context."
            (%trace-path-to-pdf path transform)
            (pdf:fill-path)))
         ;; Stroke only
-        (edge-color
+        ((and edge-color (> (or linewidth 1.0) 0))
          (let ((r (first edge-color))
                (g (second edge-color))
                (b (third edge-color))
@@ -226,12 +306,14 @@ Must be called within an active PDF page context."
            (when (and a (< a 1.0))
              (pdf:set-stroke-transparency (float (* a (or alpha 1.0)) 1.0)))
            (pdf:set-rgb-stroke (float r 1.0) (float g 1.0) (float b 1.0))
-           (%trace-path-to-pdf path transform)
+           (%trace-path-to-pdf path transform
+                               :snap-to-half-pixels (%path-axis-aligned-p path transform))
            (pdf:stroke)))
-        ;; No color at all — just stroke in black
-        (t
+        ;; No color at all — just stroke in black (only if linewidth > 0)
+        ((> (or linewidth 1.0) 0)
          (pdf:set-rgb-stroke 0.0 0.0 0.0)
-         (%trace-path-to-pdf path transform)
+         (%trace-path-to-pdf path transform
+                             :snap-to-half-pixels (%path-axis-aligned-p path transform))
          (pdf:stroke))))))
 
 ;;; ============================================================
@@ -260,8 +342,7 @@ STROKE can be T (use gc-foreground) or nil."
 (defmethod mpl.rendering:renderer-draw-text ((renderer renderer-pdf) gc x y text
                                              &key angle ha va)
   "Bridge from artist draw text protocol to backend draw-text."
-  (declare (ignore ha va))
-  (draw-text renderer gc (float x 1.0d0) (float y 1.0d0) text nil (or angle 0.0)))
+  (draw-text renderer gc (float x 1.0d0) (float y 1.0d0) text nil (or angle 0.0) nil ha va))
 
 ;;; ============================================================
 ;;; Bridge: renderer-draw-image from artist protocol → draw-image
@@ -307,37 +388,82 @@ PROP can be a font-properties object, a string path, or NIL."
        (t "Helvetica")))
     (t "Helvetica")))
 
+(defun %pdf-sanitize-string (s)
+  "Replace characters with code points >= 256 with ASCII fallbacks.
+cl-pdf's built-in fonts use a 256-entry encoding vector; characters
+outside this range (e.g. θ=952, μ=956, π=960) cause an array bounds
+error.  This maps common math/science Unicode to readable ASCII and
+replaces anything else with '?'."
+  (if (every (lambda (c) (< (char-code c) 256)) s)
+      s  ; fast path — all characters fit
+      (map 'string
+           (lambda (c)
+             (let ((code (char-code c)))
+               (if (< code 256)
+                   c
+                   (case code
+                     (952  #\o)    ; θ → o  (theta)
+                     (956  #\u)    ; μ → u  (mu)
+                     (960  #\p)    ; π → p  (pi, not in Latin-1 slot)
+                     (178  #\2)    ; ² → 2  (superscript 2)
+                     (179  #\3)    ; ³ → 3  (superscript 3)
+                     (8804 #\<)    ; ≤ → <
+                     (8805 #\>)    ; ≥ → >
+                     (t    #\?)))))
+           s)))
+
 (defmethod draw-text ((renderer renderer-pdf) gc x y s prop angle &optional ismath ha va)
   "Draw text string S at position (X, Y) using cl-pdf's text rendering.
 PROP is a font path string or NIL (uses Helvetica).
-ANGLE is rotation in degrees."
-  (declare (ignore ismath ha va))
-  (pdf:with-saved-state
-    (let* ((font-name (%resolve-pdf-font-name prop))
-           (font (%get-pdf-font renderer font-name))
-           (fontsize (or (and gc (mpl.rendering:gc-linewidth gc)) 12.0))
-           (edge-color (%gc-edge-color gc))
-           (alpha (if gc (mpl.rendering:gc-alpha gc) 1.0)))
-      ;; Set text color
-      (if edge-color
-          (progn
-            (pdf:set-rgb-fill (float (first edge-color) 1.0)
-                              (float (second edge-color) 1.0)
-                              (float (third edge-color) 1.0))
-            (when (and (fourth edge-color) (< (* (fourth edge-color) alpha) 1.0))
-              (pdf:set-fill-transparency (float (* (fourth edge-color) alpha) 1.0))))
-          (pdf:set-rgb-fill 0.0 0.0 0.0))
-      ;; Handle rotation
-      (when (and (numberp angle) (/= angle 0))
-        (pdf:translate (float x 1.0) (float y 1.0))
-        (pdf:rotate (float angle 1.0)))
-      ;; Draw text
-      (pdf:in-text-mode
-        (pdf:set-font font (float fontsize 1.0))
-        (if (and (numberp angle) (/= angle 0))
-            (pdf:move-text 0 0)
-            (pdf:move-text (float x 1.0) (float y 1.0)))
-        (pdf:draw-text s)))))
+ANGLE is rotation in degrees.
+HA is horizontal alignment (:left, :center, :right). Default :left.
+VA is vertical alignment (:baseline, :bottom, :center, :top). Default :baseline."
+  (declare (ignore ismath))
+  (when (or (null s) (string= s ""))
+    (return-from draw-text nil))
+  ;; Sanitize string for cl-pdf's 256-char font encoding
+  (let ((s (%pdf-sanitize-string s))
+        (ha (or ha :left))
+        (va (or va :baseline)))
+    (pdf:with-saved-state
+      (let* ((font-name (%resolve-pdf-font-name prop))
+             (font (%get-pdf-font renderer font-name))
+             (fontsize (or (and gc (mpl.rendering:gc-linewidth gc)) 12.0))
+             (edge-color (%gc-edge-color gc))
+             (alpha (if gc (mpl.rendering:gc-alpha gc) 1.0)))
+        ;; Set text color
+        (if edge-color
+            (progn
+              (pdf:set-rgb-fill (float (first edge-color) 1.0)
+                                (float (second edge-color) 1.0)
+                                (float (third edge-color) 1.0))
+              (when (and (fourth edge-color) (< (* (fourth edge-color) alpha) 1.0))
+                (pdf:set-fill-transparency (float (* (fourth edge-color) alpha) 1.0))))
+            (pdf:set-rgb-fill 0.0 0.0 0.0))
+        ;; Compute alignment offsets using cl-pdf font metrics
+        (let* ((text-w (pdf::text-width s font (float fontsize 1.0)))
+               (ascender (* (pdf::ascender (pdf:font-metrics font)) (float fontsize 1.0)))
+               (descender (pdf:get-font-descender font (float fontsize 1.0)))
+               (x-offset (ecase ha
+                           (:left 0.0)
+                           (:center (- (/ text-w 2.0)))
+                           (:right (- text-w))))
+               (y-offset (ecase va
+                           (:baseline 0.0)
+                           (:bottom (- descender))
+                           (:top (- ascender))
+                           (:center (- (/ (+ ascender descender) 2.0))))))
+          ;; Handle rotation
+          (when (and (numberp angle) (/= angle 0))
+            (pdf:translate (float x 1.0) (float y 1.0))
+            (pdf:rotate (float angle 1.0)))
+          ;; Draw text
+          (pdf:in-text-mode
+            (pdf:set-font font (float fontsize 1.0))
+            (if (and (numberp angle) (/= angle 0))
+                (pdf:move-text (float x-offset 1.0) (float y-offset 1.0))
+                (pdf:move-text (float (+ x x-offset) 1.0) (float (+ y y-offset) 1.0)))
+            (pdf:draw-text s)))))))
 
 ;;; ============================================================
 ;;; draw-image — Embed image into PDF
@@ -346,21 +472,33 @@ ANGLE is rotation in degrees."
 (defmethod draw-image ((renderer renderer-pdf) gc x y im)
   "Draw an RGBA image IM at position (X, Y) in the PDF.
 IM should be a plist with :data (flat RGBA bytes), :width, :height.
-Note: cl-pdf image support is limited; this creates a simple colored rectangle
-as a placeholder for raster images in the PDF backend."
+Uses zpng to encode a PNG via temp file, then cl-pdf's make-image/draw-image API."
   (declare (ignore gc))
-  (let ((w (getf im :width))
+  (let ((data (getf im :data))
+        (w (getf im :width))
         (h (getf im :height)))
-    (when (and w h)
-      ;; PDF doesn't easily support inline RGBA bitmaps without encoding
-      ;; Draw a placeholder rectangle showing image bounds
-      (pdf:with-saved-state
-        (pdf:set-rgb-fill 0.9 0.9 0.9)
-        (pdf:set-rgb-stroke 0.5 0.5 0.5)
-        (pdf:set-line-width 0.5)
-        (pdf:basic-rect (float x 1.0) (float y 1.0)
-                        (float w 1.0) (float h 1.0))
-        (pdf:fill-and-stroke)))))
+    (when (and data w h)
+      (let* ((png (make-instance 'zpng:png
+                                 :color-type :truecolor-alpha
+                                 :width w :height h))
+             (tmp-path (format nil "/tmp/cl-mpl-pdf-~A-~A.png"
+                               (get-universal-time)
+                               (random 100000))))
+        ;; Copy RGBA data into zpng image buffer
+        (replace (zpng:image-data png) data)
+        ;; Write to temp file (zpng only accepts pathname)
+        (zpng:write-png png tmp-path)
+        ;; Load into cl-pdf, register with page, and draw; clean up temp file
+        (unwind-protect
+            (let ((pdf-image (pdf:make-image tmp-path)))
+              ;; Register image XObject with current page (required by cl-pdf)
+              (pdf:add-images-to-page pdf-image)
+              (pdf:with-saved-state
+                (pdf:draw-image pdf-image
+                                (float x 1.0) (float y 1.0)
+                                (float w 1.0) (float h 1.0)
+                                0)))
+          (ignore-errors (delete-file tmp-path)))))))
 
 ;;; ============================================================
 ;;; draw-markers — Repeated path drawing
@@ -583,10 +721,13 @@ This method establishes the cl-pdf document/page context, executes all
 drawing operations, and saves the result to FILENAME."
   (let* ((w (canvas-width canvas))
          (h (canvas-height canvas))
+         (dpi (canvas-dpi canvas))
          (renderer (get-renderer canvas))
-         (page-bounds (vector 0 0 w h)))
+         (page-bounds (vector 0 0 (* w (/ 72.0 dpi)) (* h (/ 72.0 dpi)))))
     (pdf:with-document ()
       (pdf:with-page (:bounds page-bounds)
+        ;; Scale coordinate system from pixels to PDF points
+        (pdf:set-transform-matrix (/ 72.0 dpi) 0 0 (/ 72.0 dpi) 0 0)
         ;; White background
         (pdf:set-rgb-fill 1.0 1.0 1.0)
         (pdf:basic-rect 0 0 w h)

@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(8, 6))
 
@@ -18,4 +20,8 @@ plt.pie(sizes, labels=labels, autopct='%1.1f%%',
 plt.title('Programming Languages')
 
 plt.savefig('reference_images/pie-features.png', dpi=100)
+plt.savefig('reference_images/pie-features.svg')
+print('Saved reference_images/pie-features.svg')
+plt.savefig('reference_images/pie-features.pdf')
+print('Saved reference_images/pie-features.pdf')
 print('Saved reference_images/pie-features.png')

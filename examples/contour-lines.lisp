@@ -30,6 +30,8 @@
 
 (let ((out "examples/contour-lines.png"))
   (savefig out)
+  (savefig "examples/contour-lines.svg")
+  (savefig "examples/contour-lines.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

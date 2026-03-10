@@ -6,6 +6,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(10, 6))
 
@@ -32,4 +34,8 @@ plt.title('Multiple Lines — Different Styles')
 plt.grid(visible=True)
 
 plt.savefig('reference_images/multi-line.png', dpi=100)
+plt.savefig('reference_images/multi-line.svg')
+print('Saved reference_images/multi-line.svg')
+plt.savefig('reference_images/multi-line.pdf')
+print('Saved reference_images/multi-line.pdf')
 print('Saved reference_images/multi-line.png')

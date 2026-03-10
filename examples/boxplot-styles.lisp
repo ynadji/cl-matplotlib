@@ -20,6 +20,8 @@
 
 (let ((out "examples/boxplot-styles.png"))
   (savefig out)
+  (savefig "examples/boxplot-styles.svg")
+  (savefig "examples/boxplot-styles.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

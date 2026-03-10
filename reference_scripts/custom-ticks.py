@@ -6,6 +6,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 x = np.linspace(0, 2*np.pi, 200)
 y = np.sin(x)
@@ -20,4 +22,8 @@ ax.set_title('Sine Wave with Custom Tick Labels')
 ax.set_xlabel('Angle')
 ax.set_ylabel('sin(x)')
 plt.savefig('reference_images/custom-ticks.png')
+plt.savefig('reference_images/custom-ticks.svg')
+print('Saved reference_images/custom-ticks.svg')
+plt.savefig('reference_images/custom-ticks.pdf')
+print('Saved reference_images/custom-ticks.pdf')
 plt.close()

@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(8, 5))
 
@@ -27,4 +29,8 @@ plt.ylabel('y')
 plt.title('Line Styles')
 
 plt.savefig('reference_images/multi-line-styles.png', dpi=100)
+plt.savefig('reference_images/multi-line-styles.svg')
+print('Saved reference_images/multi-line-styles.svg')
+plt.savefig('reference_images/multi-line-styles.pdf')
+print('Saved reference_images/multi-line-styles.pdf')
 print('Saved reference_images/multi-line-styles.png')

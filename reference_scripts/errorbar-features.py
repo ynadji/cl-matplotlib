@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(8, 5))
 
@@ -22,4 +24,8 @@ plt.ylabel('y')
 plt.title('Error Bar Types')
 
 plt.savefig('reference_images/errorbar-features.png', dpi=100)
+plt.savefig('reference_images/errorbar-features.svg')
+print('Saved reference_images/errorbar-features.svg')
+plt.savefig('reference_images/errorbar-features.pdf')
+print('Saved reference_images/errorbar-features.pdf')
 print('Saved reference_images/errorbar-features.png')

@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(8, 5))
 
@@ -19,4 +21,8 @@ plt.title('Stem Plot')
 plt.grid(visible=True)
 
 plt.savefig('reference_images/stem-simple.png', dpi=100)
+plt.savefig('reference_images/stem-simple.svg')
+print('Saved reference_images/stem-simple.svg')
+plt.savefig('reference_images/stem-simple.pdf')
+print('Saved reference_images/stem-simple.pdf')
 print('Saved reference_images/stem-simple.png')

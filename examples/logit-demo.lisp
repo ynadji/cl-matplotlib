@@ -21,6 +21,8 @@
 
 (let ((out "examples/logit-demo.png"))
   (savefig out)
+  (savefig "examples/logit-demo.svg")
+  (savefig "examples/logit-demo.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

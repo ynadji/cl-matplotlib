@@ -26,6 +26,8 @@
 
 (let ((out "examples/violin-styled.png"))
   (savefig out)
+  (savefig "examples/violin-styled.svg")
+  (savefig "examples/violin-styled.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

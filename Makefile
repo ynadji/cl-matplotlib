@@ -6,9 +6,8 @@ REFERENCE_IMAGES_DIR := reference_images
 EXAMPLES_DIR := examples
 COMPARISON_REPORT_DIR := comparison_report
 COMPARISON_TOOL := tools/compare.py
-THRESHOLD := 0.95
 
-.PHONY: setup-python reference-images cl-images compare report clean all
+.PHONY: setup-python reference-images cl-images compare compare-png compare-svg compare-pdf report clean all
 
 setup-python:
 	@echo "Setting up Python virtual environment..."
@@ -34,21 +33,52 @@ cl-images:
 	@echo "CL images generated in $(EXAMPLES_DIR)/"
 
 compare: cl-images
-	@echo "Running visual comparison..."
-	@mkdir -p $(COMPARISON_REPORT_DIR)
+	@echo "Running combined comparison (PNG + SVG + PDF)..."
 	$(PYTHON) $(COMPARISON_TOOL) \
 		--reference $(REFERENCE_IMAGES_DIR)/ \
 		--actual $(EXAMPLES_DIR)/ \
-		--threshold $(THRESHOLD) \
+		--format all \
+		--allowlist allowlist.json \
 		--output $(COMPARISON_REPORT_DIR)/
-	@echo "Comparison complete. Report: $(COMPARISON_REPORT_DIR)/index.html"
+	@echo "Report: $(COMPARISON_REPORT_DIR)/index.html"
+
+compare-png:
+	$(PYTHON) $(COMPARISON_TOOL) \
+		--reference $(REFERENCE_IMAGES_DIR)/ \
+		--actual $(EXAMPLES_DIR)/ \
+		--format png \
+		--threshold 0.95 \
+		--allowlist allowlist.json \
+		--output $(COMPARISON_REPORT_DIR)/png/
+
+compare-svg:
+	$(PYTHON) $(COMPARISON_TOOL) \
+		--reference $(REFERENCE_IMAGES_DIR)/ \
+		--actual $(EXAMPLES_DIR)/ \
+		--format svg \
+		--threshold 0.90 \
+		--allowlist allowlist.json \
+		--output $(COMPARISON_REPORT_DIR)/svg/
+
+compare-pdf:
+	$(PYTHON) $(COMPARISON_TOOL) \
+		--reference $(REFERENCE_IMAGES_DIR)/ \
+		--actual $(EXAMPLES_DIR)/ \
+		--format pdf \
+		--threshold 0.88 \
+		--allowlist allowlist.json \
+		--output $(COMPARISON_REPORT_DIR)/pdf/
 
 report: compare
 	@echo "Report generated at $(COMPARISON_REPORT_DIR)/index.html"
 
 clean:
 	rm -f $(REFERENCE_IMAGES_DIR)/*.png
+	rm -f $(REFERENCE_IMAGES_DIR)/*.svg
+	rm -f $(REFERENCE_IMAGES_DIR)/*.pdf
 	rm -rf $(COMPARISON_REPORT_DIR)
 	rm -f $(EXAMPLES_DIR)/*.png
+	rm -f $(EXAMPLES_DIR)/*.svg
+	rm -f $(EXAMPLES_DIR)/*.pdf
 
 all: setup-python reference-images cl-images compare

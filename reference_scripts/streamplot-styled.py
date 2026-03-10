@@ -8,6 +8,8 @@ from matplotlib.patches import FancyArrowPatch
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 
 def cl_streamplot(ax, x_arr, y_arr, U, V, color='C0', linewidth=1.0,
@@ -149,4 +151,8 @@ ax.set_title('Streamplot \u2014 Saddle Point Flow')
 ax.set_xlabel('X')
 ax.set_ylabel('Y')
 fig.savefig('reference_images/streamplot-styled.png')
+fig.savefig('reference_images/streamplot-styled.svg')
+print('Saved reference_images/streamplot-styled.svg')
+fig.savefig('reference_images/streamplot-styled.pdf')
+print('Saved reference_images/streamplot-styled.pdf')
 print('Saved reference_images/streamplot-styled.png')

@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(8, 5))
 
@@ -19,4 +21,8 @@ plt.ylabel('sinh(x)')
 plt.title('sinh(x) — Hyperbolic Sine')
 
 plt.savefig('reference_images/symlog-demo.png', dpi=100)
+plt.savefig('reference_images/symlog-demo.svg')
+print('Saved reference_images/symlog-demo.svg')
+plt.savefig('reference_images/symlog-demo.pdf')
+print('Saved reference_images/symlog-demo.pdf')
 print('Saved reference_images/symlog-demo.png')

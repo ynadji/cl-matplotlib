@@ -38,6 +38,8 @@
 
   (let ((out "examples/gridspec-custom.png"))
     (mpl.containers:savefig fig out)
+    (mpl.containers:savefig fig "examples/gridspec-custom.svg")
+    (mpl.containers:savefig fig "examples/gridspec-custom.pdf")
     (format t "~&Saved to ~A~%" out)))
 
 (uiop:quit)

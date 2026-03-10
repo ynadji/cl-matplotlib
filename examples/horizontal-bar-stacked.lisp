@@ -29,6 +29,8 @@
 
 (let ((out "examples/horizontal-bar-stacked.png"))
   (savefig out)
+  (savefig "examples/horizontal-bar-stacked.svg")
+  (savefig "examples/horizontal-bar-stacked.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

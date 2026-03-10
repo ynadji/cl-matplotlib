@@ -7,6 +7,8 @@ from matplotlib.collections import PolyCollection
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 
 def draw_cl_quiver(ax, X, Y, U, V, color='C0'):
@@ -91,4 +93,8 @@ ax.set_title('Quiver Plot \u2014 Gradient Field')
 ax.grid(True)
 
 fig.savefig('reference_images/quiver-gradient.png', dpi=100)
+fig.savefig('reference_images/quiver-gradient.svg')
+print('Saved reference_images/quiver-gradient.svg')
+fig.savefig('reference_images/quiver-gradient.pdf')
+print('Saved reference_images/quiver-gradient.pdf')
 print('Saved reference_images/quiver-gradient.png')

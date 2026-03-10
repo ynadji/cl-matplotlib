@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig, ax = plt.subplots(figsize=(7, 5))
 values = [23, 45, 12, 67, 34]
@@ -18,4 +20,8 @@ ax.set_ylim(0, 80)
 ax.set_title('Bar Chart with Labels')
 
 plt.savefig('reference_images/bar-labels.png', dpi=100)
+plt.savefig('reference_images/bar-labels.svg')
+print('Saved reference_images/bar-labels.svg')
+plt.savefig('reference_images/bar-labels.pdf')
+print('Saved reference_images/bar-labels.pdf')
 plt.close()

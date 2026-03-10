@@ -7,6 +7,8 @@ import math
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 x = list(range(50))
 y = [math.sin(i * 0.3) * 2 for i in x]
@@ -23,4 +25,8 @@ plt.xlabel('Index')
 plt.ylabel('Value')
 plt.legend()
 plt.savefig('reference_images/threshold-lines.png')
+plt.savefig('reference_images/threshold-lines.svg')
+print('Saved reference_images/threshold-lines.svg')
+plt.savefig('reference_images/threshold-lines.pdf')
+print('Saved reference_images/threshold-lines.pdf')
 plt.close()

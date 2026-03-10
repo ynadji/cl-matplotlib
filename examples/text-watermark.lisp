@@ -17,6 +17,8 @@
 
 (let ((out "examples/text-watermark.png"))
   (savefig out)
+  (savefig "examples/text-watermark.svg")
+  (savefig "examples/text-watermark.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

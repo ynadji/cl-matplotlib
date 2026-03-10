@@ -6,6 +6,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(8, 5))
 
@@ -24,4 +26,8 @@ plt.legend()
 plt.grid(visible=True)
 
 plt.savefig('reference_images/curve-error-band.png', dpi=100)
+plt.savefig('reference_images/curve-error-band.svg')
+print('Saved reference_images/curve-error-band.svg')
+plt.savefig('reference_images/curve-error-band.pdf')
+print('Saved reference_images/curve-error-band.pdf')
 print('Saved reference_images/curve-error-band.png')

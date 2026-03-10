@@ -25,6 +25,8 @@
 
 (let ((out "examples/imshow-heatmap.png"))
   (savefig out)
+  (savefig "examples/imshow-heatmap.svg")
+  (savefig "examples/imshow-heatmap.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

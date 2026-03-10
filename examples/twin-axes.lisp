@@ -40,6 +40,8 @@
 
   (let ((out "examples/twin-axes.png"))
     (mpl.containers:savefig fig out)
+    (mpl.containers:savefig fig "examples/twin-axes.svg")
+    (mpl.containers:savefig fig "examples/twin-axes.pdf")
     (format t "~&Saved to ~A~%" out)))
 
 (uiop:quit)

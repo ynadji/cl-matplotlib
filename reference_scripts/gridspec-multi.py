@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig, axs = plt.subplots(1, 3, figsize=(12, 4))
 
@@ -24,4 +26,8 @@ axs[2].bar([1, 2, 3, 4, 5], [10, 20, 15, 25, 18], color='seagreen', width=0.6)
 axs[2].grid(visible=True)
 
 plt.savefig('reference_images/gridspec-multi.png', dpi=100)
+plt.savefig('reference_images/gridspec-multi.svg')
+print('Saved reference_images/gridspec-multi.svg')
+plt.savefig('reference_images/gridspec-multi.pdf')
+print('Saved reference_images/gridspec-multi.pdf')
 print('Saved reference_images/gridspec-multi.png')

@@ -36,6 +36,8 @@
 
 (let ((out "examples/legend-styles.png"))
   (savefig out)
+  (savefig "examples/legend-styles.svg")
+  (savefig "examples/legend-styles.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

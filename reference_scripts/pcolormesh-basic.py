@@ -6,6 +6,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(8, 6))
 
@@ -22,4 +24,8 @@ plt.colorbar()
 plt.title('Radial Wave: cos(r)*exp(-r^2/10)')
 
 plt.savefig('reference_images/pcolormesh-basic.png', dpi=100)
+plt.savefig('reference_images/pcolormesh-basic.svg')
+print('Saved reference_images/pcolormesh-basic.svg')
+plt.savefig('reference_images/pcolormesh-basic.pdf')
+print('Saved reference_images/pcolormesh-basic.pdf')
 print('Saved reference_images/pcolormesh-basic.png')

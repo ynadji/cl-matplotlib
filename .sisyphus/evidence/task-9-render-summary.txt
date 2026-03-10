@@ -1,0 +1,30 @@
+Task 9: Gallery Smoke Test Summary
+Date: 2026-02-22
+
+Examples rendered:
+1.  bar-chart.svg    — PASS — 10521 bytes, 34 paths, 14 texts
+2.  simple-line.svg  — PASS — 14649 bytes, 44 paths, 22 texts
+3.  scatter.svg      — PASS — 117639 bytes, 238 paths, 17 texts
+4.  contour-demo.svg — PASS — 736173 bytes, 3354 paths, 17 texts
+5.  errorbar.svg     — PASS — 23183 bytes, 96 paths, 17 texts
+6.  boxplot.svg      — PASS — 13166 bytes, 50 paths, 12 texts
+7.  histogram.svg    — PASS — 18645 bytes, 66 paths, 18 texts
+8.  pie-chart.svg    — PASS — 3088 bytes, 6 paths, 6 texts
+9.  bar-colors.svg   — PASS — 9352 bytes, 30 paths, 15 texts
+10. barh.svg         — PASS — 9673 bytes, 31 paths, 13 texts
+
+All SVGs: valid XML header, contain <svg> and <path> elements, > 1KB
+
+Browser verification (Chrome 116 headless):
+1.  bar-chart    — VISIBLE — colored bars, axes, grid, labels
+2.  simple-line  — VISIBLE — two data lines (solid+dashed), legend, grid
+3.  scatter      — VISIBLE — 200+ scatter points, axes, grid
+4.  contour-demo — VISIBLE — filled contours with color gradient, axes
+5.  errorbar     — VISIBLE — line with error bars, data points, grid
+6.  boxplot      — VISIBLE — 4 boxplots with whiskers, outlier, grid
+7.  histogram    — VISIBLE — bell-curve bins, grid, axes
+8.  pie-chart    — VISIBLE — 5 colored slices
+9.  bar-colors   — VISIBLE — 6 colored bars, grid, axes
+10. barh         — VISIBLE — 5 horizontal bars, grid, axes
+
+Overall: 10/10 rendered, 10/10 visible in browser

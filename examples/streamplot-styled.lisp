@@ -24,4 +24,6 @@
 (xlabel "X")
 (ylabel "Y")
 (savefig "examples/streamplot-styled.png")
+(savefig "examples/streamplot-styled.svg")
+(savefig "examples/streamplot-styled.pdf")
 (uiop:quit)

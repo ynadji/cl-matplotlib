@@ -6,6 +6,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(10, 6))
 
@@ -30,4 +32,8 @@ plt.legend()
 plt.grid(visible=True)
 
 plt.savefig('reference_images/annotations.png', dpi=100)
+plt.savefig('reference_images/annotations.svg')
+print('Saved reference_images/annotations.svg')
+plt.savefig('reference_images/annotations.pdf')
+print('Saved reference_images/annotations.pdf')
 print('Saved reference_images/annotations.png')

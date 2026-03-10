@@ -8,6 +8,8 @@ from matplotlib.lines import Line2D
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 
 def cl_gaussian_kde(dataset, eval_points):
@@ -121,4 +123,8 @@ plt.ylabel('Value')
 plt.title('Violin Plot \u2014 Distribution Comparison')
 
 plt.savefig('reference_images/violin-basic.png', dpi=100)
+plt.savefig('reference_images/violin-basic.svg')
+print('Saved reference_images/violin-basic.svg')
+plt.savefig('reference_images/violin-basic.pdf')
+print('Saved reference_images/violin-basic.pdf')
 print('Saved reference_images/violin-basic.png')

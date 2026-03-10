@@ -649,11 +649,16 @@
             #:make-graphics-context #:render-to-png
             ;; Font config
             #:*default-font-path*
-            ;; PDF renderer
-            #:renderer-pdf #:renderer-pdf-font-cache
-            ;; PDF canvas
-            #:canvas-pdf #:canvas-render-fn-pdf
-            #:print-pdf #:render-to-pdf))
+             ;; PDF renderer
+             #:renderer-pdf #:renderer-pdf-font-cache
+             ;; PDF canvas
+             #:canvas-pdf #:canvas-render-fn-pdf
+             #:print-pdf #:render-to-pdf
+             ;; SVG renderer
+             #:renderer-svg
+             ;; SVG canvas
+             #:canvas-svg #:canvas-render-fn-svg
+             #:print-svg #:render-to-svg))
 
 (defpackage #:cl-matplotlib.pyplot
   (:use #:cl)

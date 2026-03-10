@@ -30,6 +30,8 @@
 
 (let ((out "examples/colorbar-custom.png"))
   (savefig out)
+  (savefig "examples/colorbar-custom.svg")
+  (savefig "examples/colorbar-custom.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

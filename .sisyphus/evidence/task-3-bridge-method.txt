@@ -1,0 +1,1 @@
+<path d="M 10.00 10.00 L 50.00 50.00 L 90.00 10.00 " fill="#FF0000" fill-opacity="1.00" stroke="#0000FF" stroke-opacity="1.00" stroke-width="2.00" stroke-linecap="butt" stroke-linejoin="miter"/>

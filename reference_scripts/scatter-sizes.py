@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(8, 6))
 
@@ -31,4 +33,8 @@ plt.ylabel('Y')
 plt.title('Scatter with Varying Sizes')
 
 plt.savefig('reference_images/scatter-sizes.png', dpi=100)
+plt.savefig('reference_images/scatter-sizes.svg')
+print('Saved reference_images/scatter-sizes.svg')
+plt.savefig('reference_images/scatter-sizes.pdf')
+print('Saved reference_images/scatter-sizes.pdf')
 print('Saved reference_images/scatter-sizes.png')

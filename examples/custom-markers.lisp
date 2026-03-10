@@ -40,6 +40,8 @@
 
 (let ((out "examples/custom-markers.png"))
   (savefig out)
+  (savefig "examples/custom-markers.svg")
+  (savefig "examples/custom-markers.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 data = [-2.5, -2.1, -1.8, -1.6, -1.4, -1.3, -1.2, -1.0, -0.9, -0.8,
         -0.7, -0.6, -0.5, -0.5, -0.4, -0.3, -0.3, -0.2, -0.2, -0.1,
@@ -27,4 +29,8 @@ axs[1, 1].hist(data, bins=10, histtype='bar', color='goldenrod', edgecolor='blac
 axs[1, 1].grid(visible=True)
 
 plt.savefig('reference_images/histogram-types.png', dpi=100)
+plt.savefig('reference_images/histogram-types.svg')
+print('Saved reference_images/histogram-types.svg')
+plt.savefig('reference_images/histogram-types.pdf')
+print('Saved reference_images/histogram-types.pdf')
 print('Saved reference_images/histogram-types.png')

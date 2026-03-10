@@ -31,6 +31,8 @@
 
 (let ((out "examples/contour-demo.png"))
   (savefig out)
+  (savefig "examples/contour-demo.svg")
+  (savefig "examples/contour-demo.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

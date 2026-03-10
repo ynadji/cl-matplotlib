@@ -6,6 +6,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig, ax = plt.subplots(figsize=(7, 5))
 
@@ -22,4 +24,8 @@ ax.set_xlim(0.5, 6.5)
 ax.set_ylim(0, 8)
 
 plt.savefig('reference_images/text-alignment.png', dpi=100)
+plt.savefig('reference_images/text-alignment.svg')
+print('Saved reference_images/text-alignment.svg')
+plt.savefig('reference_images/text-alignment.pdf')
+print('Saved reference_images/text-alignment.pdf')
 plt.close()

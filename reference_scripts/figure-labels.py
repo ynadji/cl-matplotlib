@@ -6,6 +6,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig, axs = plt.subplots(2, 2, figsize=(10, 8))
 x = np.linspace(0, 2*np.pi, 50)
@@ -18,4 +20,8 @@ fig.suptitle('Trigonometric Functions', fontsize=14)
 fig.supxlabel('Angle (radians)', fontsize=12)
 fig.supylabel('Amplitude', fontsize=12)
 plt.savefig('reference_images/figure-labels.png')
+plt.savefig('reference_images/figure-labels.svg')
+print('Saved reference_images/figure-labels.svg')
+plt.savefig('reference_images/figure-labels.pdf')
+print('Saved reference_images/figure-labels.pdf')
 plt.close()

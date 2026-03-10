@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(8, 6))
 
@@ -26,4 +28,8 @@ plt.ylabel('y')
 plt.title('Contour Demo — sin(x)cos(y)')
 
 plt.savefig('reference_images/contour-demo.png', dpi=100)
+plt.savefig('reference_images/contour-demo.svg')
+print('Saved reference_images/contour-demo.svg')
+plt.savefig('reference_images/contour-demo.pdf')
+print('Saved reference_images/contour-demo.pdf')
 print('Saved reference_images/contour-demo.png')

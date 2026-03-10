@@ -26,6 +26,8 @@
 
 (let ((out "examples/quiver-gradient.png"))
   (savefig out)
+  (savefig "examples/quiver-gradient.svg")
+  (savefig "examples/quiver-gradient.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

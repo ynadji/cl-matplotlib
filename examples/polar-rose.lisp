@@ -16,6 +16,8 @@
          (r (mapcar (lambda (t_) (abs (cos (* 4.0d0 t_)))) theta)))
     (plot theta r :color "C1"))
   (title "Rose Curve: r = |cos(4θ)|")
-  (savefig "examples/polar-rose.png"))
+  (savefig "examples/polar-rose.png")
+  (savefig "examples/polar-rose.svg")
+  (savefig "examples/polar-rose.pdf"))
 
 (uiop:quit)

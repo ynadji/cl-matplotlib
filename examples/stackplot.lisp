@@ -30,6 +30,8 @@
 
 (let ((out "examples/stackplot.png"))
   (savefig out)
+  (savefig "examples/stackplot.svg")
+  (savefig "examples/stackplot.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

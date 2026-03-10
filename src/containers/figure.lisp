@@ -512,6 +512,10 @@ TRANSPARENT — if T, use transparent background."
                                                :width w :height h
                                                :dpi (figure-dpi figure)
                                                :figure figure))
+                          (:svg (make-instance 'mpl.backends:canvas-svg
+                                               :width w :height h
+                                               :dpi (figure-dpi figure)
+                                               :figure figure))
                           (otherwise (make-instance 'mpl.backends:canvas-vecto
                                                     :width w :height h
                                                     :dpi (figure-dpi figure)
@@ -521,6 +525,8 @@ TRANSPARENT — if T, use transparent background."
               (mpl.backends:print-png canvas (namestring (pathname filename))))
              (:pdf
               (mpl.backends:print-pdf canvas (namestring (pathname filename))))
+             (:svg
+              (mpl.backends:print-svg canvas (namestring (pathname filename))))
              (otherwise
               (warn "Format ~A not yet supported, falling back to PNG." fmt)
               (mpl.backends:print-png canvas (namestring (pathname filename))))))

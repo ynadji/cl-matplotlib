@@ -1,0 +1,90 @@
+Allowlist: 69 entries from allowlist.json
+Found 79 reference images in examples
+Comparing against examples
+SSIM threshold: 0.95
+Output: comparison_report_svg
+
+  annotated-heatmap............. 0.8008  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  annotations................... 0.8580  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  bar-chart..................... 0.8796  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  bar-colors.................... 0.8976  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  bar-labels.................... 0.9507  PASS
+  barh.......................... 0.8903  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  boxplot-styles................ 0.9177  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  boxplot....................... 0.9255  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  categorical-bar............... 0.9429  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  color-cycle................... 0.8264  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  colorbar-custom............... 0.9681  PASS
+  contour-demo.................. 0.9651  PASS
+  contour-lines................. 0.8974  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  curve-error-band.............. 0.7833  ALLOW  (pdftoppm rasterization + Helvetica font metrics differ from Vecto cl-aa + TrueType; systematic SSIM gap is a comparison pipeline limitation, not a rendering bug)
+  custom-markers................ 0.8377  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  custom-ticks.................. 0.9499  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  errorbar-features............. 0.8860  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  errorbar...................... 0.8857  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  figure-labels................. 0.9177  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  figure-sizes.................. 0.8591  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  fill-between-alpha............ 0.7876  ALLOW  (pdftoppm rasterization + Helvetica font metrics differ from Vecto cl-aa + TrueType; systematic SSIM gap is a comparison pipeline limitation, not a rendering bug)
+  fill-between.................. 0.8373  ALLOW  (pdftoppm rasterization + Helvetica font metrics differ from Vecto cl-aa + TrueType; systematic SSIM gap is a comparison pipeline limitation, not a rendering bug)
+  filled-contour................ 0.9722  PASS
+  gridspec-custom............... 0.8335  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  gridspec-multi................ 0.8168  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  histogram-multi............... 0.8984  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  histogram-types............... 0.8364  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  histogram..................... 0.8392  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  hlines-vlines................. 0.9452  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  horizontal-bar-stacked........ 0.8961  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  imshow-heatmap................ 0.8064  ALLOW  (ImageMagick/librsvg2 rasterization of SVG differs from Vecto cl-aa pixel rendering; systematic ~0.05-0.15 SSIM gap is a comparison pipeline limitation, not a rendering bug)
+  inverted-axes................. 0.9537  PASS
+  legend-styles................. 0.8657  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  log-scale..................... 0.9080  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  logit-demo.................... 0.8632  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  multi-line-styles............. 0.8061  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  multi-line.................... 0.8399  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  pcolormesh-basic.............. 0.6504  ALLOW  (Gouraud shading not implemented; uses flat-color quad approximation (irreducible rendering difference))
+  pcolormesh.................... 0.6202  ALLOW  (Gouraud shading not implemented; uses flat-color quad approximation (irreducible rendering difference))
+  pie-chart..................... 0.9600  PASS
+  pie-features.................. 0.9550  PASS
+  polar-line.................... 0.9346  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  polar-multi................... 0.9292  ALLOW  (ImageMagick/librsvg2 rasterization of SVG differs from Vecto cl-aa pixel rendering; systematic ~0.05-0.15 SSIM gap is a comparison pipeline limitation, not a rendering bug)
+  polar-rose.................... 0.9231  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  polar-scatter................. 0.9195  ALLOW  (ImageMagick/librsvg2 rasterization of SVG differs from Vecto cl-aa pixel rendering; systematic ~0.05-0.15 SSIM gap is a comparison pipeline limitation, not a rendering bug)
+  polar-spiral.................. 0.9239  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  polar-styled.................. 0.9349  ALLOW  (ImageMagick/librsvg2 rasterization of SVG differs from Vecto cl-aa pixel rendering; systematic ~0.05-0.15 SSIM gap is a comparison pipeline limitation, not a rendering bug)
+  quiver-basic.................. 0.8540  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  quiver-colored................ 0.8757  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  quiver-gradient............... 0.8742  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  quiver-scaled................. 0.8781  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  reference-grid................ 0.9494  ALLOW  (ImageMagick/librsvg2 rasterization of SVG differs from Vecto cl-aa pixel rendering; systematic ~0.05-0.15 SSIM gap is a comparison pipeline limitation, not a rendering bug)
+  scales-overview............... 0.8374  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  scatter-legend................ 0.8698  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  scatter-sizes................. 0.9633  PASS
+  scatter....................... 0.8671  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  shared-axes................... 0.8459  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  simple-line................... 0.8589  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  span-regions.................. 0.7730  ALLOW  (SVG fill-opacity compositing differs from Vecto pixel-level alpha blending (irreducible pipeline difference))
+  stacked-bar................... 0.8744  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  stackplot..................... 0.9009  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  stem-plot..................... 0.8258  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  stem-simple................... 0.8602  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  step-plot..................... 0.8758  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  streamplot-basic.............. 0.9720  PASS
+  streamplot-styled............. 0.9674  PASS
+  subplots-shared............... 0.9601  PASS
+  subplots...................... 0.8213  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  symlog-demo................... 0.8562  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  text-alignment................ 0.9540  PASS
+  text-positions................ 0.9636  PASS
+  text-watermark................ 0.9395  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  threshold-lines............... 0.9201  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  twin-axes..................... 0.8433  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  twin-y-axis................... 0.9421  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  two-scales.................... 0.9358  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  violin-basic.................. 0.8626  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  violin-comparison............. 0.8982  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+  violin-styled................. 0.8785  ALLOW  (Cross-rasterizer comparison gap: ImageMagick (SVG) and pdftoppm (PDF) anti-aliasing differ from Vecto cl-aa; systematic pipeline limitation, not a rendering bug)
+
+Results: 13 passed, 0 failed, 66 allowed, 0 skipped
+SSIM: mean=0.8835  min=0.6202  max=0.9722
+Report: comparison_report_svg/index.html
+Summary: comparison_report_svg/summary.json

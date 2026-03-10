@@ -32,6 +32,8 @@
 
 (let ((out "examples/scatter-sizes.png"))
   (savefig out)
+  (savefig "examples/scatter-sizes.svg")
+  (savefig "examples/scatter-sizes.pdf")
   (format t "~&Saved to ~A~%" out))
 
 (uiop:quit)

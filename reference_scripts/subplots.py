@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig, axs = plt.subplots(2, 2, figsize=(10, 8))
 
@@ -33,4 +35,8 @@ axs[1, 1].plot(xs, ys_sin2, color='darkorchid', linewidth=1.5)
 axs[1, 1].grid(visible=True)
 
 plt.savefig('reference_images/subplots.png', dpi=100)
+plt.savefig('reference_images/subplots.svg')
+print('Saved reference_images/subplots.svg')
+plt.savefig('reference_images/subplots.pdf')
+print('Saved reference_images/subplots.pdf')
 print('Saved reference_images/subplots.png')

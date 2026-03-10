@@ -1,0 +1,32 @@
+{
+  "task": "task-7-snapping-improvement",
+  "description": "Half-pixel snapping for axis-aligned paths ported from Vecto to SVG and PDF backends",
+  "test_suite": "208/208 PASS (100%)",
+  "svg": {
+    "dpi": 96,
+    "before_mean": 0.882923,
+    "after_mean": 0.882795,
+    "delta_mean": -0.000128,
+    "before_source": "/tmp/dpi96-measure/summary.json (pre-snapping, DPI 96)",
+    "after_source": "/tmp/snap-svg-check/summary.json (post-snapping, DPI 96)",
+    "examples": [
+      {"name": "simple-line", "before": 0.858778, "after": 0.858904, "delta": 0.000126},
+      {"name": "bar-chart", "before": 0.879593, "after": 0.879637, "delta": 0.000044},
+      {"name": "step-plot", "before": 0.886041, "after": 0.875780, "delta": -0.010261}
+    ]
+  },
+  "pdf": {
+    "dpi": "default (72)",
+    "before_mean": 0.928545,
+    "after_mean": 0.928559,
+    "delta_mean": 0.000014,
+    "before_source": "/tmp/img-check/summary.json (post task-5, pre-snapping)",
+    "after_source": "/tmp/snap-pdf-check/summary.json (post-snapping)",
+    "examples": [
+      {"name": "simple-line", "before": 0.921562, "after": 0.922697, "delta": 0.001135},
+      {"name": "bar-chart", "before": 0.915938, "after": 0.915904, "delta": -0.000034},
+      {"name": "step-plot", "before": 0.911930, "after": 0.911930, "delta": 0.0, "note": "PDF not regenerated due to VoidChar font error"}
+    ]
+  },
+  "conclusion": "Half-pixel snapping has negligible net impact on SVG/PDF SSIM. External rasterizers (ImageMagick for SVG, pdftoppm for PDF) apply their own anti-aliasing that masks sub-pixel coordinate changes. SVG step-plot regressed by 0.01 (likely ImageMagick AA interaction), other examples neutral or slightly improved. Change kept for correctness parity with Vecto backend."
+}

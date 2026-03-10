@@ -6,6 +6,8 @@ import numpy as np
 
 plt.rcParams['savefig.dpi'] = 100
 plt.rcParams['text.hinting'] = 'none'
+plt.rcParams['svg.fonttype'] = 'path'
+plt.rcParams['pdf.fonttype'] = 42
 
 fig = plt.figure(figsize=(10, 6))
 
@@ -22,4 +24,8 @@ plt.ylabel('Amplitude')
 plt.title('Sine Wave with Highlighted Regions')
 
 plt.savefig('reference_images/span-regions.png', dpi=100)
+plt.savefig('reference_images/span-regions.svg')
+print('Saved reference_images/span-regions.svg')
+plt.savefig('reference_images/span-regions.pdf')
+print('Saved reference_images/span-regions.pdf')
 print('Saved reference_images/span-regions.png')

@@ -34,6 +34,8 @@
 
   (let ((out "examples/histogram-types.png"))
     (mpl.containers:savefig fig out)
+    (mpl.containers:savefig fig "examples/histogram-types.svg")
+    (mpl.containers:savefig fig "examples/histogram-types.pdf")
     (format t "~&Saved to ~A~%" out)))
 
 (uiop:quit)
