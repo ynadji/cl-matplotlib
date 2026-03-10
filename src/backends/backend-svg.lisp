@@ -426,7 +426,7 @@ VA — vertical alignment (accepted but not used for dominant-baseline)."
                         (otherwise "start")))
          ;; Y-flip counter: global <g> has scale(1,-1), so text appears upside-down.
          ;; Fix: place at (x, -y) and add scale(1,-1) to un-flip.
-         ;; With rotation angle A (degrees, CCW): emit rotate(-A) in SVG.
+         ;; With rotation angle A (degrees, CCW): the global Y-flip and per-text
          (angle-d (if (numberp angle) (coerce angle 'double-float) 0.0d0))
          (dominant-baseline (case va
                               (:bottom "text-after-edge")
@@ -438,7 +438,7 @@ VA — vertical alignment (accepted but not used for dominant-baseline)."
                (format nil "translate(~A,~A) rotate(~A) scale(1,-1)"
                        (%format-float x)
                        (%format-float (coerce y 'double-float))
-                       (%format-float (- angle-d)))
+                       (%format-float angle-d))
                (format nil "translate(~A,~A) scale(1,-1)"
                        (%format-float x)
                        (%format-float (coerce y 'double-float)))))

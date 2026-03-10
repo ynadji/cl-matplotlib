@@ -388,6 +388,30 @@ PROP can be a font-properties object, a string path, or NIL."
        (t "Helvetica")))
     (t "Helvetica")))
 
+(defun %pdf-sanitize-string (s)
+  "Replace characters with code points >= 256 with ASCII fallbacks.
+cl-pdf's built-in fonts use a 256-entry encoding vector; characters
+outside this range (e.g. θ=952, μ=956, π=960) cause an array bounds
+error.  This maps common math/science Unicode to readable ASCII and
+replaces anything else with '?'."
+  (if (every (lambda (c) (< (char-code c) 256)) s)
+      s  ; fast path — all characters fit
+      (map 'string
+           (lambda (c)
+             (let ((code (char-code c)))
+               (if (< code 256)
+                   c
+                   (case code
+                     (952  #\o)    ; θ → o  (theta)
+                     (956  #\u)    ; μ → u  (mu)
+                     (960  #\p)    ; π → p  (pi, not in Latin-1 slot)
+                     (178  #\2)    ; ² → 2  (superscript 2)
+                     (179  #\3)    ; ³ → 3  (superscript 3)
+                     (8804 #\<)    ; ≤ → <
+                     (8805 #\>)    ; ≥ → >
+                     (t    #\?)))))
+           s)))
+
 (defmethod draw-text ((renderer renderer-pdf) gc x y s prop angle &optional ismath ha va)
   "Draw text string S at position (X, Y) using cl-pdf's text rendering.
 PROP is a font path string or NIL (uses Helvetica).
@@ -397,7 +421,9 @@ VA is vertical alignment (:baseline, :bottom, :center, :top). Default :baseline.
   (declare (ignore ismath))
   (when (or (null s) (string= s ""))
     (return-from draw-text nil))
-  (let ((ha (or ha :left))
+  ;; Sanitize string for cl-pdf's 256-char font encoding
+  (let ((s (%pdf-sanitize-string s))
+        (ha (or ha :left))
         (va (or va :baseline)))
     (pdf:with-saved-state
       (let* ((font-name (%resolve-pdf-font-name prop))

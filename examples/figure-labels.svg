@@ -159,7 +159,7 @@
 <path d="M 477.50 424.50 L 477.50 704.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.80" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 125.50 423.50 L 477.50 423.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.80" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 125.50 703.50 L 477.50 703.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.80" stroke-linecap="square" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="16.67" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(20.00,400.00) rotate(-90.00) scale(1,-1)">Amplitude</text>
+<text font-family="DejaVu Sans" font-size="16.67" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(20.00,400.00) rotate(90.00) scale(1,-1)">Amplitude</text>
 <text font-family="DejaVu Sans" font-size="16.67" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="text-after-edge" transform="translate(500.00,8.00) scale(1,-1)">Angle (radians)</text>
 <text font-family="DejaVu Sans" font-size="19.44" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="text-before-edge" transform="translate(500.00,784.00) scale(1,-1)">Trigonometric Functions</text>
 </g>
