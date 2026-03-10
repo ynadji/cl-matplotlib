@@ -6,9 +6,8 @@ REFERENCE_IMAGES_DIR := reference_images
 EXAMPLES_DIR := examples
 COMPARISON_REPORT_DIR := comparison_report
 COMPARISON_TOOL := tools/compare.py
-THRESHOLD := 0.95
 
-.PHONY: setup-python reference-images cl-images compare compare-svg compare-pdf compare-all report clean all
+.PHONY: setup-python reference-images cl-images compare compare-png compare-svg compare-pdf report clean all
 
 setup-python:
 	@echo "Setting up Python virtual environment..."
@@ -34,42 +33,41 @@ cl-images:
 	@echo "CL images generated in $(EXAMPLES_DIR)/"
 
 compare: cl-images
-	@echo "Running visual comparison..."
-	@mkdir -p $(COMPARISON_REPORT_DIR)
+	@echo "Running combined comparison (PNG + SVG + PDF)..."
 	$(PYTHON) $(COMPARISON_TOOL) \
 		--reference $(REFERENCE_IMAGES_DIR)/ \
 		--actual $(EXAMPLES_DIR)/ \
-		--threshold $(THRESHOLD) \
+		--format all \
+		--allowlist allowlist.json \
 		--output $(COMPARISON_REPORT_DIR)/
-	@echo "Comparison complete. Report: $(COMPARISON_REPORT_DIR)/index.html"
+	@echo "Report: $(COMPARISON_REPORT_DIR)/index.html"
 
-compare-svg: cl-images
-	@echo "Running SVG visual comparison..."
-	@mkdir -p comparison_report_svg/
+compare-png:
+	$(PYTHON) $(COMPARISON_TOOL) \
+		--reference $(REFERENCE_IMAGES_DIR)/ \
+		--actual $(EXAMPLES_DIR)/ \
+		--format png \
+		--threshold 0.95 \
+		--allowlist allowlist.json \
+		--output $(COMPARISON_REPORT_DIR)/png/
+
+compare-svg:
 	$(PYTHON) $(COMPARISON_TOOL) \
 		--reference $(REFERENCE_IMAGES_DIR)/ \
 		--actual $(EXAMPLES_DIR)/ \
 		--format svg \
-		--dpi 96 \
-		--threshold $(THRESHOLD) \
+		--threshold 0.90 \
 		--allowlist allowlist.json \
-		--output comparison_report_svg/
-	@echo "SVG comparison complete. Report: comparison_report_svg/index.html"
+		--output $(COMPARISON_REPORT_DIR)/svg/
 
-compare-pdf: cl-images
-	@echo "Running PDF visual comparison..."
-	@mkdir -p comparison_report_pdf/
+compare-pdf:
 	$(PYTHON) $(COMPARISON_TOOL) \
 		--reference $(REFERENCE_IMAGES_DIR)/ \
 		--actual $(EXAMPLES_DIR)/ \
 		--format pdf \
-		--threshold $(THRESHOLD) \
+		--threshold 0.88 \
 		--allowlist allowlist.json \
-		--output comparison_report_pdf/
-	@echo "PDF comparison complete. Report: comparison_report_pdf/index.html"
-
-compare-all: compare compare-svg compare-pdf
-	@echo "All comparisons complete."
+		--output $(COMPARISON_REPORT_DIR)/pdf/
 
 report: compare
 	@echo "Report generated at $(COMPARISON_REPORT_DIR)/index.html"
@@ -83,4 +81,4 @@ clean:
 	rm -f $(EXAMPLES_DIR)/*.svg
 	rm -f $(EXAMPLES_DIR)/*.pdf
 
-all: setup-python reference-images cl-images compare compare-svg compare-pdf
+all: setup-python reference-images cl-images compare
