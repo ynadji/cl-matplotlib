@@ -255,11 +255,16 @@ Returns (values x y width height) in display space."
     ;; Compute position in display coordinates using matplotlib's algorithm:
     ;; borderaxespad (default 0.5 * fontsize) is the gap from axes edge to legend edge.
     (let* ((loc-code (legend-loc leg))
-           (resolved-code (if (numberp loc-code)
-                              (if (= loc-code 0)
-                                  (%legend-find-best-position leg legend-width legend-height)
-                                  loc-code)
-                              1))
+           (bbox-anchor (legend-bbox-to-anchor leg))
+           ;; When bbox-to-anchor is set, don't use :best logic -- use loc directly.
+           ;; Default :best (0) to upper-left (2) for bbox-to-anchor usage.
+           (resolved-code (cond
+                            ((and bbox-anchor (numberp loc-code) (= loc-code 0)) 2)
+                            ((numberp loc-code)
+                             (if (= loc-code 0)
+                                 (%legend-find-best-position leg legend-width legend-height)
+                                 loc-code))
+                            (t 1)))
            ;; borderaxespad: gap between axes edge and legend, in fontsize units
            ;; matplotlib default is 0.5
            (axes-pad (* 0.5d0 fontsize dpi-scale)))
@@ -275,29 +280,51 @@ Returns (values x y width height) in display space."
                      (axes-height (- (aref (mpl.primitives:transform-point
                                             trans-axes (list 0.0d0 1.0d0)) 1)
                                      (aref (mpl.primitives:transform-point
-                                            trans-axes (list 0.0d0 0.0d0)) 1)))
-                     ;; Compute x,y based on loc code using borderaxespad
-                     ;; In display coords: dx=axes-left, dy=axes-bottom
-                     ;; axes-right = dx + axes-width, axes-top = dy + axes-height
-                     (x-display
-                      (case resolved-code
-                        ;; upper-right, lower-right, right, center-right
-                        ((1 4 5 7) (+ dx axes-width (- legend-width) (- axes-pad)))
-                        ;; upper-left, lower-left, center-left
-                        ((2 3 6) (+ dx axes-pad))
-                        ;; lower-center, upper-center, center
-                        ((8 9 10) (+ dx (/ (- axes-width legend-width) 2.0d0)))
-                        (otherwise (+ dx axes-width (- legend-width) (- axes-pad)))))
-                     (y-display
-                      (case resolved-code
-                        ;; upper-right, upper-left, upper-center
-                        ((1 2 9) (+ dy axes-height (- legend-height) (- axes-pad)))
-                        ;; lower-left, lower-right, lower-center
-                        ((3 4 8) (+ dy axes-pad))
-                        ;; right, center-left, center-right, center
-                        ((5 6 7 10) (+ dy (/ (- axes-height legend-height) 2.0d0)))
-                        (otherwise (+ dy axes-height (- legend-height) (- axes-pad))))))
-                (values x-display y-display legend-width legend-height))))
+                                            trans-axes (list 0.0d0 0.0d0)) 1))))
+                (if bbox-anchor
+                    ;; bbox-to-anchor: place legend at axes-fraction coordinates.
+                    ;; loc determines which corner of the legend box sits at the anchor.
+                    (let* ((anchor-px (+ dx (* (float (first bbox-anchor) 1.0d0) axes-width)))
+                           (anchor-py (+ dy (* (float (second bbox-anchor) 1.0d0) axes-height)))
+                           (x-display
+                            (case resolved-code
+                              ;; upper-right, lower-right, right, center-right
+                              ((1 4 5 7) (- anchor-px legend-width))
+                              ;; upper-left, lower-left, center-left
+                              ((2 3 6) anchor-px)
+                              ;; lower-center, upper-center, center
+                              ((8 9 10) (- anchor-px (/ legend-width 2.0d0)))
+                              (otherwise anchor-px)))
+                           (y-display
+                            (case resolved-code
+                              ;; upper-right, upper-left, upper-center
+                              ((1 2 9) (- anchor-py legend-height))
+                              ;; lower-left, lower-right, lower-center
+                              ((3 4 8) anchor-py)
+                              ;; right, center-left, center-right, center
+                              ((5 6 7 10) (- anchor-py (/ legend-height 2.0d0)))
+                              (otherwise (- anchor-py legend-height)))))
+                      (values x-display y-display legend-width legend-height))
+                    ;; Standard loc-code positioning with borderaxespad
+                    (let* ((x-display
+                            (case resolved-code
+                              ;; upper-right, lower-right, right, center-right
+                              ((1 4 5 7) (+ dx axes-width (- legend-width) (- axes-pad)))
+                              ;; upper-left, lower-left, center-left
+                              ((2 3 6) (+ dx axes-pad))
+                              ;; lower-center, upper-center, center
+                              ((8 9 10) (+ dx (/ (- axes-width legend-width) 2.0d0)))
+                              (otherwise (+ dx axes-width (- legend-width) (- axes-pad)))))
+                           (y-display
+                            (case resolved-code
+                              ;; upper-right, upper-left, upper-center
+                              ((1 2 9) (+ dy axes-height (- legend-height) (- axes-pad)))
+                              ;; lower-left, lower-right, lower-center
+                              ((3 4 8) (+ dy axes-pad))
+                              ;; right, center-left, center-right, center
+                              ((5 6 7 10) (+ dy (/ (- axes-height legend-height) 2.0d0)))
+                              (otherwise (+ dy axes-height (- legend-height) (- axes-pad))))))
+                      (values x-display y-display legend-width legend-height))))))
           ;; No parent — use figure-level positioning
           (values 320.0d0 240.0d0 legend-width legend-height)))))
 
@@ -605,7 +632,7 @@ Fontsize is passed through gc-linewidth (matching the backend convention)."
                             (fontsize 10.0) (frameon t)
                             (facecolor "white") (edgecolor "#cccccc")
                             (framealpha 0.8) (title "")
-                            (ncol 1) handler-map)
+                            (ncol 1) handler-map (bbox-to-anchor nil))
   "Create and add a legend to the axes AX.
 
 If HANDLES and LABELS are not provided, extracts labeled artists from the axes.
@@ -631,6 +658,7 @@ Returns the created mpl-legend."
                                :handles handles
                                :labels labels
                                :loc loc
+                               :bbox-to-anchor bbox-to-anchor
                                :fontsize fontsize
                                :frameon frameon
                                :facecolor facecolor
