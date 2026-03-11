@@ -658,6 +658,19 @@ ALPHA — grid line transparency."
                                    :color color :linewidth linewidth
                                    :linestyle linestyle :alpha alpha))
 
+(defun minorticks-on ()
+  "Turn on minor ticks on the current axes.
+Matches matplotlib.pyplot.minorticks_on(): sets AutoMinorLocator on both axes."
+  (let ((ax (gca)))
+    (when (mpl.containers:axes-base-xaxis ax)
+      (mpl.containers:axis-set-minor-locator
+       (mpl.containers:axes-base-xaxis ax)
+       (make-instance 'mpl.containers:auto-minor-locator)))
+    (when (mpl.containers:axes-base-yaxis ax)
+      (mpl.containers:axis-set-minor-locator
+       (mpl.containers:axes-base-yaxis ax)
+       (make-instance 'mpl.containers:auto-minor-locator)))))
+
 (defun legend (&key handles labels (loc :best) (fontsize 10.0)
                     (frameon t) (facecolor "white") (edgecolor "#cccccc")
                     (framealpha 0.8) (title-text "") (ncol 1))
@@ -674,6 +687,16 @@ TITLE-TEXT — legend title."
                               :facecolor facecolor :edgecolor edgecolor
                               :framealpha framealpha :title title-text
                               :ncol ncol))
+
+(defun hexbin (x y &key (gridsize 100) (cmap :inferno) (mincnt 1)
+                       (vmin nil) (vmax nil) (alpha nil) (zorder 1)
+                       (edgecolors "none") (linewidths 0.5))
+  "Create a hexagonal binning plot on the current axes.
+Returns a scalar-mappable (for use with colorbar)."
+  (mpl.containers:hexbin-plot (gca) x y
+                               :gridsize gridsize :cmap cmap :mincnt mincnt
+                               :vmin vmin :vmax vmax :alpha alpha :zorder zorder
+                               :edgecolors edgecolors :linewidths linewidths))
 
 (defun colorbar (mappable &key (orientation :vertical) (label "")
                                ticks format (n-levels 256))

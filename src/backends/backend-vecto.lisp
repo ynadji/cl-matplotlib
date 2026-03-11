@@ -310,7 +310,13 @@ pixel-center offset, then snaps to floor+0.5."
 (defmethod draw-path ((renderer renderer-vecto) gc path transform &optional rgbface)
   "Draw a path using Vecto. Handles fill, stroke, or fill+stroke.
 Must be called within an active canvas context (see canvas-vecto)."
-  (let ((edge-color (%gc-edge-color gc))
+  (let ((edge-color (let ((ec (%gc-edge-color gc)))
+                    ;; Treat fully-transparent edge-color (alpha=0.0) as no edge.
+                    ;; Prevents anti-aliased seam artifacts at cell boundaries
+                    ;; in pcolormesh: to-rgba("none") returns #(0 0 0 0) which is
+                    ;; truthy but should not trigger the fill+stroke branch.
+                    (when (and ec (> (fourth ec) 0.0))
+                      ec)))
         (face-color (%gc-face-color gc rgbface))
         (alpha (mpl.rendering:gc-alpha gc)))
     (vecto:with-graphics-state
@@ -615,8 +621,11 @@ LINEWIDTHS, LINESTYLES, ANTIALIASEDS — per-item drawing properties."
              (offset (when (plusp n-offsets) (elt offsets (mod i n-offsets))))
              (face-color (when facecolors
                            (elt facecolors (mod i (length facecolors)))))
-             (edge-color (when edgecolors
-                           (elt edgecolors (mod i (length edgecolors)))))
+             (edge-color (let ((ec (when edgecolors
+                                      (elt edgecolors (mod i (length edgecolors))))))
+                           ;; Treat fully-transparent edge as no edge
+                           (when (and ec (> (fourth ec) 0.0))
+                             ec)))
              (linewidth (if linewidths
                             (elt linewidths (mod i (length linewidths)))
                             1.0))

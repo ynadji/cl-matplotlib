@@ -480,6 +480,7 @@
                  #:axhspan #:axvspan
                  #:axes-twinx #:axes-twiny
                  #:axes-pcolormesh
+                 #:hexbin-plot
              ;; Grid
             #:axes-grid-toggle
             ;; Ticker — Locator base
@@ -493,6 +494,7 @@
             #:max-n-locator-integer-p #:max-n-locator-symmetric-p
             #:max-n-locator-prune #:max-n-locator-min-n-ticks
             #:auto-locator
+            #:auto-minor-locator #:auto-minor-locator-num-subdivisions
             #:log-locator #:log-locator-base #:log-locator-subs
             ;; Ticker — Formatter base
             #:tick-formatter #:tick-formatter-axis #:tick-formatter-call
@@ -522,6 +524,8 @@
              #:axis-tick-labels-visible-p
              #:axis-grid-on-p #:axis-grid-color #:axis-grid-linewidth
             #:axis-grid-linestyle #:axis-grid-alpha
+             #:axis-minor-grid-on-p #:axis-minor-grid-color #:axis-minor-grid-linewidth
+             #:axis-minor-grid-linestyle #:axis-minor-grid-alpha
              #:axis-set-major-locator #:axis-set-minor-locator
              #:axis-set-major-formatter #:axis-set-minor-formatter
              #:axis-set-label-text #:axis-grid #:axis-set-tick-params
@@ -674,7 +678,7 @@ Manages global figure state for convenience.")
              #:plot #:scatter #:bar #:hist #:imshow #:contour #:contourf
              #:pie #:errorbar #:stem #:step-plot #:stackplot #:barh #:boxplot
               #:violinplot #:quiver #:streamplot
-               #:fill-between #:pcolormesh
+               #:fill-between #:pcolormesh #:hexbin
            ;; Axes configuration
             #:xlabel #:ylabel #:title #:xlim #:ylim #:axis #:grid #:legend
              #:set-xticks #:set-xticklabels #:set-yticks #:set-yticklabels
@@ -684,6 +688,7 @@ Manages global figure state for convenience.")
               #:axhline #:axvline #:hlines #:vlines
                #:axhspan #:axvspan
                #:twinx #:twiny
+               #:minorticks-on
              ;; Output
            #:savefig #:show
            ;; State management

@@ -79,8 +79,8 @@ Returns the new axes-base."
          (p-height (fourth parent-pos)))
     (when fig
       ;; Shrink parent axes and create colorbar axes alongside
-      (let* ((shrink-frac 0.05d0)  ; fraction of width/height for colorbar
-             (pad 0.01d0))          ; gap between axes and colorbar
+      (let* ((shrink-frac 0.15d0)  ; fraction of width/height for colorbar (match matplotlib fraction=0.15)
+             (pad 0.05d0))          ; gap between axes and colorbar (match matplotlib pad=0.05)
         (if (eq orientation :vertical)
             ;; Vertical: colorbar to the right of parent
             (let* ((cb-width (* p-width shrink-frac))
@@ -124,17 +124,25 @@ Returns the new axes-base."
 ;;; ============================================================
 
 (defun %colorbar-auto-ticks (cb)
-  "Compute automatic tick positions for the colorbar."
+  "Compute automatic tick positions for the colorbar.
+Uses MaxNLocator algorithm to generate 'nice' tick values at round numbers,
+matching matplotlib's colorbar tick generation."
   (let* ((mappable (colorbar-mappable cb))
          (norm (when mappable (mpl.primitives:sm-norm mappable)))
          (vmin (when norm (mpl.primitives:norm-vmin norm)))
          (vmax (when norm (mpl.primitives:norm-vmax norm))))
     (if (and vmin vmax)
-        ;; Generate ~5 evenly-spaced ticks
-        (let* ((n-ticks 5)
-               (step (/ (- vmax vmin) (float (1- n-ticks) 1.0d0))))
-          (loop for i below n-ticks
-                collect (+ vmin (* i step))))
+        ;; Use MaxNLocator for nice tick values (matches matplotlib)
+        (let* ((loc (make-instance 'max-n-locator
+                                    :nbins 10
+                                    :steps '(1.0d0 2.0d0 2.5d0 5.0d0 10.0d0)))
+               (all-ticks (locator-tick-values loc
+                                               (float vmin 1.0d0)
+                                               (float vmax 1.0d0))))
+          ;; Filter to only ticks within [vmin, vmax]
+          (remove-if (lambda (t-val)
+                       (or (< t-val vmin) (> t-val vmax)))
+                     all-ticks))
         ;; Default ticks from 0 to 1
         (list 0.0d0 0.25d0 0.5d0 0.75d0 1.0d0))))
 

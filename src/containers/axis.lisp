@@ -146,11 +146,11 @@ Ported from matplotlib.axis.Tick."))
                          :accessor axis-tick-labels-visible-p
                          :type boolean
                          :documentation "Whether tick labels are drawn. Set to NIL to suppress (e.g. shared axes).")
-    ;; Grid state
+    ;; Grid state (major)
     (grid-on-p :initform nil
                :accessor axis-grid-on-p
                :type boolean
-               :documentation "Whether grid is enabled for this axis.")
+               :documentation "Whether major grid is enabled for this axis.")
    (grid-color :initform "#b0b0b0"
                :accessor axis-grid-color)
    (grid-linewidth :initform 0.8
@@ -158,7 +158,20 @@ Ported from matplotlib.axis.Tick."))
    (grid-linestyle :initform :solid
                    :accessor axis-grid-linestyle)
     (grid-alpha :initform 1.0
-                :accessor axis-grid-alpha))
+                :accessor axis-grid-alpha)
+    ;; Grid state (minor)
+    (minor-grid-on-p :initform nil
+                     :accessor axis-minor-grid-on-p
+                     :type boolean
+                     :documentation "Whether minor grid is enabled for this axis.")
+    (minor-grid-color :initform "#b0b0b0"
+                      :accessor axis-minor-grid-color)
+    (minor-grid-linewidth :initform 0.8
+                          :accessor axis-minor-grid-linewidth)
+    (minor-grid-linestyle :initform :solid
+                          :accessor axis-minor-grid-linestyle)
+    (minor-grid-alpha :initform 1.0
+                      :accessor axis-minor-grid-alpha))
   (:default-initargs :zorder 1.5)
   (:documentation "Base class for axes axis objects.
 Ported from matplotlib.axis.Axis."))
@@ -237,14 +250,22 @@ Ported from matplotlib.axis.Axis."))
 ;;; Grid control
 ;;; ============================================================
 
-(defun axis-grid (axis &key (visible t) (color nil) (linewidth nil)
+(defun axis-grid (axis &key (visible t) (which :major) (color nil) (linewidth nil)
                             (linestyle nil) (alpha nil))
-  "Enable or disable grid lines for this axis."
-  (setf (axis-grid-on-p axis) visible)
-  (when color (setf (axis-grid-color axis) color))
-  (when linewidth (setf (axis-grid-linewidth axis) linewidth))
-  (when linestyle (setf (axis-grid-linestyle axis) linestyle))
-  (when alpha (setf (axis-grid-alpha axis) alpha))
+  "Enable or disable grid lines for this axis.
+WHICH: :major, :minor, or :both."
+  (when (member which '(:major :both))
+    (setf (axis-grid-on-p axis) visible)
+    (when color (setf (axis-grid-color axis) color))
+    (when linewidth (setf (axis-grid-linewidth axis) linewidth))
+    (when linestyle (setf (axis-grid-linestyle axis) linestyle))
+    (when alpha (setf (axis-grid-alpha axis) alpha)))
+  (when (member which '(:minor :both))
+    (setf (axis-minor-grid-on-p axis) visible)
+    (when color (setf (axis-minor-grid-color axis) color))
+    (when linewidth (setf (axis-minor-grid-linewidth axis) linewidth))
+    (when linestyle (setf (axis-minor-grid-linestyle axis) linestyle))
+    (when alpha (setf (axis-minor-grid-alpha axis) alpha)))
   (setf (mpl.rendering:artist-stale axis) t))
 
 ;;; ============================================================
@@ -321,7 +342,11 @@ The scale sets default locators and formatters."
                                   :size (axis-tick-size-minor axis)
                                   :direction (axis-tick-direction axis)
                                   :label-fontsize (axis-tick-label-fontsize axis)
-                                  :grid-on nil)))))
+                                  :grid-on (axis-minor-grid-on-p axis)
+                                  :grid-color (axis-minor-grid-color axis)
+                                  :grid-linewidth (axis-minor-grid-linewidth axis)
+                                  :grid-linestyle (axis-minor-grid-linestyle axis)
+                                  :grid-alpha (axis-minor-grid-alpha axis))))))
 
 ;;; ============================================================
 ;;; XAxis — horizontal axis
@@ -351,10 +376,9 @@ Ported from matplotlib.axis.XAxis."))
 ;;; XAxis grid drawing (called before data artists for correct z-ordering)
 
 (defun draw-x-axis-grid (axis renderer)
-  "Draw only the grid lines for the X axis.
-Called before data artists to ensure grid appears behind data (zorder=0.5 in matplotlib)."
-  (when (and (mpl.rendering:artist-visible axis)
-             (axis-grid-on-p axis))
+  "Draw grid lines for the X axis (both major and minor).
+Called before data artists to ensure grid appears behind data."
+  (when (mpl.rendering:artist-visible axis)
     (let* ((ax (axis-axes axis))
            (trans-axes (when ax (axes-base-trans-axes ax)))
            (trans-data (when ax (axes-base-trans-data ax))))
@@ -363,27 +387,41 @@ Called before data artists to ensure grid appears behind data (zorder=0.5 in mat
                (axes-bottom (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 1))
                (axes-right (aref (mpl.primitives:transform-point trans-axes (list 1.0d0 0.0d0)) 0))
                (axes-top (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 1.0d0)) 1))
-               ;; Clip grid to axes area so line-width doesn't bleed outside
-               (clip-rect (mpl.primitives:make-bbox axes-left axes-bottom axes-right axes-top))
-               (major-ticks (axis-get-major-ticks axis)))
-          (dolist (tk major-ticks)
-            (when (tick-gridline-visible-p tk)
-              (let* ((loc (tick-loc tk))
-                     (data-pt (mpl.primitives:transform-point trans-data (list loc 0.0d0)))
-                     (x-display (aref data-pt 0))
-                     (x-display-snapped (+ (round x-display) 0.5d0))
-                     (gc (mpl.rendering:make-gc
-                          :foreground (tick-grid-color tk)
-                          :linewidth (tick-grid-linewidth tk)
-                          :alpha (tick-grid-alpha tk)
-                          :linestyle (tick-grid-linestyle tk)
-                          :clip-rectangle clip-rect))
-                     (path (mpl.primitives:make-path
-                            :vertices (make-array '(2 2) :element-type 'double-float
-                                                  :initial-contents
-                                                  (list (list x-display-snapped axes-bottom)
-                                                        (list x-display-snapped axes-top))))))
-                (mpl.rendering:renderer-draw-path renderer gc path nil :stroke t)))))))))
+               (clip-rect (mpl.primitives:make-bbox axes-left axes-bottom axes-right axes-top)))
+          ;; Minor grid lines first (behind major)
+          (when (axis-minor-grid-on-p axis)
+            (dolist (tk (axis-get-minor-ticks axis))
+              (when (tick-gridline-visible-p tk)
+                (let* ((loc (tick-loc tk))
+                       (data-pt (mpl.primitives:transform-point trans-data (list loc 0.0d0)))
+                       (x-display (aref data-pt 0))
+                       (x-display-snapped (+ (round x-display) 0.5d0)))
+                  (mpl.rendering:renderer-draw-path renderer
+                   (mpl.rendering:make-gc :foreground (tick-grid-color tk)
+                    :linewidth (tick-grid-linewidth tk) :alpha (tick-grid-alpha tk)
+                    :linestyle (tick-grid-linestyle tk) :clip-rectangle clip-rect)
+                   (mpl.primitives:make-path :vertices
+                    (make-array '(2 2) :element-type 'double-float :initial-contents
+                     (list (list x-display-snapped axes-bottom)
+                           (list x-display-snapped axes-top))))
+                   nil :stroke t)))))
+          ;; Major grid lines
+          (when (axis-grid-on-p axis)
+            (dolist (tk (axis-get-major-ticks axis))
+              (when (tick-gridline-visible-p tk)
+                (let* ((loc (tick-loc tk))
+                       (data-pt (mpl.primitives:transform-point trans-data (list loc 0.0d0)))
+                       (x-display (aref data-pt 0))
+                       (x-display-snapped (+ (round x-display) 0.5d0)))
+                  (mpl.rendering:renderer-draw-path renderer
+                   (mpl.rendering:make-gc :foreground (tick-grid-color tk)
+                    :linewidth (tick-grid-linewidth tk) :alpha (tick-grid-alpha tk)
+                    :linestyle (tick-grid-linestyle tk) :clip-rectangle clip-rect)
+                   (mpl.primitives:make-path :vertices
+                    (make-array '(2 2) :element-type 'double-float :initial-contents
+                     (list (list x-display-snapped axes-bottom)
+                           (list x-display-snapped axes-top))))
+                   nil :stroke t))))))))))
 
 ;;; XAxis drawing (ticks, labels — grid drawn separately)
 
@@ -560,10 +598,9 @@ Ported from matplotlib.axis.YAxis."))
 ;;; YAxis grid drawing (called before data artists for correct z-ordering)
 
 (defun draw-y-axis-grid (axis renderer)
-  "Draw only the grid lines for the Y axis.
-Called before data artists to ensure grid appears behind data (zorder=0.5 in matplotlib)."
-  (when (and (mpl.rendering:artist-visible axis)
-             (axis-grid-on-p axis))
+  "Draw grid lines for the Y axis (both major and minor).
+Called before data artists to ensure grid appears behind data."
+  (when (mpl.rendering:artist-visible axis)
     (let* ((ax (axis-axes axis))
            (trans-axes (when ax (axes-base-trans-axes ax)))
            (trans-data (when ax (axes-base-trans-data ax))))
@@ -572,27 +609,41 @@ Called before data artists to ensure grid appears behind data (zorder=0.5 in mat
                (axes-bottom (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 1))
                (axes-right (aref (mpl.primitives:transform-point trans-axes (list 1.0d0 0.0d0)) 0))
                (axes-top (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 1.0d0)) 1))
-               ;; Clip grid to axes area so line-width doesn't bleed outside
-               (clip-rect (mpl.primitives:make-bbox axes-left axes-bottom axes-right axes-top))
-               (major-ticks (axis-get-major-ticks axis)))
-          (dolist (tk major-ticks)
-            (when (tick-gridline-visible-p tk)
-               (let* ((loc (tick-loc tk))
-                      (data-pt (mpl.primitives:transform-point trans-data (list 0.0d0 loc)))
+               (clip-rect (mpl.primitives:make-bbox axes-left axes-bottom axes-right axes-top)))
+          ;; Minor grid lines first (behind major)
+          (when (axis-minor-grid-on-p axis)
+            (dolist (tk (axis-get-minor-ticks axis))
+              (when (tick-gridline-visible-p tk)
+                (let* ((loc (tick-loc tk))
+                       (data-pt (mpl.primitives:transform-point trans-data (list 0.0d0 loc)))
                        (y-display (aref data-pt 1))
-                        (y-display-snapped (- (round y-display) 0.5d0))
-                       (gc (mpl.rendering:make-gc
-                            :foreground (tick-grid-color tk)
-                            :linewidth (tick-grid-linewidth tk)
-                            :alpha (tick-grid-alpha tk)
-                            :linestyle (tick-grid-linestyle tk)
-                            :clip-rectangle clip-rect))
-                      (path (mpl.primitives:make-path
-                              :vertices (make-array '(2 2) :element-type 'double-float
-                                                    :initial-contents
-                                                    (list (list axes-left y-display-snapped)
-                                                          (list axes-right y-display-snapped))))))
-                 (mpl.rendering:renderer-draw-path renderer gc path nil :stroke t)))))))))
+                       (y-display-snapped (- (round y-display) 0.5d0)))
+                  (mpl.rendering:renderer-draw-path renderer
+                   (mpl.rendering:make-gc :foreground (tick-grid-color tk)
+                    :linewidth (tick-grid-linewidth tk) :alpha (tick-grid-alpha tk)
+                    :linestyle (tick-grid-linestyle tk) :clip-rectangle clip-rect)
+                   (mpl.primitives:make-path :vertices
+                    (make-array '(2 2) :element-type 'double-float :initial-contents
+                     (list (list axes-left y-display-snapped)
+                           (list axes-right y-display-snapped))))
+                   nil :stroke t)))))
+          ;; Major grid lines
+          (when (axis-grid-on-p axis)
+            (dolist (tk (axis-get-major-ticks axis))
+              (when (tick-gridline-visible-p tk)
+                (let* ((loc (tick-loc tk))
+                       (data-pt (mpl.primitives:transform-point trans-data (list 0.0d0 loc)))
+                       (y-display (aref data-pt 1))
+                       (y-display-snapped (- (round y-display) 0.5d0)))
+                  (mpl.rendering:renderer-draw-path renderer
+                   (mpl.rendering:make-gc :foreground (tick-grid-color tk)
+                    :linewidth (tick-grid-linewidth tk) :alpha (tick-grid-alpha tk)
+                    :linestyle (tick-grid-linestyle tk) :clip-rectangle clip-rect)
+                   (mpl.primitives:make-path :vertices
+                    (make-array '(2 2) :element-type 'double-float :initial-contents
+                     (list (list axes-left y-display-snapped)
+                           (list axes-right y-display-snapped))))
+                   nil :stroke t))))))))))
 
 
 ;;; YAxis drawing (ticks, labels — grid drawn separately)

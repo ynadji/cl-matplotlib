@@ -30,7 +30,8 @@
                                (:file "hist")
                                (:file "stats")
                                (:file "violin")
-                               (:file "quiver"))))
+                               (:file "quiver")
+                               (:file "hexbin"))))
   :in-order-to ((asdf:test-op (asdf:test-op #:cl-matplotlib-containers/tests))))
 
 (asdf:defsystem #:cl-matplotlib-containers/tests
