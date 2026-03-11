@@ -29,8 +29,11 @@ mapping (col . row) keys to integer counts."
            (xmax (float xmax 1.0d0))
            (ymin (float ymin 1.0d0))
            (ymax (float ymax 1.0d0))
-           (dx (/ (- xmax xmin) (max 1 gridsize)))
-           (dy (* dx (sqrt 3.0d0)))
+           ;; Match matplotlib dual-grid: 2*gridsize columns, floor(gridsize/sqrt(3)) rows
+           (nx (* 2 (max 1 gridsize)))
+           (ny (max 1 (floor (max 1 gridsize) (sqrt 3.0d0))))
+           (dx (/ (- xmax xmin) nx))
+           (dy (/ (- ymax ymin) ny))
            (counts (make-hash-table :test #'equal)))
       (loop for xi in x-list
             for yi in y-list
@@ -43,14 +46,17 @@ mapping (col . row) keys to integer counts."
                  (incf (gethash key counts 0))))
       (values counts dx dy xmin ymin))))
 
-(defun %hexbin-hex-vertices (cx cy radius)
-  "Return a list of 6 (x y) vertices for a regular hexagon centered at (CX, CY)
-with the given RADIUS (flat-top orientation)."
-  (let ((two-pi-over-6 (/ (* 2.0d0 pi) 6.0d0)))
-    (loop for i from 0 below 6
-          for angle = (+ (* i two-pi-over-6) (/ pi 6.0d0))
-          collect (list (+ cx (* radius (cos angle)))
-                        (+ cy (* radius (sin angle)))))))
+(defun %hexbin-hex-vertices (cx cy dx dy)
+  "Return a list of 6 (x y) vertices for a hexagon centered at (CX, CY)
+matching grid spacing DX (column) and DY (row). Pointy-top orientation."
+  (let ((dy6 (/ dy 6.0d0))
+        (dy3 (/ dy 3.0d0)))
+    (list (list (+ cx dx) (- cy dy6))
+          (list (+ cx dx) (+ cy dy6))
+          (list cx (+ cy dy3))
+          (list (- cx dx) (+ cy dy6))
+          (list (- cx dx) (- cy dy6))
+          (list cx (- cy dy3)))))
 
 (defun %hexbin-center (col row dx dy xmin ymin)
   "Compute the center (cx, cy) of hexagon at grid position (COL, ROW)."
@@ -88,8 +94,6 @@ Returns a scalar-mappable (for use with colorbar)."
                                    (mpl.primitives:get-colormap cmap)
                                    cmap)
                                (mpl.primitives:get-colormap :inferno)))
-           ;; Hex radius for polygon vertices
-           (radius (* 0.5d0 dx (/ 2.0d0 (sqrt 3.0d0))))
            ;; Collect non-empty hexagons
            (hex-data nil))
       ;; Gather hexagons that meet mincnt threshold
@@ -125,7 +129,7 @@ Returns a scalar-mappable (for use with colorbar)."
             (multiple-value-bind (cx cy)
                 (%hexbin-center col row dx dy xmin ymin)
               ;; Create hexagon vertices
-              (let ((verts (%hexbin-hex-vertices cx cy radius)))
+              (let ((verts (%hexbin-hex-vertices cx cy dx dy)))
                 (push verts all-verts)
                 ;; Map count to color
                 (let* ((norm-v (if (zerop range) 0.5d0
