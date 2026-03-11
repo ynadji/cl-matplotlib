@@ -1,0 +1,25 @@
+Reference Image Verification Report
+====================================
+
+All 18 reference image files generated successfully:
+
+OK: reference_images/bar-errorbars.png (20K)
+OK: reference_images/bar-errorbars.svg (14K)
+OK: reference_images/bar-errorbars.pdf (14K)
+OK: reference_images/donut-chart.png (39K)
+OK: reference_images/donut-chart.svg (14K)
+OK: reference_images/donut-chart.pdf (14K)
+OK: reference_images/fill-between-where.png (58K)
+OK: reference_images/fill-between-where.svg (20K)
+OK: reference_images/fill-between-where.pdf (20K)
+OK: reference_images/legend-outside.png (71K)
+OK: reference_images/legend-outside.svg (20K)
+OK: reference_images/legend-outside.pdf (20K)
+OK: reference_images/minor-ticks-demo.png (58K)
+OK: reference_images/minor-ticks-demo.svg (20K)
+OK: reference_images/minor-ticks-demo.pdf (20K)
+OK: reference_images/pie-explode.png (39K)
+OK: reference_images/pie-explode.svg (14K)
+OK: reference_images/pie-explode.pdf (14K)
+
+Summary: 18/18 files present with non-zero size
