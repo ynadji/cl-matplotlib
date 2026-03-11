@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="800" height="600" viewBox="0 0 800 600">
+<defs>
+</defs>
+<g transform="translate(0,600) scale(1,-1)">
+<rect width="800" height="600" fill="white"/>
+<path d="M 0.00 0.00 L 800.00 0.00 L 800.00 600.00 L 0.00 600.00 L 0.00 0.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 585.76 354.11 C 573.70 391.22 550.19 423.57 518.62 446.51 C 487.05 469.44 449.02 481.80 410.00 481.80 L 410.00 389.40 C 429.51 389.40 448.53 383.22 464.31 371.75 C 480.10 360.29 491.85 344.11 497.88 325.55 Z " fill="#C44E52" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 518.62 147.49 C 550.19 170.43 573.70 202.78 585.76 239.89 C 597.81 277.00 597.81 317.00 585.76 354.11 L 497.88 325.55 C 503.91 307.00 503.91 287.00 497.88 268.45 C 491.85 249.89 480.10 233.71 464.31 222.25 Z " fill="#55A868" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 260.49 188.38 C 289.29 148.74 332.70 122.14 381.09 114.48 C 429.48 106.81 478.99 118.70 518.62 147.49 L 464.31 222.25 C 444.49 207.85 419.74 201.91 395.55 205.74 C 371.35 209.57 349.65 222.87 335.25 242.69 Z " fill="#DD8452" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 410.00 481.80 C 375.92 481.80 342.50 472.37 313.44 454.57 C 284.39 436.76 260.81 411.26 245.34 380.90 C 229.87 350.53 223.10 316.47 225.77 282.50 C 228.44 248.53 240.46 215.95 260.49 188.38 L 335.25 242.69 C 325.23 256.47 319.22 272.76 317.88 289.75 C 316.55 306.74 319.94 323.77 327.67 338.95 C 335.41 354.13 347.19 366.88 361.72 375.78 C 376.25 384.69 392.96 389.40 410.00 389.40 Z " fill="#4C72B0" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<text font-family="DejaVu Sans" font-size="11.11" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(491.47,409.13) scale(1,-1)">20.0%</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(529.48,461.46) scale(1,-1)">Category D</text>
+<text font-family="DejaVu Sans" font-size="11.11" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(541.82,254.17) scale(1,-1)">20.0%</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(603.33,234.18) scale(1,-1)">Category C</text>
+<text font-family="DejaVu Sans" font-size="11.11" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(388.32,160.11) scale(1,-1)">25.0%</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(378.20,96.22) scale(1,-1)">Category B</text>
+<text font-family="DejaVu Sans" font-size="11.11" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(286.51,359.92) scale(1,-1)">35.0%</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(228.88,389.29) scale(1,-1)">Category A</text>
+<text font-family="DejaVu Sans" font-size="16.67" fill="#000000" fill-opacity="1.00" text-anchor="middle" transform="translate(410.00,537.33) scale(1,-1)">Donut Chart</text>
+</g>
+</svg>
