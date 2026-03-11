@@ -100,7 +100,7 @@ Returns the new axes-base."
                 ;; (gradient, border, ticks). The axes is only used for bbox.
                 (setf (mpl.rendering:artist-visible cax) nil)
                 (setf (axes-base-spines cax) nil)
-                (push cax (figure-axes fig))
+                (setf (figure-axes fig) (nconc (figure-axes fig) (list cax)))
                 (setf (mpl.rendering:artist-figure cax) fig)
                 cax))
             ;; Horizontal: colorbar below parent
@@ -122,7 +122,7 @@ Returns the new axes-base."
                 ;; Make colorbar axes invisible — colorbar draws its own content
                 (setf (mpl.rendering:artist-visible cax) nil)
                 (setf (axes-base-spines cax) nil)
-                (push cax (figure-axes fig))
+                (setf (figure-axes fig) (nconc (figure-axes fig) (list cax)))
                 (setf (mpl.rendering:artist-figure cax) fig)
                 cax)))))))
 

@@ -13,8 +13,8 @@
 3 0 obj
  endobj
 4 0 obj
-<< /ModDate (D:20260311095455)
-/CreationDate (D:20260311095455)
+<< /ModDate (D:20260311124942)
+/CreationDate (D:20260311124942)
  >>
  endobj
 5 0 obj
@@ -37,7 +37,7 @@
  >>
  endobj
 6 0 obj
-<< /Length 159648
+<< /Length 159759
  >>
 stream
     0.72      0.0      0.0     0.72      0.0      0.0 cm
@@ -7873,6 +7873,14 @@ q
  f
 Q
 q
+  0.0   0.0   0.0 rg
+BT
+/CLF101 16.67 Tf
+288.9417 537.3333 Td
+(Radial Wave: cos\(r\)*exp\(-r^2/10\)) Tj
+ET
+Q
+q
      0.8 w
 0 J
 0 j
@@ -14827,11 +14835,11 @@ xref
 0000000137 00000 n 
 0000000221 00000 n 
 0000000451 00000 n 
-0000160155 00000 n 
+0000160266 00000 n 
 trailer
 << /Size 8
 /Root 1 0 R /Info 4 0 R
 >>
 startxref
-160254
+160365
 %%EOF
