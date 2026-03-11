@@ -1,9 +1,9 @@
 {
-  "active_plan": "/home/yacin/code/cl-matplotlib/.sisyphus/plans/rendering-fixes-v2.md",
-  "started_at": "2026-03-09T00:00:00.000Z",
+  "active_plan": "/home/yacin/code/cl-matplotlib/.sisyphus/plans/visual-fixes.md",
+  "started_at": "2026-03-11T03:22:02.965Z",
   "session_ids": [
     "ses_32ca9e0d2ffezrC7bX74Ib21Te"
   ],
-  "plan_name": "rendering-fixes-v2",
-  "note": "Starting rendering-fixes-v2: fix SVG/PDF comparison infrastructure and rendering bugs, reduce allowlist from 77 to ≤5 entries."
+  "plan_name": "visual-fixes",
+  "note": "Phase 2: Fix 11 visually incorrect plots, remove 8 incorrect allowlist entries, fix categorical axis accumulation, log formatter Unicode superscripts, deterministic PRNG data, pcolormesh investigation."
 }

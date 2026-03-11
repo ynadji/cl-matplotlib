@@ -295,17 +295,37 @@ If TIGHT is T, use exact data limits (no margin)."
       (let ((x-margin (* x-range margin))
             (y-margin (* y-range margin)))
         (when (axes-base-autoscale-x-p ax)
-          ;; Sticky edge: only pin x0=0 for barh charts (when sticky-x-min is set)
-          (if (and (axes-base-sticky-x-min ax) (zerop x0))
-              (setf x1 (+ x1 x-margin))
-              (setf x0 (- x0 x-margin)
-                    x1 (+ x1 x-margin))))
+          ;; For log scale, apply margin in log space to avoid negative vmin
+          (let ((xscale (axis-scale (axes-base-xaxis ax))))
+            (if (and xscale (typep xscale 'log-scale))
+                ;; Log space margin
+                (let* ((log-x0 (if (> x0 0.0d0) (log x0 10.0d0) -300.0d0))
+                       (log-x1 (if (> x1 0.0d0) (log x1 10.0d0) -300.0d0))
+                       (log-range (- log-x1 log-x0))
+                       (log-margin (* log-range margin)))
+                  (setf x0 (expt 10.0d0 (- log-x0 log-margin))
+                        x1 (expt 10.0d0 (+ log-x1 log-margin))))
+                ;; Linear space margin (original behavior)
+                (if (and (axes-base-sticky-x-min ax) (zerop x0))
+                    (setf x1 (+ x1 x-margin))
+                    (setf x0 (- x0 x-margin)
+                          x1 (+ x1 x-margin))))))
         (when (axes-base-autoscale-y-p ax)
-          ;; Sticky edge: only pin y0=0 for bar charts (when sticky-y-min is set)
-          (if (and (axes-base-sticky-y-min ax) (zerop y0))
-              (setf y1 (+ y1 y-margin))
-              (setf y0 (- y0 y-margin)
-                    y1 (+ y1 y-margin)))))
+          ;; For log scale, apply margin in log space to avoid negative vmin
+          (let ((yscale (axis-scale (axes-base-yaxis ax))))
+            (if (and yscale (typep yscale 'log-scale))
+                ;; Log space margin: expand in log space
+                (let* ((log-y0 (if (> y0 0.0d0) (log y0 10.0d0) -300.0d0))
+                       (log-y1 (if (> y1 0.0d0) (log y1 10.0d0) -300.0d0))
+                       (log-range (- log-y1 log-y0))
+                       (log-margin (* log-range margin)))
+                  (setf y0 (expt 10.0d0 (- log-y0 log-margin))
+                        y1 (expt 10.0d0 (+ log-y1 log-margin))))
+                ;; Linear space margin (original behavior)
+                (if (and (axes-base-sticky-y-min ax) (zerop y0))
+                    (setf y1 (+ y1 y-margin))
+                    (setf y0 (- y0 y-margin)
+                          y1 (+ y1 y-margin)))))))
       ;; Set view limits
       (setf (axes-base-view-lim ax)
             (mpl.primitives:make-bbox x0 y0 x1 y1))
@@ -556,11 +576,21 @@ Additional keyword arguments are passed to the scale constructor."
                    new-xmin (mpl.primitives:bbox-y0 view-lim)
                    new-xmax (mpl.primitives:bbox-y1 view-lim))))))))
   ;; Update trans-scale for the data→display pipeline
+  ;; If Y is already log-scale, use log-xy-transform; otherwise use log-transform (X only)
   (setf (axes-base-trans-scale ax)
         (if (eq scale-name :log)
-            (make-instance 'mpl.primitives:log-transform
-                           :base (float (or (getf args :base) 10.0d0) 1.0d0))
-            (mpl.primitives:make-identity-transform)))
+            (let ((yscale (axis-scale (axes-base-yaxis ax))))
+              (if (and yscale (typep yscale 'log-scale))
+                  (make-instance 'mpl.primitives:log-xy-transform
+                                 :base (float (or (getf args :base) 10.0d0) 1.0d0))
+                  (make-instance 'mpl.primitives:log-transform
+                                 :base (float (or (getf args :base) 10.0d0) 1.0d0))))
+            ;; Linear X: check if Y is log, keep log-y-transform if so
+            (let ((yscale (axis-scale (axes-base-yaxis ax))))
+              (if (and yscale (typep yscale 'log-scale))
+                  (make-instance 'mpl.primitives:log-y-transform
+                                 :base 10.0d0)
+                  (mpl.primitives:make-identity-transform)))))
   (%update-trans-data ax)
   (setf (mpl.rendering:artist-stale ax) t))
 
@@ -593,11 +623,21 @@ Additional keyword arguments are passed to the scale constructor."
                    (mpl.primitives:bbox-x0 view-lim) new-ymin
                    (mpl.primitives:bbox-x1 view-lim) new-ymax)))))))
   ;; Update trans-scale for the data→display pipeline
+  ;; If X is already log-scale, use log-xy-transform; otherwise use log-y-transform (Y only)
   (setf (axes-base-trans-scale ax)
         (if (eq scale-name :log)
-            (make-instance 'mpl.primitives:log-y-transform
-                           :base (float (or (getf args :base) 10.0d0) 1.0d0))
-            (mpl.primitives:make-identity-transform)))
+            (let ((xscale (axis-scale (axes-base-xaxis ax))))
+              (if (and xscale (typep xscale 'log-scale))
+                  (make-instance 'mpl.primitives:log-xy-transform
+                                 :base (float (or (getf args :base) 10.0d0) 1.0d0))
+                  (make-instance 'mpl.primitives:log-y-transform
+                                 :base (float (or (getf args :base) 10.0d0) 1.0d0))))
+            ;; Linear Y: check if X is log, keep log-transform if so
+            (let ((xscale (axis-scale (axes-base-xaxis ax))))
+              (if (and xscale (typep xscale 'log-scale))
+                  (make-instance 'mpl.primitives:log-transform
+                                 :base 10.0d0)
+                  (mpl.primitives:make-identity-transform)))))
   (%update-trans-data ax)
   (setf (mpl.rendering:artist-stale ax) t))
 

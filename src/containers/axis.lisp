@@ -289,6 +289,13 @@ The scale sets default locators and formatters."
 (defun axis-get-major-ticks (axis)
   "Generate tick objects for major ticks."
   (multiple-value-bind (vmin vmax) (axis-get-view-interval axis)
+    ;; Apply scale-specific range limiting for log scales
+    (let ((scale (axis-scale axis)))
+      (when (and scale (typep scale 'log-scale))
+        (multiple-value-bind (data-min data-max) (axis-get-data-interval axis)
+          (let ((minpos (if (> data-min 0.0d0) data-min 1.0d-300)))
+            (multiple-value-setq (vmin vmax)
+              (scale-limit-range-for-scale scale vmin vmax minpos))))))
     (let* ((locator (axis-major-locator axis))
            (formatter (axis-major-formatter axis))
            (locs (locator-tick-values locator vmin vmax))
@@ -323,6 +330,13 @@ The scale sets default locators and formatters."
 (defun axis-get-minor-ticks (axis)
   "Generate tick objects for minor ticks."
   (multiple-value-bind (vmin vmax) (axis-get-view-interval axis)
+    ;; Apply scale-specific range limiting for log scales
+    (let ((scale (axis-scale axis)))
+      (when (and scale (typep scale 'log-scale))
+        (multiple-value-bind (data-min data-max) (axis-get-data-interval axis)
+          (let ((minpos (if (> data-min 0.0d0) data-min 1.0d-300)))
+            (multiple-value-setq (vmin vmax)
+              (scale-limit-range-for-scale scale vmin vmax minpos))))))
     (let* ((locator (axis-minor-locator axis))
             (locs (locator-tick-values locator vmin vmax))
            ;; Use min/max to handle inverted axes (vmin > vmax)

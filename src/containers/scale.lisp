@@ -100,7 +100,7 @@ Ported from matplotlib.scale.LogScale."))
         (subs (or (log-scale-subs scale) '(1.0d0))))
     (axis-set-major-locator axis (make-instance 'log-locator :base base :subs subs))
     (axis-set-major-formatter axis (make-instance 'log-formatter :base base))
-    (axis-set-minor-locator axis (make-instance 'log-locator :base base :subs subs))
+    (axis-set-minor-locator axis (make-instance 'log-locator :base base :subs '(2.0d0 3.0d0 4.0d0 5.0d0 6.0d0 7.0d0 8.0d0 9.0d0)))
     (axis-set-minor-formatter axis (make-instance 'log-formatter
                                                    :base base
                                                    :label-only-base t))))

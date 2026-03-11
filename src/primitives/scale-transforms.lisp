@@ -163,6 +163,108 @@ Ported from matplotlib.scale.InvertedLogTransform, applied to Y dimension."))
   (make-instance 'log-y-transform :base (inverted-log-y-transform-base tr)))
 
 ;;; ============================================================
+;;; LogXYTransform — logarithmic transform on BOTH X and Y axes
+;;; ============================================================
+
+(defclass log-xy-transform (transform)
+  ((base :initarg :base
+         :initform 10.0d0
+         :accessor log-xy-transform-base
+         :type double-float
+         :documentation "Base of the logarithm.")
+   (nonpositive :initarg :nonpositive
+                :initform :clip
+                :accessor log-xy-transform-nonpositive
+                :documentation "How to handle non-positive values: :clip or :mask."))
+  (:documentation "Logarithmic transform on BOTH X and Y axes.
+Used for loglog plots where both axes are log-scale."))
+
+(defmethod initialize-instance :after ((tr log-xy-transform) &key base nonpositive)
+  (declare (ignore nonpositive))
+  (when base
+    (when (or (<= base 0.0d0) (= base 1.0d0))
+      (error "The log base cannot be <= 0 or == 1"))))
+
+(defmethod transform-point ((tr log-xy-transform) point)
+  "Transform a point using logarithm on BOTH X and Y coordinates."
+  (let* ((x (float (if (listp point) (first point) (elt point 0)) 1.0d0))
+         (y (float (if (listp point) (second point) (elt point 1)) 1.0d0))
+         (base (log-xy-transform-base tr))
+         (clip-p (eq (log-xy-transform-nonpositive tr) :clip))
+         (result (make-array 2 :element-type 'double-float)))
+    ;; Transform x coordinate
+    (setf (aref result 0)
+          (cond
+            ((<= x 0.0d0)
+             (if clip-p -1000.0d0 (/ 0.0d0 0.0d0)))
+            (t
+             (/ (log x) (log base)))))
+    ;; Transform y coordinate
+    (setf (aref result 1)
+          (cond
+            ((<= y 0.0d0)
+             (if clip-p -1000.0d0 (/ 0.0d0 0.0d0)))
+            (t
+             (/ (log y) (log base)))))
+    result))
+
+(defmethod transform-path ((tr log-xy-transform) path)
+  "Transform all vertices in PATH by this log-XY transform."
+  (let* ((verts (mpl-path-vertices path))
+         (n (array-dimension verts 0))
+         (new-verts (make-array (list n 2) :element-type 'double-float)))
+    (dotimes (i n)
+      (let ((pt (transform-point tr (list (aref verts i 0) (aref verts i 1)))))
+        (setf (aref new-verts i 0) (aref pt 0)
+              (aref new-verts i 1) (aref pt 1))))
+    (make-path :vertices new-verts
+               :codes (mpl-path-codes path)
+               :interpolation-steps (mpl-path-interpolation-steps path))))
+
+(defmethod invert ((tr log-xy-transform))
+  "Return the inverse transform (InvertedLogXYTransform)."
+  (make-instance 'inverted-log-xy-transform :base (log-xy-transform-base tr)))
+
+;;; ============================================================
+;;; InvertedLogXYTransform — inverse of log-xy transform
+;;; ============================================================
+
+(defclass inverted-log-xy-transform (transform)
+  ((base :initarg :base
+         :initform 10.0d0
+         :accessor inverted-log-xy-transform-base
+         :type double-float
+         :documentation "Base of the logarithm."))
+  (:documentation "Inverse logarithmic transform on BOTH X and Y axes."))
+
+(defmethod transform-point ((tr inverted-log-xy-transform) point)
+  "Transform a point using exponentiation on BOTH X and Y coordinates."
+  (let* ((x (float (if (listp point) (first point) (elt point 0)) 1.0d0))
+         (y (float (if (listp point) (second point) (elt point 1)) 1.0d0))
+         (base (inverted-log-xy-transform-base tr))
+         (result (make-array 2 :element-type 'double-float)))
+    (setf (aref result 0) (expt base x))
+    (setf (aref result 1) (expt base y))
+    result))
+
+(defmethod transform-path ((tr inverted-log-xy-transform) path)
+  "Transform all vertices in PATH by this inverted log-XY transform."
+  (let* ((verts (mpl-path-vertices path))
+         (n (array-dimension verts 0))
+         (new-verts (make-array (list n 2) :element-type 'double-float)))
+    (dotimes (i n)
+      (let ((pt (transform-point tr (list (aref verts i 0) (aref verts i 1)))))
+        (setf (aref new-verts i 0) (aref pt 0)
+              (aref new-verts i 1) (aref pt 1))))
+    (make-path :vertices new-verts
+               :codes (mpl-path-codes path)
+               :interpolation-steps (mpl-path-interpolation-steps path))))
+
+(defmethod invert ((tr inverted-log-xy-transform))
+  "Return the inverse transform (LogXYTransform)."
+  (make-instance 'log-xy-transform :base (inverted-log-xy-transform-base tr)))
+
+;;; ============================================================
 ;;; InvertedLogTransform — inverse of logarithmic transform
 ;;; ============================================================
 

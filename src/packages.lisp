@@ -171,6 +171,8 @@
              #:inverted-log-transform #:inverted-log-transform-base
              #:log-y-transform #:log-y-transform-base #:log-y-transform-nonpositive
              #:inverted-log-y-transform #:inverted-log-y-transform-base
+             #:log-xy-transform #:log-xy-transform-base #:log-xy-transform-nonpositive
+             #:inverted-log-xy-transform #:inverted-log-xy-transform-base
             #:symlog-transform #:symlog-transform-base #:symlog-transform-linthresh
             #:symlog-transform-linscale
             #:inverted-symlog-transform #:inverted-symlog-transform-base

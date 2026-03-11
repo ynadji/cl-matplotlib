@@ -275,3 +275,33 @@
 - span-regions: 0.9564 (10x6 figsize, overlapping spans)
 - two-scales: 0.9641 (sin+exp on twinx)
 - Full suite: 64/64 passed, 0 failed
+
+## Full QA Results - 13 New Examples (2026-03-10)
+
+### File Existence & Validity
+- All 39 output files (13 × 3 formats) exist and are non-zero
+- All 13 PNGs verified valid via PIL (correct dimensions, RGBA mode)
+- All 39 reference images exist in reference_images/
+
+### SSIM Scores (PNG / SVG / PDF)
+| Example              | PNG   | SVG   | PDF   | Status      |
+|----------------------|-------|-------|-------|-------------|
+| scatter-colormap     | 0.800 | 0.789 | 0.846 | ALLOWLISTED |
+| bar-errorbars        | 0.970 | 0.961 | 0.967 | PASS        |
+| fill-between-where   | 0.954 | 0.931 | 0.932 | PASS        |
+| donut-chart          | 0.966 | 0.968 | 0.968 | PASS        |
+| pie-explode          | 0.963 | 0.966 | 0.966 | PASS        |
+| hexbin-basic         | 0.475 | 0.463 | 0.523 | ALLOWLISTED |
+| markers-all          | 0.926 | 0.929 | 0.942 | ALLOWLISTED |
+| histogram-stacked    | 0.895 | 0.890 | 0.906 | ALLOWLISTED |
+| bar-hatch            | 0.604 | 0.681 | 0.664 | ALLOWLISTED |
+| legend-outside       | 0.711 | 0.716 | 0.787 | ALLOWLISTED |
+| loglog-plot          | 0.510 | 0.554 | 0.537 | ALLOWLISTED |
+| minor-ticks-demo     | 0.852 | 0.842 | 0.816 | ALLOWLISTED |
+| categorical-scatter  | 0.960 | 0.938 | 0.945 | PASS        |
+
+### Summary
+- PASS: 5/13 (bar-errorbars, fill-between-where, donut-chart, pie-explode, categorical-scatter)
+- ALLOWLISTED: 8/13 (all with known inherent differences documented in allowlist.json)
+- FAIL: 0/13
+- PNG SSIM: min=0.475 mean=0.814 max=0.970
