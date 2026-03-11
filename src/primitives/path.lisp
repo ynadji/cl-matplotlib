@@ -1026,6 +1026,51 @@ If IS-WEDGE is T, the arc is a wedge (pie slice)."
   "Return a Path for the unit circle wedge from THETA1 to THETA2 (degrees)."
   (path-arc theta1 theta2 :n n :is-wedge t))
 
+(defun path-annular-wedge (theta1 theta2 &key (inner-radius 0.5d0) (n nil))
+  "Return a Path for an annular (donut) wedge with unit outer radius.
+INNER-RADIUS is the inner circle radius (0 < inner-radius < 1).
+The path traces: outer arc (theta1->theta2), line to inner arc end,
+inner arc reversed (theta2->theta1), close."
+  (let* ((ir (float inner-radius 1.0d0))
+         ;; Generate outer and inner arcs as simple arcs (not wedges)
+         (outer-arc (path-arc theta1 theta2 :n n))
+         (inner-arc (path-arc theta1 theta2 :n n))
+         ;; Extract vertices
+         (outer-v (mpl-path-vertices outer-arc))
+         (outer-c (mpl-path-codes outer-arc))
+         (outer-n (array-dimension outer-v 0))
+         (inner-v (mpl-path-vertices inner-arc))
+         (inner-n (array-dimension inner-v 0))
+         ;; Total: outer arc + LINETO to inner end + reversed inner (minus start) + CLOSEPOLY
+         (total (+ outer-n 1 (1- inner-n) 1))
+         (verts (make-array (list total 2) :element-type 'double-float :initial-element 0.0d0))
+         (codes (make-array total :element-type '(unsigned-byte 8) :initial-element +curve4+))
+         (idx 0))
+    ;; Copy outer arc vertices and codes
+    (dotimes (i outer-n)
+      (setf (aref verts idx 0) (aref outer-v i 0)
+            (aref verts idx 1) (aref outer-v i 1)
+            (aref codes idx) (aref outer-c i))
+      (incf idx))
+    ;; LINETO inner arc end (last vertex of inner arc, scaled by inner-radius)
+    (let ((last-inner (1- inner-n)))
+      (setf (aref verts idx 0) (* ir (aref inner-v last-inner 0))
+            (aref verts idx 1) (* ir (aref inner-v last-inner 1))
+            (aref codes idx) +lineto+)
+      (incf idx))
+    ;; Inner arc reversed (skip last vertex, already LINETO target)
+    ;; Reversing cubic Bezier vertices reverses curve direction correctly
+    (loop for i from (- inner-n 2) downto 0 do
+      (setf (aref verts idx 0) (* ir (aref inner-v i 0))
+            (aref verts idx 1) (* ir (aref inner-v i 1))
+            (aref codes idx) +curve4+)
+      (incf idx))
+    ;; CLOSEPOLY
+    (setf (aref verts idx 0) 0.0d0
+          (aref verts idx 1) 0.0d0
+          (aref codes idx) +closepoly+)
+    (make-path :vertices verts :codes codes :readonly t)))
+
 ;;; ============================================================
 ;;; Path copy / deepcopy
 ;;; ============================================================

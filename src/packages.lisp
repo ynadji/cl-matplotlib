@@ -114,7 +114,7 @@
            ;; Path constructors
            #:path-make-compound-path
            #:path-unit-rectangle #:path-unit-circle #:path-circle
-           #:path-arc #:path-wedge
+           #:path-arc #:path-wedge #:path-annular-wedge
            ;; Algorithms (public)
            #:point-in-path-crossings #:point-in-polygon-p
            #:sutherland-hodgman-clip

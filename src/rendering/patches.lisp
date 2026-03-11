@@ -238,8 +238,12 @@ Ported from matplotlib.patches.Polygon."))
   (:documentation "Wedge shaped patch. Ported from matplotlib.patches.Wedge."))
 
 (defmethod get-path ((w wedge))
-  "Return the wedge path."
-  (mpl.primitives:path-wedge (wedge-theta1 w) (wedge-theta2 w)))
+  "Return the wedge path. When width is set, returns an annular (donut) wedge."
+  (let ((width (wedge-width w)))
+    (if width
+        (mpl.primitives:path-annular-wedge (wedge-theta1 w) (wedge-theta2 w)
+                                            :inner-radius (- 1.0d0 (float width 1.0d0)))
+        (mpl.primitives:path-wedge (wedge-theta1 w) (wedge-theta2 w)))))
 
 (defmethod get-patch-transform ((w wedge))
   "Return the transform scaling/translating the unit wedge."
