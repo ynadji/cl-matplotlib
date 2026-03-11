@@ -225,6 +225,8 @@ Returns the PathCollection artist."
 
 (defun bar (x height &key (width 0.8) (bottom 0) (color nil)
                            (edgecolor "black") (linewidth 0.5)
+                           (yerr nil) (xerr nil) (capsize 3.0)
+                           (ecolor nil) (elinewidth 1.0)
                            (label "") (zorder 1) (align :center))
   "Make a bar plot on the current axes.
 
@@ -235,6 +237,11 @@ BOTTOM — bar bottom (default 0).
 COLOR — face color.
 EDGECOLOR — edge color.
 LINEWIDTH — edge line width.
+YERR — vertical error (number for symmetric, or list of numbers).
+XERR — horizontal error (number for symmetric, or list of numbers).
+CAPSIZE — error bar cap size in points (default 3.0).
+ECOLOR — error bar color (default black).
+ELINEWIDTH — error bar line width (default 1.0).
 LABEL — legend label.
 ZORDER — drawing order.
 ALIGN — :center or :edge.
@@ -243,6 +250,8 @@ Returns a list of Rectangle patches."
   (mpl.containers:bar (gca) x height
                        :width width :bottom bottom :color color
                        :edgecolor edgecolor :linewidth linewidth
+                       :yerr yerr :xerr xerr :capsize capsize
+                       :ecolor ecolor :elinewidth elinewidth
                        :label label :zorder zorder :align align))
 
 (defun hist (data &key (bins 10) (range nil) (density nil) (cumulative nil)
@@ -333,7 +342,8 @@ Returns a QuadContourSet."
 
 (defun pie (x &key (labels nil) (colors nil) (autopct nil)
                     (startangle 0) (counterclock t)
-                    (wedgeprops nil) (textprops nil) (zorder 1))
+                    (wedgeprops nil) (textprops nil)
+                    (explode nil) (zorder 1))
   "Draw a pie chart on the current axes.
 
 X — sequence of wedge sizes.
@@ -342,13 +352,14 @@ COLORS — list of colors.
 AUTOPCT — format string for percentage labels.
 STARTANGLE — starting angle in degrees.
 COUNTERCLOCK — if T, counter-clockwise wedges.
+EXPLODE — list of floats specifying the offset of each wedge from center.
 
 Returns (values patches texts autotexts)."
   (mpl.containers:pie (gca) x
                        :labels labels :colors colors :autopct autopct
                        :startangle startangle :counterclock counterclock
                        :wedgeprops wedgeprops :textprops textprops
-                       :zorder zorder))
+                       :explode explode :zorder zorder))
 
 (defun errorbar (xdata ydata &key (yerr nil) (xerr nil) (fmt nil)
                                    (ecolor nil) (elinewidth 1.0)
@@ -469,12 +480,13 @@ ARROWSIZE — arrow size multiplier (default 1.0)."
                               :linewidth linewidth :arrowsize arrowsize))
 
 (defun fill-between (xdata y1data y2data &key (color nil) (alpha nil)
+                                               (where nil)
                                                (label "") (zorder 1))
   "Fill area between two curves on the current axes.
 
-Returns the created Polygon."
+Returns the created Polygon (or list of Polygons when WHERE is used)."
   (mpl.containers:fill-between (gca) xdata y1data y2data
-                                 :color color :alpha alpha
+                                 :color color :alpha alpha :where where
                                  :label label :zorder zorder))
 
 (defun pcolormesh (c &key x y (cmap nil) (vmin nil) (vmax nil) (alpha nil) (zorder 1))
@@ -673,20 +685,22 @@ Matches matplotlib.pyplot.minorticks_on(): sets AutoMinorLocator on both axes."
 
 (defun legend (&key handles labels (loc :best) (fontsize 10.0)
                     (frameon t) (facecolor "white") (edgecolor "#cccccc")
-                    (framealpha 0.8) (title-text "") (ncol 1))
+                    (framealpha 0.8) (title-text "") (ncol 1)
+                    (bbox-to-anchor nil))
   "Create a legend on the current axes.
 
 If HANDLES/LABELS not provided, auto-extracts from labeled artists.
 LOC — position keyword (e.g., :best, :upper-right).
 FONTSIZE — legend font size.
 FRAMEON — draw frame.
-TITLE-TEXT — legend title."
+TITLE-TEXT — legend title.
+BBOX-TO-ANCHOR — (x y) in axes fraction coords for custom anchor positioning."
   (mpl.containers:axes-legend (gca)
                               :handles handles :labels labels :loc loc
                               :fontsize fontsize :frameon frameon
                               :facecolor facecolor :edgecolor edgecolor
                               :framealpha framealpha :title title-text
-                              :ncol ncol))
+                              :ncol ncol :bbox-to-anchor bbox-to-anchor))
 
 (defun hexbin (x y &key (gridsize 100) (cmap :inferno) (mincnt 1)
                        (vmin nil) (vmax nil) (alpha nil) (zorder 1)

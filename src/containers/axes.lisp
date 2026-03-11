@@ -37,7 +37,10 @@ LABEL - string label for legend.
 ZORDER - drawing order (default 2).
 
 Returns a list containing the created Line2D."
-  (let* ((effective-color (or color "C0"))
+  (let* ((effective-color (if color
+                              color
+                              (prog1 (format nil "C~D" (mod (axes-base-color-cycle-index ax) 10))
+                                (incf (axes-base-color-cycle-index ax)))))
          (initargs (append
                     (list :xdata xdata
                           :ydata ydata
@@ -99,7 +102,10 @@ Returns the PathCollection artist."
             (fmt (make-instance 'categorical-formatter :categories all-cats)))
         (axis-set-major-locator (axes-base-xaxis ax) loc)
         (axis-set-major-formatter (axes-base-xaxis ax) fmt))))
-  (let* ((effective-color (or c color "C0"))
+  (let* ((effective-color (if (or c color)
+                              (or c color)
+                              (prog1 (format nil "C~D" (mod (axes-base-color-cycle-index ax) 10))
+                                (incf (axes-base-color-cycle-index ax)))))
          (n (min (length xdata) (length ydata)))
          ;; Build offsets from data coordinates
          (offsets (loop for i from 0 below n
@@ -148,6 +154,8 @@ Returns the PathCollection artist."
 
 (defun bar (ax x height &key (width 0.8) (bottom 0) (color nil)
                               (edgecolor nil) (linewidth 0.0)
+                              (yerr nil) (xerr nil) (capsize 3.0)
+                              (ecolor nil) (elinewidth 1.0)
                               (label "") (zorder 1) (align :center))
   "Make a bar plot.
 
@@ -158,7 +166,12 @@ WIDTH — bar width (number or sequence, default 0.8).
 BOTTOM — bar bottom (number or sequence, default 0).
 COLOR — face color (default nil = C0).
 EDGECOLOR — edge color (default black).
-LINEWIDTH — edge line width (default 0.5).
+LINEWIDTH — edge line width (default 0.0).
+YERR — vertical error (number for symmetric, or list of numbers).
+XERR — horizontal error (number for symmetric, or list of numbers).
+CAPSIZE — error bar cap size in points (default 3.0).
+ECOLOR — error bar color (default black).
+ELINEWIDTH — error bar line width (default 1.0).
 LABEL — string label for legend.
 ZORDER — drawing order (default 1).
 ALIGN — :center or :edge (default :center).
@@ -237,6 +250,83 @@ Returns a list of Rectangle patches."
        (axes-update-datalim ax (nreverse all-x) (nreverse all-y)))
      ;; Set sticky y-min for bar charts (y=0 is a sticky edge)
      (setf (axes-base-sticky-y-min ax) t)
+     ;; Draw error bars if yerr or xerr provided
+     (when (or yerr xerr)
+       (let ((err-color (or ecolor "black"))
+             (error-segments nil)
+             (cap-segments nil))
+         (dotimes (i n)
+           (let ((xi (float (elt x i) 1.0d0))
+                 (yi (float (elt height i) 1.0d0))
+                 (bi (if (numberp bottom)
+                         (float bottom 1.0d0)
+                         (float (elt bottom i) 1.0d0))))
+             ;; Error bar y-center is at bottom + height
+             (let ((center-y (+ bi yi)))
+               ;; Vertical error bars
+               (when yerr
+                 (let* ((ye (if (numberp yerr)
+                                (float yerr 1.0d0)
+                                (float (elt yerr i) 1.0d0)))
+                        (y-lo (- center-y ye))
+                        (y-hi (+ center-y ye)))
+                   (push (list (list xi y-lo) (list xi y-hi)) error-segments)
+                   (when (plusp capsize)
+                     (let ((cap-hw (* capsize 0.01d0)))
+                       (push (list (list (- xi cap-hw) y-lo) (list (+ xi cap-hw) y-lo)) cap-segments)
+                       (push (list (list (- xi cap-hw) y-hi) (list (+ xi cap-hw) y-hi)) cap-segments)))))
+               ;; Horizontal error bars
+               (when xerr
+                 (let* ((xe (if (numberp xerr)
+                                (float xerr 1.0d0)
+                                (float (elt xerr i) 1.0d0)))
+                        (x-lo (- xi xe))
+                        (x-hi (+ xi xe)))
+                   (push (list (list x-lo center-y) (list x-hi center-y)) error-segments)
+                   (when (plusp capsize)
+                     (let ((cap-hw (* capsize 0.01d0)))
+                       (push (list (list x-lo (- center-y cap-hw)) (list x-lo (+ center-y cap-hw))) cap-segments)
+                       (push (list (list x-hi (- center-y cap-hw)) (list x-hi (+ center-y cap-hw))) cap-segments))))))))
+         ;; Create LineCollection for error bar lines
+         (let ((err-lc (mpl.rendering:make-line-collection
+                        :segments (nreverse error-segments)
+                        :edgecolors err-color
+                        :linewidths elinewidth
+                        :zorder (1+ zorder))))
+           (setf (mpl.rendering:artist-transform err-lc)
+                 (axes-base-trans-data ax))
+           (axes-add-artist ax err-lc))
+         ;; Create LineCollection for caps
+         (when cap-segments
+           (let ((cap-lc (mpl.rendering:make-line-collection
+                          :segments (nreverse cap-segments)
+                          :edgecolors err-color
+                          :linewidths elinewidth
+                          :zorder (1+ zorder))))
+             (setf (mpl.rendering:artist-transform cap-lc)
+                   (axes-base-trans-data ax))
+             (axes-add-artist ax cap-lc)))
+         ;; Update data limits with error extents
+         (when yerr
+           (let ((err-y nil))
+             (dotimes (i n)
+               (let* ((yi (float (elt height i) 1.0d0))
+                      (bi (if (numberp bottom)
+                              (float bottom 1.0d0)
+                              (float (elt bottom i) 1.0d0)))
+                      (center-y (+ bi yi))
+                      (ye (if (numberp yerr) (float yerr 1.0d0) (float (elt yerr i) 1.0d0))))
+                 (push (- center-y ye) err-y)
+                 (push (+ center-y ye) err-y)))
+             (axes-update-datalim ax x (nreverse err-y))))
+         (when xerr
+           (let ((err-x nil))
+             (dotimes (i n)
+               (let* ((xi (float (elt x i) 1.0d0))
+                      (xe (if (numberp xerr) (float xerr 1.0d0) (float (elt xerr i) 1.0d0))))
+                 (push (- xi xe) err-x)
+                 (push (+ xi xe) err-x)))
+             (axes-update-datalim ax (nreverse err-x) (coerce height 'list))))))
      ;; Autoscale
      (axes-autoscale-view ax)
      (nreverse rects)))
@@ -289,7 +379,26 @@ Returns the created Polygon."
 ;;; fill-between — fill area between two curves
 ;;; ============================================================
 
+(defun %find-true-regions (where-seq)
+  "Return list of (start . end) inclusive index pairs for contiguous true runs in WHERE-SEQ."
+  (let ((where-list (coerce where-seq 'list))
+        (regions nil)
+        (in-region nil)
+        (start 0))
+    (loop for val in where-list
+          for i from 0
+          do (cond
+               ((and val (not in-region))
+                (setf in-region t start i))
+               ((and (not val) in-region)
+                (push (cons start (1- i)) regions)
+                (setf in-region nil))))
+    (when in-region
+      (push (cons start (1- (length where-list))) regions))
+    (nreverse regions)))
+
 (defun fill-between (ax xdata y1data y2data &key (color nil) (alpha nil)
+                                                  (where nil)
                                                   (label "") (zorder 1))
   "Fill the area between two horizontal curves.
 
@@ -299,45 +408,64 @@ Y1DATA — sequence of y1 coordinates (lower curve).
 Y2DATA — sequence of y2 coordinates (upper curve).
 COLOR — fill color (default C0).
 ALPHA — transparency.
+WHERE — boolean sequence; when non-nil, creates separate polygons for each
+  contiguous true-region. When nil, fills the entire range as one polygon.
 LABEL — string label for legend.
 ZORDER — drawing order (default 1).
 
-Returns the created Polygon."
-  (let* ((effective-color (or color "C0"))
-         (n (min (length xdata) (length y1data) (length y2data)))
-         ;; Build polygon: forward along y2, then backward along y1
-         (total-verts (* 2 n))
-         (verts (make-array (list total-verts 2) :element-type 'double-float)))
-    ;; Forward pass: y2 curve (x[0]→x[n-1])
-    (dotimes (i n)
-      (setf (aref verts i 0) (float (elt xdata i) 1.0d0)
-            (aref verts i 1) (float (elt y2data i) 1.0d0)))
-    ;; Backward pass: y1 curve (x[n-1]→x[0])
-    (dotimes (i n)
-      (let ((j (- n 1 i)))
-        (setf (aref verts (+ n i) 0) (float (elt xdata j) 1.0d0)
-              (aref verts (+ n i) 1) (float (elt y1data j) 1.0d0))))
-    (let ((poly (make-instance 'mpl.rendering:polygon
-                               :xy verts
-                               :closed t
-                               :facecolor effective-color
-                               :edgecolor "none"
-                               :linewidth 0.0
-                               :label label
-                               :zorder zorder)))
-      (when alpha
-        (setf (mpl.rendering:artist-alpha poly)
-              (float alpha 1.0d0)))
-      ;; Set transform to transData
-      (setf (mpl.rendering:artist-transform poly)
-            (axes-base-trans-data ax))
-      (axes-add-patch ax poly :at-end t)
-      ;; Update data limits from both curves
-      (let ((all-y (append (coerce y1data 'list)
-                           (coerce y2data 'list))))
-        (axes-update-datalim ax xdata all-y))
-      (axes-autoscale-view ax)
-      poly)))
+Returns the created Polygon (or list of Polygons when WHERE is used)."
+  (if (null where)
+      ;; Original single-polygon behavior
+      (let* ((effective-color (or color "C0"))
+             (n (min (length xdata) (length y1data) (length y2data)))
+             ;; Build polygon: forward along y2, then backward along y1
+             (total-verts (* 2 n))
+             (verts (make-array (list total-verts 2) :element-type 'double-float)))
+        ;; Forward pass: y2 curve (x[0]→x[n-1])
+        (dotimes (i n)
+          (setf (aref verts i 0) (float (elt xdata i) 1.0d0)
+                (aref verts i 1) (float (elt y2data i) 1.0d0)))
+        ;; Backward pass: y1 curve (x[n-1]→x[0])
+        (dotimes (i n)
+          (let ((j (- n 1 i)))
+            (setf (aref verts (+ n i) 0) (float (elt xdata j) 1.0d0)
+                  (aref verts (+ n i) 1) (float (elt y1data j) 1.0d0))))
+        (let ((poly (make-instance 'mpl.rendering:polygon
+                                   :xy verts
+                                   :closed t
+                                   :facecolor effective-color
+                                   :edgecolor "none"
+                                   :linewidth 0.0
+                                   :label label
+                                   :zorder zorder)))
+          (when alpha
+            (setf (mpl.rendering:artist-alpha poly)
+                  (float alpha 1.0d0)))
+          ;; Set transform to transData
+          (setf (mpl.rendering:artist-transform poly)
+                (axes-base-trans-data ax))
+          (axes-add-patch ax poly :at-end t)
+          ;; Update data limits from both curves
+          (let ((all-y (append (coerce y1data 'list)
+                               (coerce y2data 'list))))
+            (axes-update-datalim ax xdata all-y))
+          (axes-autoscale-view ax)
+          poly))
+      ;; WHERE: separate polygon per contiguous true-region
+      (let ((regions (%find-true-regions where))
+            (xvec (coerce xdata 'vector))
+            (y1vec (coerce y1data 'vector))
+            (y2vec (coerce y2data 'vector)))
+        (mapcar
+         (lambda (region)
+           (let* ((start (car region))
+                  (end (cdr region))
+                  (sub-x (subseq xvec start (1+ end)))
+                  (sub-y1 (subseq y1vec start (1+ end)))
+                  (sub-y2 (subseq y2vec start (1+ end))))
+             (fill-between ax sub-x sub-y1 sub-y2
+                           :color color :alpha alpha :label label :zorder zorder)))
+         regions))))
 
 ;;; ============================================================
 ;;; axhspan / axvspan — shaded region spans
@@ -498,6 +626,7 @@ Returns the formatted string."
 (defun pie (ax x &key (labels nil) (colors nil) (autopct nil)
                       (startangle 0) (counterclock t)
                       (wedgeprops nil) (textprops nil)
+                      (explode nil)
                       (zorder 1))
   "Draw a pie chart.
 
@@ -511,9 +640,10 @@ COUNTERCLOCK — if T, wedges go counter-clockwise (default T).
 WEDGEPROPS — plist of extra wedge properties (ignored in simplified version).
 TEXTPROPS — plist of extra text properties (ignored in simplified version).
 ZORDER — drawing order (default 1).
+EXPLODE — list of floats specifying the offset of each wedge from center (nil = no explosion).
 
 Returns (values patches texts autotexts)."
-  (declare (ignore wedgeprops textprops))
+  (declare (ignore textprops))
   ;; Set view limits BEFORE creating artists so that transData is stable.
   ;; Artists (patches + text labels) capture transData at creation time;
   ;; setting limits afterwards would leave text artists with a stale transform
@@ -553,6 +683,7 @@ Returns (values patches texts autotexts)."
                         (make-list (length data) :initial-element 0.0d0)
                         (mapcar (lambda (v) (/ v total)) data)))
          (default-colors '("C0" "C1" "C2" "C3" "C4" "C5" "C6" "C7" "C8" "C9"))
+         (wedge-width (when wedgeprops (getf wedgeprops :width)))
          (patches nil)
          (texts nil)
          (autotexts nil)
@@ -566,12 +697,21 @@ Returns (values patches texts autotexts)."
                           (elt colors (mod i (length colors)))
                           (elt default-colors (mod i (length default-colors))))
           do
+             ;; Compute explode offset
+             (let* ((exp-amount (if (and explode (< i (length explode)))
+                                    (float (elt explode i) 1.0d0)
+                                    0.0d0))
+                    (exp-mid-angle (* (/ (+ theta1 theta2) 2.0d0) (/ pi 180.0d0)))
+                    (exp-x (* exp-amount (cos exp-mid-angle)))
+                    (exp-y (* exp-amount (sin exp-mid-angle))))
              ;; Create wedge patch
               (let ((wedge-patch (make-instance 'mpl.rendering:wedge
-                                                :center '(0.0d0 0.0d0)
+                                                :center (list exp-x exp-y)
                                                 :r 1.0d0
                                                 :theta1 (min theta1 theta2)
                                                 :theta2 (max theta1 theta2)
+                                                :width (when wedge-width
+                                                         (float wedge-width 1.0d0))
                                                 :facecolor color
                                                 :edgecolor nil
                                                 :linewidth 0.0
@@ -584,8 +724,8 @@ Returns (values patches texts autotexts)."
              (when (and labels (< i (length labels)))
                (let* ((mid-angle (* (/ (+ theta1 theta2) 2.0d0) (/ pi 180.0d0)))
                       (label-r 1.1d0)
-                      (lx (* label-r (cos mid-angle)))
-                      (ly (* label-r (sin mid-angle)))
+                      (lx (+ (* label-r (cos mid-angle)) exp-x))
+                      (ly (+ (* label-r (sin mid-angle)) exp-y))
                       (txt (make-instance 'mpl.rendering:text-artist
                                           :x lx :y ly
                                           :text (elt labels i)
@@ -601,9 +741,11 @@ Returns (values patches texts autotexts)."
              (when autopct
                (let* ((pct (* frac 100.0d0))
                       (mid-angle (* (/ (+ theta1 theta2) 2.0d0) (/ pi 180.0d0)))
-                      (pct-r 0.6d0)
-                      (px (* pct-r (cos mid-angle)))
-                      (py (* pct-r (sin mid-angle)))
+                      (pct-r (if wedge-width
+                                 (- 1.0d0 (/ (float wedge-width 1.0d0) 2.0d0))
+                                 0.6d0))
+                      (px (+ (* pct-r (cos mid-angle)) exp-x))
+                      (py (+ (* pct-r (sin mid-angle)) exp-y))
                        (pct-text (%apply-autopct autopct pct))
                       (txt (make-instance 'mpl.rendering:text-artist
                                           :x px :y py
@@ -616,6 +758,7 @@ Returns (values patches texts autotexts)."
                        (axes-base-trans-data ax))
                  (push txt (axes-base-texts ax))
                  (push txt autotexts)))
+             ) ;; close explode let*
              ;; Advance angle
              (setf angle theta2))
     ;; Set up pie chart display — match matplotlib behavior:
