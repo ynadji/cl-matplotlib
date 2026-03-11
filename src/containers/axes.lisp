@@ -19,18 +19,22 @@ fill(), fill_between() methods."))
 ;;; ============================================================
 
 (defun plot (ax xdata ydata &key (color nil) (linewidth 1.5) (linestyle :solid)
-                                 (marker :none) (label "") (zorder 2))
+                                 (marker :none) (label "") (zorder 2)
+                                 (markersize nil) (markeredgecolor nil) (markeredgewidth nil))
   "Plot y versus x as lines and/or markers.
 
-AX — an axes-base (or mpl-axes) instance.
-XDATA — sequence of x coordinates.
-YDATA — sequence of y coordinates.
-COLOR — line color (string or nil for default blue).
-LINEWIDTH — line width in points (default 1.5).
-LINESTYLE — :solid, :dashed, :dashdot, :dotted (default :solid).
-MARKER — marker style keyword (default :none).
-LABEL — string label for legend.
-ZORDER — drawing order (default 2).
+AX - an axes-base (or mpl-axes) instance.
+XDATA - sequence of x coordinates.
+YDATA - sequence of y coordinates.
+COLOR - line color (string or nil for default blue).
+LINEWIDTH - line width in points (default 1.5).
+LINESTYLE - :solid, :dashed, :dashdot, :dotted (default :solid).
+MARKER - marker style keyword (default :none).
+MARKERSIZE - marker size in points (default nil for auto).
+MARKEREDGECOLOR - marker edge color (default nil).
+MARKEREDGEWIDTH - marker edge width in points (default nil).
+LABEL - string label for legend.
+ZORDER - drawing order (default 2).
 
 Returns a list containing the created Line2D."
   (let* ((effective-color (or color "C0"))
@@ -42,7 +46,10 @@ Returns a list containing the created Line2D."
                               :linestyle linestyle
                               :marker marker
                               :label label
-                              :zorder zorder)))
+                              :zorder zorder
+                              :markersize markersize
+                              :markeredgecolor markeredgecolor
+                              :markeredgewidth markeredgewidth)))
     ;; Set the transform on the line to transData
     (setf (mpl.rendering:artist-transform line)
           (axes-base-trans-data ax))
@@ -76,6 +83,21 @@ ZORDER — drawing order (default 1).
 ALPHA — transparency (nil for opaque).
 
 Returns the PathCollection artist."
+  ;; Detect categorical (string) x-data and convert to numeric positions
+  (when (and (listp xdata) (not (null xdata)) (stringp (first xdata)))
+    (let* ((existing-loc (axis-major-locator (axes-base-xaxis ax)))
+           (existing-cats (if (typep existing-loc 'categorical-locator)
+                              (categorical-locator-categories existing-loc)
+                              nil))
+           (new-cats (remove-if (lambda (c) (member c existing-cats :test #'string=))
+                                (remove-duplicates xdata :test #'string= :from-end t)))
+           (all-cats (append existing-cats new-cats))
+           (cat-map (loop for cat in all-cats for i from 0 collect (cons cat i))))
+      (setf xdata (mapcar (lambda (s) (float (cdr (assoc s cat-map :test #'string=)) 1.0d0)) xdata))
+      (let ((loc (make-instance 'categorical-locator :categories all-cats))
+            (fmt (make-instance 'categorical-formatter :categories all-cats)))
+        (axis-set-major-locator (axes-base-xaxis ax) loc)
+        (axis-set-major-formatter (axes-base-xaxis ax) fmt))))
   (let* ((effective-color (or c color "C0"))
          (n (min (length xdata) (length ydata)))
          ;; Build offsets from data coordinates
@@ -141,6 +163,21 @@ ZORDER — drawing order (default 1).
 ALIGN — :center or :edge (default :center).
 
 Returns a list of Rectangle patches."
+  ;; Detect categorical (string) x-data and convert to numeric positions
+  (when (and (listp x) (not (null x)) (stringp (first x)))
+    (let* ((existing-loc (axis-major-locator (axes-base-xaxis ax)))
+           (existing-cats (if (typep existing-loc 'categorical-locator)
+                              (categorical-locator-categories existing-loc)
+                              nil))
+           (new-cats (remove-if (lambda (c) (member c existing-cats :test #'string=))
+                                (remove-duplicates x :test #'string= :from-end t)))
+           (all-cats (append existing-cats new-cats))
+           (cat-map (loop for cat in all-cats for i from 0 collect (cons cat i))))
+      (setf x (mapcar (lambda (s) (float (cdr (assoc s cat-map :test #'string=)) 1.0d0)) x))
+      (let ((loc (make-instance 'categorical-locator :categories all-cats))
+            (fmt (make-instance 'categorical-formatter :categories all-cats)))
+        (axis-set-major-locator (axes-base-xaxis ax) loc)
+        (axis-set-major-formatter (axes-base-xaxis ax) fmt))))
   (let* ((base-color (or color "C0"))
          (n (min (length x) (length height)))
          (rects nil))

@@ -676,7 +676,7 @@ Manages global figure state for convenience.")
               #:violinplot #:quiver #:streamplot
                #:fill-between #:pcolormesh
            ;; Axes configuration
-            #:xlabel #:ylabel #:title #:xlim #:ylim #:grid #:legend
+            #:xlabel #:ylabel #:title #:xlim #:ylim #:axis #:grid #:legend
              #:set-xticks #:set-xticklabels #:set-yticks #:set-yticklabels
              #:colorbar #:annotate #:text
              #:suptitle #:supxlabel #:supylabel

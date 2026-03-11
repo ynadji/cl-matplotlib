@@ -593,6 +593,21 @@ Ported from matplotlib.ticker.StrMethodFormatter."))
   (:documentation "Format values for log axes.
 Ported from matplotlib.ticker.LogFormatter."))
 
+(defun %format-superscript (n)
+  "Convert integer N to a Unicode superscript string.
+Digits 0-9 become ⁰¹²³⁴⁵⁶⁷⁸⁹; negative sign becomes ⁻."
+  (let ((superscript-digits #("⁰" "¹" "²" "³" "⁴" "⁵" "⁶" "⁷" "⁸" "⁹")))
+    (if (minusp n)
+        (concatenate 'string "⁻" (%format-superscript (- n)))
+        (let ((digits (if (zerop n)
+                          (list 0)
+                          (loop for x = n then (floor x 10)
+                                while (plusp x)
+                                collect (mod x 10) into ds
+                                finally (return (nreverse ds))))))
+          (apply #'concatenate 'string
+                 (mapcar (lambda (d) (aref superscript-digits d)) digits))))))
+
 (defmethod tick-formatter-call ((fmt log-formatter) value &optional pos)
   (declare (ignore pos))
   (let ((base (log-formatter-base fmt)))
@@ -606,8 +621,8 @@ Ported from matplotlib.ticker.LogFormatter."))
               (if is-decade
                   (let ((iexp (round exp)))
                     (if (= base 10.0d0)
-                        (format nil "10^~D" iexp)
-                        (format nil "~G^~D" base iexp)))
+                        (format nil "10~A" (%format-superscript iexp))
+                        (format nil "~G~A" base (%format-superscript iexp))))
                   (%scalar-format-value value)))))))
 
 ;;; ============================================================
@@ -646,3 +661,82 @@ Ported from matplotlib.ticker.PercentFormatter."))
                           ((> (abs pct) 0.5d0) 2)
                           (t 3))))
           (format nil "~,vF~A" auto-dec pct sym)))))
+
+;;; ============================================================
+;;; AutoMinorLocator — automatic minor ticks
+;;; ============================================================
+
+(defclass auto-minor-locator (locator)
+  ((num-subdivisions :initarg :num-subdivisions
+                     :initform 5
+                     :accessor auto-minor-locator-num-subdivisions
+                     :type integer
+                     :documentation "Number of subdivisions between major ticks (default 5 = 4 minor ticks)."))
+  (:documentation "Automatically place minor ticks as subdivisions between major ticks.
+Ported from matplotlib.ticker.AutoMinorLocator."))
+
+(defmethod locator-tick-values ((loc auto-minor-locator) vmin vmax)
+  "Generate minor tick locations as subdivisions between major ticks."
+  (let* ((vmin (float vmin 1.0d0))
+         (vmax (float vmax 1.0d0))
+         (num-subs (auto-minor-locator-num-subdivisions loc))
+         (axis (locator-axis loc))
+         (major-locator (when axis (axis-major-locator axis)))
+         (minor-ticks nil))
+    ;; Handle inverted axes
+    (when (> vmin vmax) (rotatef vmin vmax))
+    ;; Get major tick locations
+    (when major-locator
+      (let ((major-locs (locator-tick-values major-locator vmin vmax)))
+        (when (>= (length major-locs) 2)
+          ;; Generate minor ticks between consecutive major ticks
+          (loop for i from 0 below (1- (length major-locs))
+                do (let* ((major1 (nth i major-locs))
+                          (major2 (nth (1+ i) major-locs))
+                          (step (/ (- major2 major1) num-subs)))
+                     ;; Add minor ticks between major1 and major2 (exclusive of endpoints)
+                     (loop for j from 1 below num-subs
+                           do (let ((minor-loc (+ major1 (* j step))))
+                                (when (and (>= minor-loc (* vmin 0.999d0))
+                                           (<= minor-loc (* vmax 1.001d0)))
+                                  (push minor-loc minor-ticks))))))
+          ;; Sort and return
+          (sort (nreverse minor-ticks) #'<))))
+    ;; Fallback: return empty list if no major locator
+    (or minor-ticks nil)))
+
+;;; ============================================================
+;;; CategoricalLocator — ticks at integer positions for string categories
+;;; ============================================================
+
+(defclass categorical-locator (locator)
+  ((categories :initarg :categories
+               :accessor categorical-locator-categories
+               :documentation "Ordered list of category strings."))
+  (:documentation "Locator for categorical axes — places ticks at integer positions.
+Ported from matplotlib.category.StrCategoryLocator."))
+
+(defmethod locator-tick-values ((loc categorical-locator) vmin vmax)
+  "Return integer positions 0, 1, 2, ... for each category."
+  (declare (ignore vmin vmax))
+  (loop for i from 0 below (length (categorical-locator-categories loc))
+        collect (float i 1.0d0)))
+
+;;; ============================================================
+;;; CategoricalFormatter — maps integer positions to string labels
+;;; ============================================================
+
+(defclass categorical-formatter (tick-formatter)
+  ((categories :initarg :categories
+               :accessor categorical-formatter-categories
+               :documentation "Ordered list of category strings."))
+  (:documentation "Formatter for categorical axes — maps integer positions to string labels.
+Ported from matplotlib.category.StrCategoryFormatter."))
+
+(defmethod tick-formatter-call ((fmt categorical-formatter) value &optional pos)
+  "Return the category string for this integer position."
+  (declare (ignore pos))
+  (let ((idx (round value)))
+    (if (and (>= idx 0) (< idx (length (categorical-formatter-categories fmt))))
+        (nth idx (categorical-formatter-categories fmt))
+        "")))

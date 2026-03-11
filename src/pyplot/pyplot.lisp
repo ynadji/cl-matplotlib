@@ -181,22 +181,28 @@ Returns (values figure axes) where axes is a single axes, 1D array, or 2D array.
 ;;; ============================================================
 
 (defun plot (xdata ydata &key (color nil) (linewidth 1.5) (linestyle :solid)
-                              (marker :none) (label "") (zorder 2))
+                              (marker :none) (label "") (zorder 2)
+                              (markersize nil) (markeredgecolor nil) (markeredgewidth nil))
   "Plot y versus x as lines and/or markers on the current axes.
 
-XDATA — sequence of x coordinates.
-YDATA — sequence of y coordinates.
-COLOR — line color (string or nil for default).
-LINEWIDTH — line width in points (default 1.5).
-LINESTYLE — :solid, :dashed, :dashdot, :dotted.
-MARKER — marker style keyword (default :none).
-LABEL — legend label string.
-ZORDER — drawing order (default 2).
+XDATA - sequence of x coordinates.
+YDATA - sequence of y coordinates.
+COLOR - line color (string or nil for default).
+LINEWIDTH - line width in points (default 1.5).
+LINESTYLE - :solid, :dashed, :dashdot, :dotted.
+MARKER - marker style keyword (default :none).
+MARKERSIZE - marker size in points (default nil for auto).
+MARKEREDGECOLOR - marker edge color (default nil).
+MARKEREDGEWIDTH - marker edge width in points (default nil).
+LABEL - legend label string.
+ZORDER - drawing order (default 2).
 
 Returns a list containing the created Line2D."
   (mpl.containers:plot (gca) xdata ydata
                         :color color :linewidth linewidth :linestyle linestyle
-                        :marker marker :label label :zorder zorder))
+                        :marker marker :label label :zorder zorder
+                        :markersize markersize :markeredgecolor markeredgecolor
+                        :markeredgewidth markeredgewidth))
 
 (defun scatter (xdata ydata &key (s 36.0) (c nil) (marker :circle)
                                  (color nil) (label "") (zorder 1) (alpha nil))
@@ -580,6 +586,46 @@ If called with arguments, sets the limits."
     (if (and (null ymin) (null ymax))
         (mpl.containers:axes-get-ylim ax)
         (mpl.containers:axes-set-ylim ax :min ymin :max ymax))))
+
+(defun axis (mode)
+  "Control axis visibility and appearance.
+
+MODE - :off to hide all spines and ticks, :on to show them.
+
+When MODE is :off, hides all four spines (left, right, top, bottom)
+and hides tick labels on both axes."
+  (let ((ax (gca)))
+    (cond
+      ((eq mode :off)
+       ;; Hide all spines
+       (let ((spines (mpl.containers:axes-base-spines ax)))
+         (dolist (spine-type '("left" "right" "bottom" "top"))
+           (let ((sp (mpl.containers:spines-ref spines spine-type)))
+             (when sp
+               (setf (mpl.containers:spine-visible-p sp) nil))))
+         ;; Hide tick labels
+         (let ((xaxis (mpl.containers:axes-base-xaxis ax))
+               (yaxis (mpl.containers:axes-base-yaxis ax)))
+           (when xaxis
+             (setf (mpl.containers:axis-tick-labels-visible-p xaxis) nil))
+           (when yaxis
+             (setf (mpl.containers:axis-tick-labels-visible-p yaxis) nil)))))
+      ((eq mode :on)
+       ;; Show all spines
+       (let ((spines (mpl.containers:axes-base-spines ax)))
+         (dolist (spine-type '("left" "right" "bottom" "top"))
+           (let ((sp (mpl.containers:spines-ref spines spine-type)))
+             (when sp
+               (setf (mpl.containers:spine-visible-p sp) t))))
+         ;; Show tick labels
+         (let ((xaxis (mpl.containers:axes-base-xaxis ax))
+               (yaxis (mpl.containers:axes-base-yaxis ax)))
+           (when xaxis
+             (setf (mpl.containers:axis-tick-labels-visible-p xaxis) t))
+           (when yaxis
+             (setf (mpl.containers:axis-tick-labels-visible-p yaxis) t)))))
+      (t
+       (error "axis mode must be :on or :off, got ~A" mode)))))
 
 (defun set-xticks (ticks &key (labels nil))
   "Set x-axis major tick positions. LABELS optionally sets tick label strings."
