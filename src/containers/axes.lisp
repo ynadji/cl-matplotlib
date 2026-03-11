@@ -38,18 +38,19 @@ ZORDER - drawing order (default 2).
 
 Returns a list containing the created Line2D."
   (let* ((effective-color (or color "C0"))
-         (line (make-instance 'mpl.rendering:line-2d
-                              :xdata xdata
-                              :ydata ydata
-                              :color effective-color
-                              :linewidth linewidth
-                              :linestyle linestyle
-                              :marker marker
-                              :label label
-                              :zorder zorder
-                              :markersize markersize
-                              :markeredgecolor markeredgecolor
-                              :markeredgewidth markeredgewidth)))
+         (initargs (append
+                    (list :xdata xdata
+                          :ydata ydata
+                          :color effective-color
+                          :linewidth linewidth
+                          :linestyle linestyle
+                          :marker marker
+                          :label label
+                          :zorder zorder)
+                    (when markersize (list :markersize markersize))
+                    (when markeredgecolor (list :markeredgecolor markeredgecolor))
+                    (when markeredgewidth (list :markeredgewidth markeredgewidth))))
+         (line (apply #'make-instance 'mpl.rendering:line-2d initargs)))
     ;; Set the transform on the line to transData
     (setf (mpl.rendering:artist-transform line)
           (axes-base-trans-data ax))
