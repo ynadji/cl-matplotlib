@@ -109,7 +109,13 @@
    (%propagating-limits :initform nil
                         :accessor axes-base-%propagating-p
                         :type boolean
-                        :documentation "Guard against circular limit propagation."))
+                        :documentation "Guard against circular limit propagation.")
+   ;; Color cycling
+   (color-cycle-index
+     :initarg :color-cycle-index
+     :initform 0
+     :accessor axes-base-color-cycle-index
+     :documentation "Index into the C0-C9 color cycle for auto-color assignment."))
   (:default-initargs :zorder 0)
   (:documentation "Base class for all Axes types.
 Handles coordinate transforms, data limits, artist management, and drawing.
