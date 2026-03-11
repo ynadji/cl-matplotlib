@@ -475,25 +475,60 @@ Used by pcolormesh for efficient rendering of rectangular grids."))
 
 (defmethod collection-get-paths ((qm quad-mesh))
   "Convert quad mesh to individual quadrilateral paths.
-Each quad is defined by 4 corners: (i,j), (i,j+1), (i+1,j+1), (i+1,j)."
+Each quad is defined by 4 corners: (i,j), (i,j+1), (i+1,j+1), (i+1,j).
+Quads are expanded by a small epsilon in data coordinates to eliminate
+anti-aliased seam artifacts at cell boundaries (cl-aa has no AA-off option)."
   (let* ((w (quad-mesh-width qm))
          (h (quad-mesh-height qm))
          (coords (quad-mesh-coordinates qm))
-         (paths nil))
+         (paths nil)
+         ;; Compute expansion epsilon: a fraction of average cell size
+         ;; to create sub-pixel overlap at cell boundaries.
+         ;; This paints over the ~1px anti-aliasing seams.
+         (eps (if (and coords (plusp w) (plusp h))
+                  (let* ((x0 (aref coords 0 0 0))
+                         (x1 (aref coords 0 w 0))
+                         (y0 (aref coords 0 0 1))
+                         (y1 (aref coords h 0 1))
+                         (cell-w (/ (abs (- x1 x0)) (float w 1.0d0)))
+                         (cell-h (/ (abs (- y1 y0)) (float h 1.0d0))))
+                    ;; 3% of cell size — enough for ~0.5px overlap at typical resolution
+                    (* 0.03d0 (max cell-w cell-h)))
+                  0.0d0)))
     (when (and coords (plusp w) (plusp h))
       (dotimes (row h)
         (dotimes (col w)
           (let* ((verts (make-array '(5 2) :element-type 'double-float))
-                 (codes (make-array 5 :element-type '(unsigned-byte 8))))
-            ;; Four corners of quad
-            (setf (aref verts 0 0) (float (aref coords row col 0) 1.0d0)
-                  (aref verts 0 1) (float (aref coords row col 1) 1.0d0)
-                  (aref verts 1 0) (float (aref coords row (1+ col) 0) 1.0d0)
-                  (aref verts 1 1) (float (aref coords row (1+ col) 1) 1.0d0)
-                  (aref verts 2 0) (float (aref coords (1+ row) (1+ col) 0) 1.0d0)
-                  (aref verts 2 1) (float (aref coords (1+ row) (1+ col) 1) 1.0d0)
-                  (aref verts 3 0) (float (aref coords (1+ row) col 0) 1.0d0)
-                  (aref verts 3 1) (float (aref coords (1+ row) col 1) 1.0d0))
+                 (codes (make-array 5 :element-type '(unsigned-byte 8)))
+                 ;; Get the four corners
+                 (x0 (float (aref coords row col 0) 1.0d0))
+                 (y0 (float (aref coords row col 1) 1.0d0))
+                 (x1 (float (aref coords row (1+ col) 0) 1.0d0))
+                 (y1 (float (aref coords row (1+ col) 1) 1.0d0))
+                 (x2 (float (aref coords (1+ row) (1+ col) 0) 1.0d0))
+                 (y2 (float (aref coords (1+ row) (1+ col) 1) 1.0d0))
+                 (x3 (float (aref coords (1+ row) col 0) 1.0d0))
+                 (y3 (float (aref coords (1+ row) col 1) 1.0d0))
+                 ;; Compute cell center for expansion
+                 (cx (* 0.25d0 (+ x0 x1 x2 x3)))
+                 (cy (* 0.25d0 (+ y0 y1 y2 y3))))
+            ;; Expand corners outward from center by eps
+            (flet ((expand (x y)
+                     (let* ((dx (- x cx))
+                            (dy (- y cy))
+                            (dist (sqrt (+ (* dx dx) (* dy dy)))))
+                       (if (> dist 0.001d0)
+                           (values (+ x (* (/ dx dist) eps))
+                                   (+ y (* (/ dy dist) eps)))
+                           (values x y)))))
+              (multiple-value-bind (ex0 ey0) (expand x0 y0)
+                (multiple-value-bind (ex1 ey1) (expand x1 y1)
+                  (multiple-value-bind (ex2 ey2) (expand x2 y2)
+                    (multiple-value-bind (ex3 ey3) (expand x3 y3)
+                      (setf (aref verts 0 0) ex0 (aref verts 0 1) ey0
+                            (aref verts 1 0) ex1 (aref verts 1 1) ey1
+                            (aref verts 2 0) ex2 (aref verts 2 1) ey2
+                            (aref verts 3 0) ex3 (aref verts 3 1) ey3))))))
             ;; Close the quad
             (setf (aref verts 4 0) (aref verts 0 0)
                   (aref verts 4 1) (aref verts 0 1))

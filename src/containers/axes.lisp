@@ -420,15 +420,14 @@ Returns the created Polygon."
   "Toggle grid lines on the axes.
 WHICH: :major, :minor, or :both.
 AXIS: :both, :x, or :y."
-  (declare (ignore which))
   (when (member axis '(:both :x))
     (when (axes-base-xaxis ax)
-      (axis-grid (axes-base-xaxis ax) :visible visible
+      (axis-grid (axes-base-xaxis ax) :visible visible :which which
                  :color color :linewidth linewidth
                  :linestyle linestyle :alpha alpha)))
   (when (member axis '(:both :y))
     (when (axes-base-yaxis ax)
-      (axis-grid (axes-base-yaxis ax) :visible visible
+      (axis-grid (axes-base-yaxis ax) :visible visible :which which
                  :color color :linewidth linewidth
                  :linestyle linestyle :alpha alpha)))
   (setf (mpl.rendering:artist-stale ax) t))

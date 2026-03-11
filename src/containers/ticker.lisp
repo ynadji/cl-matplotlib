@@ -666,12 +666,29 @@ Ported from matplotlib.ticker.PercentFormatter."))
 ;;; AutoMinorLocator — automatic minor ticks
 ;;; ============================================================
 
+(defun %auto-minor-ndivs (major-step)
+  "Determine number of minor subdivisions based on major tick step.
+Matches matplotlib's AutoMinorLocator auto-detection logic."
+  (if (zerop major-step)
+      5
+      (let* ((step (abs major-step))
+             (log-step (log step 10.0d0))
+             (frac (- log-step (floor log-step)))
+             (base (expt 10.0d0 (floor log-step)))
+             (ratio (/ step base)))
+        ;; Match matplotlib: ndivs based on the leading digit of the step
+        (cond
+          ((< (abs (- ratio 1.0d0)) 1d-6) 5)   ; step = 1*10^n => 5 subdivisions
+          ((< (abs (- ratio 2.0d0)) 1d-6) 4)   ; step = 2*10^n => 4 subdivisions
+          ((< (abs (- ratio 2.5d0)) 1d-6) 5)   ; step = 2.5*10^n => 5 subdivisions
+          ((< (abs (- ratio 5.0d0)) 1d-6) 5)   ; step = 5*10^n => 5 subdivisions
+          (t 5)))))
+
 (defclass auto-minor-locator (locator)
   ((num-subdivisions :initarg :num-subdivisions
-                     :initform 5
+                     :initform nil
                      :accessor auto-minor-locator-num-subdivisions
-                     :type integer
-                     :documentation "Number of subdivisions between major ticks (default 5 = 4 minor ticks)."))
+                     :documentation "Number of subdivisions between major ticks, or NIL for auto-detect."))
   (:documentation "Automatically place minor ticks as subdivisions between major ticks.
 Ported from matplotlib.ticker.AutoMinorLocator."))
 
@@ -679,7 +696,6 @@ Ported from matplotlib.ticker.AutoMinorLocator."))
   "Generate minor tick locations as subdivisions between major ticks."
   (let* ((vmin (float vmin 1.0d0))
          (vmax (float vmax 1.0d0))
-         (num-subs (auto-minor-locator-num-subdivisions loc))
          (axis (locator-axis loc))
          (major-locator (when axis (axis-major-locator axis)))
          (minor-ticks nil))
@@ -689,20 +705,25 @@ Ported from matplotlib.ticker.AutoMinorLocator."))
     (when major-locator
       (let ((major-locs (locator-tick-values major-locator vmin vmax)))
         (when (>= (length major-locs) 2)
-          ;; Generate minor ticks between consecutive major ticks
-          (loop for i from 0 below (1- (length major-locs))
-                do (let* ((major1 (nth i major-locs))
-                          (major2 (nth (1+ i) major-locs))
-                          (step (/ (- major2 major1) num-subs)))
-                     ;; Add minor ticks between major1 and major2 (exclusive of endpoints)
-                     (loop for j from 1 below num-subs
-                           do (let ((minor-loc (+ major1 (* j step))))
-                                (when (and (>= minor-loc (* vmin 0.999d0))
-                                           (<= minor-loc (* vmax 1.001d0)))
-                                  (push minor-loc minor-ticks))))))
-          ;; Sort and return
-          (sort (nreverse minor-ticks) #'<))))
-    ;; Fallback: return empty list if no major locator
+          (let* ((major-step (- (second major-locs) (first major-locs)))
+                 (num-subs (or (auto-minor-locator-num-subdivisions loc)
+                               (%auto-minor-ndivs major-step)))
+                 (sub-step (/ major-step num-subs))
+                 ;; Extend one major step before first and after last
+                 (first-major (first major-locs))
+                 (last-major (car (last major-locs)))
+                 (range-tol (* (abs (- vmax vmin)) 1d-6)))
+            ;; Generate minor ticks from one step before first major to one step after last
+            (loop for major from (- first-major major-step) by major-step
+                  while (<= major (+ last-major (* major-step 0.5d0)))
+                  do (loop for j from 1 below num-subs
+                           do (let ((minor-loc (+ major (* j sub-step))))
+                                (when (and (>= minor-loc (- vmin range-tol))
+                                           (<= minor-loc (+ vmax range-tol)))
+                                  (push minor-loc minor-ticks)))))
+            ;; Sort and return
+            (setf minor-ticks (sort (nreverse minor-ticks) #'<))))))
+    ;; Return minor ticks (or empty list if no major locator)
     (or minor-ticks nil)))
 
 ;;; ============================================================

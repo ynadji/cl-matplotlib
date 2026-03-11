@@ -96,6 +96,10 @@ Returns the new axes-base."
                                         :facecolor "white"
                                         :frameon nil
                                         :zorder 0)))
+                ;; Make colorbar axes invisible — colorbar draws its own content
+                ;; (gradient, border, ticks). The axes is only used for bbox.
+                (setf (mpl.rendering:artist-visible cax) nil)
+                (setf (axes-base-spines cax) nil)
                 (push cax (figure-axes fig))
                 (setf (mpl.rendering:artist-figure cax) fig)
                 cax))
@@ -115,6 +119,9 @@ Returns the new axes-base."
                                         :facecolor "white"
                                         :frameon nil
                                         :zorder 0)))
+                ;; Make colorbar axes invisible — colorbar draws its own content
+                (setf (mpl.rendering:artist-visible cax) nil)
+                (setf (axes-base-spines cax) nil)
                 (push cax (figure-axes fig))
                 (setf (mpl.rendering:artist-figure cax) fig)
                 cax)))))))
@@ -147,16 +154,23 @@ matching matplotlib's colorbar tick generation."
         (list 0.0d0 0.25d0 0.5d0 0.75d0 1.0d0))))
 
 (defun %colorbar-format-tick (value &optional format-string)
-  "Format a tick value as a string."
+  "Format a tick value as a string, matching matplotlib's ScalarFormatter."
   (if format-string
       (format nil format-string value)
-      ;; Default: use scalar formatter-like output
-      (let ((abs-val (abs value)))
-        (cond
-          ((zerop value) "0")
-          ((and (>= abs-val 0.01d0) (<= abs-val 10000.0d0))
-           (format nil "~,2F" value))
-          (t (format nil "~,2E" value))))))
+      ;; Default: use scalar formatter-like output (strip trailing zeros)
+      (let* ((abs-val (abs value))
+             (raw (cond
+                    ((< abs-val 1d-10) "0.0")
+                    ((and (>= abs-val 0.01d0) (<= abs-val 10000.0d0))
+                     (format nil "~,1F" value))
+                    (t (format nil "~,2E" value)))))
+        ;; Strip trailing zeros after decimal point, but keep at least one
+        (if (find #\. raw)
+            (let ((trimmed (string-right-trim "0" raw)))
+              (if (char= (char trimmed (1- (length trimmed))) #\.)
+                  (concatenate 'string trimmed "0")
+                  trimmed))
+            raw))))
 
 ;;; ============================================================
 ;;; Colorbar draw method
@@ -185,46 +199,49 @@ matching matplotlib's colorbar tick generation."
   "Draw the color gradient for the colorbar."
   (let* ((cax (colorbar-cax cb))
          (mappable (colorbar-mappable cb))
-         (n-levels (colorbar-n-levels cb))
          (orientation (colorbar-orientation cb)))
     (multiple-value-bind (dx dy dw dh) (%compute-display-bbox cax)
-      (if (eq orientation :vertical)
-          ;; Vertical: draw horizontal strips from bottom to top
-          (let ((strip-height (/ dh (float n-levels 1.0d0))))
-            (dotimes (i n-levels)
-              (let* ((frac (/ (float i 1.0d0) (float (1- n-levels) 1.0d0)))
-                     (rgba (mpl.primitives:colormap-call
-                            (mpl.primitives:sm-cmap mappable) frac))
-                     (color-list (list (aref rgba 0) (aref rgba 1)
-                                       (aref rgba 2) (aref rgba 3)))
-                     (strip-y (+ dy (* i strip-height)))
-                     (path (mpl.primitives:path-unit-rectangle))
-                     (transform (mpl.primitives:make-affine-2d
-                                 :scale (list dw strip-height)
-                                 :translate (list dx strip-y)))
-                     (gc (mpl.backends:make-graphics-context
-                          :facecolor color-list
-                          :edgecolor nil
-                          :linewidth 0.0)))
-                (mpl.backends:draw-path renderer gc path transform color-list))))
-          ;; Horizontal: draw vertical strips from left to right
-          (let ((strip-width (/ dw (float n-levels 1.0d0))))
-            (dotimes (i n-levels)
-              (let* ((frac (/ (float i 1.0d0) (float (1- n-levels) 1.0d0)))
-                     (rgba (mpl.primitives:colormap-call
-                            (mpl.primitives:sm-cmap mappable) frac))
-                     (color-list (list (aref rgba 0) (aref rgba 1)
-                                       (aref rgba 2) (aref rgba 3)))
-                     (strip-x (+ dx (* i strip-width)))
-                     (path (mpl.primitives:path-unit-rectangle))
-                     (transform (mpl.primitives:make-affine-2d
-                                 :scale (list strip-width dh)
-                                 :translate (list strip-x dy)))
-                     (gc (mpl.backends:make-graphics-context
-                          :facecolor color-list
-                          :edgecolor nil
-                          :linewidth 0.0)))
-                (mpl.backends:draw-path renderer gc path transform color-list))))))))
+      ;; Use pixel-level resolution to avoid anti-aliasing artifacts between strips
+      (let ((n-levels (max (colorbar-n-levels cb) (ceiling (if (eq orientation :vertical) dh dw)))))
+        (if (eq orientation :vertical)
+            ;; Vertical: draw horizontal strips from bottom to top
+            ;; Constrain width to aspect ratio 20:1 (matching matplotlib default)
+            (let* ((strip-width (min dw (/ dh 20.0d0)))
+                   (strip-height (/ dh (float n-levels 1.0d0))))
+              (dotimes (i n-levels)
+                (let* ((frac (/ (float i 1.0d0) (float (1- n-levels) 1.0d0)))
+                       (rgba (mpl.primitives:colormap-call
+                              (mpl.primitives:sm-cmap mappable) frac))
+                       (color-list (list (aref rgba 0) (aref rgba 1)
+                                         (aref rgba 2) (aref rgba 3)))
+                       (strip-y (+ dy (* i strip-height)))
+                       (path (mpl.primitives:path-unit-rectangle))
+                       (transform (mpl.primitives:make-affine-2d
+                                   :scale (list strip-width strip-height)
+                                   :translate (list dx strip-y)))
+                       (gc (mpl.backends:make-graphics-context
+                            :facecolor color-list
+                            :edgecolor nil
+                            :linewidth 0.0)))
+                  (mpl.backends:draw-path renderer gc path transform color-list))))
+            ;; Horizontal: draw vertical strips from left to right
+            (let ((strip-width (/ dw (float n-levels 1.0d0))))
+              (dotimes (i n-levels)
+                (let* ((frac (/ (float i 1.0d0) (float (1- n-levels) 1.0d0)))
+                       (rgba (mpl.primitives:colormap-call
+                              (mpl.primitives:sm-cmap mappable) frac))
+                       (color-list (list (aref rgba 0) (aref rgba 1)
+                                         (aref rgba 2) (aref rgba 3)))
+                       (strip-x (+ dx (* i strip-width)))
+                       (path (mpl.primitives:path-unit-rectangle))
+                       (transform (mpl.primitives:make-affine-2d
+                                   :scale (list strip-width dh)
+                                   :translate (list strip-x dy)))
+                       (gc (mpl.backends:make-graphics-context
+                            :facecolor color-list
+                            :edgecolor nil
+                            :linewidth 0.0)))
+                  (mpl.backends:draw-path renderer gc path transform color-list)))))))))
 
 (defun %colorbar-draw-ticks (cb renderer)
   "Draw tick marks and labels for the colorbar."
@@ -235,18 +252,30 @@ matching matplotlib's colorbar tick generation."
          (orientation (colorbar-orientation cb))
          (tick-size 5.0d0)
          (tick-pad 3.0d0)
-         (fontsize 8.0d0))
+         (fontsize 8.0d0)
+         ;; Compute format string from tick spacing (like matplotlib ScalarFormatter)
+         (auto-fmt (when (>= (length ticks) 2)
+                    (let* ((step (abs (- (second ticks) (first ticks))))
+                           ;; Find minimum decimals to represent step exactly
+                           (ndec (loop for d from 0 to 10
+                                       when (< (abs (- (* step (expt 10.0d0 d))
+                                                        (round (* step (expt 10.0d0 d)))))
+                                                  1d-6)
+                                       return d
+                                       finally (return 1))))
+                      (format nil "~~,~dF" (max 1 ndec))))))
     (when (and cax ticks norm)
       (multiple-value-bind (dx dy dw dh) (%compute-display-bbox cax)
         (dolist (tick-val ticks)
           (let ((frac (mpl.primitives:normalize-call norm (float tick-val 1.0d0)))
-                (label (%colorbar-format-tick tick-val (colorbar-format cb))))
+                (label (%colorbar-format-tick tick-val (or (colorbar-format cb) auto-fmt))))
             ;; Clamp fraction to valid range
             (setf frac (max 0.0d0 (min 1.0d0 frac)))
             (if (eq orientation :vertical)
                 ;; Vertical: ticks on the right side
-                (let* ((tick-y (+ dy (* frac dh)))
-                       (tick-x0 (+ dx dw))
+                (let* ((strip-width (min dw (/ dh 20.0d0)))
+                       (tick-y (+ dy (* frac dh)))
+                       (tick-x0 (+ dx strip-width))
                        (tick-x1 (+ tick-x0 tick-size))
                        ;; Draw tick mark
                        (verts (make-array '(2 2) :element-type 'double-float))
@@ -302,9 +331,11 @@ matching matplotlib's colorbar tick generation."
   (let ((cax (colorbar-cax cb)))
     (when cax
       (multiple-value-bind (dx dy dw dh) (%compute-display-bbox cax)
-        (let* ((path (mpl.primitives:path-unit-rectangle))
+        ;; Use same aspect-constrained width as gradient
+        (let* ((strip-width (min dw (/ dh 20.0d0)))
+               (path (mpl.primitives:path-unit-rectangle))
                (transform (mpl.primitives:make-affine-2d
-                           :scale (list dw dh)
+                           :scale (list strip-width dh)
                            :translate (list dx dy)))
                (gc (mpl.backends:make-graphics-context
                     :facecolor nil
