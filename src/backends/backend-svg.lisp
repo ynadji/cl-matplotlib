@@ -312,6 +312,38 @@ Returns the clip ID string (e.g. \"clip-1\") or NIL if no clip rectangle."
         (format defs "</clipPath>~%")
         clip-id))))
 
+
+;;; ============================================================
+;;; SVG Hatch pattern rendering
+;;; ============================================================
+
+(defun %emit-svg-hatch-pattern (renderer hatch-str edge-color alpha)
+  "Emit an SVG <pattern> definition for HATCH-STR into defs-stream.
+Returns the pattern ID string for use in fill=\"url(#id)\".
+Uses hatch-get-path for geometry matching the Vecto backend exactly."
+  (let* ((dpi (renderer-dpi renderer))
+         (tile-size (float dpi 1.0d0))
+         (hatch-path (mpl.rendering:hatch-get-path hatch-str 6))
+         (pattern-id (%next-id renderer "hatch"))
+         (defs (renderer-svg-defs-stream renderer))
+         ;; Hatch stroke color (use edge color or black)
+         (color (or edge-color '(0.0d0 0.0d0 0.0d0 1.0d0)))
+         (hatch-color (list (first color) (second color) (third color)
+                           (* (fourth color) (coerce alpha 'double-float)))))
+    (when hatch-path
+      (multiple-value-bind (stroke-hex stroke-op) (%color-to-svg hatch-color)
+        ;; Convert hatch-path to SVG d-attribute with tile-size scaling
+        (let* ((tile-xf (mpl.primitives:make-affine-2d
+                          :scale (list tile-size tile-size)))
+               (d (%trace-path-to-svg hatch-path tile-xf)))
+          ;; Emit pattern
+          (format defs "<pattern id=\"~A\" patternUnits=\"userSpaceOnUse\" width=\"~A\" height=\"~A\">~%"
+                  pattern-id (%format-float tile-size) (%format-float tile-size))
+          (format defs "<path d=\"~A\" fill=\"none\" stroke=\"~A\" stroke-opacity=\"~A\" stroke-width=\"1.0\"/>~%"
+                  d stroke-hex (%format-float stroke-op))
+          (format defs "</pattern>~%"))))
+    pattern-id))
+
 ;;; ============================================================
 ;;; draw-path — Core rendering method
 ;;; ============================================================
@@ -363,7 +395,16 @@ Emits to renderer's output-stream; clip definitions go to defs-stream."
             ;; Clip path reference
             (when clip-id
               (format out " clip-path=\"url(#~A)\"" clip-id))
-             (format out "/>~%")))))))
+             (format out "/>~%")
+            ;; Render hatch pattern overlay if present
+            (let ((hatch (mpl.rendering:gc-hatch gc)))
+              (when (and hatch (stringp hatch) (not (string= hatch "")) face-color)
+                (let ((pattern-id (%emit-svg-hatch-pattern renderer hatch edge-color gc-alpha)))
+                  (format out "<path d=\"~A\" fill=\"url(#~A)\" fill-opacity=\"1.0\" stroke=\"none\" stroke-opacity=\"0.00\""
+                          d pattern-id)
+                  (when clip-id
+                    (format out " clip-path=\"url(#~A)\"" clip-id))
+                  (format out "/>~%"))))))))))
 
 ;;; ============================================================
 ;;; Bridge: renderer-draw-path from artist protocol → draw-path
