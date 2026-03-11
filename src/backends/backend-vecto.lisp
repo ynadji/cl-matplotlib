@@ -304,6 +304,65 @@ pixel-center offset, then snaps to floor+0.5."
             (t (incf i))))))))
 
 ;;; ============================================================
+;;; Hatch rendering
+;;; ============================================================
+
+(defun %render-hatch-vecto (path transform gc renderer)
+  "Render hatch pattern over a filled path area.
+Clips to PATH shape, then tiles the hatch pattern across the bounding box.
+HATCH-PATH from hatch-get-path is in [0,1]x[0,1] unit space, scaled by tile-size."
+  (let* ((hatch-str (mpl.rendering:gc-hatch gc))
+         (hatch-path (mpl.rendering:hatch-get-path hatch-str 6)))
+    (when hatch-path
+      (let* ((dpi (renderer-dpi renderer))
+             (tile-size (float dpi 1.0d0))
+             ;; Compute display-space bounding box of the path
+             (verts (mpl.primitives:mpl-path-vertices path))
+             (n (array-dimension verts 0))
+             (min-x most-positive-double-float)
+             (min-y most-positive-double-float)
+             (max-x most-negative-double-float)
+             (max-y most-negative-double-float))
+        (dotimes (i n)
+          (when transform
+            (let ((result (mpl.primitives:transform-point
+                           transform (list (aref verts i 0) (aref verts i 1)))))
+              (let ((tx (aref result 0))
+                    (ty (aref result 1)))
+                (setf min-x (min min-x tx) max-x (max max-x tx)
+                      min-y (min min-y ty) max-y (max max-y ty))))))
+        (when (> min-x max-x) (return-from %render-hatch-vecto nil))
+        ;; Use nested graphics state for clipping + hatch stroke
+        (vecto:with-graphics-state
+          ;; Clip to the patch shape
+          (%trace-path-to-vecto path transform :y-offset -0.7d0)
+          (vecto:clip-path)
+          (vecto:end-path-no-op)
+          ;; Set hatch stroke color (use edge color, default to black)
+          (let* ((edge-color (or (%gc-edge-color gc) (list 0.0 0.0 0.0 1.0)))
+                 (alpha (mpl.rendering:gc-alpha gc))
+                 (r (first edge-color))
+                 (g (second edge-color))
+                 (b (third edge-color))
+                 (a (* (fourth edge-color) (float alpha 1.0))))
+            (vecto:set-rgba-stroke (float r 1.0) (float g 1.0) (float b 1.0) (float a 1.0)))
+          (vecto:set-line-width 1.0)
+          ;; Tile the hatch path across the bounding box
+          (let ((tx0 (floor min-x tile-size))
+                (ty0 (floor min-y tile-size))
+                (tx1 (ceiling max-x tile-size))
+                (ty1 (ceiling max-y tile-size)))
+            (loop for txi from tx0 below tx1
+                  do (loop for tyi from ty0 below ty1
+                           do (let* ((ox (float (* txi tile-size) 1.0d0))
+                                      (oy (float (* tyi tile-size) 1.0d0))
+                                      (tile-xf (mpl.primitives:make-affine-2d
+                                                 :scale (list tile-size tile-size)
+                                                 :translate (list ox oy))))
+                                (%trace-path-to-vecto hatch-path tile-xf))))
+            (vecto:stroke)))))))
+
+;;; ============================================================
 ;;; draw-path — Core rendering method
 ;;; ============================================================
 
@@ -366,7 +425,11 @@ Must be called within an active canvas context (see canvas-vecto)."
         ;; Leave smooth curves (sine waves, etc.) unsnapped to avoid distortion.
         (%trace-path-to-vecto path transform
                               :snap-to-half-pixels (%path-axis-aligned-p path transform))
-        (vecto:stroke)))))
+        (vecto:stroke)))
+    ;; Render hatch pattern after fill+stroke (clipped to patch shape)
+    (let ((hatch (mpl.rendering:gc-hatch gc)))
+      (when (and hatch (stringp hatch) (not (string= hatch "")) face-color)
+        (%render-hatch-vecto path transform gc renderer)))))
 
 ;;; ============================================================
 ;;; Bridge: renderer-draw-path from artist protocol → draw-path

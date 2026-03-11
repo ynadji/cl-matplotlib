@@ -81,7 +81,7 @@ get-artist-transform (data coords → display coords)."
                       :alpha (or (artist-alpha p) 1.0)
                       :antialiased (patch-antialiased p)
                       :capstyle (patch-capstyle p)
-                      :joinstyle (patch-joinstyle p))))
+                      :joinstyle (patch-joinstyle p)                      :hatch (patch-hatch p))))
     (renderer-draw-path renderer gc path transform
                         :fill (and (patch-fill p) (patch-facecolor p))
                         :stroke (patch-edgecolor p)))
