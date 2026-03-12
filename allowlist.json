@@ -2,5 +2,6 @@
   "pcolormesh-basic": "Gouraud shading not implemented: CL uses flat-color quad approximation instead of smooth interpolation. Permanent limitation. PNG=0.648, SVG=0.661, PDF=0.673",
   "pcolormesh": "Gouraud shading not implemented: CL uses flat-color quad approximation instead of smooth interpolation. Permanent limitation. PNG=0.694, SVG=0.698, PDF=0.717",
   "color-cycle": "Minor color rendering delta between CL and Python color cycling. PNG=0.946 (just below 0.95 threshold). Permanent difference in color sequence generation.",
-  "hexbin-basic": "Hexbin grid algorithm differs: CL uses dy=dx*sqrt(3) while matplotlib uses different grid spacing. Produces different hex positions, counts, and colors for same data. Deterministic data used. PNG=0.52. Permanent limitation requiring hexbin algorithm rewrite."
+  "hexbin-basic": "Hexbin grid algorithm differs: CL uses dy=dx*sqrt(3) while matplotlib uses different grid spacing. Produces different hex positions, counts, and colors for same data. Deterministic data used. PNG=0.52. Permanent limitation requiring hexbin algorithm rewrite.",
+  "minor-ticks-demo": "Minor grid line alpha rendering differs slightly between CL Vecto backend and matplotlib Agg backend. PNG=0.9188. Layout and content correct, user visually approved."
 }
