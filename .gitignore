@@ -3,3 +3,4 @@ reference_images/
 comparison_report/
 *.pyc
 __pycache__/
+*.fasl
