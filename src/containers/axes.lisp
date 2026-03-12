@@ -456,16 +456,20 @@ Returns the created Polygon (or list of Polygons when WHERE is used)."
             (xvec (coerce xdata 'vector))
             (y1vec (coerce y1data 'vector))
             (y2vec (coerce y2data 'vector)))
-        (mapcar
-         (lambda (region)
-           (let* ((start (car region))
-                  (end (cdr region))
-                  (sub-x (subseq xvec start (1+ end)))
-                  (sub-y1 (subseq y1vec start (1+ end)))
-                  (sub-y2 (subseq y2vec start (1+ end))))
-             (fill-between ax sub-x sub-y1 sub-y2
-                           :color color :alpha alpha :label label :zorder zorder)))
-         regions))))
+        (let ((first-region t))
+          (mapcar
+           (lambda (region)
+             (let* ((start (car region))
+                    (end (cdr region))
+                    (sub-x (subseq xvec start (1+ end)))
+                    (sub-y1 (subseq y1vec start (1+ end)))
+                    (sub-y2 (subseq y2vec start (1+ end)))
+                    (this-label (if first-region label "")))
+               (setf first-region nil)
+               (fill-between ax sub-x sub-y1 sub-y2
+                             :color color :alpha alpha :label this-label :zorder zorder)))
+           regions)))))
+
 
 ;;; ============================================================
 ;;; axhspan / axvspan — shaded region spans
