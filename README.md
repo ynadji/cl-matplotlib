@@ -4,10 +4,14 @@
 
 cl-matplotlib is a Common Lisp port of Python's [matplotlib](https://matplotlib.org), providing a pyplot-style API for creating publication-quality plots.
 
-<img src="examples/scatter-colormap.png" width="400" alt="Scatter with colormap">
-<img src="examples/hexbin-basic.png" width="400" alt="Hexbin density plot">
-<img src="examples/annotated-heatmap.png" width="400" alt="Annotated heatmap">
-<img src="examples/bar-hatch.png" width="400" alt="Bar chart with hatch patterns">
+<p float="left">
+  <img src="examples/scatter-colormap.png" width="50%" alt="Scatter with colormap">
+  <img src="examples/hexbin-basic.png" width="50%" alt="Hexbin density plot">
+</p>
+<p float="left">
+  <img src="examples/annotated-heatmap.png" width="50%" alt="Annotated heatmap">
+  <img src="examples/bar-hatch.png" width="50%" alt="Bar chart with hatch patterns">
+</p>
 
 ## Quick Start
 
