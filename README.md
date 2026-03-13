@@ -13,9 +13,23 @@ cl-matplotlib is a Common Lisp port of Python's [matplotlib](https://matplotlib.
   <img src="examples/bar-hatch.png" width="45%" alt="Bar chart with hatch patterns">
 </p>
 
-## Quick Start
+## Install
+
+### Prerequisites
+- Common Lisp (SBCL or CCL)
+- [Quicklisp](https://www.quicklisp.org/)
+
+### Setup
+Clone this repository into your Quicklisp local-projects directory, then:
 
 ```lisp
+(ql:quickload :cl-matplotlib-pyplot)
+```
+
+## Example Plot
+
+```lisp
+(ql:quickload :cl-matplotlib)
 (use-package :cl-matplotlib.pyplot)
 
 (figure)
@@ -29,18 +43,7 @@ cl-matplotlib is a Common Lisp port of Python's [matplotlib](https://matplotlib.
   (savefig "/tmp/plot.png"))
 ```
 
-## Install
-
-### Prerequisites
-- Common Lisp (SBCL or CCL)
-- [Quicklisp](https://www.quicklisp.org/)
-
-### Setup
-Clone this repository into your Quicklisp local-projects directory, then:
-
-```lisp
-(ql:quickload :cl-matplotlib-pyplot)
-```
+See the Lisp files in [examples](examples/) for other plots.
 
 ## Documentation
 
