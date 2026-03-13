@@ -1,0 +1,751 @@
+{
+  "threshold": 0.9,
+  "overall": {
+    "total": 92,
+    "passed": 79,
+    "failed": 9,
+    "skipped": 0,
+    "allowed": 4,
+    "mean_ssim": 0.9289512608695653,
+    "min_ssim": 0.613779,
+    "max_ssim": 0.986209
+  },
+  "examples": [
+    {
+      "name": "annotated-heatmap",
+      "reference": "reference_images/annotated-heatmap.svg",
+      "actual": "examples/annotated-heatmap.svg",
+      "ssim": 0.94139,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "annotations",
+      "reference": "reference_images/annotations.svg",
+      "actual": "examples/annotations.svg",
+      "ssim": 0.915095,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "bar-chart",
+      "reference": "reference_images/bar-chart.svg",
+      "actual": "examples/bar-chart.svg",
+      "ssim": 0.919503,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "bar-colors",
+      "reference": "reference_images/bar-colors.svg",
+      "actual": "examples/bar-colors.svg",
+      "ssim": 0.943055,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "bar-errorbars",
+      "reference": "reference_images/bar-errorbars.svg",
+      "actual": "examples/bar-errorbars.svg",
+      "ssim": 0.966224,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "bar-hatch",
+      "reference": "reference_images/bar-hatch.svg",
+      "actual": "examples/bar-hatch.svg",
+      "ssim": 0.942526,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "bar-labels",
+      "reference": "reference_images/bar-labels.svg",
+      "actual": "examples/bar-labels.svg",
+      "ssim": 0.960683,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "barh",
+      "reference": "reference_images/barh.svg",
+      "actual": "examples/barh.svg",
+      "ssim": 0.925367,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "boxplot-styles",
+      "reference": "reference_images/boxplot-styles.svg",
+      "actual": "examples/boxplot-styles.svg",
+      "ssim": 0.936163,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "boxplot",
+      "reference": "reference_images/boxplot.svg",
+      "actual": "examples/boxplot.svg",
+      "ssim": 0.931918,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "categorical-bar",
+      "reference": "reference_images/categorical-bar.svg",
+      "actual": "examples/categorical-bar.svg",
+      "ssim": 0.950052,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "categorical-scatter",
+      "reference": "reference_images/categorical-scatter.svg",
+      "actual": "examples/categorical-scatter.svg",
+      "ssim": 0.949937,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "color-cycle",
+      "reference": "reference_images/color-cycle.svg",
+      "actual": "examples/color-cycle.svg",
+      "ssim": 0.878699,
+      "status": "ALLOW",
+      "note": "ALLOW: Minor color rendering delta between CL and Python color cycling. PNG=0.946 (just below 0.95 threshold). Permanent difference in color sequence generation."
+    },
+    {
+      "name": "colorbar-custom",
+      "reference": "reference_images/colorbar-custom.svg",
+      "actual": "examples/colorbar-custom.svg",
+      "ssim": 0.909752,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "contour-demo",
+      "reference": "reference_images/contour-demo.svg",
+      "actual": "examples/contour-demo.svg",
+      "ssim": 0.942551,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "contour-lines",
+      "reference": "reference_images/contour-lines.svg",
+      "actual": "examples/contour-lines.svg",
+      "ssim": 0.939236,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "curve-error-band",
+      "reference": "reference_images/curve-error-band.svg",
+      "actual": "examples/curve-error-band.svg",
+      "ssim": 0.879272,
+      "status": "FAIL",
+      "note": ""
+    },
+    {
+      "name": "custom-markers",
+      "reference": "reference_images/custom-markers.svg",
+      "actual": "examples/custom-markers.svg",
+      "ssim": 0.895271,
+      "status": "FAIL",
+      "note": ""
+    },
+    {
+      "name": "custom-ticks",
+      "reference": "reference_images/custom-ticks.svg",
+      "actual": "examples/custom-ticks.svg",
+      "ssim": 0.963227,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "donut-chart",
+      "reference": "reference_images/donut-chart.svg",
+      "actual": "examples/donut-chart.svg",
+      "ssim": 0.972046,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "errorbar-features",
+      "reference": "reference_images/errorbar-features.svg",
+      "actual": "examples/errorbar-features.svg",
+      "ssim": 0.928387,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "errorbar",
+      "reference": "reference_images/errorbar.svg",
+      "actual": "examples/errorbar.svg",
+      "ssim": 0.901847,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "figure-labels",
+      "reference": "reference_images/figure-labels.svg",
+      "actual": "examples/figure-labels.svg",
+      "ssim": 0.955968,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "figure-sizes",
+      "reference": "reference_images/figure-sizes.svg",
+      "actual": "examples/figure-sizes.svg",
+      "ssim": 0.913726,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "fill-between-alpha",
+      "reference": "reference_images/fill-between-alpha.svg",
+      "actual": "examples/fill-between-alpha.svg",
+      "ssim": 0.891326,
+      "status": "FAIL",
+      "note": ""
+    },
+    {
+      "name": "fill-between-where",
+      "reference": "reference_images/fill-between-where.svg",
+      "actual": "examples/fill-between-where.svg",
+      "ssim": 0.928605,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "fill-between",
+      "reference": "reference_images/fill-between.svg",
+      "actual": "examples/fill-between.svg",
+      "ssim": 0.899372,
+      "status": "FAIL",
+      "note": ""
+    },
+    {
+      "name": "filled-contour",
+      "reference": "reference_images/filled-contour.svg",
+      "actual": "examples/filled-contour.svg",
+      "ssim": 0.937914,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "gridspec-custom",
+      "reference": "reference_images/gridspec-custom.svg",
+      "actual": "examples/gridspec-custom.svg",
+      "ssim": 0.914203,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "gridspec-multi",
+      "reference": "reference_images/gridspec-multi.svg",
+      "actual": "examples/gridspec-multi.svg",
+      "ssim": 0.920188,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "hexbin-basic",
+      "reference": "reference_images/hexbin-basic.svg",
+      "actual": "examples/hexbin-basic.svg",
+      "ssim": 0.613779,
+      "status": "ALLOW",
+      "note": "ALLOW: Hexbin grid algorithm differs: CL uses dy=dx*sqrt(3) while matplotlib uses different grid spacing. Produces different hex positions, counts, and colors for same data. Deterministic data used. PNG=0.52. Permanent limitation requiring hexbin algorithm rewrite."
+    },
+    {
+      "name": "histogram-multi",
+      "reference": "reference_images/histogram-multi.svg",
+      "actual": "examples/histogram-multi.svg",
+      "ssim": 0.941557,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "histogram-stacked",
+      "reference": "reference_images/histogram-stacked.svg",
+      "actual": "examples/histogram-stacked.svg",
+      "ssim": 0.949101,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "histogram-types",
+      "reference": "reference_images/histogram-types.svg",
+      "actual": "examples/histogram-types.svg",
+      "ssim": 0.914794,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "histogram",
+      "reference": "reference_images/histogram.svg",
+      "actual": "examples/histogram.svg",
+      "ssim": 0.912118,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "hlines-vlines",
+      "reference": "reference_images/hlines-vlines.svg",
+      "actual": "examples/hlines-vlines.svg",
+      "ssim": 0.956117,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "horizontal-bar-stacked",
+      "reference": "reference_images/horizontal-bar-stacked.svg",
+      "actual": "examples/horizontal-bar-stacked.svg",
+      "ssim": 0.93143,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "imshow-heatmap",
+      "reference": "reference_images/imshow-heatmap.svg",
+      "actual": "examples/imshow-heatmap.svg",
+      "ssim": 0.975399,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "inverted-axes",
+      "reference": "reference_images/inverted-axes.svg",
+      "actual": "examples/inverted-axes.svg",
+      "ssim": 0.964429,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "legend-outside",
+      "reference": "reference_images/legend-outside.svg",
+      "actual": "examples/legend-outside.svg",
+      "ssim": 0.958998,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "legend-styles",
+      "reference": "reference_images/legend-styles.svg",
+      "actual": "examples/legend-styles.svg",
+      "ssim": 0.907245,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "log-scale",
+      "reference": "reference_images/log-scale.svg",
+      "actual": "examples/log-scale.svg",
+      "ssim": 0.937875,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "logit-demo",
+      "reference": "reference_images/logit-demo.svg",
+      "actual": "examples/logit-demo.svg",
+      "ssim": 0.93135,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "loglog-plot",
+      "reference": "reference_images/loglog-plot.svg",
+      "actual": "examples/loglog-plot.svg",
+      "ssim": 0.809849,
+      "status": "FAIL",
+      "note": ""
+    },
+    {
+      "name": "markers-all",
+      "reference": "reference_images/markers-all.svg",
+      "actual": "examples/markers-all.svg",
+      "ssim": 0.981721,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "minor-ticks-demo",
+      "reference": "reference_images/minor-ticks-demo.svg",
+      "actual": "examples/minor-ticks-demo.svg",
+      "ssim": 0.830803,
+      "status": "FAIL",
+      "note": ""
+    },
+    {
+      "name": "multi-line-styles",
+      "reference": "reference_images/multi-line-styles.svg",
+      "actual": "examples/multi-line-styles.svg",
+      "ssim": 0.874462,
+      "status": "FAIL",
+      "note": ""
+    },
+    {
+      "name": "multi-line",
+      "reference": "reference_images/multi-line.svg",
+      "actual": "examples/multi-line.svg",
+      "ssim": 0.869761,
+      "status": "FAIL",
+      "note": ""
+    },
+    {
+      "name": "pcolormesh-basic",
+      "reference": "reference_images/pcolormesh-basic.svg",
+      "actual": "examples/pcolormesh-basic.svg",
+      "ssim": 0.831918,
+      "status": "ALLOW",
+      "note": "ALLOW: Gouraud shading not implemented: CL uses flat-color quad approximation instead of smooth interpolation. Permanent limitation. PNG=0.648, SVG=0.661, PDF=0.673"
+    },
+    {
+      "name": "pcolormesh",
+      "reference": "reference_images/pcolormesh.svg",
+      "actual": "examples/pcolormesh.svg",
+      "ssim": 0.826886,
+      "status": "ALLOW",
+      "note": "ALLOW: Gouraud shading not implemented: CL uses flat-color quad approximation instead of smooth interpolation. Permanent limitation. PNG=0.694, SVG=0.698, PDF=0.717"
+    },
+    {
+      "name": "pie-chart",
+      "reference": "reference_images/pie-chart.svg",
+      "actual": "examples/pie-chart.svg",
+      "ssim": 0.986209,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "pie-explode",
+      "reference": "reference_images/pie-explode.svg",
+      "actual": "examples/pie-explode.svg",
+      "ssim": 0.975588,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "pie-features",
+      "reference": "reference_images/pie-features.svg",
+      "actual": "examples/pie-features.svg",
+      "ssim": 0.978284,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "polar-line",
+      "reference": "reference_images/polar-line.svg",
+      "actual": "examples/polar-line.svg",
+      "ssim": 0.978299,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "polar-multi",
+      "reference": "reference_images/polar-multi.svg",
+      "actual": "examples/polar-multi.svg",
+      "ssim": 0.976626,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "polar-rose",
+      "reference": "reference_images/polar-rose.svg",
+      "actual": "examples/polar-rose.svg",
+      "ssim": 0.975039,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "polar-scatter",
+      "reference": "reference_images/polar-scatter.svg",
+      "actual": "examples/polar-scatter.svg",
+      "ssim": 0.980439,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "polar-spiral",
+      "reference": "reference_images/polar-spiral.svg",
+      "actual": "examples/polar-spiral.svg",
+      "ssim": 0.977098,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "polar-styled",
+      "reference": "reference_images/polar-styled.svg",
+      "actual": "examples/polar-styled.svg",
+      "ssim": 0.975533,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "quiver-basic",
+      "reference": "reference_images/quiver-basic.svg",
+      "actual": "examples/quiver-basic.svg",
+      "ssim": 0.912327,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "quiver-colored",
+      "reference": "reference_images/quiver-colored.svg",
+      "actual": "examples/quiver-colored.svg",
+      "ssim": 0.93466,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "quiver-gradient",
+      "reference": "reference_images/quiver-gradient.svg",
+      "actual": "examples/quiver-gradient.svg",
+      "ssim": 0.933488,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "quiver-scaled",
+      "reference": "reference_images/quiver-scaled.svg",
+      "actual": "examples/quiver-scaled.svg",
+      "ssim": 0.93397,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "reference-grid",
+      "reference": "reference_images/reference-grid.svg",
+      "actual": "examples/reference-grid.svg",
+      "ssim": 0.957067,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "scales-overview",
+      "reference": "reference_images/scales-overview.svg",
+      "actual": "examples/scales-overview.svg",
+      "ssim": 0.909022,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "scatter-colormap",
+      "reference": "reference_images/scatter-colormap.svg",
+      "actual": "examples/scatter-colormap.svg",
+      "ssim": 0.937603,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "scatter-legend",
+      "reference": "reference_images/scatter-legend.svg",
+      "actual": "examples/scatter-legend.svg",
+      "ssim": 0.932198,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "scatter-sizes",
+      "reference": "reference_images/scatter-sizes.svg",
+      "actual": "examples/scatter-sizes.svg",
+      "ssim": 0.971261,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "scatter",
+      "reference": "reference_images/scatter.svg",
+      "actual": "examples/scatter.svg",
+      "ssim": 0.917147,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "shared-axes",
+      "reference": "reference_images/shared-axes.svg",
+      "actual": "examples/shared-axes.svg",
+      "ssim": 0.901966,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "simple-line",
+      "reference": "reference_images/simple-line.svg",
+      "actual": "examples/simple-line.svg",
+      "ssim": 0.908973,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "span-regions",
+      "reference": "reference_images/span-regions.svg",
+      "actual": "examples/span-regions.svg",
+      "ssim": 0.962086,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "stacked-bar",
+      "reference": "reference_images/stacked-bar.svg",
+      "actual": "examples/stacked-bar.svg",
+      "ssim": 0.934142,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "stackplot",
+      "reference": "reference_images/stackplot.svg",
+      "actual": "examples/stackplot.svg",
+      "ssim": 0.93061,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "stem-plot",
+      "reference": "reference_images/stem-plot.svg",
+      "actual": "examples/stem-plot.svg",
+      "ssim": 0.888312,
+      "status": "FAIL",
+      "note": ""
+    },
+    {
+      "name": "stem-simple",
+      "reference": "reference_images/stem-simple.svg",
+      "actual": "examples/stem-simple.svg",
+      "ssim": 0.91897,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "step-plot",
+      "reference": "reference_images/step-plot.svg",
+      "actual": "examples/step-plot.svg",
+      "ssim": 0.902219,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "streamplot-basic",
+      "reference": "reference_images/streamplot-basic.svg",
+      "actual": "examples/streamplot-basic.svg",
+      "ssim": 0.963816,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "streamplot-styled",
+      "reference": "reference_images/streamplot-styled.svg",
+      "actual": "examples/streamplot-styled.svg",
+      "ssim": 0.962931,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "subplots-shared",
+      "reference": "reference_images/subplots-shared.svg",
+      "actual": "examples/subplots-shared.svg",
+      "ssim": 0.965686,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "subplots",
+      "reference": "reference_images/subplots.svg",
+      "actual": "examples/subplots.svg",
+      "ssim": 0.91016,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "symlog-demo",
+      "reference": "reference_images/symlog-demo.svg",
+      "actual": "examples/symlog-demo.svg",
+      "ssim": 0.9086,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "text-alignment",
+      "reference": "reference_images/text-alignment.svg",
+      "actual": "examples/text-alignment.svg",
+      "ssim": 0.97167,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "text-positions",
+      "reference": "reference_images/text-positions.svg",
+      "actual": "examples/text-positions.svg",
+      "ssim": 0.974589,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "text-watermark",
+      "reference": "reference_images/text-watermark.svg",
+      "actual": "examples/text-watermark.svg",
+      "ssim": 0.96356,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "threshold-lines",
+      "reference": "reference_images/threshold-lines.svg",
+      "actual": "examples/threshold-lines.svg",
+      "ssim": 0.94139,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "twin-axes",
+      "reference": "reference_images/twin-axes.svg",
+      "actual": "examples/twin-axes.svg",
+      "ssim": 0.914359,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "twin-y-axis",
+      "reference": "reference_images/twin-y-axis.svg",
+      "actual": "examples/twin-y-axis.svg",
+      "ssim": 0.952111,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "two-scales",
+      "reference": "reference_images/two-scales.svg",
+      "actual": "examples/two-scales.svg",
+      "ssim": 0.958577,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "violin-basic",
+      "reference": "reference_images/violin-basic.svg",
+      "actual": "examples/violin-basic.svg",
+      "ssim": 0.928646,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "violin-comparison",
+      "reference": "reference_images/violin-comparison.svg",
+      "actual": "examples/violin-comparison.svg",
+      "ssim": 0.944009,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "violin-styled",
+      "reference": "reference_images/violin-styled.svg",
+      "actual": "examples/violin-styled.svg",
+      "ssim": 0.941181,
+      "status": "PASS",
+      "note": ""
+    }
+  ]
+}

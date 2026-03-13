@@ -1,6 +1,6 @@
 .venv/
 reference_images/
-comparison_report/
+/comparison_report/
 *.pyc
 __pycache__/
 *.fasl

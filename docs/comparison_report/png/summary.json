@@ -1,0 +1,751 @@
+{
+  "threshold": 0.95,
+  "overall": {
+    "total": 92,
+    "passed": 89,
+    "failed": 0,
+    "skipped": 0,
+    "allowed": 3,
+    "mean_ssim": 0.9694123152173912,
+    "min_ssim": 0.866679,
+    "max_ssim": 0.99249
+  },
+  "examples": [
+    {
+      "name": "annotated-heatmap",
+      "reference": "reference_images/annotated-heatmap.png",
+      "actual": "examples/annotated-heatmap.png",
+      "ssim": 0.958352,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "annotations",
+      "reference": "reference_images/annotations.png",
+      "actual": "examples/annotations.png",
+      "ssim": 0.961417,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "bar-chart",
+      "reference": "reference_images/bar-chart.png",
+      "actual": "examples/bar-chart.png",
+      "ssim": 0.962135,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "bar-colors",
+      "reference": "reference_images/bar-colors.png",
+      "actual": "examples/bar-colors.png",
+      "ssim": 0.966935,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "bar-errorbars",
+      "reference": "reference_images/bar-errorbars.png",
+      "actual": "examples/bar-errorbars.png",
+      "ssim": 0.970264,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "bar-hatch",
+      "reference": "reference_images/bar-hatch.png",
+      "actual": "examples/bar-hatch.png",
+      "ssim": 0.962681,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "bar-labels",
+      "reference": "reference_images/bar-labels.png",
+      "actual": "examples/bar-labels.png",
+      "ssim": 0.9576,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "barh",
+      "reference": "reference_images/barh.png",
+      "actual": "examples/barh.png",
+      "ssim": 0.96575,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "boxplot-styles",
+      "reference": "reference_images/boxplot-styles.png",
+      "actual": "examples/boxplot-styles.png",
+      "ssim": 0.981577,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "boxplot",
+      "reference": "reference_images/boxplot.png",
+      "actual": "examples/boxplot.png",
+      "ssim": 0.96839,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "categorical-bar",
+      "reference": "reference_images/categorical-bar.png",
+      "actual": "examples/categorical-bar.png",
+      "ssim": 0.962036,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "categorical-scatter",
+      "reference": "reference_images/categorical-scatter.png",
+      "actual": "examples/categorical-scatter.png",
+      "ssim": 0.973261,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "color-cycle",
+      "reference": "reference_images/color-cycle.png",
+      "actual": "examples/color-cycle.png",
+      "ssim": 0.946187,
+      "status": "ALLOW",
+      "note": "ALLOW: Minor color rendering delta between CL and Python color cycling. PNG=0.946 (just below 0.95 threshold). Permanent difference in color sequence generation."
+    },
+    {
+      "name": "colorbar-custom",
+      "reference": "reference_images/colorbar-custom.png",
+      "actual": "examples/colorbar-custom.png",
+      "ssim": 0.967378,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "contour-demo",
+      "reference": "reference_images/contour-demo.png",
+      "actual": "examples/contour-demo.png",
+      "ssim": 0.968423,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "contour-lines",
+      "reference": "reference_images/contour-lines.png",
+      "actual": "examples/contour-lines.png",
+      "ssim": 0.99249,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "curve-error-band",
+      "reference": "reference_images/curve-error-band.png",
+      "actual": "examples/curve-error-band.png",
+      "ssim": 0.965038,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "custom-markers",
+      "reference": "reference_images/custom-markers.png",
+      "actual": "examples/custom-markers.png",
+      "ssim": 0.978841,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "custom-ticks",
+      "reference": "reference_images/custom-ticks.png",
+      "actual": "examples/custom-ticks.png",
+      "ssim": 0.97667,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "donut-chart",
+      "reference": "reference_images/donut-chart.png",
+      "actual": "examples/donut-chart.png",
+      "ssim": 0.968006,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "errorbar-features",
+      "reference": "reference_images/errorbar-features.png",
+      "actual": "examples/errorbar-features.png",
+      "ssim": 0.953491,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "errorbar",
+      "reference": "reference_images/errorbar.png",
+      "actual": "examples/errorbar.png",
+      "ssim": 0.964898,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "figure-labels",
+      "reference": "reference_images/figure-labels.png",
+      "actual": "examples/figure-labels.png",
+      "ssim": 0.958517,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "figure-sizes",
+      "reference": "reference_images/figure-sizes.png",
+      "actual": "examples/figure-sizes.png",
+      "ssim": 0.984094,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "fill-between-alpha",
+      "reference": "reference_images/fill-between-alpha.png",
+      "actual": "examples/fill-between-alpha.png",
+      "ssim": 0.958424,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "fill-between-where",
+      "reference": "reference_images/fill-between-where.png",
+      "actual": "examples/fill-between-where.png",
+      "ssim": 0.954241,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "fill-between",
+      "reference": "reference_images/fill-between.png",
+      "actual": "examples/fill-between.png",
+      "ssim": 0.981657,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "filled-contour",
+      "reference": "reference_images/filled-contour.png",
+      "actual": "examples/filled-contour.png",
+      "ssim": 0.982178,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "gridspec-custom",
+      "reference": "reference_images/gridspec-custom.png",
+      "actual": "examples/gridspec-custom.png",
+      "ssim": 0.979425,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "gridspec-multi",
+      "reference": "reference_images/gridspec-multi.png",
+      "actual": "examples/gridspec-multi.png",
+      "ssim": 0.970516,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "hexbin-basic",
+      "reference": "reference_images/hexbin-basic.png",
+      "actual": "examples/hexbin-basic.png",
+      "ssim": 0.866679,
+      "status": "ALLOW",
+      "note": "ALLOW: Hexbin dual-grid algorithm now matches matplotlib exactly (identical bins, counts, centers). Remaining SSIM gap due to colorbar width and axes layout differences in CL Vecto backend. PNG=0.862."
+    },
+    {
+      "name": "histogram-multi",
+      "reference": "reference_images/histogram-multi.png",
+      "actual": "examples/histogram-multi.png",
+      "ssim": 0.950872,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "histogram-stacked",
+      "reference": "reference_images/histogram-stacked.png",
+      "actual": "examples/histogram-stacked.png",
+      "ssim": 0.951827,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "histogram-types",
+      "reference": "reference_images/histogram-types.png",
+      "actual": "examples/histogram-types.png",
+      "ssim": 0.966975,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "histogram",
+      "reference": "reference_images/histogram.png",
+      "actual": "examples/histogram.png",
+      "ssim": 0.970341,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "hlines-vlines",
+      "reference": "reference_images/hlines-vlines.png",
+      "actual": "examples/hlines-vlines.png",
+      "ssim": 0.971644,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "horizontal-bar-stacked",
+      "reference": "reference_images/horizontal-bar-stacked.png",
+      "actual": "examples/horizontal-bar-stacked.png",
+      "ssim": 0.96841,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "imshow-heatmap",
+      "reference": "reference_images/imshow-heatmap.png",
+      "actual": "examples/imshow-heatmap.png",
+      "ssim": 0.992143,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "inverted-axes",
+      "reference": "reference_images/inverted-axes.png",
+      "actual": "examples/inverted-axes.png",
+      "ssim": 0.982924,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "legend-outside",
+      "reference": "reference_images/legend-outside.png",
+      "actual": "examples/legend-outside.png",
+      "ssim": 0.978375,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "legend-styles",
+      "reference": "reference_images/legend-styles.png",
+      "actual": "examples/legend-styles.png",
+      "ssim": 0.963149,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "log-scale",
+      "reference": "reference_images/log-scale.png",
+      "actual": "examples/log-scale.png",
+      "ssim": 0.991123,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "logit-demo",
+      "reference": "reference_images/logit-demo.png",
+      "actual": "examples/logit-demo.png",
+      "ssim": 0.984566,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "loglog-plot",
+      "reference": "reference_images/loglog-plot.png",
+      "actual": "examples/loglog-plot.png",
+      "ssim": 0.965039,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "markers-all",
+      "reference": "reference_images/markers-all.png",
+      "actual": "examples/markers-all.png",
+      "ssim": 0.976115,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "minor-ticks-demo",
+      "reference": "reference_images/minor-ticks-demo.png",
+      "actual": "examples/minor-ticks-demo.png",
+      "ssim": 0.918761,
+      "status": "ALLOW",
+      "note": "ALLOW: Minor grid line alpha rendering differs slightly between CL Vecto backend and matplotlib Agg backend. PNG=0.9188. Layout and content correct, user visually approved."
+    },
+    {
+      "name": "multi-line-styles",
+      "reference": "reference_images/multi-line-styles.png",
+      "actual": "examples/multi-line-styles.png",
+      "ssim": 0.972981,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "multi-line",
+      "reference": "reference_images/multi-line.png",
+      "actual": "examples/multi-line.png",
+      "ssim": 0.973952,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "pcolormesh-basic",
+      "reference": "reference_images/pcolormesh-basic.png",
+      "actual": "examples/pcolormesh-basic.png",
+      "ssim": 0.9644,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "pcolormesh",
+      "reference": "reference_images/pcolormesh.png",
+      "actual": "examples/pcolormesh.png",
+      "ssim": 0.961577,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "pie-chart",
+      "reference": "reference_images/pie-chart.png",
+      "actual": "examples/pie-chart.png",
+      "ssim": 0.980228,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "pie-explode",
+      "reference": "reference_images/pie-explode.png",
+      "actual": "examples/pie-explode.png",
+      "ssim": 0.971147,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "pie-features",
+      "reference": "reference_images/pie-features.png",
+      "actual": "examples/pie-features.png",
+      "ssim": 0.975886,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "polar-line",
+      "reference": "reference_images/polar-line.png",
+      "actual": "examples/polar-line.png",
+      "ssim": 0.974095,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "polar-multi",
+      "reference": "reference_images/polar-multi.png",
+      "actual": "examples/polar-multi.png",
+      "ssim": 0.977833,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "polar-rose",
+      "reference": "reference_images/polar-rose.png",
+      "actual": "examples/polar-rose.png",
+      "ssim": 0.973408,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "polar-scatter",
+      "reference": "reference_images/polar-scatter.png",
+      "actual": "examples/polar-scatter.png",
+      "ssim": 0.974575,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "polar-spiral",
+      "reference": "reference_images/polar-spiral.png",
+      "actual": "examples/polar-spiral.png",
+      "ssim": 0.973087,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "polar-styled",
+      "reference": "reference_images/polar-styled.png",
+      "actual": "examples/polar-styled.png",
+      "ssim": 0.977413,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "quiver-basic",
+      "reference": "reference_images/quiver-basic.png",
+      "actual": "examples/quiver-basic.png",
+      "ssim": 0.957735,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "quiver-colored",
+      "reference": "reference_images/quiver-colored.png",
+      "actual": "examples/quiver-colored.png",
+      "ssim": 0.980732,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "quiver-gradient",
+      "reference": "reference_images/quiver-gradient.png",
+      "actual": "examples/quiver-gradient.png",
+      "ssim": 0.984591,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "quiver-scaled",
+      "reference": "reference_images/quiver-scaled.png",
+      "actual": "examples/quiver-scaled.png",
+      "ssim": 0.978791,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "reference-grid",
+      "reference": "reference_images/reference-grid.png",
+      "actual": "examples/reference-grid.png",
+      "ssim": 0.952081,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "scales-overview",
+      "reference": "reference_images/scales-overview.png",
+      "actual": "examples/scales-overview.png",
+      "ssim": 0.967162,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "scatter-colormap",
+      "reference": "reference_images/scatter-colormap.png",
+      "actual": "examples/scatter-colormap.png",
+      "ssim": 0.955479,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "scatter-legend",
+      "reference": "reference_images/scatter-legend.png",
+      "actual": "examples/scatter-legend.png",
+      "ssim": 0.985584,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "scatter-sizes",
+      "reference": "reference_images/scatter-sizes.png",
+      "actual": "examples/scatter-sizes.png",
+      "ssim": 0.986599,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "scatter",
+      "reference": "reference_images/scatter.png",
+      "actual": "examples/scatter.png",
+      "ssim": 0.97387,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "shared-axes",
+      "reference": "reference_images/shared-axes.png",
+      "actual": "examples/shared-axes.png",
+      "ssim": 0.986738,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "simple-line",
+      "reference": "reference_images/simple-line.png",
+      "actual": "examples/simple-line.png",
+      "ssim": 0.979737,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "span-regions",
+      "reference": "reference_images/span-regions.png",
+      "actual": "examples/span-regions.png",
+      "ssim": 0.973176,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "stacked-bar",
+      "reference": "reference_images/stacked-bar.png",
+      "actual": "examples/stacked-bar.png",
+      "ssim": 0.965551,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "stackplot",
+      "reference": "reference_images/stackplot.png",
+      "actual": "examples/stackplot.png",
+      "ssim": 0.973553,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "stem-plot",
+      "reference": "reference_images/stem-plot.png",
+      "actual": "examples/stem-plot.png",
+      "ssim": 0.96715,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "stem-simple",
+      "reference": "reference_images/stem-simple.png",
+      "actual": "examples/stem-simple.png",
+      "ssim": 0.984682,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "step-plot",
+      "reference": "reference_images/step-plot.png",
+      "actual": "examples/step-plot.png",
+      "ssim": 0.955024,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "streamplot-basic",
+      "reference": "reference_images/streamplot-basic.png",
+      "actual": "examples/streamplot-basic.png",
+      "ssim": 0.981888,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "streamplot-styled",
+      "reference": "reference_images/streamplot-styled.png",
+      "actual": "examples/streamplot-styled.png",
+      "ssim": 0.981883,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "subplots-shared",
+      "reference": "reference_images/subplots-shared.png",
+      "actual": "examples/subplots-shared.png",
+      "ssim": 0.975185,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "subplots",
+      "reference": "reference_images/subplots.png",
+      "actual": "examples/subplots.png",
+      "ssim": 0.975823,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "symlog-demo",
+      "reference": "reference_images/symlog-demo.png",
+      "actual": "examples/symlog-demo.png",
+      "ssim": 0.979094,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "text-alignment",
+      "reference": "reference_images/text-alignment.png",
+      "actual": "examples/text-alignment.png",
+      "ssim": 0.972979,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "text-positions",
+      "reference": "reference_images/text-positions.png",
+      "actual": "examples/text-positions.png",
+      "ssim": 0.979202,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "text-watermark",
+      "reference": "reference_images/text-watermark.png",
+      "actual": "examples/text-watermark.png",
+      "ssim": 0.967189,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "threshold-lines",
+      "reference": "reference_images/threshold-lines.png",
+      "actual": "examples/threshold-lines.png",
+      "ssim": 0.962067,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "twin-axes",
+      "reference": "reference_images/twin-axes.png",
+      "actual": "examples/twin-axes.png",
+      "ssim": 0.969751,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "twin-y-axis",
+      "reference": "reference_images/twin-y-axis.png",
+      "actual": "examples/twin-y-axis.png",
+      "ssim": 0.967434,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "two-scales",
+      "reference": "reference_images/two-scales.png",
+      "actual": "examples/two-scales.png",
+      "ssim": 0.964118,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "violin-basic",
+      "reference": "reference_images/violin-basic.png",
+      "actual": "examples/violin-basic.png",
+      "ssim": 0.964672,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "violin-comparison",
+      "reference": "reference_images/violin-comparison.png",
+      "actual": "examples/violin-comparison.png",
+      "ssim": 0.964782,
+      "status": "PASS",
+      "note": ""
+    },
+    {
+      "name": "violin-styled",
+      "reference": "reference_images/violin-styled.png",
+      "actual": "examples/violin-styled.png",
+      "ssim": 0.981234,
+      "status": "PASS",
+      "note": ""
+    }
+  ]
+}

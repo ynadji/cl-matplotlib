@@ -1,0 +1,282 @@
+<!DOCTYPE html> <html lang="AND"> <head> <meta charset="utf-8"> <title>Cl Matplotlib Pyplot</title> <style>html body{margin:0 auto 0 auto;padding:20px;max-width:1024px;font-family:sans-serif;font-size:14pt;overflow-y:scroll;}html body a{text-decoration:none;}html body a[href]{color:#0055AA;}html body a[href]:hover{color:#0088EE;}html body pre{background:#FAFAFA;border:1px solid #DDDDDD;padding:0.75em;overflow-x:auto;}html body pre >code a[href]{color:#223388;}article.project h1{font-size:1.7em;}article.project h1,article.project h2,article.project h3,article.project h4,article.project h5,article.project h6{margin:0.2em 0 0.1em 0;text-indent:1em;}article.project >header{text-align:center;}article.project >header img.logo{display:block;margin:auto;max-height:170px;}article.project >header h1{display:inline-block;text-indent:0;font-size:2.5em;}article.project >header .version{vertical-align:bottom;}article.project >header .languages{margin-top:-0.5em;text-transform:capitalize;}article.project >header .description{margin:0;}article.project >header .pages{margin-top:0.5em;font-size:1.2em;text-transform:capitalize;}article.project >header .pages a{display:inline-block;padding:0 0.2em;}article.project >section{margin:1em 0 1em 0;}article.project >section img{max-width:100%;}article.project #index >ul{list-style:none;margin:0;padding:0;}article.project .row label{display:inline-block;min-width:8em;}article.project #system .row{display:flex;}article.project #system #dependencies{display:inline;margin:0;padding:0;}article.project #system #dependencies li{display:inline;padding:0 0.2em;}article.project #system #author label{vertical-align:top;}article.project #system #author ul{display:inline-block;margin:0;padding:0;list-style:none;}article.definition{margin:1em 0 0 0;}article.definition >header h1,article.definition >header h2,article.definition >header h3,article.definition >header h4,article.definition >header h5,article.definition >header h6{text-indent:0;display:inline-block;}article.definition >header ul{display:inline-block;list-style:none;margin:0;padding:0;}article.definition >header ul li{display:inline-block;padding:0 0.2em 0 0;}article.definition >header .visibility{display:none;}article.definition >header .visibility,article.definition >header .type{text-transform:lowercase;}article.definition >header .source-link{visibility:hidden;float:right;}article.definition >header .source-link:after{visibility:visible;content:"[SRC]";}article.definition .docstring{margin:0 0 0 1em;}article.definition .docstring pre{font-size:0.8em;white-space:pre-wrap;}.definition.package >header ul.nicknames{display:inline-block;list-style:none;margin:0;padding:0 0 0 1em;}.definition.package >header ul.nicknames li{display:inline;}.definition.package >header ul.nicknames:before{content:"(";}.definition.package >header ul.nicknames:after{content:")";}.definition.package ul.definitions{margin:0;list-style:none;padding:0 0 0 0.5em;}.definition.callable >header .name:before,.definition.type >header .name:before{content:"(";font-weight:normal;}.definition.callable >header .arguments:after,.definition.type >header .arguments:after{content:")";}.definition.callable >header .arguments .arguments:before,.definition.type >header .arguments .arguments:before{content:"(";}.definition.callable >header .arguments .argument,.definition.type >header .arguments .argument{padding:0;}.definition.callable >header .arguments .argument.lambda-list-keyword,.definition.type >header .arguments .argument.lambda-list-keyword{color:#991155;}.definition li>mark{background:none;border-left:0.3em solid #0088EE;padding-left:0.3em;display:block;}</style> </head> <body> <article class="project"> <header>  <img class="logo" src="phase0-dash-test.png" alt="Logo">    <span class="version">0.1.0</span>   <nav class="languages"> <a href="index.html">English</a>  <a href="index-txt.html">Citak</a>  <a href="index-txt.html">Citak</a>  <a href="index-txt.html">Citak</a>  <a href="index-set.html">Sentani</a>  <a href="index-txt.html">Citak</a> </nav>   <p class="description">Top-level pyplot API for cl-matplotlib — procedural wrappers around Figure/Axes</p>   </header> <section id="documentation"><h1 id="documentation_&amp;_readme_overhaul">Documentation &amp; README Overhaul</h1> <h2 id="tl;dr">TL;DR</h2> <blockquote> <p><strong>Quick Summary</strong>: Simplify README to match matplotlib's concise style with showcase plots, generate Staple API docs, integrate the visual comparison report, and prepare <code>docs/</code> for GitHub Pages deployment.</p> <p><strong>Deliverables</strong>:
+- Rewritten README.md (concise, matplotlib-style, with 4 showcase images)
+- Staple-generated API documentation in <code>docs/</code> - Comparison report integrated at <code>docs/comparison_report/</code> - <code>make docs</code> Makefile target for reproducible doc generation
+- Updated <code>.gitignore</code> for correct docs/ tracking</p> <p><strong>Estimated Effort</strong>: Short <strong>Parallel Execution</strong>: YES - 2 waves <strong>Critical Path</strong>: T1 → T3 → T4 → T5</p> </blockquote> <hr> <h2 id="context">Context</h2> <h3 id="original_request">Original Request</h3> <p>User wants to improve the project's public-facing documentation:
+1. Simplify README.md to be similar to matplotlib's (concise summary, showcase plots, install instructions)
+2. Generate API docs using Staple (CL documentation generator), following the pattern from ~/code/netaddr
+3. Put comparison_report in docs/
+4. Use docs/ as the GitHub Pages deployment directory (committed to repo)
+5. Add a link to the comparison_report in README.md</p> <h3 id="interview_summary">Interview Summary</h3> <p><strong>Key Discussions</strong>:
+- <strong>Showcase plots</strong>: User chose scatter-colormap, hexbin-basic, annotated-heatmap, bar-hatch
+- <strong>Deployment</strong>: Commit docs/ directly to the repo, configure GH Pages to serve from docs/ on main branch
+- <strong>Tool convention</strong>: Use <code>ros run --</code> instead of <code>sbcl</code> directly (matching existing Makefile <code>SBCL</code> variable)</p> <p><strong>Research Findings</strong>:
+- netaddr's staple pattern: <code>sbcl --eval &quot;(ql:quickload :staple-markdown)&quot; --eval &quot;(staple:generate :netaddr :if-exists :supersede)&quot; --eval &quot;(quit)&quot;</code> → generates <code>docs/index.html</code> + <code>docs/netaddr/</code> - Current Makefile already defines <code>SBCL := ros run --</code> - CI badge in README wrongly points to <code>yacin-hamza/cl-ingrid</code> — should be <code>ynadji/cl-matplotlib</code> - 92 example PNGs exist in <code>examples/</code>, all tracked in git
+- comparison_report/ has <code>index.html</code> + <code>png/</code>, <code>svg/</code>, <code>pdf/</code> subdirs with side-by-side images (~31MB)
+- <code>.gitignore</code> has <code>comparison_report/</code> (unanchored) which would also match <code>docs/comparison_report/</code></p> <h3 id="metis_review">Metis Review</h3> <p><strong>Identified Gaps</strong> (addressed):
+- <code>.gitignore</code> <code>comparison_report/</code> is unanchored — would match <code>docs/comparison_report/</code> too. Fix: change to <code>/comparison_report/</code> - CI badge URL incorrect (<code>yacin-hamza/cl-ingrid</code>) — fix to <code>ynadji/cl-matplotlib</code> - README links to docs should use GitHub Pages URL, not relative paths (HTML won't render on GitHub)
+- <code>make docs</code> should handle missing comparison_report/ gracefully (fresh clone scenario)
+- GitHub Pages activation requires manual step in repo Settings
+- Showcase images need <code>&lt;img&gt;</code> tags with width constraints for proper grid layout
+- Add <code>docs</code> to <code>.PHONY</code> in Makefile</p> <hr> <h2 id="work_objectives">Work Objectives</h2> <h3 id="core_objective">Core Objective</h3> <p>Replace the verbose README with a concise matplotlib-style README featuring showcase images and docs links, generate Staple API documentation, and prepare <code>docs/</code> for GitHub Pages deployment.</p> <h3 id="concrete_deliverables">Concrete Deliverables</h3> <ul> <li><code>README.md</code> — rewritten, concise, under 80 lines</li> <li><code>Makefile</code> — new <code>docs</code> target added</li> <li><code>.gitignore</code> — <code>comparison_report/</code> anchored to root</li> <li><code>docs/index.html</code> — Staple-generated landing page</li> <li><code>docs/cl-matplotlib-pyplot/</code> — Staple-generated API docs</li> <li><code>docs/comparison_report/</code> — copied from root comparison_report/</li> </ul> <h3 id="definition_of_done">Definition of Done</h3> <ul> <li>[ ] <code>make docs</code> completes successfully</li> <li>[ ] <code>docs/index.html</code> exists</li> <li>[ ] <code>docs/comparison_report/png/index.html</code> exists</li> <li>[ ] README.md has 4 showcase images, install section, comparison report link</li> <li>[ ] README.md has no references to <code>yacin-hamza</code> or <code>cl-ingrid</code></li> <li>[ ] README.md is under 80 lines</li> <li>[ ] <code>git check-ignore docs/comparison_report/</code> returns nothing (not ignored)</li> <li>[ ] <code>git check-ignore comparison_report/</code> still matches (root ignored)</li> </ul> <h3 id="must_have">Must Have</h3> <ul> <li>Concise README matching matplotlib's style</li> <li>4 showcase plot images visible in README</li> <li>Working <code>make docs</code> target</li> <li>Comparison report accessible in docs/</li> <li>Link to comparison report in README</li> </ul> <h3 id="must_not_have_(guardrails)">Must NOT Have (Guardrails)</h3> <ul> <li>Do NOT modify any <code>.lisp</code> source files</li> <li>Do NOT create a GitHub Actions workflow for Pages deployment</li> <li>Do NOT customize or edit Staple's generated HTML output</li> <li>Do NOT reorganize the <code>examples/</code> directory</li> <li>Do NOT add verbose sections (System Architecture, Features lists, multiple code examples) back to README</li> <li>Do NOT reference old repo name <code>yacin-hamza/cl-ingrid</code> anywhere</li> </ul> <hr> <h2 id="verification_strategy">Verification Strategy</h2> <blockquote> <p><strong>ZERO HUMAN INTERVENTION</strong> — ALL verification is agent-executed. No exceptions.</p> </blockquote> <h3 id="test_decision">Test Decision</h3> <ul> <li><strong>Infrastructure exists</strong>: N/A (documentation task)</li> <li><strong>Automated tests</strong>: None (no code changes)</li> <li><strong>Framework</strong>: N/A</li> </ul> <h3 id="qa_policy">QA Policy</h3> <p>Every task includes agent-executed QA scenarios verifying file existence, content correctness, and build success. Evidence saved to <code>.sisyphus/evidence/task-{N}-{scenario-slug}.{ext}</code>.</p> <ul> <li><strong>File content</strong>: Use Bash (grep, wc) — check file contents, line counts, pattern presence/absence</li> <li><strong>Build verification</strong>: Use Bash — run <code>make docs</code>, check exit code and output</li> <li><strong>Git state</strong>: Use Bash (git check-ignore) — verify gitignore behavior</li> </ul> <hr> <h2 id="execution_strategy">Execution Strategy</h2> <h3 id="parallel_execution_waves">Parallel Execution Waves</h3> <pre><code>Wave 1 (Start Immediately — config + infrastructure):
+├── Task 1: Update Makefile with `docs` target [quick]
+├── Task 2: Fix .gitignore (anchor comparison_report/ to root) [quick]
+└── Task 3: Rewrite README.md [quick]
+
+Wave 2 (After Wave 1 — build + verify):
+├── Task 4: Generate docs (run `make docs`) [quick]
+└── Task 5: Final verification [quick]
+
+Critical Path: T1 → T4 → T5
+Parallel Speedup: T1, T2, T3 all run simultaneously
+Max Concurrent: 3 (Wave 1)</code></pre> <h3 id="dependency_matrix">Dependency Matrix</h3> <p>| Task | Depends On | Blocks |
+|------|-----------|--------|
+| T1   | —         | T4     |
+| T2   | —         | T4     |
+| T3   | —         | T5     |
+| T4   | T1, T2    | T5     |
+| T5   | T3, T4    | —      |</p> <h3 id="agent_dispatch_summary">Agent Dispatch Summary</h3> <ul> <li><strong>Wave 1</strong>: <strong>3 tasks</strong> — T1 → <code>quick</code>, T2 → <code>quick</code>, T3 → <code>quick</code></li> <li><strong>Wave 2</strong>: <strong>2 tasks</strong> — T4 → <code>quick</code>, T5 → <code>quick</code></li> </ul> <hr> <h2 id="todos">TODOs</h2> <ul> <li>[x] 1. Update Makefile with <code>docs</code> target</li> </ul> <p><strong>What to do</strong>:
+  - Add a <code>docs</code> Makefile target that:
+    1. Loads <code>:staple-markdown</code> via Quicklisp
+    2. Runs <code>(staple:generate :cl-matplotlib-pyplot :if-exists :supersede)</code> to generate API docs into <code>docs/</code> 3. Conditionally copies <code>comparison_report/</code> into <code>docs/comparison_report/</code> (with warning if missing)
+  - Use the existing <code>$(SBCL)</code> variable (<code>ros run --</code>) for the staple command
+  - Add <code>docs</code> to the <code>.PHONY</code> declaration on the existing line 10
+  - The staple command pattern (adapted from netaddr/Makefile line 8-9): <code>makefile
+    docs:
+        $(SBCL) --eval &quot;(ql:quickload :staple-markdown)&quot; \
+            --eval &quot;(staple:generate :cl-matplotlib-pyplot :if-exists :supersede)&quot; \
+            --eval &quot;(quit)&quot;
+        @if [ -d $(COMPARISON_REPORT_DIR) ]; then \
+            cp -r $(COMPARISON_REPORT_DIR) docs/comparison_report; \
+        else \
+            echo &quot;WARNING: comparison_report/ not found. Run 'make compare' first.&quot;; \
+        fi </code></p> <p><strong>Must NOT do</strong>:
+  - Do NOT modify any existing Makefile targets
+  - Do NOT use <code>sbcl</code> directly - use <code>$(SBCL)</code> - Do NOT make comparison_report copy unconditional (it may not exist on fresh clone)</p> <p><strong>Recommended Agent Profile</strong>:
+  - <strong>Category</strong>: <code>quick</code> - Reason: Single file edit, small addition to existing Makefile
+  - <strong>Skills</strong>: <code>[]</code></p> <p><strong>Parallelization</strong>:
+  - <strong>Can Run In Parallel</strong>: YES
+  - <strong>Parallel Group</strong>: Wave 1 (with Tasks 2, 3)
+  - <strong>Blocks</strong>: Task 4
+  - <strong>Blocked By</strong>: None</p> <p><strong>References</strong>:
+  - <code>Makefile:1-84</code> - Existing Makefile structure. <code>SBCL</code> variable at line 2. <code>.PHONY</code> at line 10. <code>COMPARISON_REPORT_DIR</code> at line 7
+  - <code>/home/yacin/code/netaddr/Makefile:7-9</code> - netaddr staple docs target. Adapt sbcl to $(SBCL) and :netaddr to :cl-matplotlib-pyplot</p> <p><strong>Acceptance Criteria</strong>:
+  - [ ] Makefile contains <code>docs:</code> target
+  - [ ] Target uses <code>$(SBCL)</code> not <code>sbcl</code> - [ ] Target references <code>staple-markdown</code> and <code>cl-matplotlib-pyplot</code> - [ ] Target conditionally copies comparison_report/
+  - [ ] <code>docs</code> appears in <code>.PHONY</code> line</p> <p><strong>QA Scenarios (MANDATORY):</strong> <code> Scenario: Makefile docs target syntax
+    Tool: Bash
+    Steps:
+      1. grep -A8 '^docs:' Makefile
+      2. Verify output contains staple-markdown, cl-matplotlib-pyplot, $(SBCL), comparison_report
+    Expected Result: All patterns present
+    Evidence: .sisyphus/evidence/task-1-makefile-target.txt </code></p> <p><strong>Commit</strong>: YES (groups with all tasks)
+  - Files: <code>Makefile</code></p> <ul> <li>[x] 2. Fix .gitignore (anchor comparison_report/ to root)</li> </ul> <p><strong>What to do</strong>:
+  - Change <code>comparison_report/</code> to <code>/comparison_report/</code> in <code>.gitignore</code> - This anchors the ignore rule to the repo root, so <code>docs/comparison_report/</code> will NOT be ignored
+  - The root-level <code>comparison_report/</code> (generated by <code>make compare</code>) stays ignored as before</p> <p><strong>Must NOT do</strong>:
+  - Do NOT remove the comparison_report ignore entirely
+  - Do NOT add <code>docs/</code> to .gitignore
+  - Do NOT modify any other gitignore entries</p> <p><strong>Recommended Agent Profile</strong>:
+  - <strong>Category</strong>: <code>quick</code> - Reason: Single character addition to one line in .gitignore
+  - <strong>Skills</strong>: <code>[]</code></p> <p><strong>Parallelization</strong>:
+  - <strong>Can Run In Parallel</strong>: YES
+  - <strong>Parallel Group</strong>: Wave 1 (with Tasks 1, 3)
+  - <strong>Blocks</strong>: Task 4
+  - <strong>Blocked By</strong>: None</p> <p><strong>References</strong>:
+  - <code>.gitignore</code> - Current content: <code>.venv/</code>, <code>reference_images/</code>, <code>comparison_report/</code>, <code>*.pyc</code>, <code>__pycache__/</code>, <code>*.fasl</code></p> <p><strong>Acceptance Criteria</strong>:
+  - [ ] <code>/comparison_report/</code> present in .gitignore (anchored with leading /)
+  - [ ] No unanchored <code>comparison_report/</code> in .gitignore</p> <p><strong>QA Scenarios (MANDATORY):</strong> ```
+  Scenario: gitignore anchoring correct
+    Tool: Bash
+    Steps:
+      1. grep comparison_report .gitignore
+      2. Verify line starts with / (anchored)
+    Expected Result: Only /comparison_report/ present, no unanchored version
+    Evidence: .sisyphus/evidence/task-2-gitignore.txt</p> <p>Scenario: git ignore behavior correct
+    Tool: Bash
+    Steps:
+      1. git check-ignore comparison_report/ - should match
+      2. mkdir -p docs/comparison_report &amp;&amp; git check-ignore docs/comparison_report/ - should NOT match
+    Expected Result: Root ignored, docs/ subdirectory not ignored
+    Evidence: .sisyphus/evidence/task-2-git-check.txt
+  ```</p> <p><strong>Commit</strong>: YES (groups with all tasks)
+  - Files: <code>.gitignore</code></p> <ul> <li>[x] 3. Rewrite README.md (matplotlib-style)</li> </ul> <p><strong>What to do</strong>:
+  - Replace the entire README.md content with a concise, matplotlib-style README
+  - Structure (in order):
+    1. <code># cl-matplotlib</code> heading
+    2. CI badge (fix URL from <code>yacin-hamza/cl-ingrid</code> to <code>ynadji/cl-matplotlib</code>)
+    3. 1-2 sentence description: Common Lisp port of matplotlib for creating publication-quality plots
+    4. Showcase images in a 2x2 grid using HTML <code>&lt;img&gt;</code> tags with <code>width=&quot;400&quot;</code> each:
+       - <code>examples/scatter-colormap.png</code> - <code>examples/hexbin-basic.png</code> - <code>examples/annotated-heatmap.png</code> - <code>examples/bar-hatch.png</code> 5. Quick Start section: brief code example (the simple plot)
+    6. Install section: <code>(ql:quickload :cl-matplotlib-pyplot)</code> with prerequisites (SBCL/CCL + Quicklisp)
+    7. Links section: API Documentation (GitHub Pages URL), Visual Comparison Report (GitHub Pages URL)
+    8. License: MIT
+  - GitHub Pages base URL: <code>https://ynadji.github.io/cl-matplotlib/</code> - API docs link: <code>https://ynadji.github.io/cl-matplotlib/</code> - Comparison report link: <code>https://ynadji.github.io/cl-matplotlib/comparison_report/png/</code> - Use <code>&lt;img&gt;</code> tags (not markdown image syntax) for showcase images so we can control width
+  - Target: under 80 lines total</p> <p><strong>Must NOT do</strong>:
+  - Do NOT include System Architecture section
+  - Do NOT include detailed Features list
+  - Do NOT include multiple code examples (one Quick Start is enough)
+  - Do NOT reference <code>yacin-hamza</code> or <code>cl-ingrid</code> anywhere
+  - Do NOT include Testing section or Supported Implementations section</p> <p><strong>Recommended Agent Profile</strong>:
+  - <strong>Category</strong>: <code>quick</code> - Reason: Single file rewrite with clear spec
+  - <strong>Skills</strong>: <code>[]</code></p> <p><strong>Parallelization</strong>:
+  - <strong>Can Run In Parallel</strong>: YES
+  - <strong>Parallel Group</strong>: Wave 1 (with Tasks 1, 2)
+  - <strong>Blocks</strong>: Task 5
+  - <strong>Blocked By</strong>: None</p> <p><strong>References</strong>:
+  - <code>README.md:1-132</code> - Current README to be replaced entirely
+  - matplotlib README (https://github.com/matplotlib/matplotlib) - Style reference: logo, description, preview image, install, contribute, contact
+  - <code>examples/scatter-colormap.png</code>, <code>examples/hexbin-basic.png</code>, <code>examples/annotated-heatmap.png</code>, <code>examples/bar-hatch.png</code> - The 4 showcase images</p> <p><strong>Acceptance Criteria</strong>:
+  - [ ] README.md exists and is under 80 lines
+  - [ ] Contains all 4 showcase image filenames
+  - [ ] Contains <code>ynadji/cl-matplotlib</code> (correct CI badge)
+  - [ ] Contains NO <code>yacin-hamza</code> or <code>cl-ingrid</code> - [ ] Contains NO <code>System Architecture</code> section
+  - [ ] Contains link to comparison report with GitHub Pages URL
+  - [ ] Contains install instructions with <code>ql:quickload</code></p> <p><strong>QA Scenarios (MANDATORY):</strong> <code> Scenario: README content correct
+    Tool: Bash
+    Steps:
+      1. wc -l README.md - should be under 80
+      2. grep -c scatter-colormap README.md - should be &gt;= 1
+      3. grep -c hexbin-basic README.md - should be &gt;= 1
+      4. grep -c annotated-heatmap README.md - should be &gt;= 1
+      5. grep -c bar-hatch README.md - should be &gt;= 1
+      6. grep -c yacin-hamza README.md - should be 0
+      7. grep -c 'System Architecture' README.md - should be 0
+      8. grep -c 'ynadji.github.io' README.md - should be &gt;= 1
+    Expected Result: All assertions pass
+    Evidence: .sisyphus/evidence/task-3-readme-content.txt </code></p> <p><strong>Commit</strong>: YES (groups with all tasks)
+  - Files: <code>README.md</code></p> <ul> <li>[ ] 4. Generate docs (run make docs)</li> </ul> <p><strong>What to do</strong>:
+  - Run <code>make docs</code> to generate Staple API docs and copy comparison_report
+  - Verify the output structure:
+    - <code>docs/index.html</code> exists (Staple landing page)
+    - <code>docs/cl-matplotlib-pyplot/</code> exists (API docs)
+    - <code>docs/comparison_report/</code> exists with <code>png/</code>, <code>svg/</code>, <code>pdf/</code> subdirs
+  - If staple fails to load or generate, debug the issue:
+    - Ensure <code>:staple-markdown</code> can be quickloaded
+    - Ensure <code>:cl-matplotlib-pyplot</code> system is loadable
+    - Check staple output for errors
+  - NOTE: comparison_report/ must exist at root first. If not, run <code>make compare-png</code> first.</p> <p><strong>Must NOT do</strong>:
+  - Do NOT edit any staple-generated HTML files
+  - Do NOT modify source .lisp files to fix doc generation</p> <p><strong>Recommended Agent Profile</strong>:
+  - <strong>Category</strong>: <code>quick</code> - Reason: Running a make target and verifying output
+  - <strong>Skills</strong>: <code>[]</code></p> <p><strong>Parallelization</strong>:
+  - <strong>Can Run In Parallel</strong>: NO
+  - <strong>Parallel Group</strong>: Wave 2 (sequential)
+  - <strong>Blocks</strong>: Task 5
+  - <strong>Blocked By</strong>: Tasks 1, 2</p> <p><strong>References</strong>:
+  - <code>Makefile</code> (after Task 1 edits) - The new docs target to run
+  - <code>/home/yacin/code/netaddr/docs/</code> - Expected output structure reference (index.html + system subdirectory)</p> <p><strong>Acceptance Criteria</strong>:
+  - [ ] <code>make docs</code> exits with code 0
+  - [ ] <code>docs/index.html</code> exists
+  - [ ] <code>docs/comparison_report/png/index.html</code> exists</p> <p><strong>QA Scenarios (MANDATORY):</strong> ```
+  Scenario: docs generated successfully
+    Tool: Bash
+    Steps:
+      1. make docs
+      2. test -f docs/index.html
+      3. test -d docs/comparison_report/png
+      4. test -f docs/comparison_report/png/index.html
+    Expected Result: All files/dirs exist, make exits 0
+    Evidence: .sisyphus/evidence/task-4-docs-build.txt</p> <p>Scenario: docs structure matches expected layout
+    Tool: Bash
+    Steps:
+      1. find docs/ -name 'index.html' -type f
+      2. Verify at least 2 index.html files (staple landing + comparison report)
+    Expected Result: Multiple index.html files present
+    Evidence: .sisyphus/evidence/task-4-docs-structure.txt
+  ```</p> <p><strong>Commit</strong>: YES (groups with all tasks)
+  - Files: <code>docs/</code> (entire directory)</p> <ul> <li>[ ] 5. Final verification and manual steps note</li> </ul> <p><strong>What to do</strong>:
+  - Run all verification commands from Success Criteria section
+  - Verify README renders correctly by checking image paths exist
+  - Verify all gitignore behavior is correct
+  - Note for the user: GitHub Pages must be enabled manually:
+    - Go to repo Settings &gt; Pages
+    - Source: Deploy from a branch
+    - Branch: main, folder: /docs
+    - Save
+  - After GitHub Pages is enabled, the docs will be available at:
+    - API docs: <code>https://ynadji.github.io/cl-matplotlib/</code> - Comparison report: <code>https://ynadji.github.io/cl-matplotlib/comparison_report/png/</code></p> <p><strong>Recommended Agent Profile</strong>:
+  - <strong>Category</strong>: <code>quick</code> - Reason: Verification pass, no code changes
+  - <strong>Skills</strong>: <code>[]</code></p> <p><strong>Parallelization</strong>:
+  - <strong>Can Run In Parallel</strong>: NO
+  - <strong>Parallel Group</strong>: Wave 2 (after Task 4)
+  - <strong>Blocks</strong>: None
+  - <strong>Blocked By</strong>: Tasks 3, 4</p> <p><strong>Acceptance Criteria</strong>:
+  - [ ] All Success Criteria verification commands pass
+  - [ ] All 4 showcase image files exist at referenced paths
+  - [ ] README has no broken references</p> <p><strong>QA Scenarios (MANDATORY):</strong> <code> Scenario: Full verification pass
+    Tool: Bash
+    Steps:
+      1. make docs (should succeed)
+      2. test -f docs/index.html (PASS)
+      3. test -f docs/comparison_report/png/index.html (PASS)
+      4. wc -l README.md (under 80)
+      5. grep -c scatter-colormap README.md (&gt;= 1)
+      6. grep -c yacin-hamza README.md (0)
+      7. git check-ignore docs/comparison_report/ (empty)
+      8. git check-ignore comparison_report/ (match)
+      9. test -f examples/scatter-colormap.png (PASS)
+      10. test -f examples/hexbin-basic.png (PASS)
+      11. test -f examples/annotated-heatmap.png (PASS)
+      12. test -f examples/bar-hatch.png (PASS)
+    Expected Result: All 12 checks pass
+    Evidence: .sisyphus/evidence/task-5-full-verify.txt </code></p> <p><strong>Commit</strong>: NO (verification only)</p> <p>---</p> <h2 id="final_verification_wave">Final Verification Wave</h2> <blockquote> <p>After ALL implementation tasks, run a single verification pass.</p> </blockquote> <ul> <li>[ ] F1. <strong>Docs Build + Content Audit</strong> — <code>quick</code> Verify: <code>make docs</code> succeeds. <code>docs/index.html</code> exists. <code>docs/comparison_report/png/index.html</code> exists. README.md under 80 lines. All 4 showcase image names in README. No <code>yacin-hamza</code> or <code>cl-ingrid</code> in README. No <code>System Architecture</code> section in README. <code>git check-ignore docs/comparison_report/</code> returns empty. <code>git check-ignore comparison_report/</code> returns match.
+  Output: <code>Build [PASS/FAIL] | Content [N/N checks] | VERDICT: APPROVE/REJECT</code></li> </ul> <hr> <h2 id="commit_strategy">Commit Strategy</h2> <ul> <li><strong>1</strong>: <code>docs: rewrite README and add Staple API docs with comparison report</code> — README.md, Makefile, .gitignore, docs/</li> </ul> <hr> <h2 id="success_criteria">Success Criteria</h2> <h3 id="verification_commands">Verification Commands</h3> <pre><code>make docs                                           # Expected: exits 0, docs/ populated
+test -f docs/index.html &amp;&amp; echo PASS || echo FAIL   # Expected: PASS
+test -f docs/comparison_report/png/index.html &amp;&amp; echo PASS || echo FAIL  # Expected: PASS
+wc -l README.md                                     # Expected: &lt; 80
+grep -c &quot;scatter-colormap&quot; README.md                 # Expected: &gt;= 1
+grep -c &quot;yacin-hamza&quot; README.md                      # Expected: 0
+git check-ignore docs/comparison_report/             # Expected: (empty — not ignored)
+git check-ignore comparison_report/                  # Expected: comparison_report/</code></pre> <h3 id="final_checklist">Final Checklist</h3> <ul> <li>[ ] All &quot;Must Have&quot; present</li> <li>[ ] All &quot;Must NOT Have&quot; absent</li> <li>[ ] <code>make docs</code> reproducible</li> <li>[ ] README renders correctly on GitHub with images</li> </ul> </section>   <section id="system"> <h2>System Information</h2>  <div class="row"> <label for="version">Version:</label> <a id="version">0.1.0</a> </div>   <div class="row"> <label for="dependencies">Dependencies:</label> <ul id="dependencies"><li><a class="external">cl-matplotlib-containers</a></li><li><a class="external">cl-matplotlib-backends</a></li></ul> </div>       </section>    </article> <script>window.addEventListener("DOMContentLoaded", function(){
+    var unmarkElement = function(el){
+        if(el.tagName === "mark" || el.tagName === "MARK"){
+            [].forEach.call(el.childNodes, function(child){
+                el.parentNode.insertBefore(child, el);
+            });
+            el.parentNode.removeChild(el);
+        }else if(el.parentNode.tagName === "mark"){
+            return unmarkElement(el.parentNode);
+        }
+        return null;
+    }
+
+    var unmarkAll = function(root){
+        root = root || document;
+        [].forEach.call(root.querySelectorAll("mark"), unmarkElement);
+    }
+    
+    var markElement = function(el){
+        if(el.parentNode.tagName === "mark" || el.parentNode.tagName === "MARK"){
+            return el.parentNode;
+        } else {
+            unmarkAll();
+            var marked = document.createElement("mark");
+            el.parentNode.insertBefore(marked, el);
+            marked.appendChild(el);
+            return marked;
+        }
+    }
+
+    var markFragmented = function(){
+        if(window.location.hash){
+            var el = document.getElementById(decodeURIComponent(window.location.hash.substr(1)));
+            if(el) markElement(el);
+        }
+    }
+
+    var registerXrefLink = function(link){
+        var el = document.getElementById(decodeURIComponent(link.getAttribute("href").substr(1)));
+        if(el){
+            link.addEventListener("click", function(){
+                markElement(el);
+            });
+        }
+    }
+
+    var registerXrefLinks = function(root){
+        root = root || document;
+        [].forEach.call(root.querySelectorAll("a.xref"), registerXrefLink);
+    }
+
+    markFragmented();
+    registerXrefLinks();
+}); </script> </body> </html> 

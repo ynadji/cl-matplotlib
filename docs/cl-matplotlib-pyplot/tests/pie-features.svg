@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="800" height="600" viewBox="0 0 800 600">
+<defs>
+</defs>
+<g transform="translate(0,600) scale(1,-1)">
+<rect width="800" height="600" fill="white"/>
+<path d="M 0.00 0.00 L 800.00 0.00 L 800.00 600.00 L 0.00 600.00 L 0.00 0.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 410.00 297.00 L 467.11 472.76 C 457.90 475.75 448.47 478.01 438.91 479.52 C 429.35 481.04 419.68 481.80 410.00 481.80 L 410.00 297.00 Z " fill="#9370DB" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 410.00 297.00 L 585.76 354.11 C 576.74 381.84 561.29 407.05 540.67 427.67 C 520.05 448.29 494.84 463.74 467.11 472.76 L 410.00 297.00 Z " fill="#DAA520" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 410.00 297.00 L 518.62 147.49 C 550.19 170.43 573.70 202.78 585.76 239.89 C 597.81 277.00 597.81 317.00 585.76 354.11 L 410.00 297.00 Z " fill="#2E8B57" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 410.00 297.00 L 260.49 188.38 C 289.29 148.74 332.70 122.14 381.09 114.48 C 429.48 106.81 478.99 118.70 518.62 147.49 L 410.00 297.00 Z " fill="#FF6347" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 410.00 297.00 L 410.00 481.80 C 375.92 481.80 342.50 472.37 313.44 454.57 C 284.39 436.76 260.81 411.26 245.34 380.90 C 229.87 350.53 223.10 316.47 225.77 282.50 C 228.44 248.53 240.46 215.95 260.49 188.38 L 410.00 297.00 Z " fill="#4682B4" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<text font-family="DejaVu Sans" font-size="11.11" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(427.35,406.51) scale(1,-1)">5.0%</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(441.80,497.78) scale(1,-1)">Others</text>
+<text font-family="DejaVu Sans" font-size="11.11" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(488.40,375.40) scale(1,-1)">15.0%</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(553.74,440.74) scale(1,-1)">JavaScript</text>
+<text font-family="DejaVu Sans" font-size="11.11" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(515.45,262.74) scale(1,-1)">20.0%</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(603.33,234.18) scale(1,-1)">C++</text>
+<text font-family="DejaVu Sans" font-size="11.11" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(392.65,187.49) scale(1,-1)">25.0%</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(378.20,96.22) scale(1,-1)">Java</text>
+<text font-family="DejaVu Sans" font-size="11.11" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(311.21,347.34) scale(1,-1)">35.0%</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="central" transform="translate(228.88,389.29) scale(1,-1)">Python</text>
+<text font-family="DejaVu Sans" font-size="16.67" fill="#000000" fill-opacity="1.00" text-anchor="middle" transform="translate(410.00,537.33) scale(1,-1)">Programming Languages</text>
+</g>
+</svg>

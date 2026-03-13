@@ -7,7 +7,7 @@ EXAMPLES_DIR := examples
 COMPARISON_REPORT_DIR := comparison_report
 COMPARISON_TOOL := tools/compare.py
 
-.PHONY: setup-python reference-images cl-images compare compare-png compare-svg compare-pdf report clean all
+.PHONY: setup-python reference-images cl-images compare compare-png compare-svg compare-pdf report clean all docs
 
 setup-python:
 	@echo "Setting up Python virtual environment..."
@@ -82,3 +82,13 @@ clean:
 	rm -f $(EXAMPLES_DIR)/*.pdf
 
 all: setup-python reference-images cl-images compare
+
+docs:
+	$(SBCL) --eval "(ql:quickload :staple-markdown)" \
+	        --eval "(staple:generate :cl-matplotlib-pyplot :if-exists :supersede)" \
+	        --eval "(quit)"
+	@if [ -d $(COMPARISON_REPORT_DIR) ]; then \
+		cp -r $(COMPARISON_REPORT_DIR) docs/comparison_report; \
+	else \
+		echo "WARNING: comparison_report/ not found. Run 'make compare' first."; \
+	fi
