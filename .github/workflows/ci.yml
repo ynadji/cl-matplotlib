@@ -11,6 +11,8 @@ jobs:
     strategy:
       matrix:
         lisp: [sbcl-bin, ccl-bin]
+    env:
+      LISP: ${{ matrix.lisp }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -23,84 +25,84 @@ jobs:
       - name: Install Quicklisp
         run: |
           curl -O https://beta.quicklisp.org/quicklisp.lisp
-          ${{ matrix.lisp }} --load quicklisp.lisp \
+          ros run -- --load quicklisp.lisp \
             --eval '(quicklisp-quickstart:install)' \
             --quit
 
       - name: Load Foundation System
         run: |
-          ${{ matrix.lisp }} \
+          ros run -- \
             --eval '(ql:quickload :cl-matplotlib-foundation)' \
             --quit
 
       - name: Run Foundation Tests
         run: |
-          ${{ matrix.lisp }} \
+          ros run -- \
             --eval '(ql:quickload :cl-matplotlib-foundation)' \
             --eval '(asdf:test-system :cl-matplotlib-foundation)' \
             --quit
 
       - name: Load Primitives System
         run: |
-          ${{ matrix.lisp }} \
+          ros run -- \
             --eval '(ql:quickload :cl-matplotlib-primitives)' \
             --quit
 
       - name: Run Primitives Tests
         run: |
-          ${{ matrix.lisp }} \
+          ros run -- \
             --eval '(ql:quickload :cl-matplotlib-primitives)' \
             --eval '(asdf:test-system :cl-matplotlib-primitives)' \
             --quit
 
       - name: Load Rendering System
         run: |
-          ${{ matrix.lisp }} \
+          ros run -- \
             --eval '(ql:quickload :cl-matplotlib-rendering)' \
             --quit
 
       - name: Run Rendering Tests
         run: |
-          ${{ matrix.lisp }} \
+          ros run -- \
             --eval '(ql:quickload :cl-matplotlib-rendering)' \
             --eval '(asdf:test-system :cl-matplotlib-rendering)' \
             --quit
 
       - name: Load Backends System
         run: |
-          ${{ matrix.lisp }} \
+          ros run -- \
             --eval '(ql:quickload :cl-matplotlib-backends)' \
             --quit
 
       - name: Run Backends Tests
         run: |
-          ${{ matrix.lisp }} \
+          ros run -- \
             --eval '(ql:quickload :cl-matplotlib-backends)' \
             --eval '(asdf:test-system :cl-matplotlib-backends)' \
             --quit
 
       - name: Load Containers System
         run: |
-          ${{ matrix.lisp }} \
+          ros run -- \
             --eval '(ql:quickload :cl-matplotlib-containers)' \
             --quit
 
       - name: Run Containers Tests
         run: |
-          ${{ matrix.lisp }} \
+          ros run -- \
             --eval '(ql:quickload :cl-matplotlib-containers)' \
             --eval '(asdf:test-system :cl-matplotlib-containers)' \
             --quit
 
       - name: Load pyplot System
         run: |
-          ${{ matrix.lisp }} \
+          ros run -- \
             --eval '(ql:quickload :cl-matplotlib-pyplot)' \
             --quit
 
       - name: Run pyplot Tests
         run: |
-          ${{ matrix.lisp }} \
+          ros run -- \
             --eval '(ql:quickload :cl-matplotlib-pyplot)' \
             --eval '(asdf:test-system :cl-matplotlib-pyplot)' \
             --quit
