@@ -92,3 +92,8 @@ docs:
 	else \
 		echo "WARNING: comparison_report/ not found. Run 'make compare' first."; \
 	fi
+	@if [ -d $(EXAMPLES_DIR) ]; then \
+		cp -r $(EXAMPLES_DIR) docs/examples; \
+	else \
+		echo "WARNING: examples/ not found. Run 'make cl-images' first."; \
+	fi
