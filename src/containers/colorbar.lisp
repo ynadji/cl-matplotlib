@@ -89,6 +89,8 @@ Returns the new axes-base."
                    (position (list cb-left p-bottom cb-width p-height)))
               ;; Shrink parent
               (setf (third (axes-base-position parent-ax)) new-parent-width)
+              ;; Recompute transAxes so title centers on the shrunk axes, not the original
+              (%setup-transforms parent-ax)
               ;; Create colorbar axes
               (let ((cax (make-instance 'axes-base
                                         :figure fig
@@ -112,6 +114,8 @@ Returns the new axes-base."
               ;; Shrink and reposition parent
               (setf (second (axes-base-position parent-ax)) new-parent-bottom
                     (fourth (axes-base-position parent-ax)) new-parent-height)
+              ;; Recompute transAxes so title centers on the shrunk axes, not the original
+              (%setup-transforms parent-ax)
               ;; Create colorbar axes
               (let ((cax (make-instance 'axes-base
                                         :figure fig

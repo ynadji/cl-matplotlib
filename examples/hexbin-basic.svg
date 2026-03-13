@@ -358,7 +358,7 @@
 <path d="M 494.55 353.56 L 494.55 364.17 L 483.27 369.47 L 472.00 364.17 L 472.00 353.56 L 483.27 348.26 Z " fill="#4A0C6B" fill-opacity="1.00" stroke="#000000" stroke-opacity="0.00" stroke-width="0.50" stroke-linecap="butt" stroke-linejoin="round"/>
 <path d="M 472.00 353.56 L 472.00 364.17 L 460.73 369.47 L 449.45 364.17 L 449.45 353.56 L 460.73 348.26 Z " fill="#CF4446" fill-opacity="1.00" stroke="#000000" stroke-opacity="0.00" stroke-width="0.50" stroke-linecap="butt" stroke-linejoin="round"/>
 <path d="M 449.45 353.56 L 449.45 364.17 L 438.18 369.47 L 426.91 364.17 L 426.91 353.56 L 438.18 348.26 Z " fill="#4A0C6B" fill-opacity="1.00" stroke="#000000" stroke-opacity="0.00" stroke-width="0.50" stroke-linecap="butt" stroke-linejoin="round"/>
-<text font-family="DejaVu Sans" font-size="16.67" fill="#000000" fill-opacity="1.00" text-anchor="middle" transform="translate(410.00,449.33) scale(1,-1)">Hexbin Plot</text>
+<text font-family="DejaVu Sans" font-size="16.67" fill="#000000" fill-opacity="1.00" text-anchor="middle" transform="translate(348.00,449.33) scale(1,-1)">Hexbin Plot</text>
 <path d="M 168.50 55.50 L 168.50 50.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.80" stroke-linecap="butt" stroke-linejoin="miter"/>
 <text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="text-before-edge" transform="translate(168.07,45.28) scale(1,-1)">-4</text>
 <path d="M 259.50 55.50 L 259.50 50.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.80" stroke-linecap="butt" stroke-linejoin="miter"/>
