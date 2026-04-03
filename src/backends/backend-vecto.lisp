@@ -530,34 +530,101 @@ raw matrices, and delegates to draw-collection-uniform-fast."
                                   (float alpha 1.0d0))
     t))
 
+;;; ============================================================
+;;; Scanline cache: rasterize once, stamp many
+;;; ============================================================
+
+(defun %rasterize-marker-to-scanlines (mpl-path scale-mtx)
+  "Rasterize an mpl-path marker with SCALE-MTX into cached scanlines.
+Traces the path into Vecto, runs the full rasterization pipeline once,
+and returns the frozen scanline data (list of cell-lists).
+The marker is rasterized at the origin — offsets are applied at replay time."
+  ;; Trace marker path into Vecto's graphics state at origin (scale only)
+  (let ((scale-only-mtx (make-array 6 :element-type 'double-float
+                                      :initial-element 0.0d0)))
+    (if scale-mtx
+        (setf (aref scale-only-mtx 0) (aref scale-mtx 0)
+              (aref scale-only-mtx 1) (aref scale-mtx 1)
+              (aref scale-only-mtx 2) (aref scale-mtx 2)
+              (aref scale-only-mtx 3) (aref scale-mtx 3))
+        (setf (aref scale-only-mtx 0) 1.0d0
+              (aref scale-only-mtx 3) 1.0d0))
+    ;; Trace the marker path into Vecto's current path structure
+    (%trace-path-to-vecto-raw mpl-path scale-only-mtx)
+    ;; Extract paths from graphics state, close them, then rasterize
+    (let ((vecto-paths (vecto::paths vecto::*graphics-state*)))
+      (vecto::close-paths vecto-paths)
+      (let* ((state (net.tuxee.aa:make-state))
+             (transform-fn (vecto::transform-function vecto::*graphics-state*))
+             (transformed (mapcar (lambda (p)
+                                    (vecto::transform-path
+                                     (net.tuxee.paths:path-clone p)
+                                     transform-fn))
+                                  vecto-paths)))
+        (net.tuxee.vectors:update-state state transformed)
+        (let ((scanlines (net.tuxee.aa:freeze-state state)))
+          ;; Clear paths without rendering (we captured the scanlines)
+          (vecto::clear-paths vecto::*graphics-state*)
+          scanlines)))))
+
+(defun %scanline-sweep-offset (scanline function dx dy start end)
+  "Like net.tuxee.aa:scanline-sweep but applies integer offset (DX, DY).
+All cell coordinates are shifted by (DX, DY) before processing.
+START and END are clipping bounds in absolute (offset) coordinates."
+  (declare (optimize speed (debug 0) (safety 0))
+           (type fixnum dx dy)
+           (type function function))
+  (let ((cover 0)
+        (y (+ (net.tuxee.aa::cell-y (first scanline)) dy))
+        (cells scanline)
+        (last-x nil))
+    (declare (type fixnum cover y)
+             (type (or null fixnum) last-x))
+    (when start
+      (loop while (and cells (< (+ (net.tuxee.aa::cell-x (car cells)) dx) start))
+            do (incf cover (net.tuxee.aa::cell-cover (car cells)))
+               (setf last-x (+ (net.tuxee.aa::cell-x (car cells)) dx)
+                     cells (cdr cells))))
+    (when cells
+      (dolist (cell cells)
+        (let ((x (+ (net.tuxee.aa::cell-x cell) dx)))
+          (declare (type fixnum x))
+          (when (and last-x (> x (1+ last-x)))
+            (let ((alpha (net.tuxee.aa::compute-alpha cover 0)))
+              (unless (zerop alpha)
+                (let ((start-x (if start (max start (1+ last-x)) (1+ last-x)))
+                      (end-x (if end (min end x) x)))
+                  (loop for ix fixnum from start-x below end-x
+                        do (funcall function ix y alpha))))))
+          (when (and end (>= x end))
+            (return))
+          (incf cover (net.tuxee.aa::cell-cover cell))
+          (let ((alpha (net.tuxee.aa::compute-alpha cover (net.tuxee.aa::cell-area cell))))
+            (unless (zerop alpha)
+              (funcall function x y alpha)))
+          (setf last-x x))))))
+
+(defun %replay-scanlines-at-offset (cached-scanlines draw-fn dx dy width height)
+  "Replay pre-computed scanlines at integer pixel offset (DX, DY).
+Calls DRAW-FN with (x y alpha) for each covered pixel, clipped to image bounds."
+  (declare (type fixnum dx dy width height)
+           (type function draw-fn))
+  (dolist (scanline cached-scanlines)
+    (let ((y (+ (net.tuxee.aa::cell-y (first scanline)) dy)))
+      (when (and (>= y 0) (< y height))
+        (%scanline-sweep-offset scanline draw-fn dx dy 0 width)))))
+
 (defun draw-collection-uniform-fast (renderer path offsets-vec n-items
                                      trans-offset-mtx scale-mtx
                                      face-color edge-color linewidth alpha)
   "Fast path for drawing a collection where all items share the same path,
 facecolor, edgecolor, and linewidth. Avoids per-item GC/transform allocation.
-
-OFFSETS-VEC is a simple-vector of (x y) lists.
-TRANS-OFFSET-MTX is a raw affine-matrix for transforming offsets, or nil.
-SCALE-MTX is a raw affine-matrix for the marker scale transform, or nil.
-FACE-COLOR and EDGE-COLOR are pre-resolved (r g b a) lists or nil."
+Uses scanline caching: rasterizes the marker ONCE, then stamps it at each offset."
   (declare (type simple-vector offsets-vec)
            (type fixnum n-items)
            (type (or null mpl.primitives::affine-matrix) trans-offset-mtx scale-mtx))
   (let ((has-fill face-color)
-        (has-stroke (and edge-color (> linewidth 0.0)))
-        ;; Reusable 6-element matrix: scale components are constant,
-        ;; only translation (indices 4,5) changes per point.
-        (final-mtx (make-array 6 :element-type 'double-float
-                                 :initial-element 0.0d0)))
-    (declare (type mpl.primitives::affine-matrix final-mtx))
-    ;; Initialize scale components (constant across all points)
-    (if scale-mtx
-        (setf (aref final-mtx 0) (aref scale-mtx 0)
-              (aref final-mtx 1) (aref scale-mtx 1)
-              (aref final-mtx 2) (aref scale-mtx 2)
-              (aref final-mtx 3) (aref scale-mtx 3))
-        (setf (aref final-mtx 0) 1.0d0
-              (aref final-mtx 3) 1.0d0))
+        (has-stroke (and edge-color (> linewidth 0.0))))
     (vecto:with-graphics-state
       ;; Set graphics state ONCE for all items
       (vecto:set-line-width (float (points-to-pixels renderer linewidth) 1.0))
@@ -573,35 +640,62 @@ FACE-COLOR and EDGE-COLOR are pre-resolved (r g b a) lists or nil."
               (b (third edge-color))
               (a (* (fourth edge-color) (float alpha 1.0))))
           (vecto:set-rgba-stroke (float r 1.0) (float g 1.0) (float b 1.0) (float a 1.0))))
-      ;; Draw each item — only the translation changes
-      (dotimes (i n-items)
-        (let* ((offset (svref offsets-vec i))
-               (ox (float (first offset) 1.0d0))
-               (oy (float (second offset) 1.0d0)))
-          ;; Transform offset through trans-offset
-          (multiple-value-bind (tx ty)
-              (if trans-offset-mtx
-                  (mpl.primitives::affine-transform-point trans-offset-mtx ox oy)
-                  (values ox oy))
-            ;; Update only translation in the reusable matrix.
-            ;; compose(scale, translate) = "apply scale first, then translate"
-            ;; Matrix = Translate * Scale = [[sx 0 tx] [0 sy ty] [0 0 1]]
-            ;; Translation components are just tx, ty (NOT scaled).
-            (setf (aref final-mtx 4) tx
-                  (aref final-mtx 5) ty)
-            ;; Trace and render
-            (cond
-              ((and has-fill has-stroke)
-               (%trace-path-to-vecto-raw path final-mtx)
-               (vecto:fill-path)
-               (%trace-path-to-vecto-raw path final-mtx)
-               (vecto:stroke))
-              (has-fill
-               (%trace-path-to-vecto-raw path final-mtx)
-               (vecto:fill-path))
-              (has-stroke
-               (%trace-path-to-vecto-raw path final-mtx)
-               (vecto:stroke)))))))))
+      ;; Rasterize marker ONCE into scanline cache
+      (let ((fill-scanlines (when has-fill
+                              (%rasterize-marker-to-scanlines path scale-mtx)))
+            (stroke-scanlines (when has-stroke
+                                ;; TODO: stroke scanline caching (needs stroke path expansion)
+                                nil))
+            (draw-fn (when has-fill
+                       (vecto::fill-draw-function vecto::*graphics-state*)))
+            (img-width (vecto::width vecto::*graphics-state*))
+            (img-height (vecto::height vecto::*graphics-state*)))
+        (if (and fill-scanlines (not has-stroke))
+            ;; Fast path: fill-only with cached scanlines (common for scatter)
+            (dotimes (i n-items)
+              (let* ((offset (svref offsets-vec i))
+                     (ox (float (first offset) 1.0d0))
+                     (oy (float (second offset) 1.0d0)))
+                (multiple-value-bind (tx ty)
+                    (if trans-offset-mtx
+                        (mpl.primitives::affine-transform-point trans-offset-mtx ox oy)
+                        (values ox oy))
+                  (%replay-scanlines-at-offset fill-scanlines draw-fn
+                                               (round tx) (round ty)
+                                               img-width img-height))))
+            ;; Fallback: per-item trace+rasterize (for stroke or no fill)
+            (let ((final-mtx (make-array 6 :element-type 'double-float
+                                           :initial-element 0.0d0)))
+              (declare (type mpl.primitives::affine-matrix final-mtx))
+              (if scale-mtx
+                  (setf (aref final-mtx 0) (aref scale-mtx 0)
+                        (aref final-mtx 1) (aref scale-mtx 1)
+                        (aref final-mtx 2) (aref scale-mtx 2)
+                        (aref final-mtx 3) (aref scale-mtx 3))
+                  (setf (aref final-mtx 0) 1.0d0
+                        (aref final-mtx 3) 1.0d0))
+              (dotimes (i n-items)
+                (let* ((offset (svref offsets-vec i))
+                       (ox (float (first offset) 1.0d0))
+                       (oy (float (second offset) 1.0d0)))
+                  (multiple-value-bind (tx ty)
+                      (if trans-offset-mtx
+                          (mpl.primitives::affine-transform-point trans-offset-mtx ox oy)
+                          (values ox oy))
+                    (setf (aref final-mtx 4) tx
+                          (aref final-mtx 5) ty)
+                    (cond
+                      ((and has-fill has-stroke)
+                       (%trace-path-to-vecto-raw path final-mtx)
+                       (vecto:fill-path)
+                       (%trace-path-to-vecto-raw path final-mtx)
+                       (vecto:stroke))
+                      (has-fill
+                       (%trace-path-to-vecto-raw path final-mtx)
+                       (vecto:fill-path))
+                      (has-stroke
+                       (%trace-path-to-vecto-raw path final-mtx)
+                       (vecto:stroke))))))))))))
 
 ;;; ============================================================
 ;;; Bridge: renderer-draw-text from artist protocol → draw-text
