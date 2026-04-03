@@ -303,6 +303,61 @@ pixel-center offset, then snaps to floor+0.5."
             ;; Unknown
             (t (incf i))))))))
 
+(defun %trace-path-to-vecto-raw (path mtx)
+  "Trace an mpl-path into the current Vecto path using a raw affine-matrix.
+MTX is a (simple-array double-float (6)) or NIL for identity.
+Uses affine-transform-point directly — zero allocation per vertex."
+  (declare (type (or null mpl.primitives::affine-matrix) mtx))
+  (let* ((verts (mpl.primitives:mpl-path-vertices path))
+         (codes (mpl.primitives:mpl-path-codes path))
+         (n (array-dimension verts 0))
+         (i 0))
+    (when (zerop n) (return-from %trace-path-to-vecto-raw nil))
+    (unless codes
+      (setf codes (make-array n :element-type '(unsigned-byte 8)))
+      (setf (aref codes 0) mpl.primitives:+moveto+)
+      (loop for j from 1 below n do
+        (setf (aref codes j) mpl.primitives:+lineto+)))
+    (flet ((xf (x y)
+             (if mtx
+                 (mpl.primitives::affine-transform-point
+                  mtx (float x 1.0d0) (float y 1.0d0))
+                 (values (float x 1.0d0) (float y 1.0d0)))))
+      (declare (inline xf))
+      (loop while (< i n) do
+        (let ((code (aref codes i)))
+          (cond
+            ((= code mpl.primitives:+moveto+)
+             (multiple-value-bind (tx ty) (xf (aref verts i 0) (aref verts i 1))
+               (vecto:move-to (float tx 1.0) (float ty 1.0)))
+             (incf i))
+            ((= code mpl.primitives:+lineto+)
+             (multiple-value-bind (tx ty) (xf (aref verts i 0) (aref verts i 1))
+               (vecto:line-to (float tx 1.0) (float ty 1.0)))
+             (incf i))
+            ((= code mpl.primitives:+curve3+)
+             (when (< (1+ i) n)
+               (multiple-value-bind (cx cy) (xf (aref verts i 0) (aref verts i 1))
+                 (multiple-value-bind (ex ey) (xf (aref verts (1+ i) 0) (aref verts (1+ i) 1))
+                   (vecto:quadratic-to (float cx 1.0) (float cy 1.0)
+                                       (float ex 1.0) (float ey 1.0)))))
+             (incf i 2))
+            ((= code mpl.primitives:+curve4+)
+             (when (< (+ i 2) n)
+               (multiple-value-bind (c1x c1y) (xf (aref verts i 0) (aref verts i 1))
+                 (multiple-value-bind (c2x c2y) (xf (aref verts (1+ i) 0) (aref verts (1+ i) 1))
+                   (multiple-value-bind (ex ey) (xf (aref verts (+ i 2) 0) (aref verts (+ i 2) 1))
+                     (vecto:curve-to (float c1x 1.0) (float c1y 1.0)
+                                     (float c2x 1.0) (float c2y 1.0)
+                                     (float ex 1.0) (float ey 1.0))))))
+             (incf i 3))
+            ((= code mpl.primitives:+closepoly+)
+             (vecto:close-subpath)
+             (incf i))
+            ((= code mpl.primitives:+stop+)
+             (return))
+            (t (incf i))))))))
+
 ;;; ============================================================
 ;;; Hatch rendering
 ;;; ============================================================
@@ -452,6 +507,101 @@ STROKE can be T (use gc-foreground) or nil."
     ;; If stroke-only, ensure gc has a foreground but no background
     ;; If fill+stroke, pass rgbface to draw-path
     (draw-path renderer gc path transform rgbface)))
+
+;;; ============================================================
+;;; Bridge: renderer-draw-collection-uniform fast path
+;;; ============================================================
+
+(defmethod mpl.rendering:renderer-draw-collection-uniform
+    ((renderer renderer-vecto) path offsets-vec n-items
+     trans-offset scale-transform face-color edge-color linewidth alpha)
+  "Vecto fast path for uniform collections. Resolves colors once, extracts
+raw matrices, and delegates to draw-collection-uniform-fast."
+  (let ((resolved-face (when face-color (%resolve-color face-color)))
+        (resolved-edge (when edge-color (%resolve-color edge-color)))
+        (trans-offset-mtx (when trans-offset
+                            (mpl.primitives:get-matrix trans-offset)))
+        (scale-mtx (when scale-transform
+                     (mpl.primitives:get-matrix scale-transform))))
+    (draw-collection-uniform-fast renderer path offsets-vec n-items
+                                  trans-offset-mtx scale-mtx
+                                  resolved-face resolved-edge
+                                  (float linewidth 1.0d0)
+                                  (float alpha 1.0d0))
+    t))
+
+(defun draw-collection-uniform-fast (renderer path offsets-vec n-items
+                                     trans-offset-mtx scale-mtx
+                                     face-color edge-color linewidth alpha)
+  "Fast path for drawing a collection where all items share the same path,
+facecolor, edgecolor, and linewidth. Avoids per-item GC/transform allocation.
+
+OFFSETS-VEC is a simple-vector of (x y) lists.
+TRANS-OFFSET-MTX is a raw affine-matrix for transforming offsets, or nil.
+SCALE-MTX is a raw affine-matrix for the marker scale transform, or nil.
+FACE-COLOR and EDGE-COLOR are pre-resolved (r g b a) lists or nil."
+  (declare (type simple-vector offsets-vec)
+           (type fixnum n-items)
+           (type (or null mpl.primitives::affine-matrix) trans-offset-mtx scale-mtx))
+  (let ((has-fill face-color)
+        (has-stroke (and edge-color (> linewidth 0.0)))
+        ;; Reusable 6-element matrix: scale components are constant,
+        ;; only translation (indices 4,5) changes per point.
+        (final-mtx (make-array 6 :element-type 'double-float
+                                 :initial-element 0.0d0)))
+    (declare (type mpl.primitives::affine-matrix final-mtx))
+    ;; Initialize scale components (constant across all points)
+    (if scale-mtx
+        (setf (aref final-mtx 0) (aref scale-mtx 0)
+              (aref final-mtx 1) (aref scale-mtx 1)
+              (aref final-mtx 2) (aref scale-mtx 2)
+              (aref final-mtx 3) (aref scale-mtx 3))
+        (setf (aref final-mtx 0) 1.0d0
+              (aref final-mtx 3) 1.0d0))
+    (vecto:with-graphics-state
+      ;; Set graphics state ONCE for all items
+      (vecto:set-line-width (float (points-to-pixels renderer linewidth) 1.0))
+      (when has-fill
+        (let ((r (first face-color))
+              (g (second face-color))
+              (b (third face-color))
+              (a (* (fourth face-color) (float alpha 1.0))))
+          (vecto:set-rgba-fill (float r 1.0) (float g 1.0) (float b 1.0) (float a 1.0))))
+      (when has-stroke
+        (let ((r (first edge-color))
+              (g (second edge-color))
+              (b (third edge-color))
+              (a (* (fourth edge-color) (float alpha 1.0))))
+          (vecto:set-rgba-stroke (float r 1.0) (float g 1.0) (float b 1.0) (float a 1.0))))
+      ;; Draw each item — only the translation changes
+      (dotimes (i n-items)
+        (let* ((offset (svref offsets-vec i))
+               (ox (float (first offset) 1.0d0))
+               (oy (float (second offset) 1.0d0)))
+          ;; Transform offset through trans-offset
+          (multiple-value-bind (tx ty)
+              (if trans-offset-mtx
+                  (mpl.primitives::affine-transform-point trans-offset-mtx ox oy)
+                  (values ox oy))
+            ;; Update only translation in the reusable matrix.
+            ;; compose(scale, translate) = "apply scale first, then translate"
+            ;; Matrix = Translate * Scale = [[sx 0 tx] [0 sy ty] [0 0 1]]
+            ;; Translation components are just tx, ty (NOT scaled).
+            (setf (aref final-mtx 4) tx
+                  (aref final-mtx 5) ty)
+            ;; Trace and render
+            (cond
+              ((and has-fill has-stroke)
+               (%trace-path-to-vecto-raw path final-mtx)
+               (vecto:fill-path)
+               (%trace-path-to-vecto-raw path final-mtx)
+               (vecto:stroke))
+              (has-fill
+               (%trace-path-to-vecto-raw path final-mtx)
+               (vecto:fill-path))
+              (has-stroke
+               (%trace-path-to-vecto-raw path final-mtx)
+               (vecto:stroke)))))))))
 
 ;;; ============================================================
 ;;; Bridge: renderer-draw-text from artist protocol → draw-text

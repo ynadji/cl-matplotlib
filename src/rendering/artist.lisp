@@ -217,6 +217,19 @@ Example: (artist-set line :color \"red\" :linewidth 2.0)"
 (defgeneric renderer-draw-path (renderer gc path transform &key fill stroke)
   (:documentation "Draw a path on the renderer."))
 
+(defgeneric renderer-draw-collection-uniform (renderer path offsets-vec n-items
+                                              trans-offset scale-transform
+                                              face-color edge-color linewidth alpha)
+  (:documentation "Fast path for drawing a uniform collection (one path, one set of properties).
+Backends should specialize this to avoid per-item overhead.
+Returns T if handled, NIL to fall back to the generic per-item loop.")
+  (:method (renderer path offsets-vec n-items trans-offset scale-transform
+            face-color edge-color linewidth alpha)
+    ;; Default: not supported, fall back to per-item rendering
+    (declare (ignore renderer path offsets-vec n-items trans-offset scale-transform
+                     face-color edge-color linewidth alpha))
+    nil))
+
 (defgeneric renderer-draw-text (renderer gc x y text &key angle ha va)
   (:documentation "Draw text on the renderer.
 HA — horizontal alignment (:left, :center, :right). Default :left.

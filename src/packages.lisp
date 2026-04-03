@@ -232,7 +232,8 @@
            ;; Mock renderer
            #:mock-renderer #:make-mock-renderer #:mock-renderer-calls
            #:mock-renderer-record
-           #:renderer-draw-path #:renderer-draw-text #:renderer-draw-image
+           #:renderer-draw-path #:renderer-draw-collection-uniform
+           #:renderer-draw-text #:renderer-draw-image
            ;; Line2D
            #:line-2d #:line-2d-xdata #:line-2d-ydata
            #:line-2d-linewidth #:line-2d-linestyle #:line-2d-color

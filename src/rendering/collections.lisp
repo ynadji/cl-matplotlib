@@ -121,6 +121,21 @@ WIDTHS can be a single number or a list of numbers."
   (when (and list (plusp (length list)))
     (elt list (mod index (length list)))))
 
+(declaim (inline %coll-nth-vec))
+(defun %coll-nth-vec (vec len index)
+  "Access simple-vector VEC cyclically at INDEX. LEN is the pre-cached length.
+O(1) access — use this instead of %coll-nth in hot loops."
+  (declare (type simple-vector vec) (type fixnum len index))
+  (svref vec (if (= len 1) 0 (mod index len))))
+
+(defun %ensure-vector (seq)
+  "Coerce SEQ to a simple-vector for O(1) indexed access.
+Returns (values simple-vector length), or (values nil 0) if SEQ is nil/empty."
+  (if (and seq (plusp (length seq)))
+      (let ((v (coerce seq 'simple-vector)))
+        (values v (length v)))
+      (values nil 0)))
+
 ;;; ============================================================
 ;;; Collection default method implementations
 ;;; ============================================================
@@ -150,56 +165,96 @@ For each item: get path, apply per-item transform, apply offset, draw."
          (alpha (or (artist-alpha c) 1.0d0)))
     (when (zerop n-items)
       (return-from draw))
-    ;; Draw each item
-    (dotimes (i n-items)
-      (let* ((path-idx (if (zerop n-paths) 0 (mod i n-paths)))
-             (path (when (plusp n-paths) (elt paths path-idx)))
-             (offset (when offsets (%coll-nth offsets i)))
-             (facecolor (%coll-nth facecolors i))
-             (edgecolor (%coll-nth edgecolors i))
-             (linewidth (or (%coll-nth linewidths i) 1.0))
-             (linestyle (or (%coll-nth linestyles i) :solid))
-             (antialiased (let ((aa (%coll-nth antialiaseds i)))
-                            (if (null antialiaseds) t aa))))
-        (when path
-          ;; Build graphics context for this item
-          (let ((gc (make-gc :foreground edgecolor
-                             :background facecolor
-                             :linewidth linewidth
-                             :linestyle linestyle
-                             :alpha (float alpha 1.0)
-                             :antialiased antialiased
-                             :capstyle (collection-capstyle c)
-                             :joinstyle (collection-joinstyle c))))
-            ;; Compute transform: per-item transform (if any) composed with offset
-            (let ((item-transform (%coll-nth transforms i))
-                  (final-transform nil))
-              ;; Start with the item's own transform
-              (if item-transform
-                  (setf final-transform item-transform)
-                  (setf final-transform nil))
-              ;; Apply offset via translation
-              (when offset
-                (let* ((ox (float (first offset) 1.0d0))
-                       (oy (float (second offset) 1.0d0))
-                       ;; Transform the offset through trans-offset
-                       (transformed-offset
-                         (if trans-offset
-                             (mpl.primitives:transform-point
-                              trans-offset (list ox oy))
-                             (vector ox oy)))
-                       (tx (aref transformed-offset 0))
-                       (ty (aref transformed-offset 1))
-                       (offset-tr (mpl.primitives:make-affine-2d
-                                   :translate (list tx ty))))
-                  (if final-transform
-                      (setf final-transform
-                            (mpl.primitives:compose final-transform offset-tr))
-                      (setf final-transform offset-tr))))
-              ;; Draw the path
-              (renderer-draw-path renderer gc path final-transform
-                                  :fill facecolor
-                                  :stroke edgecolor)))))))
+    ;; Fast path: when all properties are uniform (single path, single facecolor,
+    ;; single edgecolor, single linewidth, single/uniform transforms), delegate
+    ;; to the backend's batch renderer to avoid per-item overhead.
+    (let ((uniform-p (and (= n-paths 1)
+                          offsets
+                          (<= (length facecolors) 1)
+                          (<= (length edgecolors) 1)
+                          (<= (length linewidths) 1)
+                          (<= (length transforms) 1))))
+      (when uniform-p
+        (let ((result (renderer-draw-collection-uniform
+                       renderer
+                       (first paths)
+                       (coerce offsets 'simple-vector)
+                       n-items
+                       trans-offset
+                       (when transforms (first transforms))
+                       (first facecolors)
+                       (first edgecolors)
+                       (if linewidths (first linewidths) 1.0)
+                       alpha)))
+          (when result
+            (setf (artist-stale c) nil)
+            (return-from draw))))
+      ;; General path: coerce property lists to vectors for O(1) access.
+      (multiple-value-bind (offsets-vec offsets-len) (%ensure-vector offsets)
+        (multiple-value-bind (transforms-vec transforms-len) (%ensure-vector transforms)
+          (multiple-value-bind (facecolors-vec facecolors-len) (%ensure-vector facecolors)
+            (multiple-value-bind (edgecolors-vec edgecolors-len) (%ensure-vector edgecolors)
+              (multiple-value-bind (linewidths-vec linewidths-len) (%ensure-vector linewidths)
+                (multiple-value-bind (linestyles-vec linestyles-len) (%ensure-vector linestyles)
+                  (multiple-value-bind (antialiaseds-vec antialiaseds-len) (%ensure-vector antialiaseds)
+                    (let ((paths-vec (if paths (coerce paths 'simple-vector) #())))
+                      ;; Draw each item
+                      (dotimes (i n-items)
+                        (let* ((path-idx (if (zerop n-paths) 0 (mod i n-paths)))
+                               (path (when (plusp n-paths) (svref paths-vec path-idx)))
+                               (offset (when (plusp offsets-len)
+                                         (%coll-nth-vec offsets-vec offsets-len i)))
+                               (facecolor (when (plusp facecolors-len)
+                                            (%coll-nth-vec facecolors-vec facecolors-len i)))
+                               (edgecolor (when (plusp edgecolors-len)
+                                            (%coll-nth-vec edgecolors-vec edgecolors-len i)))
+                               (linewidth (if (plusp linewidths-len)
+                                              (%coll-nth-vec linewidths-vec linewidths-len i)
+                                              1.0))
+                               (linestyle (if (plusp linestyles-len)
+                                              (%coll-nth-vec linestyles-vec linestyles-len i)
+                                              :solid))
+                               (antialiased (if (plusp antialiaseds-len)
+                                                (%coll-nth-vec antialiaseds-vec antialiaseds-len i)
+                                                t)))
+                          (when path
+                            ;; Build graphics context for this item
+                            (let ((gc (make-gc :foreground edgecolor
+                                               :background facecolor
+                                               :linewidth linewidth
+                                               :linestyle linestyle
+                                               :alpha (float alpha 1.0)
+                                               :antialiased antialiased
+                                               :capstyle (collection-capstyle c)
+                                               :joinstyle (collection-joinstyle c))))
+                              ;; Compute transform: per-item transform (if any) composed with offset
+                              (let ((item-transform (when (plusp transforms-len)
+                                                      (%coll-nth-vec transforms-vec transforms-len i)))
+                                    (final-transform nil))
+                                (if item-transform
+                                    (setf final-transform item-transform)
+                                    (setf final-transform nil))
+                                ;; Apply offset via translation
+                                (when offset
+                                  (let* ((ox (float (first offset) 1.0d0))
+                                         (oy (float (second offset) 1.0d0))
+                                         (transformed-offset
+                                           (if trans-offset
+                                               (mpl.primitives:transform-point
+                                                trans-offset (list ox oy))
+                                               (vector ox oy)))
+                                         (tx (aref transformed-offset 0))
+                                         (ty (aref transformed-offset 1))
+                                         (offset-tr (mpl.primitives:make-affine-2d
+                                                     :translate (list tx ty))))
+                                    (if final-transform
+                                        (setf final-transform
+                                              (mpl.primitives:compose final-transform offset-tr))
+                                        (setf final-transform offset-tr))))
+                                ;; Draw the path
+                                (renderer-draw-path renderer gc path final-transform
+                                                    :fill facecolor
+                                                    :stroke edgecolor))))))))))))))))
   (setf (artist-stale c) nil))
 
 ;;; ============================================================
@@ -316,17 +371,25 @@ SIZES is a list of numbers (area in points^2)."
 (defmethod collection-get-transforms ((pc path-collection))
   "Return per-item scale transforms based on sizes.
 Each size (in points^2) is converted to a scale factor.
-Includes DPI conversion: scale = sqrt(size) * dpi/72 (matching matplotlib)."
+Includes DPI conversion: scale = sqrt(size) * dpi/72 (matching matplotlib).
+When all sizes are uniform (single element), returns a single-element list
+to avoid O(n) allocation — the cyclic access in draw handles repetition."
   (let ((sizes (path-collection-sizes pc))
         (offsets (collection-offsets pc))
         (dpi-scale (/ (float (path-collection-dpi pc) 1.0d0) 72.0d0)))
     (when (and sizes offsets)
-      (let ((n (length offsets)))
-        (loop for i from 0 below n
-              for size = (or (%coll-nth sizes i) 36.0)
-              for scale = (* (sqrt (float size 1.0d0)) dpi-scale)
-              collect (mpl.primitives:make-affine-2d
-                       :scale (list scale scale)))))))
+      (if (= (length sizes) 1)
+          ;; Uniform size: single transform, cycled by draw loop
+          (let* ((size (or (first sizes) 36.0))
+                 (scale (* (sqrt (float size 1.0d0)) dpi-scale)))
+            (list (mpl.primitives:make-affine-2d :scale (list scale scale))))
+          ;; Variable sizes: per-item transforms
+          (let ((n (length offsets)))
+            (loop for i from 0 below n
+                  for size = (or (%coll-nth sizes i) 36.0)
+                  for scale = (* (sqrt (float size 1.0d0)) dpi-scale)
+                  collect (mpl.primitives:make-affine-2d
+                           :scale (list scale scale))))))))
 
 ;;; ============================================================
 ;;; PatchCollection — efficient rendering of many patches

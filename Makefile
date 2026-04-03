@@ -7,7 +7,7 @@ EXAMPLES_DIR := examples
 COMPARISON_REPORT_DIR := comparison_report
 COMPARISON_TOOL := tools/compare.py
 
-.PHONY: setup-python reference-images cl-images compare compare-png compare-svg compare-pdf report clean all docs
+.PHONY: setup-python reference-images cl-images compare compare-png compare-svg compare-pdf report clean all docs benchmark benchmark-python benchmark-cl
 
 setup-python:
 	@echo "Setting up Python virtual environment..."
@@ -80,6 +80,22 @@ clean:
 	rm -f $(EXAMPLES_DIR)/*.png
 	rm -f $(EXAMPLES_DIR)/*.svg
 	rm -f $(EXAMPLES_DIR)/*.pdf
+
+benchmark-python:
+	@echo "=== Python benchmarks ==="
+	@for f in benchmarks/*_benchmark.py; do \
+		echo "--- $$f ---"; \
+		$(PYTHON) "$$f"; \
+	done
+
+benchmark-cl:
+	@echo "=== CL benchmarks ==="
+	@for f in benchmarks/*_benchmark.lisp; do \
+		echo "--- $$f ---"; \
+		$(SBCL) --load "$$f" --quit 2>&1; \
+	done
+
+benchmark: benchmark-python benchmark-cl
 
 all: setup-python reference-images cl-images compare
 

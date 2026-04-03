@@ -107,16 +107,19 @@ Returns the PathCollection artist."
                               (prog1 (format nil "C~D" (mod (axes-base-color-cycle-index ax) 10))
                                 (incf (axes-base-color-cycle-index ax)))))
          (n (min (length xdata) (length ydata)))
-         ;; Build offsets from data coordinates
-         (offsets (loop for i from 0 below n
-                        collect (list (float (elt xdata i) 1.0d0)
-                                      (float (elt ydata i) 1.0d0))))
+         ;; Build offsets from data coordinates — iterate in parallel,
+         ;; not via indexed (elt) access which is O(n) per call on lists.
+         (offsets (loop for x in (coerce xdata 'list)
+                        for y in (coerce ydata 'list)
+                        repeat n
+                        collect (list (float x 1.0d0)
+                                      (float y 1.0d0))))
          ;; Create marker path — a unit circle for :circle marker
          (marker-path (mpl.rendering:make-marker-path
                        (if (eq marker :circle) :o marker)))
-         ;; Build sizes list (uniform for now)
+         ;; Build sizes list — single-element for uniform size (cycled by collection draw)
          (sizes (if (numberp s)
-                    (make-list n :initial-element (float s 1.0d0))
+                    (list (float s 1.0d0))
                     (loop for i from 0 below n
                           collect (float (elt s i) 1.0d0))))
          ;; Get edge color from rcParams

@@ -4,3 +4,4 @@ reference_images/
 *.pyc
 __pycache__/
 *.fasl
+.sisyphus
