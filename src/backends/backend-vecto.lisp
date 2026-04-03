@@ -545,9 +545,8 @@ The marker is rasterized centered at pixel (0,0) — offsets applied at replay."
          (state (net.tuxee.aa:make-state))
          (cl-path (net.tuxee.paths:create-path :closed-polyline))
          ;; Apply scale transform to get pixel-space marker coordinates.
-         ;; Negate sy to flip Y axis (Vecto pixel space has Y=0 at top).
          (sx (if scale-mtx (aref scale-mtx 0) 1.0d0))
-         (sy (- (if scale-mtx (aref scale-mtx 3) 1.0d0))))
+         (sy (if scale-mtx (aref scale-mtx 3) 1.0d0)))
     (when (zerop n) (return-from %rasterize-marker-to-scanlines nil))
     ;; Build cl-vectors path from mpl-path vertices + scale transform.
     ;; This bypasses Vecto's path API entirely — no graphics state interaction.
@@ -680,6 +679,9 @@ Uses scanline caching: rasterizes the marker ONCE, then stamps it at each offset
             (img-height (vecto::height vecto::*graphics-state*)))
         (if (and fill-scanlines (not has-stroke))
             ;; Fast path: fill-only with cached scanlines (common for scatter)
+            ;; trans-offset-mtx maps data coords to Vecto user-space (Y-up).
+            ;; We bypass Vecto's Y-flip transform, so apply it here:
+            ;; pixel-y = img-height - user-y
             (dotimes (i n-items)
               (let* ((offset (svref offsets-vec i))
                      (ox (float (first offset) 1.0d0))
@@ -689,7 +691,8 @@ Uses scanline caching: rasterizes the marker ONCE, then stamps it at each offset
                         (mpl.primitives::affine-transform-point trans-offset-mtx ox oy)
                         (values ox oy))
                   (%replay-scanlines-at-offset fill-scanlines draw-fn
-                                               (round tx) (round ty)
+                                               (round tx)
+                                               (round (- img-height ty))
                                                img-width img-height))))
             ;; Fallback: per-item trace+rasterize (for stroke or no fill)
             (let ((final-mtx (make-array 6 :element-type 'double-float
