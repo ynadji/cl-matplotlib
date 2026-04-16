@@ -284,12 +284,12 @@ SEGMENTS is a list of segments, where each segment is a list of (x y) points."
               (let* ((n (length seg))
                      (verts (make-array (list n 2) :element-type 'double-float))
                      (codes (make-array n :element-type '(unsigned-byte 8))))
-                (dotimes (i n)
-                  (let ((pt (elt seg i)))
-                    (setf (aref verts i 0) (float (first pt) 1.0d0)
-                          (aref verts i 1) (float (second pt) 1.0d0))
-                    (setf (aref codes i)
-                          (if (zerop i) mpl.primitives:+moveto+ mpl.primitives:+lineto+))))
+                (loop for pt in seg
+                      for i from 0
+                      do (setf (aref verts i 0) (float (first pt) 1.0d0)
+                               (aref verts i 1) (float (second pt) 1.0d0))
+                         (setf (aref codes i)
+                               (if (zerop i) mpl.primitives:+moveto+ mpl.primitives:+lineto+)))
                 (mpl.primitives:%make-mpl-path :vertices verts :codes codes)))
             segments)))
 
@@ -309,24 +309,24 @@ SEGMENTS is a list of segments, where each segment is a list of (x y) points."
          (n (length paths)))
     (when (zerop n)
       (return-from draw))
-    (dotimes (i n)
-      (let* ((path (elt paths i))
-             (edgecolor (or (%coll-nth edgecolors i) "black"))
-             (facecolor (%coll-nth facecolors i))
-             (linewidth (or (%coll-nth linewidths i) 1.0))
-             (linestyle (or (%coll-nth linestyles i) :solid))
-             (antialiased (let ((aa (%coll-nth antialiaseds i)))
-                            (if (null antialiaseds) t aa))))
-        (let ((gc (make-gc :foreground edgecolor
-                           :linewidth linewidth
-                           :linestyle linestyle
-                           :alpha (float alpha 1.0)
-                           :antialiased antialiased
-                           :capstyle (collection-capstyle lc)
-                           :joinstyle (collection-joinstyle lc))))
-          (renderer-draw-path renderer gc path transform
-                              :fill facecolor
-                              :stroke edgecolor)))))
+    (loop for path in paths
+          for i from 0
+          do (let* ((edgecolor (or (%coll-nth edgecolors i) "black"))
+                    (facecolor (%coll-nth facecolors i))
+                    (linewidth (or (%coll-nth linewidths i) 1.0))
+                    (linestyle (or (%coll-nth linestyles i) :solid))
+                    (antialiased (let ((aa (%coll-nth antialiaseds i)))
+                                   (if (null antialiaseds) t aa))))
+               (let ((gc (make-gc :foreground edgecolor
+                                  :linewidth linewidth
+                                  :linestyle linestyle
+                                  :alpha (float alpha 1.0)
+                                  :antialiased antialiased
+                                  :capstyle (collection-capstyle lc)
+                                  :joinstyle (collection-joinstyle lc))))
+                 (renderer-draw-path renderer gc path transform
+                                     :fill facecolor
+                                     :stroke edgecolor)))))
   (setf (artist-stale lc) nil))
 
 ;;; ============================================================
@@ -462,12 +462,12 @@ Vertices are already in correct winding order from marching squares."
                    (total (1+ n))
                    (verts (make-array (list total 2) :element-type 'double-float))
                    (codes (make-array total :element-type '(unsigned-byte 8))))
-              (dotimes (i n)
-                (let ((pt (elt vert-list i)))
-                  (setf (aref verts i 0) (float (first pt) 1.0d0)
-                        (aref verts i 1) (float (second pt) 1.0d0))
-                  (setf (aref codes i)
-                        (if (zerop i) mpl.primitives:+moveto+ mpl.primitives:+lineto+))))
+              (loop for pt in vert-list
+                    for i from 0
+                    do (setf (aref verts i 0) (float (first pt) 1.0d0)
+                             (aref verts i 1) (float (second pt) 1.0d0))
+                       (setf (aref codes i)
+                             (if (zerop i) mpl.primitives:+moveto+ mpl.primitives:+lineto+)))
               ;; Close the polygon
               (setf (aref verts n 0) (aref verts 0 0)
                     (aref verts n 1) (aref verts 0 1)
@@ -491,25 +491,25 @@ Vertices are already in correct winding order from marching squares."
          (n (length paths)))
     (when (zerop n)
       (return-from draw))
-    (dotimes (i n)
-      (let* ((path (elt paths i))
-             (facecolor (or (%coll-nth facecolors i) "C0"))
-             (edgecolor (%coll-nth edgecolors i))
-             (linewidth (or (%coll-nth linewidths i) 1.0))
-             (linestyle (or (%coll-nth linestyles i) :solid))
-             (antialiased (let ((aa (%coll-nth antialiaseds i)))
-                            (if (null antialiaseds) t aa))))
-        (let ((gc (make-gc :foreground edgecolor
-                           :background facecolor
-                           :linewidth linewidth
-                           :linestyle linestyle
-                           :alpha (float alpha 1.0)
-                           :antialiased antialiased
-                           :capstyle (collection-capstyle pc)
-                           :joinstyle (collection-joinstyle pc))))
-          (renderer-draw-path renderer gc path transform
-                              :fill facecolor
-                              :stroke edgecolor)))))
+    (loop for path in paths
+          for i from 0
+          do (let* ((facecolor (or (%coll-nth facecolors i) "C0"))
+                    (edgecolor (%coll-nth edgecolors i))
+                    (linewidth (or (%coll-nth linewidths i) 1.0))
+                    (linestyle (or (%coll-nth linestyles i) :solid))
+                    (antialiased (let ((aa (%coll-nth antialiaseds i)))
+                                   (if (null antialiaseds) t aa))))
+               (let ((gc (make-gc :foreground edgecolor
+                                  :background facecolor
+                                  :linewidth linewidth
+                                  :linestyle linestyle
+                                  :alpha (float alpha 1.0)
+                                  :antialiased antialiased
+                                  :capstyle (collection-capstyle pc)
+                                  :joinstyle (collection-joinstyle pc))))
+                 (renderer-draw-path renderer gc path transform
+                                     :fill facecolor
+                                     :stroke edgecolor)))))
   (setf (artist-stale pc) nil))
 
 ;;; ============================================================
@@ -618,23 +618,23 @@ anti-aliased seam artifacts at cell boundaries (cl-aa has no AA-off option)."
          (n (length paths)))
     (when (zerop n)
       (return-from draw))
-    (dotimes (i n)
-      (let* ((path (elt paths i))
-             (facecolor (or (%coll-nth facecolors i) "C0"))
-             (edgecolor (%coll-nth edgecolors i))
-             (linewidth (or (%coll-nth linewidths i) 0.0)))
-        (let ((gc (make-gc :foreground edgecolor
-                           :background facecolor
-                           :linewidth linewidth
-                           :linestyle :solid
-                           :alpha (float alpha 1.0)
-                           :antialiased nil
-                           :capstyle (collection-capstyle qm)
-                           :joinstyle (collection-joinstyle qm))))
-          (renderer-draw-path renderer gc path transform
-                              :fill facecolor
-                              :stroke (when (and edgecolor (plusp linewidth))
-                                        edgecolor))))))
+    (loop for path in paths
+          for i from 0
+          do (let* ((facecolor (or (%coll-nth facecolors i) "C0"))
+                    (edgecolor (%coll-nth edgecolors i))
+                    (linewidth (or (%coll-nth linewidths i) 0.0)))
+               (let ((gc (make-gc :foreground edgecolor
+                                  :background facecolor
+                                  :linewidth linewidth
+                                  :linestyle :solid
+                                  :alpha (float alpha 1.0)
+                                  :antialiased nil
+                                  :capstyle (collection-capstyle qm)
+                                  :joinstyle (collection-joinstyle qm))))
+                 (renderer-draw-path renderer gc path transform
+                                     :fill facecolor
+                                     :stroke (when (and edgecolor (plusp linewidth))
+                                               edgecolor))))))
   (setf (artist-stale qm) nil))
 
 ;;; ============================================================

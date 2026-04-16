@@ -107,14 +107,17 @@ Returns a list of segments, where each segment is a list of (x y) points
 forming a connected contour path."
   (let* ((nx (length x-coords))
          (ny (length y-coords))
+         ;; Coerce to vectors for O(1) random access — (1+ i) and (1+ j) patterns
+         (xc-vec (coerce x-coords 'vector))
+         (yc-vec (coerce y-coords 'vector))
          (raw-segments nil))
     ;; Phase 1: Generate raw edge-crossing segments
     (loop for j from 0 below (1- ny) do
       (loop for i from 0 below (1- nx) do
-        (let* ((x0 (float (elt x-coords i) 1.0d0))
-               (x1 (float (elt x-coords (1+ i)) 1.0d0))
-               (y0 (float (elt y-coords j) 1.0d0))
-               (y1 (float (elt y-coords (1+ j)) 1.0d0))
+        (let* ((x0 (float (aref xc-vec i) 1.0d0))
+               (x1 (float (aref xc-vec (1+ i)) 1.0d0))
+               (y0 (float (aref yc-vec j) 1.0d0))
+               (y1 (float (aref yc-vec (1+ j)) 1.0d0))
                (z-bl (float (aref z-data j i) 1.0d0))
                (z-br (float (aref z-data j (1+ i)) 1.0d0))
                (z-tr (float (aref z-data (1+ j) (1+ i)) 1.0d0))
@@ -232,14 +235,17 @@ Uses a simplified approach: generates the boundary contour at each level
 and constructs filled regions from the grid cells that fall within the band."
   (let* ((nx (length x-coords))
          (ny (length y-coords))
+         ;; Coerce to vectors for O(1) random access — (1+ i) and (1+ j) patterns
+         (xc-vec (coerce x-coords 'vector))
+         (yc-vec (coerce y-coords 'vector))
          (polygons nil))
     ;; For each grid cell, check if it overlaps the band
     (loop for j from 0 below (1- ny) do
       (loop for i from 0 below (1- nx) do
-        (let* ((x0 (float (elt x-coords i) 1.0d0))
-               (x1 (float (elt x-coords (1+ i)) 1.0d0))
-               (y0 (float (elt y-coords j) 1.0d0))
-               (y1 (float (elt y-coords (1+ j)) 1.0d0))
+        (let* ((x0 (float (aref xc-vec i) 1.0d0))
+               (x1 (float (aref xc-vec (1+ i)) 1.0d0))
+               (y0 (float (aref yc-vec j) 1.0d0))
+               (y1 (float (aref yc-vec (1+ j)) 1.0d0))
                (z-bl (float (aref z-data j i) 1.0d0))
                (z-br (float (aref z-data j (1+ i)) 1.0d0))
                (z-tr (float (aref z-data (1+ j) (1+ i)) 1.0d0))

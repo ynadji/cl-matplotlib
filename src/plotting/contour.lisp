@@ -134,14 +134,16 @@ Returns a list of color specs (one per level for lines, one per band for filled)
       ;; Use cmap + norm
       ((and cmap norm)
        (let* ((n (if filled-p (1- (length levels)) (length levels)))
+              ;; Needs random access for filled-p: (elt levels (1+ i))
+              (levels-vec (coerce levels 'vector))
               (result nil))
          (dotimes (i n)
            (let* ((val (if filled-p
                            ;; For filled: use midpoint of band
-                           (* 0.5d0 (+ (float (elt levels i) 1.0d0)
-                                       (float (elt levels (1+ i)) 1.0d0)))
+                           (* 0.5d0 (+ (float (aref levels-vec i) 1.0d0)
+                                       (float (aref levels-vec (1+ i)) 1.0d0)))
                            ;; For lines: use level value
-                           (float (elt levels i) 1.0d0)))
+                           (float (aref levels-vec i) 1.0d0)))
                   (normalized (mpl.primitives:normalize-call norm val))
                   (rgba (mpl.primitives:colormap-call cmap normalized)))
              (push rgba result)))
@@ -166,7 +168,7 @@ Returns list of LineCollection instances."
          (collections nil))
     (loop for level in levels
           for i from 0
-          for color = (elt colors i)
+          for color in colors
           for lw = (if (numberp linewidths)
                        linewidths
                        (elt linewidths (mod i (length linewidths))))
@@ -200,11 +202,13 @@ Returns list of LineCollection instances."
   "Build PolyCollection per level pair for filled contours.
 Returns list of PolyCollection instances."
   (let* ((colors (%contour-level-colors cs levels t))
+         ;; Needs random access for (1+ i) pattern — coerce to vector
+         (levels-vec (coerce levels 'vector))
          (collections nil))
     (loop for i from 0 below (1- (length levels))
-          for lo = (float (elt levels i) 1.0d0)
-          for hi = (float (elt levels (1+ i)) 1.0d0)
-          for color = (elt colors i)
+          for lo = (float (aref levels-vec i) 1.0d0)
+          for hi = (float (aref levels-vec (1+ i)) 1.0d0)
+          for color in colors
           do
               (let* ((polygons (marching-squares-filled x y z lo hi))
                       (pc (when polygons

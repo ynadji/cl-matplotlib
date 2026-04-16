@@ -120,8 +120,7 @@ Returns the PathCollection artist."
          ;; Build sizes list — single-element for uniform size (cycled by collection draw)
          (sizes (if (numberp s)
                     (list (float s 1.0d0))
-                    (loop for i from 0 below n
-                          collect (float (elt s i) 1.0d0))))
+                    (map 'list (lambda (si) (float si 1.0d0)) s)))
          ;; Get edge color from rcParams
          (edge-color (mpl.rc:rc "scatter.edgecolors"))
          ;; Get figure DPI for correct point-to-pixel conversion
@@ -198,58 +197,72 @@ Returns a list of Rectangle patches."
   (let* ((base-color (or color "C0"))
          (n (min (length x) (length height)))
          (rects nil))
-    (dotimes (i n)
-      (let* ((xi (float (elt x i) 1.0d0))
-             (hi (float (elt height i) 1.0d0))
-             (wi (if (numberp width)
-                     (float width 1.0d0)
-                     (float (elt width i) 1.0d0)))
-             (bi (if (numberp bottom)
-                     (float bottom 1.0d0)
-                     (float (elt bottom i) 1.0d0)))
-             ;; Adjust x based on alignment
-             (x0 (if (eq align :center)
-                     (- xi (* wi 0.5d0))
-                     xi))
-             ;; Per-bar color: if color is a list, index into it
-             (effective-color (if (and (listp base-color) (not (null base-color)))
-                                  (elt base-color (mod i (length base-color)))
-                                  base-color))
-             (rect (make-instance 'mpl.rendering:rectangle
-                                  :x0 x0
-                                  :y0 bi
-                                  :width wi
-                                  :height hi
-                                  :facecolor effective-color
-                                  :edgecolor edgecolor
-                                  :linewidth linewidth
-                                  :zorder zorder)))
-        ;; Set label on first rect for legend auto-collect
-        (when (and (= i 0) (stringp label) (plusp (length label)))
-          (setf (mpl.rendering:artist-label rect) label))
-        ;; Set transform to transData
-        (setf (mpl.rendering:artist-transform rect)
-              (axes-base-trans-data ax))
-        (axes-add-patch ax rect)
-        (push rect rects)))
+    (let ((width-list (unless (numberp width) (coerce width 'list)))
+          (bottom-list (unless (numberp bottom) (coerce bottom 'list)))
+          (color-list (when (and (listp base-color) (not (null base-color))) base-color)))
+      (loop for i from 0
+            for xi-raw in (coerce x 'list)
+            for hi-raw in (coerce height 'list)
+            for wi-iter = width-list then (cdr wi-iter)
+            for bi-iter = bottom-list then (cdr bi-iter)
+            repeat n
+            do (let* ((xi (float xi-raw 1.0d0))
+                      (hi (float hi-raw 1.0d0))
+                      (wi (if (numberp width)
+                              (float width 1.0d0)
+                              (float (car wi-iter) 1.0d0)))
+                      (bi (if (numberp bottom)
+                              (float bottom 1.0d0)
+                              (float (car bi-iter) 1.0d0)))
+                      ;; Adjust x based on alignment
+                      (x0 (if (eq align :center)
+                              (- xi (* wi 0.5d0))
+                              xi))
+                      ;; Per-bar color: if color is a list, index into it
+                      (effective-color (if color-list
+                                           (elt color-list (mod i (length color-list)))
+                                           base-color))
+                      (rect (make-instance 'mpl.rendering:rectangle
+                                           :x0 x0
+                                           :y0 bi
+                                           :width wi
+                                           :height hi
+                                           :facecolor effective-color
+                                           :edgecolor edgecolor
+                                           :linewidth linewidth
+                                           :zorder zorder)))
+                 ;; Set label on first rect for legend auto-collect
+                 (when (and (= i 0) (stringp label) (plusp (length label)))
+                   (setf (mpl.rendering:artist-label rect) label))
+                 ;; Set transform to transData
+                 (setf (mpl.rendering:artist-transform rect)
+                       (axes-base-trans-data ax))
+                 (axes-add-patch ax rect)
+                 (push rect rects))))
     ;; Compute data limits from bar extents
-    (let ((all-x nil) (all-y nil))
-      (dotimes (i n)
-        (let* ((xi (float (elt x i) 1.0d0))
-               (hi (float (elt height i) 1.0d0))
-               (wi (if (numberp width)
-                       (float width 1.0d0)
-                       (float (elt width i) 1.0d0)))
-               (bi (if (numberp bottom)
-                       (float bottom 1.0d0)
-                       (float (elt bottom i) 1.0d0)))
-               (x0 (if (eq align :center)
-                       (- xi (* wi 0.5d0))
-                       xi)))
-          (push x0 all-x)
-          (push (+ x0 wi) all-x)
-          (push bi all-y)
-          (push (+ bi hi) all-y)))
+    (let ((all-x nil) (all-y nil)
+          (dl-width-list (unless (numberp width) (coerce width 'list)))
+          (dl-bottom-list (unless (numberp bottom) (coerce bottom 'list))))
+      (loop for xi-raw in (coerce x 'list)
+            for hi-raw in (coerce height 'list)
+            for wi-iter = dl-width-list then (cdr wi-iter)
+            for bi-iter = dl-bottom-list then (cdr bi-iter)
+            repeat n
+            do (let* ((xi (float xi-raw 1.0d0))
+                      (hi (float hi-raw 1.0d0))
+                      (wi (if (numberp width)
+                              (float width 1.0d0)
+                              (float (car wi-iter) 1.0d0)))
+                      (bi (if (numberp bottom)
+                              (float bottom 1.0d0)
+                              (float (car bi-iter) 1.0d0)))
+                      (x0 (if (eq align :center)
+                              (- xi (* wi 0.5d0))
+                              xi)))
+                 (push x0 all-x)
+                 (push (+ x0 wi) all-x)
+                 (push bi all-y)
+                 (push (+ bi hi) all-y)))
        (axes-update-datalim ax (nreverse all-x) (nreverse all-y)))
      ;; Set sticky y-min for bar charts (y=0 is a sticky edge)
      (setf (axes-base-sticky-y-min ax) t)
@@ -258,38 +271,46 @@ Returns a list of Rectangle patches."
        (let ((err-color (or ecolor "black"))
              (error-segments nil)
              (cap-segments nil))
-         (dotimes (i n)
-           (let ((xi (float (elt x i) 1.0d0))
-                 (yi (float (elt height i) 1.0d0))
-                 (bi (if (numberp bottom)
-                         (float bottom 1.0d0)
-                         (float (elt bottom i) 1.0d0))))
-             ;; Error bar y-center is at bottom + height
-             (let ((center-y (+ bi yi)))
-               ;; Vertical error bars
-               (when yerr
-                 (let* ((ye (if (numberp yerr)
-                                (float yerr 1.0d0)
-                                (float (elt yerr i) 1.0d0)))
-                        (y-lo (- center-y ye))
-                        (y-hi (+ center-y ye)))
-                   (push (list (list xi y-lo) (list xi y-hi)) error-segments)
-                   (when (plusp capsize)
-                     (let ((cap-hw (* capsize 0.01d0)))
-                       (push (list (list (- xi cap-hw) y-lo) (list (+ xi cap-hw) y-lo)) cap-segments)
-                       (push (list (list (- xi cap-hw) y-hi) (list (+ xi cap-hw) y-hi)) cap-segments)))))
-               ;; Horizontal error bars
-               (when xerr
-                 (let* ((xe (if (numberp xerr)
-                                (float xerr 1.0d0)
-                                (float (elt xerr i) 1.0d0)))
-                        (x-lo (- xi xe))
-                        (x-hi (+ xi xe)))
-                   (push (list (list x-lo center-y) (list x-hi center-y)) error-segments)
-                   (when (plusp capsize)
-                     (let ((cap-hw (* capsize 0.01d0)))
-                       (push (list (list x-lo (- center-y cap-hw)) (list x-lo (+ center-y cap-hw))) cap-segments)
-                       (push (list (list x-hi (- center-y cap-hw)) (list x-hi (+ center-y cap-hw))) cap-segments))))))))
+         (let ((eb-bottom-list (unless (numberp bottom) (coerce bottom 'list)))
+               (eb-yerr-list (when (and yerr (not (numberp yerr))) (coerce yerr 'list)))
+               (eb-xerr-list (when (and xerr (not (numberp xerr))) (coerce xerr 'list))))
+           (loop for xi-raw in (coerce x 'list)
+                 for yi-raw in (coerce height 'list)
+                 for bi-iter = eb-bottom-list then (cdr bi-iter)
+                 for ye-iter = eb-yerr-list then (cdr ye-iter)
+                 for xe-iter = eb-xerr-list then (cdr xe-iter)
+                 repeat n
+                 do (let ((xi (float xi-raw 1.0d0))
+                          (yi (float yi-raw 1.0d0))
+                          (bi (if (numberp bottom)
+                                  (float bottom 1.0d0)
+                                  (float (car bi-iter) 1.0d0))))
+                      ;; Error bar y-center is at bottom + height
+                      (let ((center-y (+ bi yi)))
+                        ;; Vertical error bars
+                        (when yerr
+                          (let* ((ye (if (numberp yerr)
+                                         (float yerr 1.0d0)
+                                         (float (car ye-iter) 1.0d0)))
+                                 (y-lo (- center-y ye))
+                                 (y-hi (+ center-y ye)))
+                            (push (list (list xi y-lo) (list xi y-hi)) error-segments)
+                            (when (plusp capsize)
+                              (let ((cap-hw (* capsize 0.01d0)))
+                                (push (list (list (- xi cap-hw) y-lo) (list (+ xi cap-hw) y-lo)) cap-segments)
+                                (push (list (list (- xi cap-hw) y-hi) (list (+ xi cap-hw) y-hi)) cap-segments)))))
+                        ;; Horizontal error bars
+                        (when xerr
+                          (let* ((xe (if (numberp xerr)
+                                         (float xerr 1.0d0)
+                                         (float (car xe-iter) 1.0d0)))
+                                 (x-lo (- xi xe))
+                                 (x-hi (+ xi xe)))
+                            (push (list (list x-lo center-y) (list x-hi center-y)) error-segments)
+                            (when (plusp capsize)
+                              (let ((cap-hw (* capsize 0.01d0)))
+                                (push (list (list x-lo (- center-y cap-hw)) (list x-lo (+ center-y cap-hw))) cap-segments)
+                                (push (list (list x-hi (- center-y cap-hw)) (list x-hi (+ center-y cap-hw))) cap-segments)))))))))
          ;; Create LineCollection for error bar lines
          (let ((err-lc (mpl.rendering:make-line-collection
                         :segments (nreverse error-segments)
@@ -311,24 +332,32 @@ Returns a list of Rectangle patches."
              (axes-add-artist ax cap-lc)))
          ;; Update data limits with error extents
          (when yerr
-           (let ((err-y nil))
-             (dotimes (i n)
-               (let* ((yi (float (elt height i) 1.0d0))
-                      (bi (if (numberp bottom)
-                              (float bottom 1.0d0)
-                              (float (elt bottom i) 1.0d0)))
-                      (center-y (+ bi yi))
-                      (ye (if (numberp yerr) (float yerr 1.0d0) (float (elt yerr i) 1.0d0))))
-                 (push (- center-y ye) err-y)
-                 (push (+ center-y ye) err-y)))
+           (let ((err-y nil)
+                 (ey-bottom-list (unless (numberp bottom) (coerce bottom 'list)))
+                 (ey-yerr-list (unless (numberp yerr) (coerce yerr 'list))))
+             (loop for hi-raw in (coerce height 'list)
+                   for bi-iter = ey-bottom-list then (cdr bi-iter)
+                   for ye-iter = ey-yerr-list then (cdr ye-iter)
+                   repeat n
+                   do (let* ((yi (float hi-raw 1.0d0))
+                             (bi (if (numberp bottom)
+                                     (float bottom 1.0d0)
+                                     (float (car bi-iter) 1.0d0)))
+                             (center-y (+ bi yi))
+                             (ye (if (numberp yerr) (float yerr 1.0d0) (float (car ye-iter) 1.0d0))))
+                        (push (- center-y ye) err-y)
+                        (push (+ center-y ye) err-y)))
              (axes-update-datalim ax x (nreverse err-y))))
          (when xerr
-           (let ((err-x nil))
-             (dotimes (i n)
-               (let* ((xi (float (elt x i) 1.0d0))
-                      (xe (if (numberp xerr) (float xerr 1.0d0) (float (elt xerr i) 1.0d0))))
-                 (push (- xi xe) err-x)
-                 (push (+ xi xe) err-x)))
+           (let ((err-x nil)
+                 (ex-xerr-list (unless (numberp xerr) (coerce xerr 'list))))
+             (loop for xi-raw in (coerce x 'list)
+                   for xe-iter = ex-xerr-list then (cdr xe-iter)
+                   repeat n
+                   do (let* ((xi (float xi-raw 1.0d0))
+                             (xe (if (numberp xerr) (float xerr 1.0d0) (float (car xe-iter) 1.0d0))))
+                        (push (- xi xe) err-x)
+                        (push (+ xi xe) err-x)))
              (axes-update-datalim ax (nreverse err-x) (coerce height 'list))))))
      ;; Autoscale
      (axes-autoscale-view ax)
@@ -355,9 +384,11 @@ Returns the created Polygon."
          (n (min (length xdata) (length ydata)))
          (verts (make-array (list n 2) :element-type 'double-float)))
     ;; Build vertex array
-    (dotimes (i n)
-      (setf (aref verts i 0) (float (elt xdata i) 1.0d0)
-            (aref verts i 1) (float (elt ydata i) 1.0d0)))
+    (loop for xi in (coerce xdata 'list)
+          for yi in (coerce ydata 'list)
+          for i from 0
+          do (setf (aref verts i 0) (float xi 1.0d0)
+                   (aref verts i 1) (float yi 1.0d0)))
     (let ((poly (make-instance 'mpl.rendering:polygon
                                :xy verts
                                :closed t
@@ -425,14 +456,18 @@ Returns the created Polygon (or list of Polygons when WHERE is used)."
              (total-verts (* 2 n))
              (verts (make-array (list total-verts 2) :element-type 'double-float)))
         ;; Forward pass: y2 curve (x[0]→x[n-1])
-        (dotimes (i n)
-          (setf (aref verts i 0) (float (elt xdata i) 1.0d0)
-                (aref verts i 1) (float (elt y2data i) 1.0d0)))
-        ;; Backward pass: y1 curve (x[n-1]→x[0])
-        (dotimes (i n)
-          (let ((j (- n 1 i)))
-            (setf (aref verts (+ n i) 0) (float (elt xdata j) 1.0d0)
-                  (aref verts (+ n i) 1) (float (elt y1data j) 1.0d0))))
+        (loop for xi in (coerce xdata 'list)
+              for y2i in (coerce y2data 'list)
+              for i from 0
+              do (setf (aref verts i 0) (float xi 1.0d0)
+                       (aref verts i 1) (float y2i 1.0d0)))
+        ;; Backward pass: y1 curve (x[n-1]→x[0]) — needs random access, use vectors
+        (let ((xvec (coerce xdata 'vector))
+              (y1vec (coerce y1data 'vector)))
+          (dotimes (i n)
+            (let ((j (- n 1 i)))
+              (setf (aref verts (+ n i) 0) (float (aref xvec j) 1.0d0)
+                    (aref verts (+ n i) 1) (float (aref y1vec j) 1.0d0)))))
         (let ((poly (make-instance 'mpl.rendering:polygon
                                    :xy verts
                                    :closed t
@@ -703,10 +738,12 @@ Returns (values patches texts autotexts)."
           for color = (if colors
                           (elt colors (mod i (length colors)))
                           (elt default-colors (mod i (length default-colors))))
+          for explode-tail = (when explode (coerce explode 'list)) then (cdr explode-tail)
+          for labels-tail = labels then (cdr labels-tail)
           do
              ;; Compute explode offset
-             (let* ((exp-amount (if (and explode (< i (length explode)))
-                                    (float (elt explode i) 1.0d0)
+             (let* ((exp-amount (if explode-tail
+                                    (float (car explode-tail) 1.0d0)
                                     0.0d0))
                     (exp-mid-angle (* (/ (+ theta1 theta2) 2.0d0) (/ pi 180.0d0)))
                     (exp-x (* exp-amount (cos exp-mid-angle)))
@@ -728,14 +765,14 @@ Returns (values patches texts autotexts)."
                (axes-add-patch ax wedge-patch)
                (push wedge-patch patches))
              ;; Label text
-             (when (and labels (< i (length labels)))
+             (when labels-tail
                (let* ((mid-angle (* (/ (+ theta1 theta2) 2.0d0) (/ pi 180.0d0)))
                       (label-r 1.1d0)
                       (lx (+ (* label-r (cos mid-angle)) exp-x))
                       (ly (+ (* label-r (sin mid-angle)) exp-y))
                       (txt (make-instance 'mpl.rendering:text-artist
                                           :x lx :y ly
-                                          :text (elt labels i)
+                                          :text (car labels-tail)
                                           :fontsize 10.0
                                           :horizontalalignment :center
                                           :verticalalignment :center
@@ -823,37 +860,43 @@ Returns (values line error-lines caps)."
                              :label label
                              :zorder zorder))))
       ;; Create error bar segments
-      (dotimes (i n)
-        (let ((xi (float (elt xdata i) 1.0d0))
-              (yi (float (elt ydata i) 1.0d0)))
-          ;; Vertical error bars
-          (when yerr
-            (let* ((ye (if (numberp yerr)
-                           (float yerr 1.0d0)
-                           (float (elt yerr i) 1.0d0)))
-                   (y-lo (- yi ye))
-                   (y-hi (+ yi ye)))
-              ;; Vertical line
-              (push (list (list xi y-lo) (list xi y-hi)) error-segments)
-              ;; Caps
-              (when (plusp capsize)
-                (let ((cap-hw (* capsize 0.01d0))) ; convert points to data approx
-                  (push (list (list (- xi cap-hw) y-lo) (list (+ xi cap-hw) y-lo)) cap-segments)
-                  (push (list (list (- xi cap-hw) y-hi) (list (+ xi cap-hw) y-hi)) cap-segments)))))
-          ;; Horizontal error bars
-          (when xerr
-            (let* ((xe (if (numberp xerr)
-                           (float xerr 1.0d0)
-                           (float (elt xerr i) 1.0d0)))
-                   (x-lo (- xi xe))
-                   (x-hi (+ xi xe)))
-              ;; Horizontal line
-              (push (list (list x-lo yi) (list x-hi yi)) error-segments)
-              ;; Caps
-              (when (plusp capsize)
-                (let ((cap-hw (* capsize 0.01d0)))
-                  (push (list (list x-lo (- yi cap-hw)) (list x-lo (+ yi cap-hw))) cap-segments)
-                  (push (list (list x-hi (- yi cap-hw)) (list x-hi (+ yi cap-hw))) cap-segments)))))))
+      (let ((eb-yerr-list (when (and yerr (not (numberp yerr))) (coerce yerr 'list)))
+            (eb-xerr-list (when (and xerr (not (numberp xerr))) (coerce xerr 'list))))
+        (loop for xi-raw in (coerce xdata 'list)
+              for yi-raw in (coerce ydata 'list)
+              for ye-iter = eb-yerr-list then (cdr ye-iter)
+              for xe-iter = eb-xerr-list then (cdr xe-iter)
+              repeat n
+              do (let ((xi (float xi-raw 1.0d0))
+                       (yi (float yi-raw 1.0d0)))
+                   ;; Vertical error bars
+                   (when yerr
+                     (let* ((ye (if (numberp yerr)
+                                    (float yerr 1.0d0)
+                                    (float (car ye-iter) 1.0d0)))
+                            (y-lo (- yi ye))
+                            (y-hi (+ yi ye)))
+                       ;; Vertical line
+                       (push (list (list xi y-lo) (list xi y-hi)) error-segments)
+                       ;; Caps
+                       (when (plusp capsize)
+                         (let ((cap-hw (* capsize 0.01d0))) ; convert points to data approx
+                           (push (list (list (- xi cap-hw) y-lo) (list (+ xi cap-hw) y-lo)) cap-segments)
+                           (push (list (list (- xi cap-hw) y-hi) (list (+ xi cap-hw) y-hi)) cap-segments)))))
+                   ;; Horizontal error bars
+                   (when xerr
+                     (let* ((xe (if (numberp xerr)
+                                    (float xerr 1.0d0)
+                                    (float (car xe-iter) 1.0d0)))
+                            (x-lo (- xi xe))
+                            (x-hi (+ xi xe)))
+                       ;; Horizontal line
+                       (push (list (list x-lo yi) (list x-hi yi)) error-segments)
+                       ;; Caps
+                       (when (plusp capsize)
+                         (let ((cap-hw (* capsize 0.01d0)))
+                           (push (list (list x-lo (- yi cap-hw)) (list x-lo (+ yi cap-hw))) cap-segments)
+                           (push (list (list x-hi (- yi cap-hw)) (list x-hi (+ yi cap-hw))) cap-segments))))))))
       ;; Create LineCollection for error bars
       (let ((err-lc (mpl.rendering:make-line-collection
                      :segments (nreverse error-segments)
@@ -876,20 +919,26 @@ Returns (values line error-lines caps)."
             (axes-add-artist ax cap-lc))
           ;; Update data limits with error extents
           (when yerr
-            (let ((all-y nil))
-              (dotimes (i n)
-                (let* ((yi (float (elt ydata i) 1.0d0))
-                       (ye (if (numberp yerr) (float yerr 1.0d0) (float (elt yerr i) 1.0d0))))
-                  (push (- yi ye) all-y)
-                  (push (+ yi ye) all-y)))
+            (let ((all-y nil)
+                  (dl-yerr-list (unless (numberp yerr) (coerce yerr 'list))))
+              (loop for yi-raw in (coerce ydata 'list)
+                    for ye-iter = dl-yerr-list then (cdr ye-iter)
+                    repeat n
+                    do (let* ((yi (float yi-raw 1.0d0))
+                              (ye (if (numberp yerr) (float yerr 1.0d0) (float (car ye-iter) 1.0d0))))
+                         (push (- yi ye) all-y)
+                         (push (+ yi ye) all-y)))
               (axes-update-datalim ax xdata (nreverse all-y))))
           (when xerr
-            (let ((all-x nil))
-              (dotimes (i n)
-                (let* ((xi (float (elt xdata i) 1.0d0))
-                       (xe (if (numberp xerr) (float xerr 1.0d0) (float (elt xerr i) 1.0d0))))
-                  (push (- xi xe) all-x)
-                  (push (+ xi xe) all-x)))
+            (let ((all-x nil)
+                  (dl-xerr-list (unless (numberp xerr) (coerce xerr 'list))))
+              (loop for xi-raw in (coerce xdata 'list)
+                    for xe-iter = dl-xerr-list then (cdr xe-iter)
+                    repeat n
+                    do (let* ((xi (float xi-raw 1.0d0))
+                              (xe (if (numberp xerr) (float xerr 1.0d0) (float (car xe-iter) 1.0d0))))
+                         (push (- xi xe) all-x)
+                         (push (+ xi xe) all-x)))
               (axes-update-datalim ax (nreverse all-x) ydata)))
           (axes-autoscale-view ax)
           (values line err-lc cap-lc))))))
@@ -920,10 +969,12 @@ Returns (values markerline stemlines baseline)."
          (n (min (length xdata) (length ydata)))
          (stem-segments nil))
     ;; Create stem line segments (vertical lines from bottom to y)
-    (dotimes (i n)
-      (let ((xi (float (elt xdata i) 1.0d0))
-            (yi (float (elt ydata i) 1.0d0)))
-        (push (list (list xi bot) (list xi yi)) stem-segments)))
+    (loop for xi-raw in (coerce xdata 'list)
+          for yi-raw in (coerce ydata 'list)
+          repeat n
+          do (let ((xi (float xi-raw 1.0d0))
+                   (yi (float yi-raw 1.0d0)))
+               (push (list (list xi bot) (list xi yi)) stem-segments)))
     ;; Stem lines as LineCollection
     (let ((stemlines (mpl.rendering:make-line-collection
                       :segments (nreverse stem-segments)
@@ -986,6 +1037,9 @@ ZORDER — drawing order.
 Returns the created Line2D."
   (let* ((effective-color (or color "C0"))
          (n (min (length xdata) (length ydata)))
+         ;; Coerce to vectors once — step-plot needs random access for (1- i) and (1+ i) patterns
+         (xvec (coerce xdata 'vector))
+         (yvec (coerce ydata 'vector))
          (step-x nil)
          (step-y nil))
     ;; Build step path based on where
@@ -994,14 +1048,14 @@ Returns the created Line2D."
        ;; Step happens before the next y value
        ;; For each segment: first go horizontal at old y, then vertical to new y
        (when (plusp n)
-         (push (float (elt xdata 0) 1.0d0) step-x)
-         (push (float (elt ydata 0) 1.0d0) step-y)
+         (push (float (aref xvec 0) 1.0d0) step-x)
+         (push (float (aref yvec 0) 1.0d0) step-y)
          (loop for i from 1 below n
-               for xi = (float (elt xdata i) 1.0d0)
-               for yi = (float (elt ydata i) 1.0d0)
+               for xi = (float (aref xvec i) 1.0d0)
+               for yi = (float (aref yvec i) 1.0d0)
                do ;; Horizontal at previous y to current x
                   (push xi step-x)
-                  (push (float (elt ydata (1- i)) 1.0d0) step-y)
+                  (push (float (aref yvec (1- i)) 1.0d0) step-y)
                   ;; Vertical to current y
                   (push xi step-x)
                   (push yi step-y))))
@@ -1009,9 +1063,9 @@ Returns the created Line2D."
        ;; Step happens after the current y value
        (when (plusp n)
          (loop for i from 0 below (1- n)
-               for xi = (float (elt xdata i) 1.0d0)
-               for yi = (float (elt ydata i) 1.0d0)
-               for xi+1 = (float (elt xdata (1+ i)) 1.0d0)
+               for xi = (float (aref xvec i) 1.0d0)
+               for yi = (float (aref yvec i) 1.0d0)
+               for xi+1 = (float (aref xvec (1+ i)) 1.0d0)
                do ;; Current point
                   (push xi step-x)
                   (push yi step-y)
@@ -1019,18 +1073,18 @@ Returns the created Line2D."
                   (push xi+1 step-x)
                   (push yi step-y))
          ;; Last point
-         (push (float (elt xdata (1- n)) 1.0d0) step-x)
-         (push (float (elt ydata (1- n)) 1.0d0) step-y)))
+         (push (float (aref xvec (1- n)) 1.0d0) step-x)
+         (push (float (aref yvec (1- n)) 1.0d0) step-y)))
       (:mid
        ;; Step happens at midpoint between x values
        (when (plusp n)
-         (push (float (elt xdata 0) 1.0d0) step-x)
-         (push (float (elt ydata 0) 1.0d0) step-y)
+         (push (float (aref xvec 0) 1.0d0) step-x)
+         (push (float (aref yvec 0) 1.0d0) step-y)
          (loop for i from 1 below n
-               for xi-prev = (float (elt xdata (1- i)) 1.0d0)
-               for xi = (float (elt xdata i) 1.0d0)
-               for yi-prev = (float (elt ydata (1- i)) 1.0d0)
-               for yi = (float (elt ydata i) 1.0d0)
+               for xi-prev = (float (aref xvec (1- i)) 1.0d0)
+               for xi = (float (aref xvec i) 1.0d0)
+               for yi-prev = (float (aref yvec (1- i)) 1.0d0)
+               for yi = (float (aref yvec i) 1.0d0)
                for mid-x = (* 0.5d0 (+ xi-prev xi))
                do ;; Horizontal to midpoint at previous y
                   (push mid-x step-x)
@@ -1039,8 +1093,8 @@ Returns the created Line2D."
                   (push mid-x step-x)
                   (push yi step-y))
          ;; Last segment to end
-         (push (float (elt xdata (1- n)) 1.0d0) step-x)
-         (push (float (elt ydata (1- n)) 1.0d0) step-y))))
+         (push (float (aref xvec (1- n)) 1.0d0) step-x)
+         (push (float (aref yvec (1- n)) 1.0d0) step-y))))
     (setf step-x (nreverse step-x)
           step-y (nreverse step-y))
     ;; Create Line2D with step path
@@ -1088,30 +1142,33 @@ Returns a list of Polygon patches."
     ;; cumsum[k] = sum of layers 0..k-1
     (loop for k from 0 below n-layers
           for ydata in ydatas
-          do (dotimes (j n-pts)
-               (setf (aref cumsum (1+ k) j)
-                     (+ (aref cumsum k j)
-                        (float (elt ydata j) 1.0d0)))))
-    ;; Create filled polygons for each layer
-    (loop for k from 0 below n-layers
-          for color = (if colors
-                          (elt colors (mod k (length colors)))
-                          (elt default-colors (mod k (length default-colors))))
-          for label = (if (and labels (< k (length labels)))
-                          (elt labels k) "")
-           do (let* (;; +1 extra vertex so the last backward point is LINETO (not CLOSEPOLY)
-                     ;; This ensures the left edge is drawn correctly as a vertical line
-                     (total-verts (+ (* 2 n-pts) 1))
-                     (verts (make-array (list total-verts 2) :element-type 'double-float)))
-                ;; Forward pass: upper boundary (cumsum[k+1])
-                (dotimes (j n-pts)
-                  (setf (aref verts j 0) (float (elt xdata j) 1.0d0)
-                        (aref verts j 1) (aref cumsum (1+ k) j)))
-                ;; Backward pass: lower boundary (cumsum[k])
-                (dotimes (j n-pts)
-                  (let ((rev-j (- n-pts 1 j)))
-                    (setf (aref verts (+ n-pts j) 0) (float (elt xdata rev-j) 1.0d0)
-                          (aref verts (+ n-pts j) 1) (aref cumsum k rev-j))))
+          do (loop for yj in (coerce ydata 'list)
+                   for j from 0
+                   do (setf (aref cumsum (1+ k) j)
+                            (+ (aref cumsum k j)
+                               (float yj 1.0d0)))))
+    ;; Coerce xdata to vector once — backward pass needs random access
+    (let ((xdata-vec (coerce xdata 'vector)))
+      ;; Create filled polygons for each layer
+      (loop for k from 0 below n-layers
+            for color = (if colors
+                            (elt colors (mod k (length colors)))
+                            (elt default-colors (mod k (length default-colors))))
+            for labels-tail = labels then (cdr labels-tail)
+            for label = (if labels-tail (car labels-tail) "")
+             do (let* (;; +1 extra vertex so the last backward point is LINETO (not CLOSEPOLY)
+                       ;; This ensures the left edge is drawn correctly as a vertical line
+                       (total-verts (+ (* 2 n-pts) 1))
+                       (verts (make-array (list total-verts 2) :element-type 'double-float)))
+                  ;; Forward pass: upper boundary (cumsum[k+1])
+                  (dotimes (j n-pts)
+                    (setf (aref verts j 0) (float (aref xdata-vec j) 1.0d0)
+                          (aref verts j 1) (aref cumsum (1+ k) j)))
+                  ;; Backward pass: lower boundary (cumsum[k])
+                  (dotimes (j n-pts)
+                    (let ((rev-j (- n-pts 1 j)))
+                      (setf (aref verts (+ n-pts j) 0) (float (aref xdata-vec rev-j) 1.0d0)
+                            (aref verts (+ n-pts j) 1) (aref cumsum k rev-j))))
                 ;; Extra closing vertex = same as start, so CLOSEPOLY draws the left edge
                 (setf (aref verts (* 2 n-pts) 0) (aref verts 0 0)
                       (aref verts (* 2 n-pts) 1) (aref verts 0 1))
@@ -1126,7 +1183,7 @@ Returns a list of Polygon patches."
                  (setf (mpl.rendering:artist-transform poly)
                        (axes-base-trans-data ax))
                  (axes-add-patch ax poly)
-                 (push poly polys))))
+                 (push poly polys)))))
     ;; Update data limits
     (let ((y-max 0.0d0))
       (dotimes (j n-pts)
@@ -1162,49 +1219,62 @@ Returns a list of Rectangle patches."
   (let* ((effective-color (or color "C0"))
          (n (min (length y) (length width)))
          (rects nil))
-    (dotimes (i n)
-      (let* ((yi (float (elt y i) 1.0d0))
-             (wi (float (elt width i) 1.0d0))
-             (hi (if (numberp height)
-                     (float height 1.0d0)
-                     (float (elt height i) 1.0d0)))
-             (li (if (numberp left)
-                     (float left 1.0d0)
-                     (float (elt left i) 1.0d0)))
-             ;; Adjust y based on alignment
-             (y0 (if (eq align :center)
-                     (- yi (* hi 0.5d0))
-                     yi))
-             (rect (make-instance 'mpl.rendering:rectangle
-                                  :x0 li
-                                  :y0 y0
-                                  :width wi
-                                  :height hi
-                                  :facecolor effective-color
-                                  :edgecolor edgecolor
-                                  :linewidth linewidth
-                                  :zorder zorder)))
-        ;; Set label on first rect for legend auto-collect
-        (when (and (= i 0) (stringp label) (plusp (length label)))
-          (setf (mpl.rendering:artist-label rect) label))
-        (setf (mpl.rendering:artist-transform rect)
-              (axes-base-trans-data ax))
-        (axes-add-patch ax rect)
-        (push rect rects)))
+    (let ((height-list (unless (numberp height) (coerce height 'list)))
+          (left-list (unless (numberp left) (coerce left 'list))))
+      (loop for i from 0
+            for yi-raw in (coerce y 'list)
+            for wi-raw in (coerce width 'list)
+            for hi-iter = height-list then (cdr hi-iter)
+            for li-iter = left-list then (cdr li-iter)
+            repeat n
+            do (let* ((yi (float yi-raw 1.0d0))
+                      (wi (float wi-raw 1.0d0))
+                      (hi (if (numberp height)
+                              (float height 1.0d0)
+                              (float (car hi-iter) 1.0d0)))
+                      (li (if (numberp left)
+                              (float left 1.0d0)
+                              (float (car li-iter) 1.0d0)))
+                      ;; Adjust y based on alignment
+                      (y0 (if (eq align :center)
+                              (- yi (* hi 0.5d0))
+                              yi))
+                      (rect (make-instance 'mpl.rendering:rectangle
+                                           :x0 li
+                                           :y0 y0
+                                           :width wi
+                                           :height hi
+                                           :facecolor effective-color
+                                           :edgecolor edgecolor
+                                           :linewidth linewidth
+                                           :zorder zorder)))
+                 ;; Set label on first rect for legend auto-collect
+                 (when (and (= i 0) (stringp label) (plusp (length label)))
+                   (setf (mpl.rendering:artist-label rect) label))
+                 (setf (mpl.rendering:artist-transform rect)
+                       (axes-base-trans-data ax))
+                 (axes-add-patch ax rect)
+                 (push rect rects))))
     ;; Update data limits
-    (let ((all-x nil) (all-y nil))
-      (dotimes (i n)
-        (let* ((yi (float (elt y i) 1.0d0))
-               (wi (float (elt width i) 1.0d0))
-               (hi (if (numberp height) (float height 1.0d0)
-                       (float (elt height i) 1.0d0)))
-               (li (if (numberp left) (float left 1.0d0)
-                       (float (elt left i) 1.0d0)))
-               (y0 (if (eq align :center) (- yi (* hi 0.5d0)) yi)))
-          (push li all-x)
-          (push (+ li wi) all-x)
-          (push y0 all-y)
-          (push (+ y0 hi) all-y)))
+    (let ((all-x nil) (all-y nil)
+          (dl-height-list (unless (numberp height) (coerce height 'list)))
+          (dl-left-list (unless (numberp left) (coerce left 'list))))
+      (loop for yi-raw in (coerce y 'list)
+            for wi-raw in (coerce width 'list)
+            for hi-iter = dl-height-list then (cdr hi-iter)
+            for li-iter = dl-left-list then (cdr li-iter)
+            repeat n
+            do (let* ((yi (float yi-raw 1.0d0))
+                      (wi (float wi-raw 1.0d0))
+                      (hi (if (numberp height) (float height 1.0d0)
+                              (float (car hi-iter) 1.0d0)))
+                      (li (if (numberp left) (float left 1.0d0)
+                              (float (car li-iter) 1.0d0)))
+                      (y0 (if (eq align :center) (- yi (* hi 0.5d0)) yi)))
+                 (push li all-x)
+                 (push (+ li wi) all-x)
+                 (push y0 all-y)
+                 (push (+ y0 hi) all-y)))
       (axes-update-datalim ax (nreverse all-x) (nreverse all-y)))
     (setf (axes-base-sticky-x-min ax) t)
     (axes-autoscale-view ax)

@@ -108,13 +108,14 @@ Returns a list of 7 (x y) pairs defining the arrow polygon."
                  ;; Auto: mean magnitude / (0.1 * span)
                  (let ((total-mag 0.0d0)
                        (count 0))
-                   (dotimes (i n)
-                     (let ((ui (float (elt u-data i) 1.0d0))
-                           (vi (float (elt v-data i) 1.0d0)))
-                       (let ((mag (sqrt (+ (* ui ui) (* vi vi)))))
-                         (when (> mag 0.0d0)
-                           (incf total-mag mag)
-                           (incf count)))))
+                   (loop for ui-raw in u-data
+                         for vi-raw in v-data
+                         do (let ((ui (float ui-raw 1.0d0))
+                                  (vi (float vi-raw 1.0d0)))
+                              (let ((mag (sqrt (+ (* ui ui) (* vi vi)))))
+                                (when (> mag 0.0d0)
+                                  (incf total-mag mag)
+                                  (incf count)))))
                    (if (zerop count)
                        1.0d0
                        (let ((mean-mag (/ total-mag (float count 1.0d0))))
@@ -124,11 +125,14 @@ Returns a list of 7 (x y) pairs defining the arrow polygon."
            (headlength-factor 5.0d0)
            ;; Build arrow polygons
            (arrow-verts
-             (loop for i from 0 below n
-                   for xi = (float (elt x-data i) 1.0d0)
-                   for yi = (float (elt y-data i) 1.0d0)
-                   for ui = (float (elt u-data i) 1.0d0)
-                   for vi = (float (elt v-data i) 1.0d0)
+             (loop for xi-raw in x-data
+                   for yi-raw in y-data
+                   for ui-raw in u-data
+                   for vi-raw in v-data
+                   for xi = (float xi-raw 1.0d0)
+                   for yi = (float yi-raw 1.0d0)
+                   for ui = (float ui-raw 1.0d0)
+                   for vi = (float vi-raw 1.0d0)
                    for mag = (sqrt (+ (* ui ui) (* vi vi)))
                    ;; Skip zero-length and invalid arrows
                    when (and (> mag 0.0d0)
@@ -160,14 +164,14 @@ Returns a list of 7 (x y) pairs defining the arrow polygon."
                (alpha (or (artist-alpha qc) 1.0d0))
                (n (length paths)))
           (when (plusp n)
-            (dotimes (i n)
-              (let* ((path (elt paths i))
-                     (facecolor (or (%coll-nth (collection-facecolors qc) i) "C0"))
-                     (edgecolor (%coll-nth (collection-edgecolors qc) i))
-                     (linewidth (or (%coll-nth (collection-linewidths qc) i) 1.0))
-                     (linestyle (or (%coll-nth (collection-linestyles qc) i) :solid))
-                     (antialiased (let ((aa (%coll-nth (collection-antialiaseds qc) i)))
-                                    (if (null (collection-antialiaseds qc)) t aa))))
+            (loop for path in paths
+                  for i from 0
+                  do (let* ((facecolor (or (%coll-nth (collection-facecolors qc) i) "C0"))
+                            (edgecolor (%coll-nth (collection-edgecolors qc) i))
+                            (linewidth (or (%coll-nth (collection-linewidths qc) i) 1.0))
+                            (linestyle (or (%coll-nth (collection-linestyles qc) i) :solid))
+                            (antialiased (let ((aa (%coll-nth (collection-antialiaseds qc) i)))
+                                           (if (null (collection-antialiaseds qc)) t aa))))
                 (let ((gc (make-gc :foreground edgecolor
                                    :background facecolor
                                    :linewidth linewidth

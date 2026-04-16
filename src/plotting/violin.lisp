@@ -72,11 +72,14 @@ Returns NIL."
          (n-violins (length dsets))
          (pos (or positions (loop for i from 1 to n-violins
                                   collect (float i 1.0d0)))))
+    (let ((widths-list (unless (numberp widths) (coerce widths 'list))))
     (loop for idx from 0 below n-violins
           for dataset in dsets
-          for position = (float (elt pos idx) 1.0d0)
+          for pos-val in pos
+          for position = (float pos-val 1.0d0)
+          for wi-iter = widths-list then (cdr wi-iter)
           for w = (if (numberp widths) (float widths 1.0d0)
-                      (float (elt widths idx) 1.0d0))
+                      (float (car wi-iter) 1.0d0))
           for half-w = (* w 0.5d0)
           do (let ((data-list (mapcar (lambda (x) (float x 1.0d0))
                                      (coerce dataset 'list))))
@@ -113,6 +116,9 @@ Returns NIL."
                         (total-verts (* 2 n-eval))
                         (verts (make-array (list total-verts 2)
                                            :element-type 'double-float)))
+                   ;; Coerce to vectors — backward pass needs random access
+                   (let ((kde-vec (coerce kde-scaled 'vector))
+                         (eval-vec (coerce eval-points 'vector)))
                    ;; Fill vertices
                    (if vert
                        ;; Vertical: x = position ± kde, y = eval-point
@@ -120,31 +126,31 @@ Returns NIL."
                          ;; Forward pass: right side (pos + kde)
                          (dotimes (i n-eval)
                            (setf (aref verts i 0)
-                                 (+ position (elt kde-scaled i))
+                                 (+ position (aref kde-vec i))
                                  (aref verts i 1)
-                                 (elt eval-points i)))
+                                 (aref eval-vec i)))
                          ;; Backward pass: left side (pos - kde), reversed
                          (dotimes (i n-eval)
                            (let ((j (- n-eval 1 i)))
                              (setf (aref verts (+ n-eval i) 0)
-                                   (- position (elt kde-scaled j))
+                                   (- position (aref kde-vec j))
                                    (aref verts (+ n-eval i) 1)
-                                   (elt eval-points j)))))
+                                   (aref eval-vec j)))))
                        ;; Horizontal: x = eval-point, y = position ± kde
                        (progn
                          ;; Forward pass: top side (pos + kde)
                          (dotimes (i n-eval)
                            (setf (aref verts i 0)
-                                 (elt eval-points i)
+                                 (aref eval-vec i)
                                  (aref verts i 1)
-                                 (+ position (elt kde-scaled i))))
+                                 (+ position (aref kde-vec i))))
                          ;; Backward pass: bottom side (pos - kde), reversed
                          (dotimes (i n-eval)
                            (let ((j (- n-eval 1 i)))
                              (setf (aref verts (+ n-eval i) 0)
-                                   (elt eval-points j)
+                                   (aref eval-vec j)
                                    (aref verts (+ n-eval i) 1)
-                                   (- position (elt kde-scaled j)))))))
+                                   (- position (aref kde-vec j))))))))
                    ;; Create polygon patch
                    (let ((poly (make-instance 'mpl.rendering:polygon
                                               :xy verts
@@ -227,7 +233,7 @@ Returns NIL."
                                                   :zorder 3))))
                          (setf (mpl.rendering:artist-transform max-line)
                                (axes-base-trans-data ax))
-                         (axes-add-line ax max-line))))))))
+                         (axes-add-line ax max-line)))))))))
     ;; Update data limits
     (let* ((all-data (apply #'append
                             (mapcar (lambda (d)

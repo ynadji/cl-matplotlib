@@ -53,12 +53,14 @@ Returns a list of counts (length = (1- (length bin-edges)))."
   "Normalize histogram counts to probability density.
 Result: sum of area (count * bin_width) = 1.0."
   (let* ((total (reduce #'+ counts))
-         (n (length counts)))
+         (n (length counts))
+         ;; Needs random access: (1+ i) pattern — coerce to vector
+         (edges-vec (coerce bin-edges 'vector)))
     (if (zerop total)
         (make-list n :initial-element 0.0d0)
         (loop for i from 0 below n
               for count in counts
-              for width = (- (elt bin-edges (1+ i)) (elt bin-edges i))
+              for width = (- (aref edges-vec (1+ i)) (aref edges-vec i))
               collect (if (zerop width) 0.0d0
                           (float (/ count (* total width)) 1.0d0))))))
 
@@ -106,13 +108,15 @@ Returns (values counts bin-edges patches)."
                       (mapcar (lambda (c) (float c 1.0d0)) counts)))
          ;; Create patches/artists
          (patches nil))
+    ;; Coerce bin-edges to vector once — all hist types need random access (1+ i)
+    (let ((be-vec (coerce bin-edges 'vector)))
     (ecase histtype
       (:bar
        ;; Create rectangle patches for each bin
        (loop for i from 0 below (length heights)
              for h in heights
-             for left = (float (elt bin-edges i) 1.0d0)
-             for right = (float (elt bin-edges (1+ i)) 1.0d0)
+             for left = (float (aref be-vec i) 1.0d0)
+             for right = (float (aref be-vec (1+ i)) 1.0d0)
              for width = (- right left)
               do (let ((rect (make-instance 'mpl.rendering:rectangle
                                            :x0 left
@@ -137,8 +141,8 @@ Returns (values counts bin-edges patches)."
        (let ((step-x nil) (step-y nil))
          ;; Build step path: for each bin, horizontal line at top
          (loop for i from 0 below (length heights)
-               for left = (float (elt bin-edges i) 1.0d0)
-               for right = (float (elt bin-edges (1+ i)) 1.0d0)
+               for left = (float (aref be-vec i) 1.0d0)
+               for right = (float (aref be-vec (1+ i)) 1.0d0)
                for h in heights
                do (push left step-x) (push h step-y)
                   (push right step-x) (push h step-y))
@@ -166,8 +170,8 @@ Returns (values counts bin-edges patches)."
        (let ((verts-x nil) (verts-y nil))
          ;; Forward pass along top of bins
          (loop for i from 0 below (length heights)
-               for left = (float (elt bin-edges i) 1.0d0)
-               for right = (float (elt bin-edges (1+ i)) 1.0d0)
+               for left = (float (aref be-vec i) 1.0d0)
+               for right = (float (aref be-vec (1+ i)) 1.0d0)
                for h in heights
                do (push left verts-x) (push h verts-y)
                   (push right verts-x) (push h verts-y))
@@ -180,9 +184,11 @@ Returns (values counts bin-edges patches)."
                verts-y (nreverse verts-y))
          (let* ((n (length verts-x))
                 (verts (make-array (list n 2) :element-type 'double-float)))
-           (dotimes (i n)
-             (setf (aref verts i 0) (elt verts-x i)
-                   (aref verts i 1) (elt verts-y i)))
+           (loop for vx in verts-x
+                 for vy in verts-y
+                 for i from 0
+                 do (setf (aref verts i 0) vx
+                          (aref verts i 1) vy))
            (let ((poly (make-instance 'mpl.rendering:polygon
                                       :xy verts
                                       :closed t
@@ -196,7 +202,7 @@ Returns (values counts bin-edges patches)."
              (setf (mpl.rendering:artist-transform poly)
                    (axes-base-trans-data ax))
              (axes-add-patch ax poly)
-             (push poly patches))))))
+             (push poly patches)))))))
     ;; Update data limits
     (let* ((all-x (coerce bin-edges 'list))
            (all-y (cons 0.0d0 heights)))
