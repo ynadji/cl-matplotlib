@@ -474,27 +474,30 @@ Returns a BBOX (from cl-matplotlib.primitives)."
          (prev-glyph nil))
     (loop for char across text
           for glyph = (zpb-ttf:find-glyph (char-code char) font-loader)
-          do (when glyph
-               ;; Kerning
-               (when prev-glyph
-                 (let ((kern (zpb-ttf:kerning-offset prev-glyph glyph font-loader)))
-                   (when kern
-                     (incf x-pos (* (float kern 1.0d0) scale)))))
-               ;; Advance
-               (let ((advance (* (float (zpb-ttf:advance-width glyph) 1.0d0) scale)))
-                 (incf x-pos advance))
-               ;; Track glyph bbox
-               (let ((bb (zpb-ttf:bounding-box glyph)))
-                 (when bb
-                   (let ((gx-min (* (float (zpb-ttf:xmin bb) 1.0d0) scale))
-                         (gy-min (* (float (zpb-ttf:ymin bb) 1.0d0) scale))
-                         (gx-max (* (float (zpb-ttf:xmax bb) 1.0d0) scale))
-                         (gy-max (* (float (zpb-ttf:ymax bb) 1.0d0) scale)))
-                     (declare (ignore gx-min))
-                     (setf min-y (min min-y gy-min))
-                     (setf max-y (max max-y gy-max))
-                     (setf max-x (max max-x (+ x-pos gx-max))))))
-               (setf prev-glyph glyph))
-             (setf prev-glyph nil))
+          do (if glyph
+                 (progn
+                   ;; Kerning against the previous glyph, applied before
+                   ;; positioning this one
+                   (when prev-glyph
+                     (let ((kern (zpb-ttf:kerning-offset prev-glyph glyph font-loader)))
+                       (when kern
+                         (incf x-pos (* (float kern 1.0d0) scale)))))
+                   ;; Track glyph ink bbox at the current pen position
+                   ;; (before advancing)
+                   (let ((bb (zpb-ttf:bounding-box glyph)))
+                     (when bb
+                       (let ((gx-min (* (float (zpb-ttf:xmin bb) 1.0d0) scale))
+                             (gy-min (* (float (zpb-ttf:ymin bb) 1.0d0) scale))
+                             (gx-max (* (float (zpb-ttf:xmax bb) 1.0d0) scale))
+                             (gy-max (* (float (zpb-ttf:ymax bb) 1.0d0) scale)))
+                         (setf min-x (min min-x (+ x-pos gx-min)))
+                         (setf min-y (min min-y gy-min))
+                         (setf max-y (max max-y gy-max))
+                         (setf max-x (max max-x (+ x-pos gx-max))))))
+                   ;; Advance
+                   (incf x-pos (* (float (zpb-ttf:advance-width glyph) 1.0d0) scale))
+                   (setf prev-glyph glyph))
+                 ;; Missing glyph: reset the kerning context
+                 (setf prev-glyph nil)))
     (setf max-x (max max-x x-pos))
     (cl-matplotlib.primitives:make-bbox min-x min-y max-x max-y)))

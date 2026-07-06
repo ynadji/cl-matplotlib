@@ -114,7 +114,7 @@
 <path d="M 900.50 66.50 L 900.50 528.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 125.50 65.50 L 900.50 65.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 125.50 527.50 L 900.50 527.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M 131.94 454.39 L 256.33 454.39 L 256.33 521.06 L 131.94 521.06 L 131.94 454.39 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 131.94 454.39 L 244.93 454.39 L 244.93 521.06 L 131.94 521.06 L 131.94 454.39 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 137.50 503.69 L 165.28 503.69 L 165.28 513.42 L 137.50 513.42 L 137.50 503.69 Z " fill="#4682B4" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
 <text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(176.39,508.56) scale(1,-1)">Group A</text>
 <path d="M 137.50 482.86 L 165.28 482.86 L 165.28 492.58 L 137.50 492.58 L 137.50 482.86 Z " fill="#FF6347" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>

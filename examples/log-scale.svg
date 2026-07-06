@@ -88,7 +88,7 @@
 <path d="M 720.50 66.50 L 720.50 528.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 100.50 65.50 L 720.50 65.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 100.50 527.50 L 720.50 527.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M 106.94 496.06 L 235.09 496.06 L 235.09 521.06 L 106.94 521.06 L 106.94 496.06 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 106.94 496.06 L 230.58 496.06 L 230.58 521.06 L 106.94 521.06 L 106.94 496.06 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 112.50 509.50 L 140.50 509.50 " fill="none" fill-opacity="0.00" stroke="#4682B4" stroke-opacity="1.00" stroke-width="2.78" stroke-linecap="butt" stroke-linejoin="miter"/>
 <text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(151.39,508.56) scale(1,-1)">y = exp(x)</text>
 </g>

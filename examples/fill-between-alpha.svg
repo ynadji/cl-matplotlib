@@ -103,14 +103,14 @@
 <path d="M 720.50 55.50 L 720.50 440.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 100.50 54.50 L 720.50 54.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 100.50 439.50 L 720.50 439.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M 570.65 345.56 L 713.06 345.56 L 713.06 433.06 L 570.65 433.06 L 570.65 345.56 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<path d="M 576.50 421.50 L 604.50 421.50 " fill="none" fill-opacity="0.00" stroke="#0000FF" stroke-opacity="1.00" stroke-width="2.08" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(615.09,420.56) scale(1,-1)">sin(x)</text>
-<path d="M 576.50 400.50 L 604.50 400.50 " fill="none" fill-opacity="0.00" stroke="#0000FF" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(615.09,399.72) scale(1,-1)">1.5 sin(x)</text>
-<path d="M 576.50 379.50 L 604.50 379.50 " fill="none" fill-opacity="0.00" stroke="#0000FF" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(615.09,378.89) scale(1,-1)">0.5 sin(x)</text>
-<path d="M 576.20 353.19 L 603.98 353.19 L 603.98 362.92 L 576.20 362.92 L 576.20 353.19 Z " fill="#0000FF" fill-opacity="0.30" stroke="none" stroke-opacity="0.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(615.09,358.06) scale(1,-1)">±50% band</text>
+<path d="M 578.84 345.56 L 713.06 345.56 L 713.06 433.06 L 578.84 433.06 L 578.84 345.56 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 584.50 421.50 L 612.50 421.50 " fill="none" fill-opacity="0.00" stroke="#0000FF" stroke-opacity="1.00" stroke-width="2.08" stroke-linecap="butt" stroke-linejoin="miter"/>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(623.29,420.56) scale(1,-1)">sin(x)</text>
+<path d="M 584.50 400.50 L 612.50 400.50 " fill="none" fill-opacity="0.00" stroke="#0000FF" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(623.29,399.72) scale(1,-1)">1.5 sin(x)</text>
+<path d="M 584.50 379.50 L 612.50 379.50 " fill="none" fill-opacity="0.00" stroke="#0000FF" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(623.29,378.89) scale(1,-1)">0.5 sin(x)</text>
+<path d="M 584.40 353.19 L 612.18 353.19 L 612.18 362.92 L 584.40 362.92 L 584.40 353.19 Z " fill="#0000FF" fill-opacity="0.30" stroke="none" stroke-opacity="0.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(623.29,358.06) scale(1,-1)">±50% band</text>
 </g>
 </svg>

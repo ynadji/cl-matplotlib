@@ -188,7 +188,21 @@ Uses weak pointers so children don't prevent parent from being GC'd."
   (:documentation "Transform a point (vector of 2 doubles). Returns a new vector."))
 
 (defgeneric transform-path (transform path)
-  (:documentation "Transform a path by applying this transform to all vertices."))
+  (:documentation "Transform a path by applying this transform to all vertices.")
+  (:method ((tr transform) path)
+    ;; Default: transform each vertex through TRANSFORM-POINT, preserving
+    ;; codes. Gives non-affine transforms (symlog, logit, blended-generic,
+    ;; ...) correct behavior when composed without requiring each to
+    ;; define a specialized method; affine subclasses override with direct
+    ;; matrix application.
+    (let* ((verts (mpl-path-vertices path))
+           (n (array-dimension verts 0))
+           (new-verts (make-array (list n 2) :element-type 'double-float)))
+      (dotimes (i n)
+        (let ((p (transform-point tr (list (aref verts i 0) (aref verts i 1)))))
+          (setf (aref new-verts i 0) (aref p 0)
+                (aref new-verts i 1) (aref p 1))))
+      (make-path :vertices new-verts :codes (mpl-path-codes path)))))
 
 (defgeneric invert (transform)
   (:documentation "Return the inverse transform."))
@@ -727,7 +741,14 @@ Does not participate in invalidation."))
   (:documentation "A bbox that is automatically transformed by a given transform."))
 
 (defmethod initialize-instance :after ((tb transformed-bbox) &key bbox transform)
-  (declare (ignore bbox transform))
+  (declare (ignore bbox))
+  ;; Register as a child of the source transform so mutations to it
+  ;; invalidate this node — otherwise the cache goes permanently stale
+  ;; after the first recompute (matplotlib's TransformedBbox does the same
+  ;; via set_children). Plain bboxes have no invalidation channel; only
+  ;; transform-nodes participate.
+  (when (typep transform 'transform-node)
+    (set-children tb transform))
   (setf (transform-node-invalid tb) +invalid-full+))
 
 (defun transformed-bbox-recompute (tb)

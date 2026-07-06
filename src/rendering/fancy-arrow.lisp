@@ -189,16 +189,21 @@ Returns (values shaft-path head-path) or just shaft-path for styles without head
          (sa-y (+ ay (* shrink-a-pts uy)))
          (sb-x (- bx (* shrink-b-pts ux)))
          (sb-y (- by (* shrink-b-pts uy)))
-         ;; Head dimensions scaled by mutation-scale
-         (head-length (* 10.0d0 mutation-scale))
-         (head-width (* 8.0d0 mutation-scale))
+         ;; Head dimensions scaled by mutation-scale, using matplotlib's
+         ;; ArrowStyle factors (head_length=0.4, head_width=0.2 per side).
+         ;; MUTATION-SCALE arrives in display pixels (the draw method
+         ;; converts from points).
+         (head-length (* 0.4d0 mutation-scale))
+         (head-width (* 0.4d0 mutation-scale))
          (style-key (etypecase arrowstyle
                       (keyword arrowstyle)
                       (string (intern (string-upcase arrowstyle) :keyword)))))
     (declare (ignore connection-path))
     (cond
       ;; -> : line with arrow head at end
-      ((eq style-key :->)
+      ;; -|> : same geometry, filled head (matplotlib's streamplot default);
+      ;;       the third return value tells the caller to fill the head
+      ((member style-key '(:-> :-\|>))
        (let* ((head-verts (%arrow-head-path sb-x sb-y (- dx) (- dy) head-length head-width))
               (head-path (mpl.primitives:make-path
                           :vertices head-verts
@@ -206,7 +211,7 @@ Returns (values shaft-path head-path) or just shaft-path for styles without head
               (shaft-path (mpl.primitives:make-path
                            :vertices (list (list sa-x sa-y) (list sb-x sb-y))
                            :codes (list mpl.primitives:+moveto+ mpl.primitives:+lineto+))))
-         (values shaft-path head-path)))
+         (values shaft-path head-path (eq style-key :-\|>))))
       ;; <- : line with arrow head at start
       ((eq style-key :<-)
        (let* ((head-verts (%arrow-head-path sa-x sa-y dx dy head-length head-width))
@@ -237,7 +242,7 @@ Returns (values shaft-path head-path) or just shaft-path for styles without head
                nil))
       ;; -bracket : line with bracket at end
       ((eq style-key :-bracket)
-       (let* ((bracket-len (* 5.0d0 mutation-scale))
+       (let* ((bracket-len (* 0.5d0 mutation-scale))
               (px (- uy)) (py ux)
               (left-x (+ sb-x (* bracket-len px)))
               (left-y (+ sb-y (* bracket-len py)))
@@ -256,7 +261,7 @@ Returns (values shaft-path head-path) or just shaft-path for styles without head
          (values shaft-path bracket-path)))
       ;; bar-bar : line with perpendicular bars at both ends
       ((eq style-key :-bar-bar)
-       (let* ((bar-len (* 5.0d0 mutation-scale))
+       (let* ((bar-len (* 0.5d0 mutation-scale))
               (px (- uy)) (py ux)
               (bar-a (mpl.primitives:make-path
                       :vertices (list (list (+ sa-x (* bar-len px))
@@ -430,23 +435,36 @@ so that arrowhead dimensions (points) are resolution-independent."
              ;; Compute connection path in display coords
              (cs (fancy-arrow-connectionstyle fa))
              (conn-path (when cs (connect cs posA-display posB-display))))
-        (multiple-value-bind (shaft-path head-path)
+        (multiple-value-bind (shaft-path head-path fill-head-p)
             (%compute-arrow-path posA-display posB-display
                                  arrowstyle conn-path
-                                 :mutation-scale (fancy-arrow-mutation-scale fa)
+                                 ;; mutation-scale is in points; the arrow
+                                 ;; path is computed in display pixels
+                                 :mutation-scale (* (fancy-arrow-mutation-scale fa)
+                                                    (/ (renderer-dpi renderer) 72.0d0))
                                  :shrinkA (fancy-arrow-shrinkA fa)
                                  :shrinkB (fancy-arrow-shrinkB fa))
-          (let ((path (if head-path
-                          (mpl.primitives:path-make-compound-path
-                           (list shaft-path head-path))
-                          shaft-path)))
-            (when path
-              ;; Draw with nil transform — path is already in display coords
-              (renderer-draw-path renderer gc path nil
-                                  :fill (when filled-p
-                                          (or (patch-facecolor fa)
-                                              (patch-edgecolor fa) "black"))
-                                  :stroke (patch-edgecolor fa))))))))
+          (if fill-head-p
+              ;; Filled-head styles (e.g. :-|>): stroke the shaft, fill the head
+              (progn
+                (renderer-draw-path renderer gc shaft-path nil
+                                    :stroke (patch-edgecolor fa))
+                (when head-path
+                  (renderer-draw-path renderer gc head-path nil
+                                      :fill (or (patch-facecolor fa)
+                                                (patch-edgecolor fa) "black")
+                                      :stroke (patch-edgecolor fa))))
+              (let ((path (if head-path
+                              (mpl.primitives:path-make-compound-path
+                               (list shaft-path head-path))
+                              shaft-path)))
+                (when path
+                  ;; Draw with nil transform — path is already in display coords
+                  (renderer-draw-path renderer gc path nil
+                                      :fill (when filled-p
+                                              (or (patch-facecolor fa)
+                                                  (patch-edgecolor fa) "black"))
+                                      :stroke (patch-edgecolor fa)))))))))
   (setf (artist-stale fa) nil))
 
 ;;; ============================================================
@@ -624,31 +642,75 @@ PAD is the offset from edge in axes fraction."
     (:lower-center (list 0.5d0 pad))))
 
 (defmethod draw ((at anchored-text) renderer)
-  "Draw the anchored text box."
+  "Draw the anchored text box.
+The anchor corner comes from %anchored-text-position in axes-fraction
+coordinates and is mapped to display pixels through the artist transform
+(callers should set it to transAxes). borderpad and pad are in fontsize
+units, converted to pixels via the renderer dpi — mixing fraction, point,
+and pixel units directly is what made earlier versions render in the
+bottom-left corner."
   (unless (artist-visible at)
     (return-from draw))
   (when (zerop (length (anchored-text-text at)))
     (return-from draw))
-  (let* ((borderpad (float (anchored-text-borderpad at) 1.0d0))
-         (pos (%anchored-text-position (anchored-text-loc at) borderpad))
-         (x (float (first pos) 1.0d0))
-         (y (float (second pos) 1.0d0))
+  (let* ((loc (anchored-text-loc at))
+         (text (anchored-text-text at))
+         (fs-pts (float (anchored-text-fontsize at) 1.0d0))
+         (px-per-pt (/ (renderer-dpi renderer) 72.0d0))
+         (fs-px (* fs-pts px-per-pt))
+         ;; Anchor corner in axes fractions; pads are applied below in pixels
+         (frac (%anchored-text-position loc 0.0d0))
+         (transform (get-artist-transform at))
+         (anchor (if transform
+                     (mpl.primitives:transform-point
+                      transform (list (float (first frac) 1.0d0)
+                                      (float (second frac) 1.0d0)))
+                     (vector (float (first frac) 1.0d0)
+                             (float (second frac) 1.0d0))))
+         ;; borderpad: spacing between anchor and frame, in fontsize units
+         (borderpad-px (* (float (anchored-text-borderpad at) 1.0d0) fs-px))
+         (x-dir (case loc
+                  ((:upper-left :lower-left :center-left) 1.0d0)
+                  ((:upper-right :lower-right :center-right) -1.0d0)
+                  (t 0.0d0)))
+         (y-dir (case loc
+                  ((:lower-left :lower-right :lower-center) 1.0d0)
+                  ((:upper-left :upper-right :upper-center) -1.0d0)
+                  (t 0.0d0)))
+         (x (+ (aref anchor 0) (* x-dir borderpad-px)))
+         (y (+ (aref anchor 1) (* y-dir borderpad-px)))
+         (ha (case loc
+               ((:upper-left :lower-left :center-left) :left)
+               ((:upper-right :lower-right :center-right) :right)
+               (t :center)))
+         (va (case loc
+               ((:upper-left :upper-right :upper-center) :top)
+               ((:lower-left :lower-right :lower-center) :bottom)
+               (t :center)))
+         ;; Fontsize is carried to the backend in pixels via gc-linewidth
          (gc (make-gc :foreground (anchored-text-color at)
                       :alpha (or (artist-alpha at) 1.0)
-                      :linewidth (anchored-text-fontsize at))))
+                      :linewidth fs-px)))
     ;; Draw background box if frameon
     (when (anchored-text-frameon at)
-      (let* ((fs (float (anchored-text-fontsize at) 1.0d0))
-             ;; Compute text width using actual glyph metrics
-             (font-loader (load-font "sans-serif"))
-             (text-width (cl-matplotlib.primitives:bbox-width
-                          (get-text-extents (anchored-text-text at) font-loader fs)))
-             (text-height (* 1.2d0 fs))
-             (pad-pts (* (float (anchored-text-pad at) 1.0d0) fs))
-             (box-x (- x pad-pts))
-             (box-y (- y pad-pts))
-             (box-w (+ text-width (* 2 pad-pts)))
-             (box-h (+ text-height (* 2 pad-pts)))
+      (let* ((font-loader (load-font "sans-serif"))
+             (text-width-px (* px-per-pt
+                               (cl-matplotlib.primitives:bbox-width
+                                (get-text-extents text font-loader fs-pts))))
+             (text-height-px (* 1.2d0 fs-px))
+             (pad-px (* (float (anchored-text-pad at) 1.0d0) fs-px))
+             (box-x (- (ecase ha
+                         (:left x)
+                         (:center (- x (/ text-width-px 2.0d0)))
+                         (:right (- x text-width-px)))
+                       pad-px))
+             (box-y (- (ecase va
+                         (:top (- y text-height-px))
+                         (:center (- y (/ text-height-px 2.0d0)))
+                         (:bottom y))
+                       pad-px))
+             (box-w (+ text-width-px (* 2 pad-px)))
+             (box-h (+ text-height-px (* 2 pad-px)))
              (box-path (mpl.primitives:make-path
                         :vertices (list (list box-x box-y)
                                         (list (+ box-x box-w) box-y)
@@ -663,5 +725,5 @@ PAD is the offset from edge in axes fraction."
                             :fill (anchored-text-facecolor at)
                             :stroke (anchored-text-edgecolor at))))
     ;; Draw text
-    (renderer-draw-text renderer gc x y (anchored-text-text at) :angle 0.0))
+    (renderer-draw-text renderer gc x y text :angle 0.0 :ha ha :va va))
   (setf (artist-stale at) nil))

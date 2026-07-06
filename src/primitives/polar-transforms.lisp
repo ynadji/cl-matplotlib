@@ -33,7 +33,10 @@ Output: (r*cos(theta), r*sin(theta))."))
     (dotimes (i n)
       (let* ((theta (aref verts i 0))
              (r     (aref verts i 1))
-             (code  (aref codes i)))
+             ;; Codes may be NIL (plain polyline): synthesize MOVETO + LINETOs
+             (code  (if codes
+                        (aref codes i)
+                        (if (zerop i) +moveto+ +lineto+))))
         (cond
           ;; MOVETO: just transform
           ((= code +moveto+)
@@ -156,4 +159,8 @@ Maps unit circle to center of [0,1]×[0,1] axes space."))
           (aref m 5) 0.5d0)  ; f (y translation)
     (setf (affine-2d-matrix pa) m)
     (setf (polar-affine-r-max pa) (float r-max 1.0d0))
+    ;; Invalidate parents (composites caching a product) before marking
+    ;; this node valid — mutating the matrix silently otherwise leaves
+    ;; composed transforms with a stale cached matrix.
+    (invalidate pa)
     (setf (transform-node-invalid pa) +valid+)))

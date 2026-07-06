@@ -275,7 +275,9 @@ Returns a list of (x . y) cons cells, or NIL if completely clipped."
         ;; Degenerate: segment is a point
         (sqrt (+ (* (- px x1) (- px x1)) (* (- py y1) (- py y1))))
         ;; Normal case: distance from point to line
-        (/ (abs (- (* dy px) (* dx py) (* x2 y1) (- (* x1 y2))))
+        ;; |dy*px - dx*py + x2*y1 - x1*y2| / |segment|
+        (/ (abs (+ (- (* dy px) (* dx py))
+                   (- (* x2 y1) (* x1 y2))))
            (sqrt (+ (* dx dx) (* dy dy)))))))
 
 (defun douglas-peucker (points tolerance)

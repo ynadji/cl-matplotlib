@@ -59,7 +59,11 @@ Ported from matplotlib.text.Annotation."))
          (linewidth (or (getf props :linewidth) 1.5))
          (shrinkA (or (getf props :shrinkA) 0.0d0))
          (shrinkB (or (getf props :shrinkB) 3.0d0))
-         (mutation-scale (or (getf props :mutation-scale) 1.0d0))
+         ;; matplotlib defaults an annotate arrow's mutation_scale to the
+         ;; text fontsize (points); the arrowhead is 0.4x this
+         (mutation-scale (or (getf props :mutation-scale)
+                             (text-fontsize ann)
+                             12.0d0))
          (xytext (annotation-xytext ann))
          (xy (annotation-xy ann))
          (arrow (make-instance 'fancy-arrow-patch

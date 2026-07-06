@@ -100,8 +100,8 @@
 <path d="M 900.50 55.50 L 900.50 440.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 125.50 54.50 L 900.50 54.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 125.50 439.50 L 900.50 439.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M 694.03 235.00 L 893.06 235.00 L 893.06 260.00 L 694.03 260.00 L 694.03 235.00 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<path d="M 700.50 247.50 L 727.50 247.50 " fill="none" fill-opacity="0.00" stroke="#4682B4" stroke-opacity="1.00" stroke-width="2.78" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(738.48,247.50) scale(1,-1)">Digital Signal (post)</text>
+<path d="M 698.55 235.00 L 893.06 235.00 L 893.06 260.00 L 698.55 260.00 L 698.55 235.00 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 704.50 247.50 L 732.50 247.50 " fill="none" fill-opacity="0.00" stroke="#4682B4" stroke-opacity="1.00" stroke-width="2.78" stroke-linecap="butt" stroke-linejoin="miter"/>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(742.99,247.50) scale(1,-1)">Digital Signal (post)</text>
 </g>
 </svg>

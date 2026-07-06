@@ -54,14 +54,14 @@
 <path d="M 720.50 55.50 L 720.50 440.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 100.50 54.50 L 720.50 54.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 100.50 439.50 L 720.50 439.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M 579.81 345.56 L 713.06 345.56 L 713.06 433.06 L 579.81 433.06 L 579.81 345.56 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<path d="M 585.50 421.50 L 613.50 421.50 " fill="none" fill-opacity="0.00" stroke="#0000FF" stroke-opacity="1.00" stroke-width="2.08" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(624.26,420.56) scale(1,-1)">sin(x)</text>
-<path d="M 585.50 400.50 L 613.50 400.50 " fill="none" fill-opacity="0.00" stroke="#FF0000" stroke-opacity="1.00" stroke-width="2.08" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(624.26,399.72) scale(1,-1)">0.5·sin(2x)</text>
-<path d="M 585.37 374.03 L 613.15 374.03 L 613.15 383.75 L 585.37 383.75 L 585.37 374.03 Z " fill="#FF0000" fill-opacity="0.40" stroke="none" stroke-opacity="0.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(624.26,378.89) scale(1,-1)">y1 &lt;= y2</text>
-<path d="M 585.37 353.19 L 613.15 353.19 L 613.15 362.92 L 585.37 362.92 L 585.37 353.19 Z " fill="#008000" fill-opacity="0.40" stroke="none" stroke-opacity="0.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(624.26,358.06) scale(1,-1)">y1 &gt; y2</text>
+<path d="M 584.33 345.56 L 713.06 345.56 L 713.06 433.06 L 584.33 433.06 L 584.33 345.56 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 590.50 421.50 L 618.50 421.50 " fill="none" fill-opacity="0.00" stroke="#0000FF" stroke-opacity="1.00" stroke-width="2.08" stroke-linecap="butt" stroke-linejoin="miter"/>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(628.77,420.56) scale(1,-1)">sin(x)</text>
+<path d="M 590.50 400.50 L 618.50 400.50 " fill="none" fill-opacity="0.00" stroke="#FF0000" stroke-opacity="1.00" stroke-width="2.08" stroke-linecap="butt" stroke-linejoin="miter"/>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(628.77,399.72) scale(1,-1)">0.5·sin(2x)</text>
+<path d="M 589.88 374.03 L 617.66 374.03 L 617.66 383.75 L 589.88 383.75 L 589.88 374.03 Z " fill="#FF0000" fill-opacity="0.40" stroke="none" stroke-opacity="0.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(628.77,378.89) scale(1,-1)">y1 &lt;= y2</text>
+<path d="M 589.88 353.19 L 617.66 353.19 L 617.66 362.92 L 589.88 362.92 L 589.88 353.19 Z " fill="#008000" fill-opacity="0.40" stroke="none" stroke-opacity="0.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(628.77,358.06) scale(1,-1)">y1 &gt; y2</text>
 </g>
 </svg>

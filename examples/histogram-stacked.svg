@@ -82,12 +82,12 @@
 <path d="M 720.50 55.50 L 720.50 440.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 100.50 54.50 L 720.50 54.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 100.50 439.50 L 720.50 439.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M 588.67 366.39 L 713.06 366.39 L 713.06 433.06 L 588.67 433.06 L 588.67 366.39 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<path d="M 594.22 415.69 L 622.00 415.69 L 622.00 425.42 L 594.22 425.42 L 594.22 415.69 Z " fill="#4C72B0" fill-opacity="1.00" stroke="#FFFFFF" stroke-opacity="1.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(633.11,420.56) scale(1,-1)">Group A</text>
-<path d="M 594.22 394.86 L 622.00 394.86 L 622.00 404.58 L 594.22 404.58 L 594.22 394.86 Z " fill="#DD8452" fill-opacity="1.00" stroke="#FFFFFF" stroke-opacity="1.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(633.11,399.72) scale(1,-1)">Group B</text>
-<path d="M 594.22 374.03 L 622.00 374.03 L 622.00 383.75 L 594.22 383.75 L 594.22 374.03 Z " fill="#55A868" fill-opacity="1.00" stroke="#FFFFFF" stroke-opacity="1.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(633.11,378.89) scale(1,-1)">Group C</text>
+<path d="M 600.07 366.39 L 713.06 366.39 L 713.06 433.06 L 600.07 433.06 L 600.07 366.39 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 605.62 415.69 L 633.40 415.69 L 633.40 425.42 L 605.62 425.42 L 605.62 415.69 Z " fill="#4C72B0" fill-opacity="1.00" stroke="#FFFFFF" stroke-opacity="1.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(644.51,420.56) scale(1,-1)">Group A</text>
+<path d="M 605.62 394.86 L 633.40 394.86 L 633.40 404.58 L 605.62 404.58 L 605.62 394.86 Z " fill="#DD8452" fill-opacity="1.00" stroke="#FFFFFF" stroke-opacity="1.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(644.51,399.72) scale(1,-1)">Group B</text>
+<path d="M 605.62 374.03 L 633.40 374.03 L 633.40 383.75 L 605.62 383.75 L 605.62 374.03 Z " fill="#55A868" fill-opacity="1.00" stroke="#FFFFFF" stroke-opacity="1.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(644.51,378.89) scale(1,-1)">Group C</text>
 </g>
 </svg>

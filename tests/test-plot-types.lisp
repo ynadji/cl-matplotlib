@@ -116,6 +116,23 @@
         (loop for i from 1 below (length counts)
               do (is (>= (elt counts i) (elt counts (1- i)))))))))
 
+(test hist-density-cumulative
+  "Density + cumulative together form a CDF ending at 1.0 (matplotlib
+computes density first, then cumsum(density * bin_width))."
+  (multiple-value-bind (ax fig) (make-test-axes)
+    (declare (ignore fig))
+    (let ((data '(1.0 2.0 2.0 3.0 4.0 4.0 4.0 5.0)))
+      (multiple-value-bind (values bin-edges patches)
+          (hist ax data :bins 4 :density t :cumulative t)
+        (declare (ignore bin-edges patches))
+        ;; CDF ends at 1.0
+        (is (< (abs (- (car (last values)) 1.0d0)) 1.0d-9))
+        ;; CDF is non-decreasing and within [0, 1]
+        (loop for i from 1 below (length values)
+              do (is (>= (elt values i) (elt values (1- i)))))
+        (is (every (lambda (v) (and (>= v 0.0d0) (<= v (+ 1.0d0 1.0d-9))))
+                   values))))))
+
 (test hist-step-type
   "Test step histogram type."
   (multiple-value-bind (ax fig) (make-test-axes)

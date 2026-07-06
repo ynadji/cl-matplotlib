@@ -90,7 +90,7 @@
 <path d="M 900.50 66.50 L 900.50 528.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 125.50 65.50 L 900.50 65.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 125.50 527.50 L 900.50 527.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M 132.64 424.11 L 380.29 424.11 L 380.29 520.36 L 132.64 520.36 L 132.64 424.11 Z " fill="#F0F0F0" fill-opacity="0.80" stroke="#808080" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 132.64 424.11 L 371.02 424.11 L 371.02 520.36 L 132.64 520.36 L 132.64 424.11 Z " fill="#F0F0F0" fill-opacity="0.80" stroke="#808080" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
 <text font-family="DejaVu Sans" font-size="15.28" fill="#000000" fill-opacity="1.00" text-anchor="start" transform="translate(138.75,502.03) scale(1,-1)">Function Comparison</text>
 <path d="M 139.50 484.50 L 169.50 484.50 " fill="none" fill-opacity="0.00" stroke="#4682B4" stroke-opacity="1.00" stroke-width="2.78" stroke-linecap="butt" stroke-linejoin="miter"/>
 <text font-family="DejaVu Sans" font-size="15.28" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(181.53,483.69) scale(1,-1)">Linear: y = 2x</text>

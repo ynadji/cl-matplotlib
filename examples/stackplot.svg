@@ -96,12 +96,12 @@
 <path d="M 900.50 66.50 L 900.50 528.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 125.50 65.50 L 900.50 65.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 125.50 527.50 L 900.50 527.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M 757.55 454.39 L 893.06 454.39 L 893.06 521.06 L 757.55 521.06 L 757.55 454.39 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<path d="M 763.10 503.69 L 790.88 503.69 L 790.88 513.42 L 763.10 513.42 L 763.10 503.69 Z " fill="#4682B4" fill-opacity="1.00" stroke="#4682B4" stroke-opacity="1.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(801.99,508.56) scale(1,-1)">Product A</text>
-<path d="M 763.10 482.86 L 790.88 482.86 L 790.88 492.58 L 763.10 492.58 L 763.10 482.86 Z " fill="#FF6347" fill-opacity="1.00" stroke="#FF6347" stroke-opacity="1.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(801.99,487.72) scale(1,-1)">Product B</text>
-<path d="M 763.10 462.03 L 790.88 462.03 L 790.88 471.75 L 763.10 471.75 L 763.10 462.03 Z " fill="#2E8B57" fill-opacity="1.00" stroke="#2E8B57" stroke-opacity="1.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(801.99,466.89) scale(1,-1)">Product C</text>
+<path d="M 768.95 454.39 L 893.06 454.39 L 893.06 521.06 L 768.95 521.06 L 768.95 454.39 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 774.51 503.69 L 802.28 503.69 L 802.28 513.42 L 774.51 513.42 L 774.51 503.69 Z " fill="#4682B4" fill-opacity="1.00" stroke="#4682B4" stroke-opacity="1.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(813.40,508.56) scale(1,-1)">Product A</text>
+<path d="M 774.51 482.86 L 802.28 482.86 L 802.28 492.58 L 774.51 492.58 L 774.51 482.86 Z " fill="#FF6347" fill-opacity="1.00" stroke="#FF6347" stroke-opacity="1.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(813.40,487.72) scale(1,-1)">Product B</text>
+<path d="M 774.51 462.03 L 802.28 462.03 L 802.28 471.75 L 774.51 471.75 L 774.51 462.03 Z " fill="#2E8B57" fill-opacity="1.00" stroke="#2E8B57" stroke-opacity="1.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(813.40,466.89) scale(1,-1)">Product C</text>
 </g>
 </svg>

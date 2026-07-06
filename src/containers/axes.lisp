@@ -1640,16 +1640,20 @@ Returns the created mpl-axes or polar-axes."
          ;; Available area
          (total-w (- right left))
          (total-h (- top bottom))
-         ;; Spacing between subplots
-         (subplot-w (/ (- total-w (* wspace (1- ncols))) ncols))
-         (subplot-h (/ (- total-h (* hspace (1- nrows))) nrows))
+         ;; matplotlib (and gridspec-get-grid-positions) treat wspace/hspace
+         ;; as a fraction of the average subplot size, NOT of the figure:
+         ;; cell = total / (n + space*(n-1)), gap = space * cell
+         (subplot-w (/ total-w (+ ncols (* wspace (1- ncols)))))
+         (subplot-h (/ total-h (+ nrows (* hspace (1- nrows)))))
+         (gap-w (* wspace subplot-w))
+         (gap-h (* hspace subplot-h))
          ;; Convert 1-based index to row, col (0-based)
          (row (floor (1- index) ncols))      ; row 0 = top
          (col (mod (1- index) ncols))
          ;; Compute position in figure coordinates
-         ;; Row 0 is top, so we flip: pos-bottom = top - (row+1)*h - row*hspace
-         (pos-left (+ left (* col (+ subplot-w wspace))))
-         (pos-bottom (- top (* (1+ row) subplot-h) (* row hspace)))
+         ;; Row 0 is top, so we flip: pos-bottom = top - (row+1)*h - row*gap
+         (pos-left (+ left (* col (+ subplot-w gap-w))))
+         (pos-bottom (- top (* (1+ row) subplot-h) (* row gap-h)))
          (pos-width subplot-w)
          (pos-height subplot-h))
      ;; Ensure position is within bounds

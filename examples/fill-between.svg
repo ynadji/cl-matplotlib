@@ -114,7 +114,7 @@
 <path d="M 900.50 66.50 L 900.50 528.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 125.50 65.50 L 900.50 65.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 125.50 527.50 L 900.50 527.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M 131.94 72.94 L 262.38 72.94 L 262.38 139.61 L 131.94 139.61 L 131.94 72.94 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 131.94 72.94 L 254.19 72.94 L 254.19 139.61 L 131.94 139.61 L 131.94 72.94 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 137.50 127.50 L 165.50 127.50 " fill="none" fill-opacity="0.00" stroke="#4682B4" stroke-opacity="1.00" stroke-width="2.78" stroke-linecap="butt" stroke-linejoin="miter"/>
 <text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(176.39,127.11) scale(1,-1)">sin(x)</text>
 <path d="M 137.50 106.50 L 165.50 106.50 " fill="none" fill-opacity="0.00" stroke="#FF6347" stroke-opacity="1.00" stroke-width="2.78" stroke-linecap="butt" stroke-linejoin="miter"/>
