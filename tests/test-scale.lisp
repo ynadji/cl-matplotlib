@@ -302,7 +302,9 @@
 ;;; ============================================================
 
 (defun run-scale-tests ()
-  "Run all scale tests and return T if all pass, NIL otherwise."
+  "Run all scale tests, signaling an error on failure."
   (let ((results (run 'scale-tests)))
     (explain! results)
-    (results-status results)))
+    (unless (results-status results)
+      (error "Scale tests failed"))
+    results))

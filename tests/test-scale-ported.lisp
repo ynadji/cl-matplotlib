@@ -199,7 +199,9 @@
 ;;; ============================================================
 
 (defun run-scale-ported-tests ()
-  "Run all ported scale tests and return results."
+  "Run all scale ported tests, signaling an error on failure."
   (let ((results (run 'scale-ported-suite)))
     (explain! results)
-    (results-status results)))
+    (unless (results-status results)
+      (error "Scale ported tests failed"))
+    results))

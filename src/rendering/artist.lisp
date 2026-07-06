@@ -235,6 +235,19 @@ Returns T if handled, NIL to fall back to the generic per-item loop.")
 HA — horizontal alignment (:left, :center, :right). Default :left.
 VA — vertical alignment (:baseline, :bottom, :center, :top). Default :baseline."))
 
+(defgeneric renderer-dpi (renderer)
+  (:documentation "Resolution of RENDERER in dots per inch, used to convert
+point-based sizes (fonts, markers, linewidths) to pixels. Backends specialize
+this; the default of 72 makes one point equal one pixel.")
+  (:method (renderer)
+    (declare (ignore renderer))
+    72.0d0))
+
+(defgeneric renderer-draw-markers (renderer gc marker-path marker-trans path transform face-color)
+  (:documentation "Draw MARKER-PATH (scaled by MARKER-TRANS) at each vertex of
+PATH (mapped through TRANSFORM). FACE-COLOR is an (r g b a) list for filled
+markers, or NIL for stroke-only."))
+
 (defgeneric renderer-draw-image (renderer gc x y image)
   (:documentation "Draw an image on the renderer."))
 
@@ -247,6 +260,9 @@ VA — vertical alignment (:baseline, :bottom, :center, :top). Default :baseline
 
 (defmethod renderer-draw-image ((r mock-renderer) gc x y image)
   (mock-renderer-record r :draw-image gc x y image))
+
+(defmethod renderer-draw-markers ((r mock-renderer) gc marker-path marker-trans path transform face-color)
+  (mock-renderer-record r :draw-markers gc marker-path marker-trans path transform face-color))
 
 ;;; ============================================================
 ;;; Graphics context (simplified)

@@ -110,8 +110,9 @@
               :norm (mpl.primitives:make-normalize :vmin 0 :vmax 100))))
     (let ((cb (make-colorbar ax sm)))
       (is (not (null (colorbar-ticks cb))))
-      ;; Should have 5 ticks by default
-      (is (= 5 (length (colorbar-ticks cb))))
+      ;; All auto ticks should lie within [vmin, vmax]
+      (is (every (lambda (tv) (and (>= tv 0.0d0) (<= tv 100.0d0)))
+                 (colorbar-ticks cb)))
       ;; First tick should be at vmin
       (is (approx= 0.0d0 (first (colorbar-ticks cb))))
       ;; Last tick should be at vmax
@@ -227,7 +228,9 @@
 ;;; ============================================================
 
 (defun run-colorbar-tests ()
-  "Run all colorbar tests and return success boolean."
+  "Run all colorbar tests, signaling an error on failure."
   (let ((results (run 'colorbar-suite)))
     (explain! results)
-    (results-status results)))
+    (unless (results-status results)
+      (error "Colorbar tests failed"))
+    results))

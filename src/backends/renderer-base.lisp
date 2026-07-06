@@ -125,6 +125,14 @@ Subclasses must implement at minimum: draw-path, draw-image, draw-text."))
   "Convert typographic points to pixels: pixels = points * dpi / 72.0"
   (* points (/ (renderer-dpi r) 72.0)))
 
+;;; Bridge the rendering layer's renderer protocol to the backend accessors,
+;;; so artists never reference this (later-loaded) system directly.
+(defmethod mpl.rendering:renderer-dpi ((r renderer-base))
+  (renderer-dpi r))
+
+(defmethod mpl.rendering:renderer-draw-markers ((r renderer-base) gc marker-path marker-trans path transform face-color)
+  (draw-markers r gc marker-path marker-trans path transform face-color))
+
 (defmethod renderer-option-image-nocomposite ((r renderer-base))
   "Default: compositing is supported."
   nil)

@@ -44,12 +44,18 @@ and write the PDF 'd' operator directly with ~f formatting."
           (mapcar (lambda (x) (float x 1.0)) dash-list)
           phase))
 
-(defun %apply-gc-to-pdf (gc)
+(defun %apply-gc-to-pdf (gc &optional renderer)
   "Apply a graphics-context's properties to the current cl-pdf state.
-Must be called within a pdf:with-page context."
-  ;; Line width
+Must be called within a pdf:with-page context.
+gc-linewidth and dashes arrive in points, but the page CTM maps display
+pixels to PDF points (72/dpi), so widths must be pre-scaled by dpi/72
+(via points-to-pixels) or strokes render 72/dpi too thin. RENDERER
+supplies the dpi; without it values are passed through unscaled."
+  ;; Line width (points → display pixels; the CTM scales back to points)
   (let ((lw (mpl.rendering:gc-linewidth gc)))
-    (when lw (pdf:set-line-width (float lw 1.0))))
+    (when lw
+      (pdf:set-line-width
+       (float (if renderer (points-to-pixels renderer lw) lw) 1.0))))
   ;; Line cap: PDF uses integers: 0=butt, 1=round, 2=projecting-square
   (let ((cap (mpl.rendering:gc-capstyle gc)))
     (when cap
@@ -74,16 +80,21 @@ Must be called within a pdf:with-page context."
   ;;   dashed:  (3.7, 1.6)
   ;;   dashdot: (6.4, 1.6, 1.0, 1.6)
   ;;   dotted:  (1.0, 1.65)
-  (let ((dashes (mpl.rendering:gc-dashes gc))
-        (linestyle (mpl.rendering:gc-linestyle gc))
-        (lw (or (mpl.rendering:gc-linewidth gc) 1.0)))
+  (let* ((dashes (mpl.rendering:gc-dashes gc))
+         (linestyle (mpl.rendering:gc-linestyle gc))
+         (lw (or (mpl.rendering:gc-linewidth gc) 1.0))
+         (lw-px (if renderer (points-to-pixels renderer lw) lw)))
     (cond
-      ;; Explicit dash list
+      ;; Explicit dash list (points → display pixels)
       ((and dashes (listp dashes) (not (null dashes)))
-       (%pdf-set-dash-pattern dashes 0))
-      ;; Named line style — scale by linewidth
+       (%pdf-set-dash-pattern
+        (if renderer
+            (mapcar (lambda (d) (points-to-pixels renderer d)) dashes)
+            dashes)
+        0))
+      ;; Named line style — scale by linewidth in display pixels
       ((and linestyle (not (eq linestyle :solid)))
-       (let ((mult (max lw 1.0)))
+       (let ((mult (max lw-px 1.0)))
          (case linestyle
            (:dashed (%pdf-set-dash-pattern (list (* 3.7 mult) (* 1.6 mult)) 0))
            (:dashdot (%pdf-set-dash-pattern (list (* 6.4 mult) (* 1.6 mult) (* 1.0 mult) (* 1.6 mult)) 0))
@@ -294,7 +305,7 @@ Uses the same hatch-get-path infrastructure as the Vecto backend."
             (pdf:set-rgb-stroke (float r 1.0) (float g 1.0) (float b 1.0))
             (when (< a 1.0)
               (pdf:set-stroke-transparency (float a 1.0))))
-          (pdf:set-line-width 1.0)
+          (pdf:set-line-width (float (points-to-pixels renderer 1.0) 1.0))
           ;; Tile the hatch path across the bounding box
           (let ((tx0 (floor min-x tile-size))
                 (ty0 (floor min-y tile-size))
@@ -324,7 +335,7 @@ Must be called within an active PDF page context."
         (linewidth (mpl.rendering:gc-linewidth gc)))
     (pdf:with-saved-state
       ;; Apply graphics context state
-      (%apply-gc-to-pdf gc)
+      (%apply-gc-to-pdf gc renderer)
       ;; Set alpha transparency if not fully opaque
       (when (and alpha (< alpha 1.0))
         (pdf:set-transparency (float alpha 1.0)))
@@ -579,7 +590,7 @@ Uses zpng to encode a PNG via temp file, then cl-pdf's make-image/draw-image API
          (n (array-dimension verts 0)))
     (when (zerop n) (return-from draw-markers nil))
     (pdf:with-saved-state
-      (%apply-gc-to-pdf gc)
+      (%apply-gc-to-pdf gc renderer)
       (dotimes (i n)
         (let ((code (if codes (aref codes i)
                         (if (zerop i) mpl.primitives:+moveto+ mpl.primitives:+lineto+))))
@@ -648,7 +659,7 @@ Uses zpng to encode a PNG via temp file, then cl-pdf's make-image/draw-image API
                           (mpl.primitives:compose final-transform offset-tr))
                     (setf final-transform offset-tr))))
             (pdf:with-saved-state
-              (pdf:set-line-width (float linewidth 1.0))
+              (pdf:set-line-width (float (points-to-pixels renderer linewidth) 1.0))
               (cond
                 ;; Fill and stroke
                 ((and face-color edge-color)

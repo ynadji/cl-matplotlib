@@ -517,7 +517,9 @@
 ;;; ============================================================
 
 (defun run-figure-tests ()
-  "Run all figure tests and return success boolean."
+  "Run all figure tests, signaling an error on failure."
   (let ((results (run 'figure-suite)))
     (explain! results)
-    (results-status results)))
+    (unless (results-status results)
+      (error "Figure tests failed"))
+    results))

@@ -629,7 +629,9 @@
 ;;; ============================================================
 
 (defun run-pdf-backend-tests ()
-  "Run all backend-pdf tests and return results."
+  "Run all pdf backend tests, signaling an error on failure."
   (let ((results (run 'backend-pdf-suite)))
     (explain! results)
+    (unless (results-status results)
+      (error "Pdf backend tests failed"))
     results))

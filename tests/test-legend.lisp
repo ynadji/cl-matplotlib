@@ -340,13 +340,21 @@
     (let ((leg (axes-legend ax)))
       (is (eq leg (axes-base-legend ax))))))
 
-(test axes-legend-added-to-artists
-  "axes-legend adds legend to axes artists list."
+(test axes-legend-not-in-artists
+  "axes-legend stores the legend only in the legend slot; the axes draw
+method draws it explicitly on top, so adding it to axes-base-artists as
+well would draw it twice."
   (let* ((fig (make-figure))
          (ax (add-subplot fig 1 1 1)))
     (plot ax '(1 2 3) '(1 4 9) :label "Data")
     (let ((leg (axes-legend ax)))
-      (is (member leg (axes-base-artists ax))))))
+      (is (eq leg (axes-base-legend ax)))
+      (is (not (member leg (axes-base-artists ax))))
+      ;; Re-calling axes-legend replaces the legend entirely
+      (let ((leg2 (axes-legend ax)))
+        (is (eq leg2 (axes-base-legend ax)))
+        (is (not (member leg (axes-base-artists ax))))
+        (is (not (member leg2 (axes-base-artists ax))))))))
 
 (test axes-legend-frameon-false
   "axes-legend respects frameon=nil."
@@ -488,7 +496,9 @@
 ;;; ============================================================
 
 (defun run-legend-tests ()
-  "Run all legend tests and return success boolean."
+  "Run all legend tests, signaling an error on failure."
   (let ((results (run 'legend-suite)))
     (explain! results)
-    (results-status results)))
+    (unless (results-status results)
+      (error "Legend tests failed"))
+    results))

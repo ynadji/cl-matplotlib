@@ -87,4 +87,9 @@
 ;;; ============================================================
 
 (defun run-polar-tests ()
-  (run! 'polar-suite))
+  "Run all polar tests, signaling an error on failure."
+  (let ((results (run 'polar-suite)))
+    (explain! results)
+    (unless (results-status results)
+      (error "Polar tests failed"))
+    results))

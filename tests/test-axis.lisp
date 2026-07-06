@@ -512,7 +512,9 @@
 ;;; ============================================================
 
 (defun run-axis-tests ()
-  "Run all axis/ticker/spine tests and return success boolean."
+  "Run all axis tests, signaling an error on failure."
   (let ((results (run 'axis-suite)))
     (explain! results)
-    (results-status results)))
+    (unless (results-status results)
+      (error "Axis tests failed"))
+    results))

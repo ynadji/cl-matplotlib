@@ -76,7 +76,7 @@ Ported from matplotlib.text.Text."))
   (when (zerop (length (text-text txt)))
     (return-from draw))
   (let* ((fontsize-px (* (text-fontsize txt)
-                       (/ (mpl.backends:renderer-dpi renderer) 72.0)))
+                       (/ (renderer-dpi renderer) 72.0)))
          (gc (make-gc :foreground (text-color txt)
                       :linewidth fontsize-px
                       :alpha (or (artist-alpha txt) 1.0)))

@@ -199,5 +199,9 @@
 ;;; ============================================================
 
 (defun run-style-tests ()
-  "Run all style tests and return results"
-  (run! 'style-suite))
+  "Run all style tests, signaling an error on failure."
+  (let ((results (run 'style-suite)))
+    (explain! results)
+    (unless (results-status results)
+      (error "Style tests failed"))
+    results))

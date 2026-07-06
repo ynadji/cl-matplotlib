@@ -348,9 +348,8 @@ picks the one that produces the closest to N levels."
          (best-step (first candidates))
          (best-diff most-positive-fixnum))
     (dolist (step candidates)
-      (let* ((first-level (* step (ceiling 0.0d0 step)))
-             (count 0))
-        (loop for level = first-level then (+ level step)
+      (let ((count 0))
+        (loop for level = 0.0d0 then (+ level step)
               while (<= level (+ data-range (* 0.5d0 step)))
               do (incf count))
         (let ((diff (abs (- count n))))
@@ -360,25 +359,23 @@ picks the one that produces the closest to N levels."
     best-step))
 
 (defun auto-select-levels (zmin zmax &optional (n 7))
-  "Auto-select N contour levels spanning [ZMIN, ZMAX].
+  "Auto-select ~N contour levels for data spanning [ZMIN, ZMAX].
 Uses 'nice' step sizes (like matplotlib's MaxNLocator) to produce
 visually clean level values.
-Returns a list of level values."
+Like matplotlib's ContourSet._autolev, the result may include one level
+at/below ZMIN and one above ZMAX: those draw no contour lines but anchor
+the colormap normalization, so line colors match matplotlib's."
   (when (= zmin zmax)
     (return-from auto-select-levels (list zmin)))
   (let* ((data-range (- zmax zmin))
          ;; Find a nice step that produces ~n levels
          (step (%nice-steps-for-range data-range n))
-         ;; First level: smallest multiple of step >= zmin
-         (first-level (* step (ceiling zmin step)))
-         ;; Collect levels within [zmin - 0.5*step, zmax + 0.5*step]
-         (levels nil))
-    ;; Generate levels from first-level upward
-    (loop for level = first-level then (+ level step)
-          while (<= level (+ zmax (* 0.5d0 step)))
-          do (push level levels))
-    (if levels
-        (nreverse levels)
+         ;; First level: largest multiple of step <= zmin
+         (first-level (* step (floor zmin step)))
+         (levels (loop for level = first-level then (+ level step)
+                       while (< level (+ zmax step))
+                       collect level)))
+    (or levels
         ;; Fallback: simple linear spacing
         (let ((s (/ data-range (float (1+ n) 1.0d0))))
           (loop for i from 1 to n

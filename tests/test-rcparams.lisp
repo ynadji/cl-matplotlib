@@ -389,7 +389,9 @@
 ;;; ============================================================
 
 (defun run-rcparams-tests ()
-  "Run all rcParams tests and return T if all pass, NIL otherwise."
+  "Run all rcparams tests, signaling an error on failure."
   (let ((results (run 'rcparams-suite)))
     (explain! results)
-    (results-status results)))
+    (unless (results-status results)
+      (error "Rcparams tests failed"))
+    results))

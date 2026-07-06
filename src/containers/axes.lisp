@@ -1308,9 +1308,11 @@ Returns the created text-artist."
     ;; Set transform to transData (data coordinates)
     (setf (mpl.rendering:artist-transform txt)
           (axes-base-trans-data ax))
-    ;; Add to axes texts list and artists
+    ;; Add to axes texts list only — texts are drawn via axes-get-all-artists,
+    ;; so registering in axes-base-artists as well would draw them twice.
     (push txt (axes-base-texts ax))
-    (axes-add-artist ax txt)
+    (setf (mpl.rendering:artist-axes txt) ax
+          (mpl.rendering:artist-figure txt) (axes-base-figure ax))
     (setf (mpl.rendering:artist-stale ax) t)
     txt))
 
@@ -1365,10 +1367,11 @@ Returns the created Annotation."
     (when (mpl.rendering:annotation-arrow-patch ann)
       (setf (mpl.rendering:artist-transform (mpl.rendering:annotation-arrow-patch ann))
             (axes-base-trans-data ax)))
-    ;; Add to axes texts list
+    ;; Add to axes texts list only — texts are drawn via axes-get-all-artists,
+    ;; so registering in axes-base-artists as well would draw them twice.
     (push ann (axes-base-texts ax))
-    ;; Also add to artists for draw ordering
-    (axes-add-artist ax ann)
+    (setf (mpl.rendering:artist-axes ann) ax
+          (mpl.rendering:artist-figure ann) (axes-base-figure ax))
     ;; Mark stale
     (setf (mpl.rendering:artist-stale ax) t)
     ann))

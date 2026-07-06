@@ -554,7 +554,9 @@
 ;;; ============================================================
 
 (defun run-backend-tests ()
-  "Run all backend-vecto tests and return results."
+  "Run all backend tests, signaling an error on failure."
   (let ((results (run 'backend-vecto-suite)))
     (explain! results)
+    (unless (results-status results)
+      (error "Backend tests failed"))
     results))

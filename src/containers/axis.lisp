@@ -478,7 +478,7 @@ SIDE is :bottom (default) or :top for twin axes."
          ;; Get axes bottom/top in display coords
          (axes-bottom (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 1))
          (axes-top (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 1.0d0)) 1))
-         (dpi (mpl.backends:renderer-dpi renderer))
+         (dpi (mpl.rendering:renderer-dpi renderer))
          (pts->px (/ dpi 72.0d0))
          (tick-len (* (float (or (tick-size tk) 3.5) 1.0d0) pts->px))
          (tick-wid (float (or (tick-width tk) 0.8) 1.0d0))
@@ -527,7 +527,7 @@ SIDE is :bottom (default) or :top for twin axes."
                           (+ y-end (* (float (tick-pad tk) 1.0d0) pts->px))
                           (- y-end (* (float (tick-pad tk) 1.0d0) pts->px))))
               (fontsize-px (* (tick-label-fontsize tk)
-                              (/ (mpl.backends:renderer-dpi renderer) 72.0)))
+                              (/ (mpl.rendering:renderer-dpi renderer) 72.0)))
               (gc (mpl.rendering:make-gc
                    :foreground (tick-label-color tk)
                    :linewidth fontsize-px
@@ -559,7 +559,7 @@ The tick_label_height uses the font line-height ratio (0.9754) matching matplotl
 SIDE is :bottom (default) or :top for twin axes."
   (declare (ignore ax))
   (let* ((top-p (eq side :top))
-         (dpi (mpl.backends:renderer-dpi renderer))
+         (dpi (mpl.rendering:renderer-dpi renderer))
          (pts->px (/ dpi 72.0d0))
          (p-mid (mpl.primitives:transform-point trans-axes
                                                  (list 0.5d0 (if top-p 1.0d0 0.0d0))))
@@ -702,7 +702,7 @@ SIDE is :left (default) or :right for twin axes."
          ;; Get axes left/right edge in display coords
          (axes-left (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 0))
          (axes-right (aref (mpl.primitives:transform-point trans-axes (list 1.0d0 0.0d0)) 0))
-         (dpi (mpl.backends:renderer-dpi renderer))
+         (dpi (mpl.rendering:renderer-dpi renderer))
          (pts->px (/ dpi 72.0d0))
          (tick-len (* (float (or (tick-size tk) 3.5) 1.0d0) pts->px))
          (tick-wid (float (or (tick-width tk) 0.8) 1.0d0))
@@ -751,7 +751,7 @@ SIDE is :left (default) or :right for twin axes."
                           (+ x-end (* (float (tick-pad tk) 1.0d0) pts->px))
                           (- x-end (* (float (tick-pad tk) 1.0d0) pts->px))))
               (fontsize-px (* (tick-label-fontsize tk)
-                              (/ (mpl.backends:renderer-dpi renderer) 72.0)))
+                              (/ (mpl.rendering:renderer-dpi renderer) 72.0)))
               (gc (mpl.rendering:make-gc
                    :foreground (tick-label-color tk)
                    :linewidth fontsize-px
@@ -782,7 +782,7 @@ Dynamically computes offset based on actual tick label widths.
 SIDE is :left (default) or :right for twin axes."
   (declare (ignore ax))
   (let* ((right-p (eq side :right))
-         (dpi (mpl.backends:renderer-dpi renderer))
+         (dpi (mpl.rendering:renderer-dpi renderer))
          (pts->px (/ dpi 72.0d0))
          (p-mid (mpl.primitives:transform-point trans-axes
                                                  (list (if right-p 1.0d0 0.0d0) 0.5d0)))

@@ -585,7 +585,9 @@
 ;;; ============================================================
 
 (defun run-axes-tests ()
-  "Run all axes tests and return success boolean."
+  "Run all axes tests, signaling an error on failure."
   (let ((results (run 'axes-suite)))
     (explain! results)
-    (results-status results)))
+    (unless (results-status results)
+      (error "Axes tests failed"))
+    results))

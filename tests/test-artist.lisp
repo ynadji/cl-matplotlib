@@ -462,5 +462,9 @@
 ;;; ============================================================
 
 (defun run-artist-tests ()
-  "Run all artist tests and return results."
-  (run! 'artist-suite))
+  "Run all artist tests, signaling an error on failure."
+  (let ((results (run 'artist-suite)))
+    (explain! results)
+    (unless (results-status results)
+      (error "Artist tests failed"))
+    results))

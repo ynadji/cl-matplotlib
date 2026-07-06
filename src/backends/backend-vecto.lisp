@@ -539,34 +539,49 @@ raw matrices, and delegates to draw-collection-uniform-fast."
 Builds a cl-vectors path directly from transformed vertices, runs the
 rasterization pipeline once, and returns frozen scanline data.
 The marker is rasterized centered at pixel (0,0) — offsets applied at replay."
+  ;; Rotation/shear can't be baked into this axis-aligned rasterization;
+  ;; return NIL so the caller falls back to per-item tracing (which copies
+  ;; the full matrix).
+  (when (and scale-mtx
+             (or (/= (aref scale-mtx 1) 0.0d0)
+                 (/= (aref scale-mtx 2) 0.0d0)))
+    (return-from %rasterize-marker-to-scanlines nil))
   (let* ((verts (mpl.primitives:mpl-path-vertices mpl-path))
          (codes (mpl.primitives:mpl-path-codes mpl-path))
          (n (array-dimension verts 0))
          (state (net.tuxee.aa:make-state))
-         (cl-path (net.tuxee.paths:create-path :closed-polyline))
+         (cl-path nil)
+         (paths '())
          ;; Apply scale transform to get pixel-space marker coordinates.
+         ;; The scanlines are replayed in raster space (Y grows downward)
+         ;; while the marker path is in user space (Y grows upward), so the
+         ;; y scale must be negated to keep marker shapes upright.
          (sx (if scale-mtx (aref scale-mtx 0) 1.0d0))
-         (sy (if scale-mtx (aref scale-mtx 3) 1.0d0)))
+         (sy (- (if scale-mtx (aref scale-mtx 3) 1.0d0))))
     (when (zerop n) (return-from %rasterize-marker-to-scanlines nil))
-    ;; Build cl-vectors path from mpl-path vertices + scale transform.
-    ;; This bypasses Vecto's path API entirely — no graphics state interaction.
+    ;; Build cl-vectors paths from mpl-path vertices + scale transform,
+    ;; one per subpath (path-reset on a single path would discard previously
+    ;; built subpaths). This bypasses Vecto's path API entirely.
     (let ((i 0))
       (loop while (< i n) do
         (let ((code (if codes (aref codes i) (if (zerop i) mpl.primitives:+moveto+ mpl.primitives:+lineto+))))
           (cond
             ((= code mpl.primitives:+moveto+)
+             (setf cl-path (net.tuxee.paths:create-path :closed-polyline))
              (net.tuxee.paths:path-reset cl-path
                (net.tuxee.paths:make-point
                 (* sx (aref verts i 0)) (* sy (aref verts i 1))))
+             (push cl-path paths)
              (incf i))
             ((= code mpl.primitives:+lineto+)
-             (net.tuxee.paths:path-extend cl-path
-               (net.tuxee.paths:make-straight-line)
-               (net.tuxee.paths:make-point
-                (* sx (aref verts i 0)) (* sy (aref verts i 1))))
+             (when cl-path
+               (net.tuxee.paths:path-extend cl-path
+                 (net.tuxee.paths:make-straight-line)
+                 (net.tuxee.paths:make-point
+                  (* sx (aref verts i 0)) (* sy (aref verts i 1)))))
              (incf i))
             ((= code mpl.primitives:+curve4+)
-             (when (< (+ i 2) n)
+             (when (and cl-path (< (+ i 2) n))
                (net.tuxee.paths:path-extend cl-path
                  (net.tuxee.paths:make-bezier-curve
                   (list (net.tuxee.paths:make-point
@@ -577,7 +592,7 @@ The marker is rasterized centered at pixel (0,0) — offsets applied at replay."
                   (* sx (aref verts (+ i 2) 0)) (* sy (aref verts (+ i 2) 1)))))
              (incf i 3))
             ((= code mpl.primitives:+curve3+)
-             (when (< (1+ i) n)
+             (when (and cl-path (< (1+ i) n))
                (net.tuxee.paths:path-extend cl-path
                  (net.tuxee.paths:make-bezier-curve
                   (list (net.tuxee.paths:make-point
@@ -590,8 +605,10 @@ The marker is rasterized centered at pixel (0,0) — offsets applied at replay."
             ((= code mpl.primitives:+stop+)
              (return))
             (t (incf i))))))
-    ;; Rasterize the path (no transform — already in pixel-centered coords)
-    (net.tuxee.vectors:update-state state (list cl-path))
+    (when (null paths)
+      (return-from %rasterize-marker-to-scanlines nil))
+    ;; Rasterize the paths (no transform — already in pixel-centered coords)
+    (net.tuxee.vectors:update-state state (nreverse paths))
     (net.tuxee.aa:freeze-state state)))
 
 (defun %scanline-sweep-offset (scanline function dx dy start end)

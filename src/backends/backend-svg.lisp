@@ -235,13 +235,15 @@ Does NOT flip Y coordinates — the global <g> transform handles that."
 (defun %apply-gc-to-svg-attrs (gc renderer)
   "Map a graphics-context's line properties to SVG attribute name/value strings.
 Returns a plist like (:stroke-width \"2.00\" :stroke-linecap \"round\" ...).
-RENDERER is accepted for interface symmetry but currently unused."
-  (declare (ignore renderer))
+gc-linewidth and dashes arrive in points; SVG coordinates are emitted in
+display pixels at the renderer's dpi, so widths must be converted the same
+way the Vecto backend does or strokes render dpi/72 too thin."
   (let ((attrs '()))
-    ;; Stroke width
+    ;; Stroke width (points → pixels)
     (let ((lw (mpl.rendering:gc-linewidth gc)))
       (when lw
-        (setf (getf attrs :stroke-width) (%format-float lw))))
+        (setf (getf attrs :stroke-width)
+              (%format-float (points-to-pixels renderer lw)))))
     ;; Stroke line cap
     (let ((cap (mpl.rendering:gc-capstyle gc)))
       (when cap
@@ -268,14 +270,19 @@ RENDERER is accepted for interface symmetry but currently unused."
     ;;   dotted:  (1.0, 1.65)
     (let ((dashes (mpl.rendering:gc-dashes gc))
           (linestyle (mpl.rendering:gc-linestyle gc))
-          (lw (or (and gc (mpl.rendering:gc-linewidth gc)) 1.0d0)))
+          (lw-px (points-to-pixels
+                  renderer
+                  (coerce (or (and gc (mpl.rendering:gc-linewidth gc)) 1.0d0)
+                          'double-float))))
       (cond
-        ;; Explicit dash list
+        ;; Explicit dash list (points → pixels, matching matplotlib semantics)
         ((and dashes (listp dashes) (not (null dashes)))
          (setf (getf attrs :stroke-dasharray)
                (format nil "~{~A~^ ~}"
-                       (mapcar (lambda (d) (%format-float d)) dashes))))
-        ;; Named line style — scale by linewidth
+                       (mapcar (lambda (d)
+                                 (%format-float (points-to-pixels renderer d)))
+                               dashes))))
+        ;; Named line style — scale by linewidth in pixels
         ((and linestyle (not (eq linestyle :solid)))
          (let ((base-pattern (case linestyle
                                (:dashed '(3.7d0 1.6d0))
@@ -286,7 +293,7 @@ RENDERER is accepted for interface symmetry but currently unused."
              (setf (getf attrs :stroke-dasharray)
                    (format nil "~{~A~^ ~}"
                            (mapcar (lambda (d)
-                                     (%format-float (max (* d (coerce lw 'double-float)) 1.0d0)))
+                                     (%format-float (max (* d lw-px) 1.0d0)))
                                    base-pattern))))))))
     attrs))
 
@@ -689,7 +696,9 @@ Each item gets its own <path> element with per-item colors and linewidth."
                               (%format-float (* fill-op (coerce alpha 'double-float)))
                               stroke-hex
                               (%format-float (* stroke-op (coerce alpha 'double-float)))
-                              (%format-float (coerce linewidth 'double-float))))))))))))))
+                              (%format-float (points-to-pixels
+                                              renderer
+                                              (coerce linewidth 'double-float)))))))))))))))
 
 ;;; ============================================================
 ;;; draw-gouraud-triangles — Flat-color average fallback

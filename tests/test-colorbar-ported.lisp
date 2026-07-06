@@ -143,7 +143,9 @@
 ;;; ============================================================
 
 (defun run-colorbar-ported-tests ()
-  "Run all ported colorbar tests and return results."
+  "Run all colorbar ported tests, signaling an error on failure."
   (let ((results (run 'colorbar-ported-suite)))
     (explain! results)
-    (results-status results)))
+    (unless (results-status results)
+      (error "Colorbar ported tests failed"))
+    results))

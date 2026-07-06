@@ -264,12 +264,15 @@ X ranges [0, nx-1], Y ranges [0, ny-1]."
 ;;; ============================================================
 
 (test auto-levels-basic
-  "Auto-select 7 levels between 0 and 1."
+  "Auto-select ~7 levels for data spanning [0, 1]."
   (let ((levels (auto-select-levels 0.0d0 1.0d0 7)))
-    (is (= 7 (length levels)))
-    ;; Levels should be within (0, 1)
-    (is (> (first levels) 0.0d0))
-    (is (< (car (last levels)) 1.0d0))
+    ;; Nice steps rarely hit the requested count exactly (matplotlib's
+    ;; MaxNLocator doesn't either) — expect roughly n levels
+    (is (<= 5 (length levels) 10))
+    ;; Like matplotlib, at most one level at/below zmin and one above zmax
+    ;; (they draw nothing but anchor the colormap normalization)
+    (is (<= (count-if (lambda (v) (<= v 0.0d0)) levels) 1))
+    (is (<= (count-if (lambda (v) (>= v 1.0d0)) levels) 1))
     ;; Levels should be monotonically increasing
     (loop for i from 0 below (1- (length levels))
           do (is (< (elt levels i) (elt levels (1+ i)))))))
@@ -671,7 +674,9 @@ X ranges [0, nx-1], Y ranges [0, ny-1]."
 ;;; ============================================================
 
 (defun run-contour-tests ()
-  "Run all contour tests and return success boolean."
+  "Run all contour tests, signaling an error on failure."
   (let ((results (run 'contour-suite)))
     (explain! results)
-    (results-status results)))
+    (unless (results-status results)
+      (error "Contour tests failed"))
+    results))

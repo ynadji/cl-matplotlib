@@ -214,7 +214,7 @@ Returns (values x y width height) in display space."
          (fontsize (legend-fontsize leg))
          ;; DPI scale factor: convert points to pixels
          (dpi-scale (if (and renderer (typep renderer 'mpl.backends:renderer-base))
-                        (/ (mpl.backends:renderer-dpi renderer) 72.0d0)
+                        (/ (mpl.rendering:renderer-dpi renderer) 72.0d0)
                         1.0d0))
          (n-entries (length (legend-entry-artists leg)))
          (ncol (min (legend-ncol leg) (max 1 n-entries)))
@@ -466,7 +466,7 @@ legend box and bboxes that overlap with it."
           (current-y (+ y height))
           ;; DPI scale factor: must match %legend-compute-bbox
           (dpi-scale (if (and renderer (typep renderer 'mpl.backends:renderer-base))
-                         (/ (mpl.backends:renderer-dpi renderer) 72.0d0)
+                         (/ (mpl.rendering:renderer-dpi renderer) 72.0d0)
                          1.0d0)))
       (when (and title (plusp (length title)))
         (let* ((title-fontsize (legend-title-fontsize leg))
@@ -668,10 +668,15 @@ Returns the created mpl-legend."
                                :ncol ncol
                                :handler-map handler-map
                                :zorder 5)))
-    ;; Store in axes
+    ;; Store in axes. The axes draw method draws the legend explicitly on top
+    ;; of everything, so it must NOT also be in axes-base-artists (that drew it
+    ;; twice, double-compositing the semi-transparent frame). Storing only in
+    ;; the slot also means re-calling axes-legend replaces the old legend
+    ;; instead of leaving a stale one behind.
     (setf (axes-base-legend ax) legend)
-    ;; Add to axes artists for drawing
-    (axes-add-artist ax legend)
+    (setf (mpl.rendering:artist-axes legend) ax
+          (mpl.rendering:artist-figure legend) (axes-base-figure ax))
+    (setf (mpl.rendering:artist-stale ax) t)
     legend))
 
 (defun %axes-get-legend-handles-labels (ax)
