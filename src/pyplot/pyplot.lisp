@@ -959,3 +959,25 @@ For interactive use, consider using savefig instead."
   "Magnitude spectrum on the current axes."
   (declare (ignore fs color linewidth label zorder))
   (apply #'mpl.containers:magnitude-spectrum (gca) x args))
+
+(defun triplot (x y &rest args &key triangles color linewidth marker zorder)
+  "Triangulation edges on the current axes (matplotlib triplot)."
+  (declare (ignore triangles color linewidth marker zorder))
+  (apply #'mpl.containers:triplot (gca) x y args))
+
+(defun tripcolor (x y c &rest args &key triangles cmap vmin vmax alpha zorder)
+  "Flat-shaded triangulation fill on the current axes."
+  (declare (ignore triangles cmap vmin vmax alpha zorder))
+  (apply #'mpl.containers:tripcolor (gca) x y c args))
+
+(defun tricontour (x y z &rest args &key triangles levels n-levels cmap
+                                         colors linewidth zorder)
+  "Contour lines over a triangulation on the current axes."
+  (declare (ignore triangles levels n-levels cmap colors linewidth zorder))
+  (apply #'mpl.containers:tricontour (gca) x y z args))
+
+(defun tricontourf (x y z &rest args &key triangles levels n-levels cmap
+                                          alpha zorder)
+  "Filled contours over a triangulation on the current axes."
+  (declare (ignore triangles levels n-levels cmap alpha zorder))
+  (apply #'mpl.containers:tricontourf (gca) x y z args))

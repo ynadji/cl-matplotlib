@@ -24,7 +24,8 @@
                              (:file "polar")))
                (:module "src/algorithms"
                  :components ((:file "marching-squares")
-                              (:file "streamplot")))
+                              (:file "streamplot")
+                              (:file "delaunay")))
                  (:module "src/plotting"
                   :components ((:file "contour")
                                (:file "image")
@@ -33,7 +34,8 @@
                                (:file "violin")
                                (:file "quiver")
                                (:file "hexbin")
-                               (:file "spectral"))))
+                               (:file "spectral")
+                               (:file "tri"))))
   :in-order-to ((asdf:test-op (asdf:test-op #:cl-matplotlib-containers/tests))))
 
 (asdf:defsystem #:cl-matplotlib-containers/tests
@@ -52,7 +54,8 @@
                 (:file "test-plot-types")
                 (:file "test-polar")
                 (:file "test-dates")
-                (:file "test-spectral"))
+                (:file "test-spectral")
+                (:file "test-tri"))
    :perform (asdf:test-op (o c)
                   (uiop:symbol-call '#:cl-matplotlib.tests.figure '#:run-figure-tests)
                   (uiop:symbol-call '#:cl-matplotlib.tests.axes '#:run-axes-tests)
@@ -66,4 +69,5 @@
                   (uiop:symbol-call '#:cl-matplotlib.tests.plot-types '#:run-plot-types-tests)
                   (uiop:symbol-call '#:cl-matplotlib.tests.polar '#:run-polar-tests)
                   (uiop:symbol-call '#:cl-matplotlib.tests.dates '#:run-dates-tests)
-                  (uiop:symbol-call '#:cl-matplotlib.tests.spectral '#:run-spectral-tests)))
+                  (uiop:symbol-call '#:cl-matplotlib.tests.spectral '#:run-spectral-tests)
+                  (uiop:symbol-call '#:cl-matplotlib.tests.tri '#:run-tri-tests)))

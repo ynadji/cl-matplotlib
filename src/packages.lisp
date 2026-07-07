@@ -467,6 +467,10 @@
               #:plot #:scatter #:bar #:axes-fill #:fill-between
             #:eventplot #:stairs #:broken-barh #:axline #:matshow #:spy
             #:psd #:csd #:specgram #:magnitude-spectrum
+            #:triplot #:tripcolor #:tricontour #:tricontourf
+            #:delaunay-triangulate #:ensure-triangulation
+            #:triangulation #:triangulation-x #:triangulation-y
+            #:triangulation-triangles
               #:imshow #:axes-add-image
               ;; Additional plot types (Phase 6b)
               #:hist #:pie #:errorbar #:stem #:axes-step
@@ -686,6 +690,7 @@ Manages global figure state for convenience.")
              #:plot #:scatter #:bar #:hist #:imshow #:contour #:contourf
              #:eventplot #:stairs #:broken-barh #:axline #:matshow #:spy
              #:psd #:csd #:specgram #:magnitude-spectrum
+             #:triplot #:tripcolor #:tricontour #:tricontourf
              #:pie #:errorbar #:stem #:step-plot #:stackplot #:barh #:boxplot
               #:violinplot #:quiver #:streamplot
                #:fill-between #:pcolormesh #:hexbin
