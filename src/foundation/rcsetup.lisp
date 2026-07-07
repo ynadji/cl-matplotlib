@@ -55,7 +55,8 @@
     ((floatp value) value)
     ((numberp value) (float value 1.0d0))
     ((stringp value)
-     (let ((parsed (ignore-errors (read-from-string value))))
+     (let ((parsed (let ((*read-eval* nil))
+                     (ignore-errors (read-from-string value)))))
        (if (numberp parsed)
            (float parsed 1.0d0)
            (error 'rc-validation-error
@@ -77,7 +78,8 @@
     ((integerp value) value)
     ((numberp value) (round value))
     ((stringp value)
-     (let ((parsed (ignore-errors (read-from-string value))))
+     (let ((parsed (let ((*read-eval* nil))
+                     (ignore-errors (read-from-string value)))))
        (if (integerp parsed)
            parsed
            (error 'rc-validation-error
@@ -608,16 +610,7 @@ Example:
                (\"lines.color\" \"blue\"))
     (plot x y))  ; Uses linewidth=3.0, color=blue
   ;; Restored to original after"
-  (let ((saved (gensym "SAVED")))
-    `(let ((,saved (list ,@(loop for (key _val) in bindings
-                                 collect `(cons ,key (rc ,key))))))
-       (unwind-protect
-            (progn
-              ,@(loop for (key val) in bindings
-                      collect `(setf (rc ,key) ,val))
-              ,@body)
-         (dolist (pair ,saved)
-           (setf (gethash (car pair) *rc-params*) (cdr pair)))))))
+  `(with-rc ,bindings ,@body))
 
 ;;; ============================================================
 ;;; File I/O functions

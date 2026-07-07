@@ -431,28 +431,6 @@ VERTS is a list of vertex lists, each vertex list is a list of (x y) pairs."
   (setf (poly-collection-verts collection) verts)
   (setf (artist-stale collection) t))
 
-(defun %sort-polygon-vertices (vert-list)
-  "Sort polygon vertices by angle from centroid to ensure proper winding order.
-Fixes bowtie/crossed polygons from marching-squares cell-band output."
-  (let* ((n (length vert-list))
-         (cx 0.0d0)
-         (cy 0.0d0))
-    (when (< n 3)
-      (return-from %sort-polygon-vertices vert-list))
-    ;; Compute centroid
-    (dolist (pt vert-list)
-      (incf cx (float (first pt) 1.0d0))
-      (incf cy (float (second pt) 1.0d0)))
-    (setf cx (/ cx (float n 1.0d0))
-          cy (/ cy (float n 1.0d0)))
-    ;; Sort by angle from centroid
-    (sort (copy-list vert-list)
-          (lambda (a b)
-            (< (atan (- (float (second a) 1.0d0) cy)
-                     (- (float (first a) 1.0d0) cx))
-               (atan (- (float (second b) 1.0d0) cy)
-                     (- (float (first b) 1.0d0) cx)))))))
-
 (defmethod collection-get-paths ((pc poly-collection))
   "Convert polygon vertices to closed paths.
 Vertices are already in correct winding order from marching squares."

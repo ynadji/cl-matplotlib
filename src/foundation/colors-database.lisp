@@ -115,10 +115,11 @@ ALPHA if provided overrides the alpha channel."
                        (every (lambda (c) (digit-char-p c 16)) lower))
                   (hex-to-rgba (concatenate 'string "#" lower)))
                  ;; Grayscale float string "0.5" etc.
-                 ((let ((val (ignore-errors (read-from-string lower))))
-                    (and (numberp val) (<= 0 val 1)))
-                  (let ((g (float (read-from-string lower) 1.0)))
-                    (vector g g g 1.0)))
+                 ((let ((val (let ((*read-eval* nil))
+                               (ignore-errors (read-from-string lower)))))
+                    (when (and (numberp val) (<= 0 val 1))
+                      (let ((g (float val 1.0)))
+                        (vector g g g 1.0)))))
                  (t (error "~S is not a recognized color" color)))))
             (t (error "~S is not a recognized color" color)))))
 
