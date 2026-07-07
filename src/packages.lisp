@@ -465,6 +465,8 @@
              ;; Plotting functions
              #:add-subplot
               #:plot #:scatter #:bar #:axes-fill #:fill-between
+            #:eventplot #:stairs #:broken-barh #:axline #:matshow #:spy
+            #:psd #:csd #:specgram #:magnitude-spectrum
               #:imshow #:axes-add-image
               ;; Additional plot types (Phase 6b)
               #:hist #:pie #:errorbar #:stem #:axes-step
@@ -682,6 +684,8 @@ Manages global figure state for convenience.")
            #:subplots
            ;; Plot functions
              #:plot #:scatter #:bar #:hist #:imshow #:contour #:contourf
+             #:eventplot #:stairs #:broken-barh #:axline #:matshow #:spy
+             #:psd #:csd #:specgram #:magnitude-spectrum
              #:pie #:errorbar #:stem #:step-plot #:stackplot #:barh #:boxplot
               #:violinplot #:quiver #:streamplot
                #:fill-between #:pcolormesh #:hexbin

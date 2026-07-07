@@ -899,3 +899,63 @@ In a non-interactive backend, this does nothing.
 For interactive use, consider using savefig instead."
   (format t "~&; pyplot: Non-interactive backend — use (savefig \"file.png\") to save.~%")
   (values))
+
+;;; ============================================================
+;;; Long-tail plot wrappers
+;;; ============================================================
+
+(defun eventplot (positions &rest args &key orientation lineoffsets
+                                            linelengths linewidth colors
+                                            alpha zorder)
+  "Event raster rows on the current axes (matplotlib eventplot)."
+  (declare (ignore orientation lineoffsets linelengths linewidth colors
+                   alpha zorder))
+  (apply #'mpl.containers:eventplot (gca) positions args))
+
+(defun stairs (values &optional edges &rest args
+               &key fill baseline color linewidth alpha label zorder)
+  "Step function over bin edges on the current axes (matplotlib stairs)."
+  (declare (ignore fill baseline color linewidth alpha label zorder))
+  (apply #'mpl.containers:stairs (gca) values edges args))
+
+(defun broken-barh (xranges yrange &rest args
+                    &key facecolors edgecolor linewidth alpha label zorder)
+  "Horizontal bar segments on the current axes (matplotlib broken_barh)."
+  (declare (ignore facecolors edgecolor linewidth alpha label zorder))
+  (apply #'mpl.containers:broken-barh (gca) xranges yrange args))
+
+(defun axline (xy1 &rest args &key xy2 slope color linewidth linestyle
+                                   label zorder)
+  "Infinite line through XY1 on the current axes (matplotlib axline)."
+  (declare (ignore xy2 slope color linewidth linestyle label zorder))
+  (apply #'mpl.containers:axline (gca) xy1 args))
+
+(defun matshow (z &rest args &key cmap vmin vmax)
+  "Matrix display with top ticks on the current axes."
+  (declare (ignore cmap vmin vmax))
+  (apply #'mpl.containers:matshow (gca) z args))
+
+(defun spy (z &rest args &key precision)
+  "Sparsity pattern of matrix Z on the current axes."
+  (declare (ignore precision))
+  (apply #'mpl.containers:spy (gca) z args))
+
+(defun psd (x &rest args &key nfft fs noverlap color linewidth label zorder)
+  "Power spectral density on the current axes (Welch, matplotlib psd)."
+  (declare (ignore nfft fs noverlap color linewidth label zorder))
+  (apply #'mpl.containers:psd (gca) x args))
+
+(defun csd (x y &rest args &key nfft fs noverlap color linewidth label zorder)
+  "Cross spectral density on the current axes."
+  (declare (ignore nfft fs noverlap color linewidth label zorder))
+  (apply #'mpl.containers:csd (gca) x y args))
+
+(defun specgram (x &rest args &key nfft fs noverlap cmap vmin vmax)
+  "Spectrogram on the current axes."
+  (declare (ignore nfft fs noverlap cmap vmin vmax))
+  (apply #'mpl.containers:specgram (gca) x args))
+
+(defun magnitude-spectrum (x &rest args &key fs color linewidth label zorder)
+  "Magnitude spectrum on the current axes."
+  (declare (ignore fs color linewidth label zorder))
+  (apply #'mpl.containers:magnitude-spectrum (gca) x args))

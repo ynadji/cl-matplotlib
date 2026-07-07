@@ -1841,3 +1841,276 @@ Ported from matplotlib.axes.Axes.twiny."
     (push twin (figure-axes fig))
     (setf (mpl.rendering:artist-stale fig) t)
     twin))
+
+;;; ============================================================
+;;; eventplot — parallel event rasters (matplotlib eventplot)
+;;; ============================================================
+
+(defun eventplot (ax positions &key (orientation :horizontal)
+                                    (lineoffsets 1.0) (linelengths 1.0)
+                                    (linewidth 1.5) (colors "C0")
+                                    (alpha nil) (zorder 2))
+  "Draw one row of event ticks per group in POSITIONS.
+
+POSITIONS — a sequence of event values, or a sequence of such sequences
+(one raster row per group).
+LINEOFFSETS — center of each row (scalar or per-group sequence).
+LINELENGTHS — tick length (scalar or per-group sequence).
+COLORS — color (scalar or per-group sequence).
+ORIENTATION — :horizontal (events on x) or :vertical.
+
+Returns the list of created Line2D objects."
+  (let* ((groups (if (and (not (null positions))
+                          (typep (elt positions 0) 'sequence)
+                          (not (stringp (elt positions 0))))
+                     (map 'list (lambda (g) (coerce g 'list)) positions)
+                     (list (coerce positions 'list))))
+         (n (length groups))
+         (offsets (if (typep lineoffsets 'sequence)
+                      (coerce lineoffsets 'list)
+                      (loop for i from 0 below n
+                            collect (+ (float lineoffsets 1.0d0) i))))
+         (lengths (if (typep linelengths 'sequence)
+                      (coerce linelengths 'list)
+                      (make-list n :initial-element linelengths)))
+         (colorlist (if (and (typep colors 'sequence) (not (stringp colors)))
+                        (coerce colors 'list)
+                        (make-list n :initial-element colors)))
+         (lines '()))
+    (loop for events in groups
+          for offset in offsets
+          for len in lengths
+          for col in colorlist
+          do (let ((half (/ (float len 1.0d0) 2.0d0)))
+               (dolist (e events)
+                 (let* ((e (float e 1.0d0))
+                        (line (make-instance
+                               'mpl.rendering:line-2d
+                               :xdata (if (eq orientation :horizontal)
+                                          (list e e)
+                                          (list (- offset half) (+ offset half)))
+                               :ydata (if (eq orientation :horizontal)
+                                          (list (- offset half) (+ offset half))
+                                          (list e e))
+                               :color col
+                               :linewidth linewidth
+                               :zorder zorder)))
+                   (when alpha
+                     (setf (mpl.rendering:artist-alpha line)
+                           (float alpha 1.0d0)))
+                   (setf (mpl.rendering:artist-transform line)
+                         (axes-base-trans-data ax))
+                   (axes-add-line ax line)
+                   (push line lines)))
+               (when events
+                 ;; matplotlib EventCollection reports offset +/- FULL
+                 ;; linelength into the data limits (drawing uses half);
+                 ;; replicate for identical autoscaling
+                 (let ((lo (- offset (float len 1.0d0)))
+                       (hi (+ offset (float len 1.0d0))))
+                   (if (eq orientation :horizontal)
+                       (axes-update-datalim ax events (list lo hi))
+                       (axes-update-datalim ax (list lo hi) events))))))
+    (axes-autoscale-view ax)
+    (setf (mpl.rendering:artist-stale ax) t)
+    (nreverse lines)))
+
+;;; ============================================================
+;;; stairs — step outline/fill over bin edges (matplotlib stairs)
+;;; ============================================================
+
+(defun %stairs-outline (values edges)
+  "(values xs ys) of the step outline through EDGES/VALUES."
+  (let ((xs '()) (ys '()))
+    (loop for i from 0 below (length values)
+          for v = (float (elt values i) 1.0d0)
+          do (push (float (elt edges i) 1.0d0) xs) (push v ys)
+             (push (float (elt edges (1+ i)) 1.0d0) xs) (push v ys))
+    (values (nreverse xs) (nreverse ys))))
+
+(defun stairs (ax values &optional edges
+               &key (fill nil) (baseline 0.0) (color nil)
+                    (linewidth 1.5) (alpha nil) (label "") (zorder 2))
+  "Step function over bin EDGES (default 0..n), optionally filled down
+to BASELINE (matplotlib stairs).
+
+Returns the created Line2D (outline) or polygon artist (fill)."
+  (let* ((n (length values))
+         (edges (or edges (loop for i from 0 to n collect i)))
+         (effective-color
+           (or color
+               (prog1 (format nil "C~D"
+                              (mod (axes-base-color-cycle-index ax) 10))
+                 (incf (axes-base-color-cycle-index ax))))))
+    (multiple-value-bind (xs ys) (%stairs-outline values edges)
+      (if fill
+          ;; closed polygon down to the baseline; the baseline edge is
+          ;; sticky (matplotlib: no autoscale margin below a zero base)
+          (let ((poly-x (append xs (list (car (last xs)) (first xs))))
+                (poly-y (append ys (list (float baseline 1.0d0)
+                                         (float baseline 1.0d0)))))
+            (when (zerop (float baseline 1.0d0))
+              (setf (axes-base-sticky-y-min ax) t))
+            (axes-fill ax poly-x poly-y
+                       :color effective-color
+                       :alpha (or alpha 1.0)
+                       :label label :zorder zorder))
+          (let ((line (make-instance 'mpl.rendering:line-2d
+                                     :xdata xs :ydata ys
+                                     :color effective-color
+                                     :linewidth linewidth
+                                     :label label
+                                     :zorder zorder)))
+            (when alpha
+              (setf (mpl.rendering:artist-alpha line) (float alpha 1.0d0)))
+            (setf (mpl.rendering:artist-transform line)
+                  (axes-base-trans-data ax))
+            (axes-add-line ax line)
+            (axes-update-datalim ax xs ys)
+            (axes-autoscale-view ax)
+            (setf (mpl.rendering:artist-stale ax) t)
+            line)))))
+
+;;; ============================================================
+;;; broken-barh — horizontal bar segments (matplotlib broken_barh)
+;;; ============================================================
+
+(defun broken-barh (ax xranges yrange &key (facecolors "C0")
+                                           (edgecolor nil) (linewidth 0.0)
+                                           (alpha nil) (label "") (zorder 1))
+  "Horizontal bars at YRANGE = (ystart height), one per (xstart width)
+in XRANGES. FACECOLORS is a color or a sequence cycled across segments.
+
+Returns the list of Rectangle patches."
+  (destructuring-bind (y0 height) (coerce yrange 'list)
+    (let* ((ranges (map 'list (lambda (r) (coerce r 'list)) xranges))
+           (colorlist (if (and (typep facecolors 'sequence)
+                               (not (stringp facecolors)))
+                          (coerce facecolors 'list)
+                          (list facecolors)))
+           (rects '()))
+      (loop for (x0 width) in ranges
+            for i from 0
+            do (let ((rect (make-instance
+                            'mpl.rendering:rectangle
+                            :x0 (float x0 1.0d0)
+                            :y0 (float y0 1.0d0)
+                            :width (float width 1.0d0)
+                            :height (float height 1.0d0)
+                            :facecolor (elt colorlist
+                                            (mod i (length colorlist)))
+                            :edgecolor edgecolor
+                            :linewidth linewidth
+                            :zorder zorder)))
+                 (when alpha
+                   (setf (mpl.rendering:artist-alpha rect)
+                         (float alpha 1.0d0)))
+                 (when (and (zerop i) (stringp label) (plusp (length label)))
+                   (setf (mpl.rendering:artist-label rect) label))
+                 (setf (mpl.rendering:artist-transform rect)
+                       (axes-base-trans-data ax))
+                 (axes-add-patch ax rect)
+                 (axes-update-datalim ax
+                                      (list (float x0 1.0d0)
+                                            (+ (float x0 1.0d0)
+                                               (float width 1.0d0)))
+                                      (list (float y0 1.0d0)
+                                            (+ (float y0 1.0d0)
+                                               (float height 1.0d0))))
+                 (push rect rects)))
+      (axes-autoscale-view ax)
+      (setf (mpl.rendering:artist-stale ax) t)
+      (nreverse rects))))
+
+;;; ============================================================
+;;; axline — infinite line through a point (matplotlib axline)
+;;; ============================================================
+
+(defclass axline-2d (mpl.rendering:line-2d)
+  ((xy1 :initarg :xy1 :reader axline-xy1)
+   (xy2 :initarg :xy2 :initform nil :reader axline-xy2)
+   (slope :initarg :slope :initform nil :reader axline-slope))
+  (:documentation "A line of infinite extent through XY1 (and XY2 or with
+SLOPE); endpoints are recomputed against the axes view limits at draw
+time so later autoscaling can't clip it."))
+
+(defmethod mpl.rendering:draw :before ((line axline-2d) renderer)
+  (declare (ignore renderer))
+  (let ((ax (mpl.rendering:artist-axes line)))
+    (when ax
+      (multiple-value-bind (x0 x1) (axes-get-xlim ax)
+        (multiple-value-bind (y0 y1) (axes-get-ylim ax)
+          (destructuring-bind (px py) (axline-xy1 line)
+            (let ((slope (or (axline-slope line)
+                             (destructuring-bind (qx qy) (axline-xy2 line)
+                               (if (= qx px)
+                                   nil            ; vertical
+                                   (/ (- qy py) (- qx px)))))))
+              (if (null slope)
+                  (mpl.rendering:line-2d-set-data line (list px px)
+                                                  (list y0 y1))
+                  (mpl.rendering:line-2d-set-data
+                   line (list x0 x1)
+                   (list (+ py (* slope (- x0 px)))
+                         (+ py (* slope (- x1 px)))))))))))))
+
+(defun axline (ax xy1 &key xy2 slope (color nil) (linewidth 1.5)
+                           (linestyle :solid) (label "") (zorder 2))
+  "Infinite line through XY1 = (x y), defined by a second point XY2 or a
+SLOPE. Does not affect autoscaling (like matplotlib).
+
+Returns the created line artist."
+  (unless (or xy2 slope)
+    (error "axline: provide :xy2 or :slope"))
+  (let* ((effective-color
+           (or color
+               (prog1 (format nil "C~D"
+                              (mod (axes-base-color-cycle-index ax) 10))
+                 (incf (axes-base-color-cycle-index ax)))))
+         (line (make-instance 'axline-2d
+                              :xy1 (coerce xy1 'list)
+                              :xy2 (and xy2 (coerce xy2 'list))
+                              :slope (and slope (float slope 1.0d0))
+                              :xdata (list 0.0d0 1.0d0)
+                              :ydata (list 0.0d0 1.0d0)
+                              :color effective-color
+                              :linewidth linewidth
+                              :linestyle linestyle
+                              :label label
+                              :zorder zorder)))
+    (setf (mpl.rendering:artist-transform line) (axes-base-trans-data ax))
+    (axes-add-line ax line)
+    (setf (mpl.rendering:artist-stale ax) t)
+    line))
+
+;;; ============================================================
+;;; matshow / spy — matrix visualizations
+;;; ============================================================
+
+(defun matshow (ax z &key (cmap nil) (vmin nil) (vmax nil))
+  "Display matrix Z like matplotlib matshow: origin upper, equal aspect,
+x tick labels on top.
+
+Returns the image artist."
+  (let ((im (imshow ax z :cmap cmap :vmin vmin :vmax vmax
+                         :origin :upper :aspect :equal
+                         :interpolation :nearest)))
+    (setf (axis-side (axes-base-xaxis ax)) :top)
+    (setf (mpl.rendering:artist-stale ax) t)
+    im))
+
+(defun spy (ax z &key (precision 0.0))
+  "Sparsity pattern of matrix Z: cells with |z| > PRECISION are black,
+the rest white; matshow-style orientation.
+
+Returns the image artist."
+  (let* ((rows (array-dimension z 0))
+         (cols (array-dimension z 1))
+         (binary (make-array (list rows cols) :initial-element 0.0d0)))
+    (dotimes (i rows)
+      (dotimes (j cols)
+        (when (> (abs (float (aref z i j) 1.0d0)) precision)
+          (setf (aref binary i j) 1.0d0))))
+    (matshow ax binary
+             :cmap (mpl.primitives:get-colormap "binary")
+             :vmin 0.0d0 :vmax 1.0d0)))

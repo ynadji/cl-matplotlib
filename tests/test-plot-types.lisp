@@ -19,7 +19,11 @@
                 #:hist #:pie #:errorbar #:stem #:axes-step
                 #:stackplot #:barh #:boxplot
                 #:violinplot #:gaussian-kde
-                #:quiver #:streamplot)
+                #:quiver #:streamplot
+                ;; Long-tail types
+                #:eventplot #:stairs #:broken-barh #:axline #:matshow #:spy
+                #:axes-get-xlim #:axes-get-ylim #:axes-set-xlim
+                #:axes-set-ylim)
    (:import-from #:cl-matplotlib.rendering
                  #:quiver-collection)
   (:export #:run-plot-types-tests))
@@ -800,3 +804,52 @@ computes density first, then cumsum(density * bin_width))."
     (explain! results)
     (unless (results-status results)
       (error "Plot types tests FAILED"))))
+
+;;; ============================================================
+;;; Long-tail plot types (eventplot, stairs, broken-barh, axline,
+;;; matshow, spy)
+;;; ============================================================
+
+(test eventplot-basic
+  (let* ((fig (make-figure))
+         (ax (add-subplot fig 1 1 1))
+         (lines (eventplot ax '((1.0 2.0 3.0) (1.5 2.5))
+                           :lineoffsets '(1 2) :linelengths 0.8)))
+    (is (= 5 (length lines)))
+    ;; datalim y covers offset +/- FULL linelength (matplotlib quirk)
+    (multiple-value-bind (y0 y1) (axes-get-ylim ax)
+      (is (<= y0 0.2d0))
+      (is (>= y1 2.8d0)))))
+
+(test stairs-fill-sticky-baseline
+  (let* ((fig (make-figure))
+         (ax (add-subplot fig 1 1 1)))
+    (stairs ax '(1.0 2.0 3.0) '(0 1 2 3) :fill t)
+    ;; zero baseline is sticky: no autoscale margin below 0
+    (multiple-value-bind (y0 y1) (axes-get-ylim ax)
+      (declare (ignore y1))
+      (is (= 0.0d0 y0)))))
+
+(test broken-barh-rect-count
+  (let* ((fig (make-figure))
+         (ax (add-subplot fig 1 1 1))
+         (rects (broken-barh ax '((10 5) (20 3) (30 1)) '(1 2))))
+    (is (= 3 (length rects)))))
+
+(test axline-tracks-view
+  (let* ((fig (make-figure))
+         (ax (add-subplot fig 1 1 1)))
+    (axline ax '(0 0) :slope 1.0)
+    (axes-set-xlim ax :min -2 :max 2)
+    (axes-set-ylim ax :min -2 :max 2)
+    ;; drawing must not error and endpoints follow view limits
+    (let ((path (format nil "/tmp/axline-test-~D.png" (get-universal-time))))
+      (finishes (savefig fig path))
+      (when (probe-file path) (delete-file path)))))
+
+(test spy-binary
+  (let* ((fig (make-figure))
+         (ax (add-subplot fig 1 1 1))
+         (z (make-array '(4 4) :initial-element 0.0d0)))
+    (setf (aref z 1 2) 5.0d0)
+    (finishes (spy ax z))))
