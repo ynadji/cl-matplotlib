@@ -51,23 +51,6 @@ MESSAGE is an optional custom message."
 ;;; Caching utilities
 ;;; ============================================================
 
-(defmacro define-cached-function (name args &body body)
-  "Define a memoized function. Results are cached in a hash table keyed by args.
-Adapted from Python's functools.lru_cache for CL patterns."
-  (let ((cache (gensym "CACHE"))
-        (sentinel (gensym "SENTINEL"))
-        (key (gensym "KEY"))
-        (result (gensym "RESULT")))
-    `(let ((,cache (make-hash-table :test 'equal)))
-       (defun ,name ,args
-         (let* ((,key (list ,@args))
-                (,sentinel ',sentinel)
-                (,result (gethash ,key ,cache ,sentinel)))
-           (if (eq ,result ,sentinel)
-               (setf (gethash ,key ,cache)
-                     (progn ,@body))
-               ,result))))))
-
 (defun clear-cache (fn-name)
   "Clear the cache for a cached function (placeholder — actual clearing depends on implementation)."
   (declare (ignore fn-name))

@@ -24,7 +24,7 @@
            #:warn-deprecated
            #:suppress-matplotlib-deprecation-warning
            #:deprecated
-           #:define-cached-function #:clear-cache
+           #:clear-cache
            #:*unset* #:unsetp #:unset-type
            #:nargs-error #:getitem-checked #:levenshtein-distance))
 
@@ -74,15 +74,6 @@
 ;;; ============================================================
 ;;; Original packages (Phase 0 — preserved)
 ;;; ============================================================
-
-(defpackage #:cl-matplotlib.foundation
-  (:use #:cl)
-  (:nicknames #:mpl.foundation)
-  (:documentation "Core types, math utilities, color, transforms.")
-  (:export #:rgba-color #:make-rgba
-           #:affine-2d #:make-affine-2d #:affine-multiply
-           #:deg->rad #:rad->deg
-           #:clamp))
 
 (defpackage #:cl-matplotlib.primitives
   (:use #:cl)

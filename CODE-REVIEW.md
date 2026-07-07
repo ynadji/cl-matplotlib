@@ -247,22 +247,27 @@ ignored negative left bearings — both fixed alongside the kerning bug.
   PARTIALLY FIXED: rendering now owns `renderer-dpi`/`renderer-draw-markers` protocol
   generics (backends bridge them; containers switched over); `quiver.lisp:153` and the
   CLAUDE.md doc drift remain.
-- [ ] **`*read-eval*` not bound to nil around `read-from-string` on external input** —
+- [x] **`*read-eval*` not bound to nil around `read-from-string` on external input** —
   `rcsetup.lisp:58,80` (rc/style files), `colors-database.lisp:118-120` (color strings),
   `afm.lisp:35` (AFM font files). `#.(...)` executes code at parse time.
+  FIXED: all four sites bind `*read-eval*` to nil; colors-database now reads once and
+  reuses the parsed value.
 - [ ] `src/packages.lisp` is a component of 3 systems (double compile/load, package clobber
   risk) — foundation, primitives, and meta `.asd`s.
 - [ ] `cl-matplotlib-containers.asd` modules lack `:serial t` internally — incremental/parallel
   builds have no ordering guarantee for order-dependent files.
 - [ ] `with-style` loads style files at macroexpansion time (freezes key set into compiled code,
   requires stylelib at compile time) — `style.lisp:94-120`. Do it at runtime like `rc-context`.
-- [ ] `with-rc` and `rc-context` are byte-identical duplicates — `rcsetup.lisp:549-567,601-620`.
+- [x] `with-rc` and `rc-context` are byte-identical duplicates — `rcsetup.lisp:549-567,601-620`.
+  FIXED: `rc-context` now expands into `with-rc`.
 - [x] zorder draws rely on `sort` stability (unspecified in CL) — `axes-base.lisp:447`,
   `figure.lisp:356`. Use `stable-sort`.
-- [ ] Dead package `cl-matplotlib.foundation` exports 8 undefined symbols, 2 colliding with real
+- [~] Dead package `cl-matplotlib.foundation` exports 8 undefined symbols, 2 colliding with real
   primitives exports — `packages.lisp:78-85`. `cl-matplotlib:version` exported, never defined
   (`:704`). `%make-mpl-path` internal constructor exported (`:100`). `mock-renderer` lives in the
   production rendering package (`:233`).
+  PARTIALLY FIXED: dead `cl-matplotlib.foundation` defpackage deleted (verified unreferenced);
+  `version`, `%make-mpl-path`, and `mock-renderer` remain.
 - [ ] renderer-base default `draw-markers`/`draw-path-collection` are dead-but-wrong (ignore
   trans, drop offsets) — `renderer-base.lisp:132-169`.
 - [ ] Vecto fast path depends on unexported vecto/cl-aa internals; roswell has cl-vectors
@@ -279,9 +284,11 @@ ignored negative left bearings — both fixed alongside the kerning bug.
   missing center bar — `violin.lisp:28-36,92-94,191-236`.
 - [ ] hexbin can't render matplotlib's zero-count background (hash accumulation, mincnt≥1) —
   `hexbin.lisp:105,131-132`.
-- [ ] Misc dead code: `%sort-polygon-vertices`, `define-cached-function` (broken on lambda-list
+- [~] Misc dead code: `%sort-polygon-vertices`, `define-cached-function` (broken on lambda-list
   keywords, exported), `%interpolate-control-points`, `path-annular-wedge` duplicate arc,
   mathtext dead branches, marker scaffolding — see agent reports for lines.
+  PARTIALLY FIXED: `%sort-polygon-vertices` and `define-cached-function` removed (no callers);
+  the rest remains.
 
 ## P5 — repo hygiene
 
