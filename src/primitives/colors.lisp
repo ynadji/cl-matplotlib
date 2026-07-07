@@ -711,7 +711,9 @@ COLORS is a list of color specs or (value color) pairs."
     (colormap-call cmap normalized :alpha alpha)))
 
 (defmethod scalar-mappable-autoscale ((sm scalar-mappable) data)
-  "Set norm vmin/vmax from DATA (a list or vector of numbers)."
+  "Set norm vmin/vmax from DATA (a list or vector of numbers).
+Uses REDUCE rather than (APPLY #'MIN ...) to stay within
+CALL-ARGUMENTS-LIMIT on large data."
   (let ((vals (if (listp data) data (coerce data 'list))))
-    (setf (norm-vmin (sm-norm sm)) (float (apply #'min vals) 1.0d0))
-    (setf (norm-vmax (sm-norm sm)) (float (apply #'max vals) 1.0d0))))
+    (setf (norm-vmin (sm-norm sm)) (float (reduce #'min vals) 1.0d0))
+    (setf (norm-vmax (sm-norm sm)) (float (reduce #'max vals) 1.0d0))))

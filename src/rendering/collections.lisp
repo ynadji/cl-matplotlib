@@ -69,7 +69,12 @@ If shorter than paths, cycles modulo length.")
    (joinstyle :initarg :joinstyle
               :initform :round
               :accessor collection-joinstyle
-              :documentation "Join style for all items."))
+              :documentation "Join style for all items.")
+   (paths-cache :initform nil
+                :accessor %collection-paths-cache
+                :documentation "Cons (key . paths) memoizing COLLECTION-GET-PATHS.
+The key is the source geometry (compared by identity), so setting new
+geometry via the accessors invalidates the cache."))
   (:default-initargs :zorder 1)
   (:documentation "Base class for collections of similar artists.
 Ported from matplotlib.collections.Collection.
@@ -278,20 +283,26 @@ SEGMENTS is a list of segments, where each segment is a list of (x y) points."
   (setf (artist-stale collection) t))
 
 (defmethod collection-get-paths ((lc line-collection))
-  "Convert line segments to paths."
-  (let ((segments (line-collection-segments lc)))
-    (mapcar (lambda (seg)
-              (let* ((n (length seg))
-                     (verts (make-array (list n 2) :element-type 'double-float))
-                     (codes (make-array n :element-type '(unsigned-byte 8))))
-                (loop for pt in seg
-                      for i from 0
-                      do (setf (aref verts i 0) (float (first pt) 1.0d0)
-                               (aref verts i 1) (float (second pt) 1.0d0))
-                         (setf (aref codes i)
-                               (if (zerop i) mpl.primitives:+moveto+ mpl.primitives:+lineto+)))
-                (mpl.primitives:%make-mpl-path :vertices verts :codes codes)))
-            segments)))
+  "Convert line segments to paths. Memoized on the segments list identity."
+  (let ((segments (line-collection-segments lc))
+        (cache (%collection-paths-cache lc)))
+    (if (and cache (eq (car cache) segments))
+        (cdr cache)
+        (let ((paths
+                (mapcar (lambda (seg)
+                          (let* ((n (length seg))
+                                 (verts (make-array (list n 2) :element-type 'double-float))
+                                 (codes (make-array n :element-type '(unsigned-byte 8))))
+                            (loop for pt in seg
+                                  for i from 0
+                                  do (setf (aref verts i 0) (float (first pt) 1.0d0)
+                                           (aref verts i 1) (float (second pt) 1.0d0))
+                                     (setf (aref codes i)
+                                           (if (zerop i) mpl.primitives:+moveto+ mpl.primitives:+lineto+)))
+                            (mpl.primitives:%make-mpl-path :vertices verts :codes codes)))
+                        segments)))
+          (setf (%collection-paths-cache lc) (cons segments paths))
+          paths))))
 
 ;;; Override draw for LineCollection to use segments as implicit paths+offsets
 (defmethod draw ((lc line-collection) renderer)
@@ -309,24 +320,38 @@ SEGMENTS is a list of segments, where each segment is a list of (x y) points."
          (n (length paths)))
     (when (zerop n)
       (return-from draw))
-    (loop for path in paths
-          for i from 0
-          do (let* ((edgecolor (or (%coll-nth edgecolors i) "black"))
-                    (facecolor (%coll-nth facecolors i))
-                    (linewidth (or (%coll-nth linewidths i) 1.0))
-                    (linestyle (or (%coll-nth linestyles i) :solid))
-                    (antialiased (let ((aa (%coll-nth antialiaseds i)))
-                                   (if (null antialiaseds) t aa))))
-               (let ((gc (make-gc :foreground edgecolor
-                                  :linewidth linewidth
-                                  :linestyle linestyle
-                                  :alpha (float alpha 1.0)
-                                  :antialiased antialiased
-                                  :capstyle (collection-capstyle lc)
-                                  :joinstyle (collection-joinstyle lc))))
-                 (renderer-draw-path renderer gc path transform
-                                     :fill facecolor
-                                     :stroke edgecolor)))))
+    ;; Coerce property lists to vectors once for O(1) cyclic access in the loop.
+    (multiple-value-bind (facecolors-vec facecolors-len) (%ensure-vector facecolors)
+      (multiple-value-bind (edgecolors-vec edgecolors-len) (%ensure-vector edgecolors)
+        (multiple-value-bind (linewidths-vec linewidths-len) (%ensure-vector linewidths)
+          (multiple-value-bind (linestyles-vec linestyles-len) (%ensure-vector linestyles)
+            (multiple-value-bind (antialiaseds-vec antialiaseds-len) (%ensure-vector antialiaseds)
+              (loop for path in paths
+                    for i from 0
+                    do (let* ((edgecolor (or (when (plusp edgecolors-len)
+                                               (%coll-nth-vec edgecolors-vec edgecolors-len i))
+                                             "black"))
+                              (facecolor (when (plusp facecolors-len)
+                                           (%coll-nth-vec facecolors-vec facecolors-len i)))
+                              (linewidth (if (plusp linewidths-len)
+                                             (%coll-nth-vec linewidths-vec linewidths-len i)
+                                             1.0))
+                              (linestyle (if (plusp linestyles-len)
+                                             (%coll-nth-vec linestyles-vec linestyles-len i)
+                                             :solid))
+                              (antialiased (if (plusp antialiaseds-len)
+                                               (%coll-nth-vec antialiaseds-vec antialiaseds-len i)
+                                               t)))
+                         (let ((gc (make-gc :foreground edgecolor
+                                            :linewidth linewidth
+                                            :linestyle linestyle
+                                            :alpha (float alpha 1.0)
+                                            :antialiased antialiased
+                                            :capstyle (collection-capstyle lc)
+                                            :joinstyle (collection-joinstyle lc))))
+                           (renderer-draw-path renderer gc path transform
+                                               :fill facecolor
+                                               :stroke edgecolor))))))))))
   (setf (artist-stale lc) nil))
 
 ;;; ============================================================
@@ -385,11 +410,14 @@ to avoid O(n) allocation — the cyclic access in draw handles repetition."
             (list (mpl.primitives:make-affine-2d :scale (list scale scale))))
           ;; Variable sizes: per-item transforms
           (let ((n (length offsets)))
-            (loop for i from 0 below n
-                  for size = (or (%coll-nth sizes i) 36.0)
-                  for scale = (* (sqrt (float size 1.0d0)) dpi-scale)
-                  collect (mpl.primitives:make-affine-2d
-                           :scale (list scale scale))))))))
+            (multiple-value-bind (sizes-vec sizes-len) (%ensure-vector sizes)
+              (loop for i from 0 below n
+                    for size = (or (when (plusp sizes-len)
+                                     (%coll-nth-vec sizes-vec sizes-len i))
+                                   36.0)
+                    for scale = (* (sqrt (float size 1.0d0)) dpi-scale)
+                    collect (mpl.primitives:make-affine-2d
+                             :scale (list scale scale)))))))))
 
 ;;; ============================================================
 ;;; PatchCollection — efficient rendering of many patches
@@ -433,25 +461,33 @@ VERTS is a list of vertex lists, each vertex list is a list of (x y) pairs."
 
 (defmethod collection-get-paths ((pc poly-collection))
   "Convert polygon vertices to closed paths.
-Vertices are already in correct winding order from marching squares."
-  (mapcar (lambda (vert-list)
-            (let* ((n (length vert-list))
-                   ;; +1 for closepoly
-                   (total (1+ n))
-                   (verts (make-array (list total 2) :element-type 'double-float))
-                   (codes (make-array total :element-type '(unsigned-byte 8))))
-              (loop for pt in vert-list
-                    for i from 0
-                    do (setf (aref verts i 0) (float (first pt) 1.0d0)
-                             (aref verts i 1) (float (second pt) 1.0d0))
-                       (setf (aref codes i)
-                             (if (zerop i) mpl.primitives:+moveto+ mpl.primitives:+lineto+)))
-              ;; Close the polygon
-              (setf (aref verts n 0) (aref verts 0 0)
-                    (aref verts n 1) (aref verts 0 1)
-                    (aref codes n) mpl.primitives:+closepoly+)
-              (mpl.primitives:%make-mpl-path :vertices verts :codes codes)))
-          (poly-collection-verts pc)))
+Vertices are already in correct winding order from marching squares.
+Memoized on the verts list identity."
+  (let ((all-verts (poly-collection-verts pc))
+        (cache (%collection-paths-cache pc)))
+    (if (and cache (eq (car cache) all-verts))
+        (cdr cache)
+        (let ((paths
+                (mapcar (lambda (vert-list)
+                          (let* ((n (length vert-list))
+                                 ;; +1 for closepoly
+                                 (total (1+ n))
+                                 (verts (make-array (list total 2) :element-type 'double-float))
+                                 (codes (make-array total :element-type '(unsigned-byte 8))))
+                            (loop for pt in vert-list
+                                  for i from 0
+                                  do (setf (aref verts i 0) (float (first pt) 1.0d0)
+                                           (aref verts i 1) (float (second pt) 1.0d0))
+                                     (setf (aref codes i)
+                                           (if (zerop i) mpl.primitives:+moveto+ mpl.primitives:+lineto+)))
+                            ;; Close the polygon
+                            (setf (aref verts n 0) (aref verts 0 0)
+                                  (aref verts n 1) (aref verts 0 1)
+                                  (aref codes n) mpl.primitives:+closepoly+)
+                            (mpl.primitives:%make-mpl-path :vertices verts :codes codes)))
+                        all-verts)))
+          (setf (%collection-paths-cache pc) (cons all-verts paths))
+          paths))))
 
 ;;; Override draw for PolyCollection — polygons use paths directly, no offsets
 (defmethod draw ((pc poly-collection) renderer)
@@ -469,25 +505,39 @@ Vertices are already in correct winding order from marching squares."
          (n (length paths)))
     (when (zerop n)
       (return-from draw))
-    (loop for path in paths
-          for i from 0
-          do (let* ((facecolor (or (%coll-nth facecolors i) "C0"))
-                    (edgecolor (%coll-nth edgecolors i))
-                    (linewidth (or (%coll-nth linewidths i) 1.0))
-                    (linestyle (or (%coll-nth linestyles i) :solid))
-                    (antialiased (let ((aa (%coll-nth antialiaseds i)))
-                                   (if (null antialiaseds) t aa))))
-               (let ((gc (make-gc :foreground edgecolor
-                                  :background facecolor
-                                  :linewidth linewidth
-                                  :linestyle linestyle
-                                  :alpha (float alpha 1.0)
-                                  :antialiased antialiased
-                                  :capstyle (collection-capstyle pc)
-                                  :joinstyle (collection-joinstyle pc))))
-                 (renderer-draw-path renderer gc path transform
-                                     :fill facecolor
-                                     :stroke edgecolor)))))
+    ;; Coerce property lists to vectors once for O(1) cyclic access in the loop.
+    (multiple-value-bind (facecolors-vec facecolors-len) (%ensure-vector facecolors)
+      (multiple-value-bind (edgecolors-vec edgecolors-len) (%ensure-vector edgecolors)
+        (multiple-value-bind (linewidths-vec linewidths-len) (%ensure-vector linewidths)
+          (multiple-value-bind (linestyles-vec linestyles-len) (%ensure-vector linestyles)
+            (multiple-value-bind (antialiaseds-vec antialiaseds-len) (%ensure-vector antialiaseds)
+              (loop for path in paths
+                    for i from 0
+                    do (let* ((facecolor (or (when (plusp facecolors-len)
+                                               (%coll-nth-vec facecolors-vec facecolors-len i))
+                                             "C0"))
+                              (edgecolor (when (plusp edgecolors-len)
+                                           (%coll-nth-vec edgecolors-vec edgecolors-len i)))
+                              (linewidth (if (plusp linewidths-len)
+                                             (%coll-nth-vec linewidths-vec linewidths-len i)
+                                             1.0))
+                              (linestyle (if (plusp linestyles-len)
+                                             (%coll-nth-vec linestyles-vec linestyles-len i)
+                                             :solid))
+                              (antialiased (if (plusp antialiaseds-len)
+                                               (%coll-nth-vec antialiaseds-vec antialiaseds-len i)
+                                               t)))
+                         (let ((gc (make-gc :foreground edgecolor
+                                            :background facecolor
+                                            :linewidth linewidth
+                                            :linestyle linestyle
+                                            :alpha (float alpha 1.0)
+                                            :antialiased antialiased
+                                            :capstyle (collection-capstyle pc)
+                                            :joinstyle (collection-joinstyle pc))))
+                           (renderer-draw-path renderer gc path transform
+                                               :fill facecolor
+                                               :stroke edgecolor))))))))))
   (setf (artist-stale pc) nil))
 
 ;;; ============================================================
@@ -518,7 +568,20 @@ Used by pcolormesh for efficient rendering of rectangular grids."))
   "Convert quad mesh to individual quadrilateral paths.
 Each quad is defined by 4 corners: (i,j), (i,j+1), (i+1,j+1), (i+1,j).
 Quads are expanded by a small epsilon in data coordinates to eliminate
-anti-aliased seam artifacts at cell boundaries (cl-aa has no AA-off option)."
+anti-aliased seam artifacts at cell boundaries (cl-aa has no AA-off option).
+Memoized on the coordinates array identity and mesh dimensions."
+  (let ((key (list (quad-mesh-coordinates qm)
+                   (quad-mesh-width qm)
+                   (quad-mesh-height qm)))
+        (cache (%collection-paths-cache qm)))
+    (when (and cache (equal (car cache) key))
+      (return-from collection-get-paths (cdr cache)))
+    (let ((paths (%quad-mesh-compute-paths qm)))
+      (setf (%collection-paths-cache qm) (cons key paths))
+      paths)))
+
+(defun %quad-mesh-compute-paths (qm)
+  "Compute the quadrilateral paths for QM (see COLLECTION-GET-PATHS)."
   (let* ((w (quad-mesh-width qm))
          (h (quad-mesh-height qm))
          (coords (quad-mesh-coordinates qm))
@@ -596,23 +659,32 @@ anti-aliased seam artifacts at cell boundaries (cl-aa has no AA-off option)."
          (n (length paths)))
     (when (zerop n)
       (return-from draw))
-    (loop for path in paths
-          for i from 0
-          do (let* ((facecolor (or (%coll-nth facecolors i) "C0"))
-                    (edgecolor (%coll-nth edgecolors i))
-                    (linewidth (or (%coll-nth linewidths i) 0.0)))
-               (let ((gc (make-gc :foreground edgecolor
-                                  :background facecolor
-                                  :linewidth linewidth
-                                  :linestyle :solid
-                                  :alpha (float alpha 1.0)
-                                  :antialiased nil
-                                  :capstyle (collection-capstyle qm)
-                                  :joinstyle (collection-joinstyle qm))))
-                 (renderer-draw-path renderer gc path transform
-                                     :fill facecolor
-                                     :stroke (when (and edgecolor (plusp linewidth))
-                                               edgecolor))))))
+    ;; Coerce property lists to vectors once for O(1) cyclic access in the loop.
+    (multiple-value-bind (facecolors-vec facecolors-len) (%ensure-vector facecolors)
+      (multiple-value-bind (edgecolors-vec edgecolors-len) (%ensure-vector edgecolors)
+        (multiple-value-bind (linewidths-vec linewidths-len) (%ensure-vector linewidths)
+          (loop for path in paths
+                for i from 0
+                do (let* ((facecolor (or (when (plusp facecolors-len)
+                                           (%coll-nth-vec facecolors-vec facecolors-len i))
+                                         "C0"))
+                          (edgecolor (when (plusp edgecolors-len)
+                                       (%coll-nth-vec edgecolors-vec edgecolors-len i)))
+                          (linewidth (if (plusp linewidths-len)
+                                         (%coll-nth-vec linewidths-vec linewidths-len i)
+                                         0.0)))
+                     (let ((gc (make-gc :foreground edgecolor
+                                        :background facecolor
+                                        :linewidth linewidth
+                                        :linestyle :solid
+                                        :alpha (float alpha 1.0)
+                                        :antialiased nil
+                                        :capstyle (collection-capstyle qm)
+                                        :joinstyle (collection-joinstyle qm))))
+                       (renderer-draw-path renderer gc path transform
+                                           :fill facecolor
+                                           :stroke (when (and edgecolor (plusp linewidth))
+                                                     edgecolor)))))))))
   (setf (artist-stale qm) nil))
 
 ;;; ============================================================
