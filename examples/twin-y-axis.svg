@@ -6,8 +6,8 @@
 </defs>
 <g transform="translate(0,500) scale(1,-1)">
 <rect width="800" height="500" fill="white"/>
-<path d="M 0.00 0.00 L 800.00 0.00 L 800.00 500.00 L 0.00 500.00 L 0.00 0.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
-<path d="M 100.00 55.00 L 720.00 55.00 L 720.00 440.00 L 100.00 440.00 L 100.00 55.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="none" stroke-opacity="0.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 0.00 0.00 L 800.00 0.00 L 800.00 500.00 L 0.00 500.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#FFFFFF" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 100.00 55.00 L 720.00 55.00 L 720.00 440.00 L 100.00 440.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="none" stroke-opacity="0.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 128.18 72.50 L 179.42 102.93 L 230.66 163.80 L 281.90 239.89 L 333.14 315.98 L 384.38 376.85 L 435.62 422.50 L 486.86 407.28 L 538.10 346.41 L 589.34 255.11 L 640.58 163.80 L 691.82 87.72 " fill="none" fill-opacity="0.00" stroke="#0000FF" stroke-opacity="1.00" stroke-width="2.78" stroke-linecap="square" stroke-linejoin="round"/>
 <path d="M 179.50 55.50 L 179.50 50.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
 <text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="text-before-edge" transform="translate(179.42,45.28) scale(1,-1)">2</text>

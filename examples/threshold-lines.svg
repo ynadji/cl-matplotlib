@@ -6,8 +6,8 @@
 </defs>
 <g transform="translate(0,500) scale(1,-1)">
 <rect width="800" height="500" fill="white"/>
-<path d="M 0.00 0.00 L 800.00 0.00 L 800.00 500.00 L 0.00 500.00 L 0.00 0.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
-<path d="M 100.00 55.00 L 720.00 55.00 L 720.00 440.00 L 100.00 440.00 L 100.00 55.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="none" stroke-opacity="0.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 0.00 0.00 L 800.00 0.00 L 800.00 500.00 L 0.00 500.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#FFFFFF" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 100.00 55.00 L 720.00 55.00 L 720.00 440.00 L 100.00 440.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="none" stroke-opacity="0.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 100.50 143.50 L 720.50 143.50 " fill="none" fill-opacity="0.00" stroke="#FFA500" stroke-opacity="1.00" stroke-width="2.08" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="2.08 3.44"/>
 <path d="M 100.50 390.49 L 720.50 390.49 " fill="none" fill-opacity="0.00" stroke="#FFA500" stroke-opacity="1.00" stroke-width="2.08" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="2.08 3.44"/>
 <path d="M 100.50 266.51 L 720.50 266.51 " fill="none" fill-opacity="0.00" stroke="#FF0000" stroke-opacity="1.00" stroke-width="2.08" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="7.71 3.33"/>
@@ -49,7 +49,7 @@
 <path d="M 720.50 55.50 L 720.50 440.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 100.50 54.50 L 720.50 54.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 100.50 439.50 L 720.50 439.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M 106.94 61.94 L 233.38 61.94 L 233.38 149.44 L 106.94 149.44 L 106.94 61.94 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 106.94 61.94 L 233.38 61.94 L 233.38 149.44 L 106.94 149.44 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 112.50 137.50 L 140.50 137.50 " fill="none" fill-opacity="0.00" stroke="#4682B4" stroke-opacity="1.00" stroke-width="2.08" stroke-linecap="butt" stroke-linejoin="miter"/>
 <text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(151.39,136.94) scale(1,-1)">Data</text>
 <path d="M 112.50 116.50 L 140.50 116.50 " fill="none" fill-opacity="0.00" stroke="#FF0000" stroke-opacity="1.00" stroke-width="2.08" stroke-linecap="butt" stroke-linejoin="miter" stroke-dasharray="7.71 3.33"/>

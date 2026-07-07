@@ -9,8 +9,8 @@
 </defs>
 <g transform="translate(0,500) scale(1,-1)">
 <rect width="700" height="500" fill="white"/>
-<path d="M 0.00 0.00 L 700.00 0.00 L 700.00 500.00 L 0.00 500.00 L 0.00 0.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
-<path d="M 87.50 55.00 L 630.00 55.00 L 630.00 440.00 L 87.50 440.00 L 87.50 55.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="none" stroke-opacity="0.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 0.00 0.00 L 700.00 0.00 L 700.00 500.00 L 0.00 500.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#FFFFFF" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 87.50 55.00 L 630.00 55.00 L 630.00 440.00 L 87.50 440.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="none" stroke-opacity="0.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 132.71 199.38 L 223.13 295.63 L 313.54 151.25 L 403.96 343.75 L 494.37 247.50 L 584.79 391.88 " fill="none" fill-opacity="0.00" stroke="#4682B4" stroke-opacity="1.00" stroke-width="2.78" stroke-linecap="square" stroke-linejoin="round"/>
 <use xlink:href="#marker-1" x="132.71" y="199.38"/>
 <use xlink:href="#marker-1" x="223.13" y="295.63"/>

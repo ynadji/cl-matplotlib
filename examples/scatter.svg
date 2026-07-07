@@ -6,44 +6,11 @@
 <clipPath id="clip-1">
 <rect x="100.00" y="66.00" width="620.00" height="462.00"/>
 </clipPath>
-<clipPath id="clip-2">
-<rect x="100.00" y="66.00" width="620.00" height="462.00"/>
-</clipPath>
-<clipPath id="clip-3">
-<rect x="100.00" y="66.00" width="620.00" height="462.00"/>
-</clipPath>
-<clipPath id="clip-4">
-<rect x="100.00" y="66.00" width="620.00" height="462.00"/>
-</clipPath>
-<clipPath id="clip-5">
-<rect x="100.00" y="66.00" width="620.00" height="462.00"/>
-</clipPath>
-<clipPath id="clip-6">
-<rect x="100.00" y="66.00" width="620.00" height="462.00"/>
-</clipPath>
-<clipPath id="clip-7">
-<rect x="100.00" y="66.00" width="620.00" height="462.00"/>
-</clipPath>
-<clipPath id="clip-8">
-<rect x="100.00" y="66.00" width="620.00" height="462.00"/>
-</clipPath>
-<clipPath id="clip-9">
-<rect x="100.00" y="66.00" width="620.00" height="462.00"/>
-</clipPath>
-<clipPath id="clip-10">
-<rect x="100.00" y="66.00" width="620.00" height="462.00"/>
-</clipPath>
-<clipPath id="clip-11">
-<rect x="100.00" y="66.00" width="620.00" height="462.00"/>
-</clipPath>
-<clipPath id="clip-12">
-<rect x="100.00" y="66.00" width="620.00" height="462.00"/>
-</clipPath>
 </defs>
 <g transform="translate(0,600) scale(1,-1)">
 <rect width="800" height="600" fill="white"/>
-<path d="M 0.00 0.00 L 800.00 0.00 L 800.00 600.00 L 0.00 600.00 L 0.00 0.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
-<path d="M 100.00 66.00 L 720.00 66.00 L 720.00 528.00 L 100.00 528.00 L 100.00 66.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="none" stroke-opacity="0.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 0.00 0.00 L 800.00 0.00 L 800.00 600.00 L 0.00 600.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#FFFFFF" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 100.00 66.00 L 720.00 66.00 L 720.00 528.00 L 100.00 528.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="none" stroke-opacity="0.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 303.26 181.70 C 304.18 181.70 305.06 182.07 305.71 182.72 C 306.37 183.37 306.73 184.25 306.73 185.17 C 306.73 186.09 306.37 186.98 305.71 187.63 C 305.06 188.28 304.18 188.65 303.26 188.65 C 302.34 188.65 301.45 188.28 300.80 187.63 C 300.15 186.98 299.79 186.09 299.79 185.17 C 299.79 184.25 300.15 183.37 300.80 182.72 C 301.45 182.07 302.34 181.70 303.26 181.70 Z " fill="#9932CC" fill-opacity="0.60" stroke="none" stroke-opacity="0.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="round"/>
 <path d="M 427.51 310.44 C 428.43 310.44 429.32 310.81 429.97 311.46 C 430.62 312.11 430.98 312.99 430.98 313.91 C 430.98 314.83 430.62 315.72 429.97 316.37 C 429.32 317.02 428.43 317.39 427.51 317.39 C 426.59 317.39 425.71 317.02 425.06 316.37 C 424.41 315.72 424.04 314.83 424.04 313.91 C 424.04 312.99 424.41 312.11 425.06 311.46 C 425.71 310.81 426.59 310.44 427.51 310.44 Z " fill="#9932CC" fill-opacity="0.60" stroke="none" stroke-opacity="0.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="round"/>
 <path d="M 535.09 439.03 C 536.02 439.03 536.90 439.39 537.55 440.05 C 538.20 440.70 538.57 441.58 538.57 442.50 C 538.57 443.42 538.20 444.31 537.55 444.96 C 536.90 445.61 536.02 445.97 535.09 445.97 C 534.17 445.97 533.29 445.61 532.64 444.96 C 531.99 444.31 531.62 443.42 531.62 442.50 C 531.62 441.58 531.99 440.70 532.64 440.05 C 533.29 439.39 534.17 439.03 535.09 439.03 Z " fill="#9932CC" fill-opacity="0.60" stroke="none" stroke-opacity="0.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="round"/>
@@ -245,17 +212,17 @@
 <path d="M 321.70 277.88 C 322.62 277.88 323.51 278.25 324.16 278.90 C 324.81 279.55 325.18 280.43 325.18 281.35 C 325.18 282.27 324.81 283.16 324.16 283.81 C 323.51 284.46 322.62 284.82 321.70 284.82 C 320.78 284.82 319.90 284.46 319.25 283.81 C 318.60 283.16 318.23 282.27 318.23 281.35 C 318.23 280.43 318.60 279.55 319.25 278.90 C 319.90 278.25 320.78 277.88 321.70 277.88 Z " fill="#9932CC" fill-opacity="0.60" stroke="none" stroke-opacity="0.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="round"/>
 <path d="M 406.91 238.13 C 407.83 238.13 408.72 238.50 409.37 239.15 C 410.02 239.80 410.39 240.68 410.39 241.60 C 410.39 242.52 410.02 243.41 409.37 244.06 C 408.72 244.71 407.83 245.08 406.91 245.08 C 405.99 245.08 405.11 244.71 404.46 244.06 C 403.81 243.41 403.44 242.52 403.44 241.60 C 403.44 240.68 403.81 239.80 404.46 239.15 C 405.11 238.50 405.99 238.13 406.91 238.13 Z " fill="#9932CC" fill-opacity="0.60" stroke="none" stroke-opacity="0.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="round"/>
 <path d="M 106.50 66.50 L 106.50 528.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
-<path d="M 206.50 66.50 L 206.50 528.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-2)"/>
-<path d="M 306.50 66.50 L 306.50 528.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-3)"/>
-<path d="M 407.50 66.50 L 407.50 528.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-4)"/>
-<path d="M 507.50 66.50 L 507.50 528.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-5)"/>
-<path d="M 607.50 66.50 L 607.50 528.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-6)"/>
-<path d="M 707.50 66.50 L 707.50 528.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-7)"/>
-<path d="M 100.50 102.50 L 720.50 102.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-8)"/>
-<path d="M 100.50 197.50 L 720.50 197.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-9)"/>
-<path d="M 100.50 292.50 L 720.50 292.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-10)"/>
-<path d="M 100.50 387.50 L 720.50 387.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-11)"/>
-<path d="M 100.50 482.50 L 720.50 482.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-12)"/>
+<path d="M 206.50 66.50 L 206.50 528.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 306.50 66.50 L 306.50 528.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 407.50 66.50 L 407.50 528.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 507.50 66.50 L 507.50 528.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 607.50 66.50 L 607.50 528.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 707.50 66.50 L 707.50 528.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 100.50 102.50 L 720.50 102.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 100.50 197.50 L 720.50 197.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 100.50 292.50 L 720.50 292.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 100.50 387.50 L 720.50 387.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 100.50 482.50 L 720.50 482.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
 <text font-family="DejaVu Sans" font-size="16.67" fill="#000000" fill-opacity="1.00" text-anchor="middle" transform="translate(410.00,537.33) scale(1,-1)">Scatter Plot</text>
 <path d="M 106.50 66.50 L 106.50 61.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
 <text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="text-before-edge" transform="translate(106.18,56.28) scale(1,-1)">-3</text>
@@ -287,7 +254,7 @@
 <path d="M 720.50 66.50 L 720.50 528.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 100.50 65.50 L 720.50 65.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 100.50 527.50 L 720.50 527.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M 630.62 496.06 L 713.06 496.06 L 713.06 521.06 L 630.62 521.06 L 630.62 496.06 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 630.62 496.06 L 713.06 496.06 L 713.06 521.06 L 630.62 521.06 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 650.06 505.08 C 650.98 505.08 651.87 505.45 652.52 506.10 C 653.17 506.75 653.53 507.63 653.53 508.56 C 653.53 509.48 653.17 510.36 652.52 511.01 C 651.87 511.66 650.98 512.03 650.06 512.03 C 649.14 512.03 648.26 511.66 647.61 511.01 C 646.96 510.36 646.59 509.48 646.59 508.56 C 646.59 507.63 646.96 506.75 647.61 506.10 C 648.26 505.45 649.14 505.08 650.06 505.08 Z " fill="#9932CC" fill-opacity="1.00" stroke="#9932CC" stroke-opacity="1.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 650.06 505.08 C 650.98 505.08 651.87 505.45 652.52 506.10 C 653.17 506.75 653.53 507.63 653.53 508.56 C 653.53 509.48 653.17 510.36 652.52 511.01 C 651.87 511.66 650.98 512.03 650.06 512.03 C 649.14 512.03 648.26 511.66 647.61 511.01 C 646.96 510.36 646.59 509.48 646.59 508.56 C 646.59 507.63 646.96 506.75 647.61 506.10 C 648.26 505.45 649.14 505.08 650.06 505.08 Z " fill="#9932CC" fill-opacity="1.00" stroke="#9932CC" stroke-opacity="1.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 650.06 505.08 C 650.98 505.08 651.87 505.45 652.52 506.10 C 653.17 506.75 653.53 507.63 653.53 508.56 C 653.53 509.48 653.17 510.36 652.52 511.01 C 651.87 511.66 650.98 512.03 650.06 512.03 C 649.14 512.03 648.26 511.66 647.61 511.01 C 646.96 510.36 646.59 509.48 646.59 508.56 C 646.59 507.63 646.96 506.75 647.61 506.10 C 648.26 505.45 649.14 505.08 650.06 505.08 Z " fill="#9932CC" fill-opacity="1.00" stroke="#9932CC" stroke-opacity="1.00" stroke-width="0.69" stroke-linecap="butt" stroke-linejoin="miter"/>

@@ -6,64 +6,25 @@
 <clipPath id="clip-1">
 <rect x="125.00" y="55.00" width="775.00" height="385.00"/>
 </clipPath>
-<clipPath id="clip-2">
-<rect x="125.00" y="55.00" width="775.00" height="385.00"/>
-</clipPath>
-<clipPath id="clip-3">
-<rect x="125.00" y="55.00" width="775.00" height="385.00"/>
-</clipPath>
-<clipPath id="clip-4">
-<rect x="125.00" y="55.00" width="775.00" height="385.00"/>
-</clipPath>
-<clipPath id="clip-5">
-<rect x="125.00" y="55.00" width="775.00" height="385.00"/>
-</clipPath>
-<clipPath id="clip-6">
-<rect x="125.00" y="55.00" width="775.00" height="385.00"/>
-</clipPath>
-<clipPath id="clip-7">
-<rect x="125.00" y="55.00" width="775.00" height="385.00"/>
-</clipPath>
-<clipPath id="clip-8">
-<rect x="125.00" y="55.00" width="775.00" height="385.00"/>
-</clipPath>
-<clipPath id="clip-9">
-<rect x="125.00" y="55.00" width="775.00" height="385.00"/>
-</clipPath>
-<clipPath id="clip-10">
-<rect x="125.00" y="55.00" width="775.00" height="385.00"/>
-</clipPath>
-<clipPath id="clip-11">
-<rect x="125.00" y="55.00" width="775.00" height="385.00"/>
-</clipPath>
-<clipPath id="clip-12">
-<rect x="125.00" y="55.00" width="775.00" height="385.00"/>
-</clipPath>
-<clipPath id="clip-13">
-<rect x="125.00" y="55.00" width="775.00" height="385.00"/>
-</clipPath>
-<clipPath id="clip-14">
-<rect x="125.00" y="55.00" width="775.00" height="385.00"/>
-</clipPath>
 </defs>
 <g transform="translate(0,500) scale(1,-1)">
 <rect width="1000" height="500" fill="white"/>
-<path d="M 0.00 0.00 L 1000.00 0.00 L 1000.00 500.00 L 0.00 500.00 L 0.00 0.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
-<path d="M 125.00 55.00 L 900.00 55.00 L 900.00 440.00 L 125.00 440.00 L 125.00 55.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="none" stroke-opacity="0.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 0.00 0.00 L 1000.00 0.00 L 1000.00 500.00 L 0.00 500.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#FFFFFF" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 125.00 55.00 L 900.00 55.00 L 900.00 440.00 L 125.00 440.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="none" stroke-opacity="0.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 160.50 55.50 L 160.50 440.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
-<path d="M 254.50 55.50 L 254.50 440.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-2)"/>
-<path d="M 348.50 55.50 L 348.50 440.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-3)"/>
-<path d="M 442.50 55.50 L 442.50 440.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-4)"/>
-<path d="M 536.50 55.50 L 536.50 440.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-5)"/>
-<path d="M 630.50 55.50 L 630.50 440.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-6)"/>
-<path d="M 724.50 55.50 L 724.50 440.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-7)"/>
-<path d="M 818.50 55.50 L 818.50 440.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-8)"/>
-<path d="M 125.50 71.50 L 900.50 71.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-9)"/>
-<path d="M 125.50 141.50 L 900.50 141.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-10)"/>
-<path d="M 125.50 212.50 L 900.50 212.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-11)"/>
-<path d="M 125.50 281.50 L 900.50 281.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-12)"/>
-<path d="M 125.50 351.50 L 900.50 351.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-13)"/>
-<path d="M 125.50 422.50 L 900.50 422.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-14)"/>
+<path d="M 254.50 55.50 L 254.50 440.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 348.50 55.50 L 348.50 440.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 442.50 55.50 L 442.50 440.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 536.50 55.50 L 536.50 440.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 630.50 55.50 L 630.50 440.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 724.50 55.50 L 724.50 440.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 818.50 55.50 L 818.50 440.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 125.50 71.50 L 900.50 71.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 125.50 141.50 L 900.50 141.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 125.50 212.50 L 900.50 212.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 125.50 281.50 L 900.50 281.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 125.50 351.50 L 900.50 351.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
+<path d="M 125.50 422.50 L 900.50 422.50 " fill="none" fill-opacity="0.00" stroke="#B0B0B0" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter" clip-path="url(#clip-1)"/>
 <path d="M 160.50 72.50 L 207.50 72.50 L 207.50 422.50 L 254.50 422.50 L 254.50 422.50 L 301.50 422.50 L 301.50 72.50 L 348.50 72.50 L 348.50 72.50 L 395.50 72.50 L 395.50 422.50 L 442.50 422.50 L 442.50 72.50 L 489.50 72.50 L 489.50 422.50 L 536.50 422.50 L 536.50 422.50 L 583.50 422.50 L 583.50 422.50 L 630.50 422.50 L 630.50 72.50 L 677.50 72.50 L 677.50 72.50 L 724.50 72.50 L 724.50 422.50 L 771.50 422.50 L 771.50 72.50 L 818.50 72.50 L 818.50 422.50 L 865.50 422.50 L 865.50 422.50 " fill="none" fill-opacity="0.00" stroke="#4682B4" stroke-opacity="1.00" stroke-width="2.78" stroke-linecap="square" stroke-linejoin="round"/>
 <text font-family="DejaVu Sans" font-size="16.67" fill="#000000" fill-opacity="1.00" text-anchor="middle" transform="translate(512.50,449.33) scale(1,-1)">Step Plot — Digital Signal</text>
 <path d="M 160.50 55.50 L 160.50 50.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
@@ -100,7 +61,7 @@
 <path d="M 900.50 55.50 L 900.50 440.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 125.50 54.50 L 900.50 54.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 125.50 439.50 L 900.50 439.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M 698.55 235.00 L 893.06 235.00 L 893.06 260.00 L 698.55 260.00 L 698.55 235.00 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 698.55 235.00 L 893.06 235.00 L 893.06 260.00 L 698.55 260.00 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 704.50 247.50 L 732.50 247.50 " fill="none" fill-opacity="0.00" stroke="#4682B4" stroke-opacity="1.00" stroke-width="2.78" stroke-linecap="butt" stroke-linejoin="miter"/>
 <text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(742.99,247.50) scale(1,-1)">Digital Signal (post)</text>
 </g>

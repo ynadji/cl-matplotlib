@@ -6,7 +6,7 @@
 </defs>
 <g transform="translate(0,700) scale(1,-1)">
 <rect width="700" height="700" fill="white"/>
-<path d="M 0.00 0.00 L 700.00 0.00 L 700.00 700.00 L 0.00 700.00 L 0.00 0.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 0.00 0.00 L 700.00 0.00 L 700.00 700.00 L 0.00 700.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#FFFFFF" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 358.75 346.50 L 425.37 551.55 C 414.63 555.04 403.63 557.68 392.48 559.45 C 381.32 561.21 370.04 562.10 358.75 562.10 L 358.75 346.50 Z " fill="#9370DB" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 358.75 346.50 L 563.80 413.12 C 553.28 445.48 535.26 474.89 511.20 498.95 C 487.14 523.01 457.73 541.03 425.37 551.55 L 358.75 346.50 Z " fill="#DAA520" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 358.75 346.50 L 485.48 172.08 C 522.31 198.83 549.73 236.58 563.80 279.88 C 577.87 323.17 577.87 369.83 563.80 413.12 L 358.75 346.50 Z " fill="#2E8B57" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>

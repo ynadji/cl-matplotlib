@@ -6,8 +6,8 @@
 </defs>
 <g transform="translate(0,500) scale(1,-1)">
 <rect width="700" height="500" fill="white"/>
-<path d="M 0.00 0.00 L 700.00 0.00 L 700.00 500.00 L 0.00 500.00 L 0.00 0.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
-<path d="M 87.50 55.00 L 630.00 55.00 L 630.00 440.00 L 87.50 440.00 L 87.50 55.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="none" stroke-opacity="0.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 0.00 0.00 L 700.00 0.00 L 700.00 500.00 L 0.00 500.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#FFFFFF" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 87.50 55.00 L 630.00 55.00 L 630.00 440.00 L 87.50 440.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="none" stroke-opacity="0.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 87.50 385.50 L 630.50 385.50 " fill="none" fill-opacity="0.00" stroke="#FF0000" stroke-opacity="0.70" stroke-width="1.39" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="5.14 2.22"/>
 <path d="M 87.50 247.50 L 630.50 247.50 " fill="none" fill-opacity="0.00" stroke="#FFA500" stroke-opacity="0.70" stroke-width="1.39" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="5.14 2.22"/>
 <path d="M 87.50 110.50 L 630.50 110.50 " fill="none" fill-opacity="0.00" stroke="#008000" stroke-opacity="0.70" stroke-width="1.39" stroke-linecap="butt" stroke-linejoin="round" stroke-dasharray="5.14 2.22"/>
