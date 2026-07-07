@@ -94,9 +94,9 @@ ZORDER — drawing order (default 1).
 
 Returns (values counts bin-edges patches)."
   (let* ((effective-color (or color "C0"))
-         ;; Compute bin edges
-         (bin-edges (if (listp bins)
-                        bins
+         ;; Compute bin edges (BINS may be a count, or a list/vector of edges)
+         (bin-edges (if (and (typep bins 'sequence) (not (stringp bins)))
+                        (coerce bins 'list)
                         (%compute-bin-edges data bins range)))
          ;; Compute histogram counts
          (counts (%histogram-counts data bin-edges))

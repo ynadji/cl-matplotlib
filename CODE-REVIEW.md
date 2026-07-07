@@ -147,9 +147,9 @@ ignored negative left bearings — both fixed alongside the kerning bug.
   `plot(x, y, fmt)` signature missing; `stem` fmt args treated as bare colors.
 - [ ] pyplot `title :loc :color` ignored; repeated calls stack overlapping titles; layout math
   inlined in pyplot instead of an axes-level `set-title` — `pyplot.lisp:544-580`.
-- [ ] `line-2d :linestyle :none` still strokes the line — `lines.lisp:191` + vecto dash
+- [x] `line-2d :linestyle :none` still strokes the line — `lines.lisp:191` + vecto dash
   `otherwise → solid`. Marker-only plots draw a connecting polyline.
-- [ ] `max-n-locator :integer t` accepted, never consulted — `ticker.lisp:207-211`.
+- [x] `max-n-locator :integer t` accepted, never consulted — `ticker.lisp:207-211`.
 - [ ] image `:bicubic` silently degrades to nearest — `image.lisp:410-412`.
 - [ ] Artist `clip-box`/`clip-path`/`clip-on` and `collection-hatch` stored, never consumed —
   `artist.lisp:54-66`, `collections.lisp:56-59`.
@@ -159,22 +159,22 @@ ignored negative left bearings — both fixed alongside the kerning bug.
   is a no-op; the entire find-font machinery is bypassed for normal text.
 
 ### Containers / ticks / scales
-- [ ] `fixed-formatter` labels misalign when fixed ticks are clipped by view range —
+- [x] `fixed-formatter` labels misalign when fixed ticks are clipped by view range —
   `axis.lisp:299-313` + `ticker.lisp:437-442` (format by index among ALL locator ticks).
-- [ ] `log-locator` yields zero ticks for sub-decade ranges (view (2,5) → no ticks/labels) —
+- [x] `log-locator` yields zero ticks for sub-decade ranges (view (2,5) → no ticks/labels) —
   `ticker.lisp:372-388`. Needs numdec<1 → subs fallback.
 - [x] Log autoscale with nonpositive data explodes range to ~10^-315 — `axes-base.lisp:308-329`
   (`-300.0d0` fallback); should ignore nonpositive data like matplotlib.
-- [ ] `%nonsingular` both-inputs-~0 case returns unchanged instead of expanding — `ticker.lisp:60-64`.
-- [ ] errorbar/bar `capsize` converted pts→data with hardcoded 0.01 — `axes.lisp:299,311,883,897`.
+- [x] `%nonsingular` both-inputs-~0 case returns unchanged instead of expanding — `ticker.lisp:60-64`.
+- [x] errorbar/bar `capsize` converted pts→data with hardcoded 0.01 — `axes.lisp:299,311,883,897`.
   Cap size depends on data range.
 - [ ] `axhline`/`axvline`/`axhspan`/`axvspan` bake current limits as data coords —
   `axes.lisp:1386-1434,522-582`. Needs blended transform; `axhline` before `plot` yields a short line.
 - [x] Shared-axes limit propagation not transitive — `axes-base.lisp:740-772` +
   `gridspec.lisp:413-423` (all wired to axarr[0,0] only).
-- [ ] figure frame `rgba-edge` shadowed by malformed duplicate binding — `figure.lisp:383-389`
+- [x] figure frame `rgba-edge` shadowed by malformed duplicate binding — `figure.lisp:383-389`
   (`multiple-value-list` of a vector). Masked by lw 0 default; delete the second binding.
-- [ ] `wedge :width` normalization wrong for r≠1 — `patches.lisp:240-246`; should be
+- [x] `wedge :width` normalization wrong for r≠1 — `patches.lisp:240-246`; should be
   `(/ (- r width) r)`. Masked by pie's r=1.
 - [x] annotation draw drops ha/va and duplicates text-artist draw — `annotation.lisp:99-113`;
   annotation bbox mixes data coords with point units then applies data transform — `:116-139`.
@@ -189,11 +189,11 @@ ignored negative left bearings — both fixed alongside the kerning bug.
 - [x] `polar-affine-update` mutates matrix without invalidating parents — `polar-transforms.lisp:142-159`.
 - [x] Double-closing in `path-create-closed` / `path-unit-rectangle` (start vertex 3×; crashes on
   empty input) — `path.lisp:1111-1116,882-888,203-218`.
-- [ ] imshow `origin :upper` + user extent inverts the whole y-axis — `plotting/image.lisp:94-97`;
-  `:aspect` numeric/`:auto` documented but unimplemented (`:99`).
+- [x] imshow `origin :upper` + user extent inverts the whole y-axis — `plotting/image.lisp:94-97`
+  (fixed; `:aspect` numeric/`:auto` still documented-but-unimplemented — `:99`).
 - [ ] contour: NaN in Z crashes (SBCL FP traps) or propagates NaN vertices — `contour.lisp:243-249`,
   `marching-squares.lisp:90-96`. No masking anywhere.
-- [ ] boxplot/violin/hist reject vectors where lists work (dataset normalization via `listp`) —
+- [x] boxplot/violin/hist reject vectors where lists work (dataset normalization via `listp`) —
   `stats.lisp:77-79`, `violin.lisp:69-78`, `hist.lisp:98`.
 - [ ] per-pixel 0-255 vs 0-1 detection in image RGB conversion (uint8 (1,1,1) renders white) —
   `rendering/image.lisp:272-289`. Decide once per array.
@@ -276,10 +276,10 @@ ignored negative left bearings — both fixed alongside the kerning bug.
   (0.7px misalignment between edged and un-edged shapes) — `backend-vecto.lisp:441-470,393`.
 - [ ] colorbar mutates parent position in place; pre-existing twins don't follow —
   `colorbar.lisp:91,115`.
-- [x] `label_outer` ignores share mode (`:row`/`:col`) — `gridspec.lisp:424-450`.
-- [ ] repeated `suptitle` accumulates artists — `figure.lisp:247-274`.
-- [ ] `hlines`/`vlines` reject vectors, silently truncate short `colors` — `axes.lisp:1446-1490`;
-  `stem` errors on empty data — `:1001-1002`.
+- [ ] `label_outer` ignores share mode (`:row`/`:col`) — `gridspec.lisp:424-450`.
+- [x] repeated `suptitle` accumulates artists — `figure.lisp:247-274`.
+- [x] `hlines`/`vlines` reject vectors, silently truncate short `colors` — `axes.lisp:1446-1490`
+  (fixed; `stem` errors on empty data — `:1001-1002` — not addressed).
 - [ ] Violin parity: population vs sample variance in KDE bandwidth, ±5% range padding,
   missing center bar — `violin.lisp:28-36,92-94,191-236`.
 - [ ] hexbin can't render matplotlib's zero-count background (hash accumulation, mincnt≥1) —

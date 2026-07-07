@@ -308,13 +308,16 @@ The scale sets default locators and formatters."
            (real-max (max vmin vmax))
            (range (- real-max real-min))
            (tol (* range 0.001d0))
-           (visible-locs (remove-if-not
-                          (lambda (l) (and (>= l (- real-min tol))
-                                           (<= l (+ real-max tol))))
-                          locs))
-           (labels (tick-formatter-format-ticks formatter visible-locs)))
-      (loop for loc in visible-locs
-            for label in labels
+           ;; Format labels by index over the FULL locator list before
+           ;; clipping (matplotlib semantics) so index-based formatters like
+           ;; fixed-formatter stay aligned when leading ticks are clipped.
+           (all-labels (tick-formatter-format-ticks formatter locs))
+           (visible (loop for loc in locs
+                          for label in all-labels
+                          when (and (>= loc (- real-min tol))
+                                    (<= loc (+ real-max tol)))
+                            collect (cons loc label))))
+      (loop for (loc . label) in visible
             collect (let ((tk (make-instance 'tick
                                             :axes (axis-axes axis)
                                             :loc (float loc 1.0d0)

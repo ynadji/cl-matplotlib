@@ -241,8 +241,11 @@ Ported from matplotlib.patches.Polygon."))
   "Return the wedge path. When width is set, returns an annular (donut) wedge."
   (let ((width (wedge-width w)))
     (if width
-        (mpl.primitives:path-annular-wedge (wedge-theta1 w) (wedge-theta2 w)
-                                            :inner-radius (- 1.0d0 (float width 1.0d0)))
+        ;; WIDTH is in data units; the unit wedge is scaled by R, so the
+        ;; inner radius fraction is (r - width) / r.
+        (let ((r (float (wedge-r w) 1.0d0)))
+          (mpl.primitives:path-annular-wedge (wedge-theta1 w) (wedge-theta2 w)
+                                              :inner-radius (/ (- r (float width 1.0d0)) r)))
         (mpl.primitives:path-wedge (wedge-theta1 w) (wedge-theta2 w)))))
 
 (defmethod get-patch-transform ((w wedge))

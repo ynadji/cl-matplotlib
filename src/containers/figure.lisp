@@ -268,7 +268,11 @@ Returns the created text-artist."
                              :zorder 5)))
     (when alpha (setf (mpl.rendering:artist-alpha txt) (float alpha 1.0d0)))
     (setf (mpl.rendering:artist-transform txt) transform)
-    ;; Store in figure slot and add to fig-texts for rendering
+    ;; Replace any previous suptitle, then store in figure slot and add to
+    ;; fig-texts for rendering
+    (let ((old (figure-suptitle-artist fig)))
+      (when old
+        (setf (figure-texts fig) (remove old (figure-texts fig)))))
     (setf (figure-suptitle-artist fig) txt)
     (push txt (figure-texts fig))
     txt))
@@ -383,10 +387,7 @@ Only draws when renderer supports the backends draw-path protocol."
            (rgba-edge (if (stringp ec)
                            (let ((rgba (mpl.colors:to-rgba ec)))
                              (list (elt rgba 0) (elt rgba 1) (elt rgba 2) (elt rgba 3)))
-                           (list 1.0 1.0 1.0 1.0)))
-           (rgba-edge (if (stringp ec)
-                          (multiple-value-list (mpl.colors:to-rgba ec))
-                          (list 1.0 1.0 1.0 1.0))))
+                           (list 1.0 1.0 1.0 1.0))))
       ;; Create a rectangle path covering the entire figure
       (let ((path (mpl.primitives:path-unit-rectangle))
             (transform (mpl.primitives:make-affine-2d
