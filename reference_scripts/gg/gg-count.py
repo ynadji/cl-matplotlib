@@ -7,7 +7,7 @@ from plotnine import ggplot, aes, geom_count
 
 rows = []
 for i in range(120):
-    rows.append({'x': float((i * 7) % 5), 'y': float((i * 3) % 4)})
+    rows.append({'x': float((i * i) % 5), 'y': float((i * 7) % 4)})
 df = pd.DataFrame(rows)
 
 p = ggplot(df, aes('x', 'y')) + geom_count()

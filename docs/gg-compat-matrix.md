@@ -3,7 +3,7 @@
 Status of the `ggplot` system against plotnine's public API and gallery.
 SSIM scores are `make gg-compare-png` results against plotnine 0.15.7
 references at 640x480/dpi 100 (threshold 0.90; `allowlist-gg.json` carries
-justified exceptions). Updated: 2026-07-06.
+justified exceptions). Updated: 2026-07-07.
 
 ## Example twins (reference_scripts/gg + examples/gg)
 
@@ -11,6 +11,8 @@ justified exceptions). Updated: 2026-07-06.
 |---|---|---|
 | gg-boxplot | 0.969 | pass |
 | gg-brewer | 0.957 | pass |
+| gg-abline | 0.954 | pass |
+| gg-crossbar | 0.936 | pass |
 | gg-reverse | 0.934 | pass |
 | gg-gradient2 | 0.910 | pass |
 | gg-area-stacked | 0.968 | pass |
@@ -32,6 +34,8 @@ justified exceptions). Updated: 2026-07-06.
 | gg-smooth-lm | 0.909 | pass |
 | gg-annotate | 0.903 | pass |
 | gg-ecdf-step | 0.890 | step AA + 3px margin |
+| gg-count | 0.881 | size-key calibration |
+| gg-bin2d | 0.853 | tile AA detail |
 | gg-tile-heatmap | 0.880 | tile edge AA |
 | gg-histogram | 0.877 | 4px right margin + bar AA |
 | gg-facet-wrap | 0.876 | strip/point detail |
@@ -56,14 +60,14 @@ margin rule, not by structure.
 ## plotnine API surface
 
 ### geoms
-| implemented (24) | planned | blocked |
+| implemented (30) | planned | blocked |
 |---|---|---|
-| blank point line path bar col histogram freqpoly area ribbon density boxplot violin smooth tile raster text label segment hline vline rect step rug linerange errorbar pointrange qq | abline crossbar count jitter(alias) dotplot bin2d density-2d quantile sina spoke pointdensity | map (no geospatial backend) |
+| blank point line path bar col histogram freqpoly area ribbon density boxplot violin smooth tile raster text label segment hline vline abline rect step rug linerange errorbar pointrange crossbar qq bin2d count jitter | dotplot density-2d quantile sina spoke pointdensity | map (no geospatial backend) |
 
 ### stats
-| implemented (11) | planned |
+| implemented (13) | planned |
 |---|---|
-| identity count bin density boxplot ydensity smooth(lm/loess) ecdf qq | bin-2d function summary sina quantile |
+| identity count bin bin2d sum density boxplot ydensity smooth(lm/loess) ecdf qq | function summary sina quantile |
 
 ### positions
 All: identity stack fill dodge jitter nudge. (dodge2/jitterdodge planned.)
@@ -85,7 +89,7 @@ All: identity stack fill dodge jitter nudge. (dodge2/jitterdodge planned.)
 - Colorbar for continuous color/fill: drawn (gradient bar + value labels
   + title, geometry measured from plotnine). Tick placement detail still
   costs the heatmap example ~0.14.
-- One legend per plot for now; multi-aesthetic guide merging planned.
+- Multiple legends stack vertically (11px apart), centered as a group.
 
 ### themes
 gray/grey (plotnine default, pixel-calibrated), bw, minimal, classic,

@@ -6,10 +6,11 @@ import math
 import pandas as pd
 from plotnine import ggplot, aes, geom_bin_2d
 
+# integer-mod quasi-random data: bit-exact across languages
 xs, ys = [], []
 for i in range(500):
-    xs.append(3.0*math.sin(i*12.9898) + 0.5*math.cos(i*3.7))
-    ys.append(2.0*math.sin(i*78.233) + 0.5*math.sin(i*5.1))
+    xs.append(((i*37) % 97) / 97.0 * 7.0 - 3.5)
+    ys.append(((i*53) % 89) / 89.0 * 5.0 - 2.5)
 df = pd.DataFrame({'x': xs, 'y': ys})
 
 p = ggplot(df, aes('x', 'y')) + geom_bin_2d(bins=15)

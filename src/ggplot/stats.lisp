@@ -551,3 +551,83 @@ standard first-order loess variance approximation."
                                     (/ (- i a) (+ n 1.0d0 (* -2.0d0 a)))))
                      'vector)
           :y sorted))))))
+
+;;; ============================================================
+;;; stat-bin2d: rectangular 2D binning
+;;; ============================================================
+
+(defclass stat-bin2d-obj (stat)
+  ((bins :initarg :bins :initform 30 :reader stat-bin2d-bins)))
+
+(defmethod stat-default-aes ((stat stat-bin2d-obj))
+  (list :fill (after-stat :count)))
+
+(defmethod stat-compute-panel ((stat stat-bin2d-obj) data scales &key)
+  (declare (ignore scales))
+  (let ((x-col (gtable-column data :x))
+        (y-col (gtable-column data :y))
+        (bins (stat-bin2d-bins stat)))
+    (unless (and x-col y-col)
+      (error "stat-bin2d requires x and y aesthetics"))
+    (multiple-value-bind (xlo xhi) (finite-range x-col)
+      (multiple-value-bind (ylo yhi) (finite-range y-col)
+        ;; plotnine: binwidth = range/bins, edges on the k*binwidth grid
+        ;; anchored at 0 (verified against geom_bin_2d output)
+        (let* ((xw (/ (max (- xhi xlo) 1.0d-12) bins))
+               (yw (/ (max (- yhi ylo) 1.0d-12) bins))
+               (counts (make-hash-table :test #'equal)))
+          (dotimes (i (length x-col))
+            (let ((bx (floor (float (svref x-col i) 1.0d0) xw))
+                  (by (floor (float (svref y-col i) 1.0d0) yw)))
+              (incf (gethash (list bx by) counts 0))))
+          (let ((cells (sort (loop for k being the hash-keys of counts
+                                     using (hash-value v)
+                                   collect (cons k v))
+                             (lambda (a b)
+                               (or (< (first (car a)) (first (car b)))
+                                   (and (= (first (car a)) (first (car b)))
+                                        (< (second (car a)) (second (car b)))))))))
+            (make-gtable
+             :xmin (map 'vector (lambda (c) (* (first (car c)) xw)) cells)
+             :xmax (map 'vector (lambda (c) (* (1+ (first (car c))) xw)) cells)
+             :ymin (map 'vector (lambda (c) (* (second (car c)) yw)) cells)
+             :ymax (map 'vector (lambda (c) (* (1+ (second (car c))) yw)) cells)
+             :x (map 'vector (lambda (c) (* (+ 0.5d0 (first (car c))) xw)) cells)
+             :y (map 'vector (lambda (c) (* (+ 0.5d0 (second (car c))) yw)) cells)
+             :count (map 'vector (lambda (c) (float (cdr c) 1.0d0)) cells))))))))
+
+;;; ============================================================
+;;; stat-sum: count observations per (x, y) location
+;;; ============================================================
+
+(defclass stat-sum-obj (stat) ())
+
+(defmethod stat-default-aes ((stat stat-sum-obj))
+  (list :size (after-stat :n)))
+
+(defmethod stat-compute-panel ((stat stat-sum-obj) data scales &key)
+  (declare (ignore scales))
+  (map-stat-groups
+   data
+   (lambda (sub)
+     (let ((x-col (gtable-column sub :x))
+           (y-col (gtable-column sub :y))
+           (counts (make-hash-table :test #'equal)))
+       (unless (and x-col y-col)
+         (error "stat-sum requires x and y aesthetics"))
+       (dotimes (i (length x-col))
+         (incf (gethash (list (svref x-col i) (svref y-col i)) counts 0)))
+       (let ((locs (sort (loop for k being the hash-keys of counts
+                                 using (hash-value v)
+                               collect (cons k v))
+                         (lambda (a b)
+                           (or (< (first (car a)) (first (car b)))
+                               (and (= (first (car a)) (first (car b)))
+                                    (< (second (car a)) (second (car b)))))))))
+         (make-gtable
+          :x (map 'vector (lambda (l) (first (car l))) locs)
+          :y (map 'vector (lambda (l) (second (car l))) locs)
+          :n (map 'vector (lambda (l) (float (cdr l) 1.0d0)) locs)))))))
+
+(register-stat :bin2d 'stat-bin2d-obj)
+(register-stat :sum 'stat-sum-obj)

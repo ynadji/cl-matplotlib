@@ -8,8 +8,11 @@
 (in-package #:gg-example)
 
 (let* ((vals (loop for i from 0 below 80
-                   collect (+ 3.0d0 (* 1.5d0 (sin (* i 12.9898d0))
-                                       (cos (* i 78.233d0)) 2.0d0))))
+                   ;; integer-mod quasi-random: bit-exact across languages
+                   collect (+ 3.0d0
+                              (* 3.0d0
+                                 (- (/ (mod (* i 37) 97) 97.0d0) 0.5d0)
+                                 (+ (/ (mod (* i 53) 89) 89.0d0) 0.5d0)))))
        (data (list :v (coerce vals 'vector))))
   (gg:ggsave (gg:stack (gg:ggplot data (gg:aes :sample :v))
                (gg:geom-qq))

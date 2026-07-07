@@ -379,8 +379,10 @@ on the panel; white tick marks inside both bar edges at the breaks; labels
           (add-rect fx0 (+ fy0 (* fh (/ (float i 1.0d0) n-steps)))
                     fw (* fh (/ 1.5d0 n-steps)) color)))
       ;; breaks: white tick marks inside both edges + labels right of bar
+      ;; plotnine's colorbar asks for ~4 breaks (verified: counts 1..8
+      ;; label 2.5/5.0/7.5), unlike the 5 used for axes
       (let ((breaks (remove-if-not (lambda (b) (<= lo b hi))
-                                   (extended-breaks lo hi 5)))
+                                   (extended-breaks lo hi 4)))
             (tick-w (/ (* 6.0d0 scale) panel-w))
             (tick-h (/ (* 1.0d0 scale) panel-h)))
         (loop for b in breaks
@@ -403,8 +405,13 @@ on the panel; white tick marks inside both bar edges at the breaks; labels
                                             (aes-ref mapping :color)))))
                          (typecase ref
                            (string ref)
-                           (symbol (string-downcase (symbol-name ref)))
-                           (t ""))))))
+                           ((and symbol (not null))
+                            (string-downcase (symbol-name ref)))
+                           (t nil)))
+                       ;; stat-supplied fill (bin2d): the computed column
+                       (or (%stat-default-label built :fill)
+                           (%stat-default-label built :color))
+                       "")))
         (when (plusp (length title))
           (%axes-fraction-text
            axes title
@@ -419,11 +426,39 @@ on the panel; white tick marks inside both bar edges at the breaks; labels
          (defaults (geom-default-aes geom)))
     (or (getf params :size) (getf defaults :size) 0.5d0)))
 
-(defun %draw-legend (built theme spec axes margins width-px height-px dpi)
+(defun %legend-block-height-px (spec scale)
+  "Height of one legend block: title line + gap + keys."
+  (let ((n (length (getf spec :labels))))
+    (+ (* *legend-title-lh-px* scale)
+       (* *legend-title-gap-px* scale)
+       (* *legend-key-px* scale)
+       (* (1- n) (* *legend-key-pitch-px* scale)))))
+
+(defun %draw-legends (built theme specs axes margins width-px height-px dpi)
+  "Stack all legend blocks vertically (11px apart), centered as a group
+on the panel area, like plotnine draws multiple guides."
+  (let* ((scale (/ dpi 100.0d0))
+         (gap (* 11.0d0 scale))
+         (heights (mapcar (lambda (s) (%legend-block-height-px s scale))
+                          specs))
+         (total (+ (reduce #'+ heights)
+                   (* (max 0 (1- (length specs))) gap)))
+         (offset (/ total 2.0d0)))   ; top of the stack relative to center
+    (loop for spec in specs
+          for h in heights
+          do (%draw-legend built theme spec axes margins
+                           width-px height-px dpi
+                           :block-top-offset offset)
+             (decf offset (+ h gap)))))
+
+(defun %draw-legend (built theme spec axes margins width-px height-px dpi
+                     &key block-top-offset)
   "plotnine-style legend right of the panel: #F2F2F2 key boxes with geom
-glyphs, labels right of the keys, title above, the whole block vertically
-centered on the panel area. All geometry constants are pixel measurements
-of plotnine 0.15.7 output (see *legend-*-px* above)."
+glyphs, labels right of the keys, title above. Without BLOCK-TOP-OFFSET
+the block is vertically centered on the panel area; with it, the block's
+top sits OFFSET px above the panel center (multi-legend stacking). All
+geometry constants are pixel measurements of plotnine 0.15.7 output
+(see *legend-*-px* above)."
   (declare (ignore built theme))
   (let* ((scale (/ dpi 100.0d0))
          ;; grid area (all panels) in figure px: drives centering and the
@@ -449,7 +484,8 @@ of plotnine 0.15.7 output (see *legend-*-px* above)."
          (title-gap (* *legend-title-gap-px* scale))
          (keys-h (+ key (* (1- n) pitch)))
          (block-h (+ title-lh title-gap keys-h))
-         (block-top (+ (/ (+ bottom-px top-px) 2.0d0) (/ block-h 2.0d0)))
+         (block-top (+ (/ (+ bottom-px top-px) 2.0d0)
+                       (or block-top-offset (/ block-h 2.0d0))))
          (key-x0 (+ right-px (* *legend-gap-px* scale)))
          (label-x (+ key-x0 key (* *legend-label-gap-px* scale)))
          (trans-axes (cl-matplotlib.containers:axes-base-trans-axes axes))
@@ -477,7 +513,9 @@ of plotnine 0.15.7 output (see *legend-*-px* above)."
             for key-top = (- block-top title-lh title-gap (* i pitch))
             for cy = (- key-top (/ key 2.0d0))
             do (add-rect key-x0 (- key-top key) key key "#F2F2F2")
-               (let ((color (if (eq aesthetic :shape) "black" v)))
+               (let ((color (if (member aesthetic '(:shape :size))
+                                "black"
+                                v)))
                  (ecase glyph
                    (:rect (add-rect key-x0 (- key-top key) key key color))
                    (:line (let ((lw-px (* (size-to-linewidth
@@ -486,7 +524,10 @@ of plotnine 0.15.7 output (see *legend-*-px* above)."
                             (add-rect key-x0 (- cy (/ lw-px 2.0d0))
                                       key lw-px color)))
                    (:point
-                    (let* ((size (or (getf (getf spec :params) :size) 1.5d0))
+                    (let* ((size (if (eq aesthetic :size)
+                                     v   ; mapped size IS the entry value
+                                     (or (getf (getf spec :params) :size)
+                                         1.5d0)))
                            (d-px (* (sqrt (size-to-scatter-s size))
                                     (/ dpi 72.0d0)))
                            (dot (make-instance
@@ -730,15 +771,11 @@ x in [1, 1+strip-frac]) with the label rotated -90."
                              margins (* width dpi) (* height dpi) dpi)))
          ;; Legend drawn manually (plotnine geometry), anchored to the
          ;; first panel of the last column but positioned in figure px
-         (let ((spec (first (ggbuilt-legends built))))
-           (when spec
-             (when (rest (ggbuilt-legends built))
-               (warn "Multiple legends requested; only the ~S guide is drawn"
-                     (getf spec :aesthetic)))
-             (let ((anchor-axes (cdr (assoc (1- ncol) axes-list))))
-               (when anchor-axes
-                 (%draw-legend built theme spec anchor-axes margins
-                               width-px height-px dpi)))))
+         (let ((specs (ggbuilt-legends built))
+               (anchor-axes (cdr (assoc (1- ncol) axes-list))))
+           (when (and specs anchor-axes)
+             (%draw-legends built theme specs anchor-axes margins
+                            width-px height-px dpi)))
          ;; Axis titles: centered across the whole panel grid, attached to
          ;; the bottom-left panel
          (let ((anchor (cdr (assoc (* (1- nrow) ncol) axes-list))))

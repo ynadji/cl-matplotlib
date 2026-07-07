@@ -316,6 +316,51 @@ or the y equivalents) from a fresh scale trained on the panel's rows."
                           :geom (layer-geom layer)
                           :params (layer-params layer))
                     legends))))))
+    ;; continuous size legend (geom-count, mapped :size): entries at the
+    ;; scale's breaks, keys drawn as sized points
+    (let ((scale (%scale-for scales :size)))
+      (when (and scale
+                 (typep scale 'scale-size-obj)
+                 (not (eq (scale-guide scale) :none))
+                 (scale-range-min scale))
+        (let* ((limits (scale-limits scale))
+               (breaks (remove-if-not
+                        (lambda (b) (<= (first limits) b (second limits)))
+                        (scale-breaks scale)))
+               (layer (or (loop for (l . nil) in layer-tables
+                                for m = (%layer-mapping plot l)
+                                when (and m (aes-ref m :size)) return l)
+                          (loop for (l . nil) in layer-tables
+                                when (getf (stat-default-aes (layer-stat l))
+                                           :size)
+                                  return l)))
+               (title (or (scale-name scale)
+                          (let* ((m (and layer (%layer-mapping plot layer)))
+                                 (ref (and m (aes-ref m :size))))
+                            (typecase ref
+                              (string ref)
+                              ((and symbol (not null))
+                               (string-downcase (symbol-name ref)))
+                              (t (let ((default
+                                         (and layer
+                                              (getf (stat-default-aes
+                                                     (layer-stat layer))
+                                                    :size))))
+                                   (if (after-stat-ref-p default)
+                                       (string-downcase
+                                        (symbol-name
+                                         (after-stat-ref-name default)))
+                                       "size"))))))))
+          (when (and layer breaks)
+            (push (list :aesthetic :size
+                        :title title
+                        :labels (scale-break-labels scale breaks)
+                        :values (coerce (scale-map scale
+                                                   (coerce breaks 'vector))
+                                        'list)
+                        :geom (layer-geom layer)
+                        :params (layer-params layer))
+                  legends)))))
     (nreverse legends)))
 
 ;;; ============================================================

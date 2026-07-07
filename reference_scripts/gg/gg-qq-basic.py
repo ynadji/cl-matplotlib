@@ -6,8 +6,8 @@ import math
 import pandas as pd
 from plotnine import ggplot, aes, geom_qq
 
-# deterministic "random" sample: inverse-normal of a low-discrepancy sequence
-vals = [3.0 + 1.5 * math.sin(i * 12.9898) * math.cos(i * 78.233) * 2.0
+# integer-mod quasi-random sample: bit-exact across languages
+vals = [3.0 + 3.0 * (((i*37) % 97) / 97.0 - 0.5) * (((i*53) % 89) / 89.0 + 0.5)
         for i in range(80)]
 df = pd.DataFrame({'v': vals})
 

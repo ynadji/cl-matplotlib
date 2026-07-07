@@ -164,6 +164,14 @@ passed as keywords; mapped aesthetics come from (aes ...)."
                 :mapping mapping :data data :params params
                 :show-legend show-legend :inherit-aes inherit-aes)))
 
+(defun geom-jitter (&rest args &key mapping data stat (position :jitter)
+                                    show-legend inherit-aes &allow-other-keys)
+  "geom-point with position-jitter (plotnine's geom_jitter)."
+  (declare (ignore mapping data stat show-legend inherit-aes))
+  (let ((clean (loop for (k v) on args by #'cddr
+                     unless (eq k :position) append (list k v))))
+    (apply #'geom-point :position position clean)))
+
 ;;; ============================================================
 ;;; geom-line / geom-path
 ;;; ============================================================
@@ -843,6 +851,46 @@ text in data units (shorthand for :position (position-nudge ...))."
                                 (when size (list :size size))
                                 (when linetype (list :linetype linetype))))))
 
+(defclass geom-abline-obj (geom) ())
+
+(defmethod geom-default-aes ((geom geom-abline-obj))
+  '(:color "black" :size 0.5d0 :alpha 1.0d0 :linetype :solid))
+
+(defmethod geom-draw-panel ((geom geom-abline-obj) data panel axes)
+  (let ((slope (gtable-column data :slope))
+        (intercept (gtable-column data :intercept))
+        (x-range (getf panel :x-range)))
+    (dotimes (i (length slope))
+      (let* ((m (float (svref slope i) 1.0d0))
+             (b (float (svref intercept i) 1.0d0))
+             (x0 (first x-range))
+             (x1 (second x-range)))
+        (cl-matplotlib.containers:plot
+         axes (list x0 x1) (list (+ (* m x0) b) (+ (* m x1) b))
+         :color (%column-value data :color "black")
+         :linewidth (size-to-linewidth (%column-value data :size 0.5d0))
+         :linestyle (%column-value data :linetype :solid)
+         :zorder 3)))))
+
+(defun geom-abline (&key (slope 1.0d0) (intercept 0.0d0) color size linetype)
+  "Line(s) with SLOPE and INTERCEPT spanning the panel."
+  (let ((ms (if (listp slope) slope (list slope)))
+        (bs (if (listp intercept) intercept (list intercept))))
+    (let ((n (max (length ms) (length bs))))
+      (make-layer :geom (make-instance 'geom-abline-obj)
+                  :data (list :slope (coerce (loop for i from 0 below n
+                                                   collect (elt ms (min i (1- (length ms)))))
+                                             'vector)
+                              :intercept (coerce (loop for i from 0 below n
+                                                       collect (elt bs (min i (1- (length bs)))))
+                                                 'vector))
+                  :mapping (aes :slope :slope :intercept :intercept)
+                  :inherit-aes nil
+                  :show-legend nil
+                  :params (append (when color (list :color color))
+                                  (when size (list :size size))
+                                  (when linetype (list :linetype linetype)))))))
+
 (defun geom-vline (&key xintercept color size linetype)
   "Vertical reference line(s)."
   (let ((xs (if (listp xintercept) xintercept (list xintercept))))
@@ -1046,3 +1094,113 @@ GEOM is a keyword naming the geom (:text, :segment, :rect, :point, ...)."
                     :stat :qq :position :identity
                     :mapping mapping :data data :params params
                     :show-legend show-legend :inherit-aes inherit-aes)))))
+
+;;; ============================================================
+;;; geom-crossbar: box from ymin..ymax with a line at y
+;;; ============================================================
+
+(defclass geom-crossbar-obj (geom) ())
+
+(defmethod geom-default-aes ((geom geom-crossbar-obj))
+  '(:color "black" :fill nil :size 0.5d0 :alpha 1.0d0 :width 0.9d0))
+
+(defmethod geom-setup-data ((geom geom-crossbar-obj) data &key)
+  (let* ((x (gtable-column data :x))
+         (width (gtable-column data :width))
+         (n (length x))
+         (xmin (make-array n)) (xmax (make-array n)))
+    (dotimes (i n)
+      (let ((w (if width (float (svref width i) 1.0d0) 0.9d0))
+            (xc (float (svref x i) 1.0d0)))
+        (setf (aref xmin i) (- xc (/ w 2.0d0))
+              (aref xmax i) (+ xc (/ w 2.0d0)))))
+    (gtable-set-column (gtable-set-column data :xmin xmin) :xmax xmax)))
+
+(defmethod geom-draw-panel ((geom geom-crossbar-obj) data panel axes)
+  (declare (ignore panel))
+  (dotimes (i (gtable-nrows data))
+    (flet ((col (name) (let ((c (gtable-column data name)))
+                         (and c (svref c i)))))
+      (let ((xmin (float (col :xmin) 1.0d0))
+            (xmax (float (col :xmax) 1.0d0))
+            (ymin (float (col :ymin) 1.0d0))
+            (ymax (float (col :ymax) 1.0d0))
+            (y (float (col :y) 1.0d0))
+            (color (or (col :color) "black"))
+            (fill (col :fill))
+            (lw (size-to-linewidth (or (col :size) 0.5d0))))
+        (let ((rect (make-instance 'cl-matplotlib.rendering:rectangle
+                                   :x0 xmin :y0 ymin
+                                   :width (- xmax xmin)
+                                   :height (- ymax ymin)
+                                   :facecolor (or fill "none")
+                                   :edgecolor color
+                                   :linewidth lw
+                                   :zorder 2)))
+          (cl-matplotlib.containers:axes-add-patch axes rect))
+        (cl-matplotlib.containers:plot
+         axes (list xmin xmax) (list y y)
+         :color color :linewidth (* lw 2.0d0) :zorder 3)))))
+
+(defun geom-crossbar (&rest args &key mapping data stat position show-legend
+                                      inherit-aes width color fill
+                                      &allow-other-keys)
+  "Hollow bar from ymin to ymax with a doubled line at y."
+  (declare (ignore mapping data stat position show-legend inherit-aes
+                   width color fill))
+  (make-geom-layer 'geom-crossbar-obj args))
+
+;;; ============================================================
+;;; geom-bin2d: heatmap of 2D bin counts (stat-bin2d)
+;;; ============================================================
+
+(defclass geom-bin2d-obj (geom) ())
+
+(defmethod geom-default-aes ((geom geom-bin2d-obj))
+  (list :fill (after-stat :count) :alpha 1.0d0))
+
+(defmethod geom-draw-panel ((geom geom-bin2d-obj) data panel axes)
+  (declare (ignore panel))
+  (dotimes (i (gtable-nrows data))
+    (flet ((col (name) (let ((c (gtable-column data name)))
+                         (and c (svref c i)))))
+      (let ((rect (make-instance 'cl-matplotlib.rendering:rectangle
+                                 :x0 (float (col :xmin) 1.0d0)
+                                 :y0 (float (col :ymin) 1.0d0)
+                                 :width (- (float (col :xmax) 1.0d0)
+                                           (float (col :xmin) 1.0d0))
+                                 :height (- (float (col :ymax) 1.0d0)
+                                            (float (col :ymin) 1.0d0))
+                                 :facecolor (or (col :fill) "#132B43")
+                                 :edgecolor nil
+                                 :linewidth 0.0d0
+                                 :zorder 2)))
+        (cl-matplotlib.containers:axes-add-patch axes rect)))))
+
+(defun geom-bin2d (&rest args &key mapping data stat position
+                                   show-legend inherit-aes (bins 30)
+                                   &allow-other-keys)
+  "2D histogram: rectangular bins filled by count."
+  (declare (ignore mapping data position show-legend inherit-aes))
+  (let ((clean (loop for (k v) on args by #'cddr
+                     unless (member k '(:bins :stat)) append (list k v))))
+    (make-geom-layer 'geom-bin2d-obj clean
+                     :stat (or stat
+                               (make-instance 'stat-bin2d-obj :bins bins)))))
+
+(defun geom-bin-2d (&rest args)
+  "plotnine-style alias for geom-bin2d."
+  (apply #'geom-bin2d args))
+
+;;; ============================================================
+;;; geom-count: points sized by overlap count (stat-sum)
+;;; ============================================================
+
+(defclass geom-count-obj (geom-point-obj) ())
+
+(defun geom-count (&rest args &key mapping data (stat :sum) position
+                                   show-legend inherit-aes
+                                   &allow-other-keys)
+  "Points sized by the number of observations at each location."
+  (declare (ignore mapping data position show-legend inherit-aes))
+  (make-geom-layer 'geom-count-obj args :stat stat))

@@ -22,6 +22,8 @@
    #:geom-smooth #:geom-tile #:geom-raster #:geom-text #:geom-label
    #:geom-segment #:geom-hline #:geom-vline #:geom-rect #:annotate
    #:geom-step #:geom-rug #:geom-linerange #:geom-errorbar
+   #:geom-abline #:geom-jitter #:geom-crossbar
+   #:geom-bin2d #:geom-bin-2d #:geom-count
    #:geom-pointrange #:geom-qq
    ;; positions
    #:position-identity #:position-stack #:position-fill #:position-dodge
