@@ -5,3 +5,4 @@ reference_images/
 __pycache__/
 *.fasl
 .sisyphus
+.continue.bak
