@@ -51,3 +51,11 @@ jobs:
 
       - name: Run show-web Tests
         run: ./tools/ci-run.sh cl-matplotlib-show-web --test
+
+      - name: Install SDL2
+        if: matrix.lisp == 'sbcl-bin'
+        run: sudo apt-get update && sudo apt-get install -y libsdl2-2.0-0
+
+      - name: Run show-sdl2 Tests
+        if: matrix.lisp == 'sbcl-bin'
+        run: SDL_VIDEODRIVER=dummy ./tools/ci-run.sh cl-matplotlib-show-sdl2 --test

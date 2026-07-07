@@ -8,8 +8,7 @@
 
 (defun %ensure-renderer (figure renderer)
   "Return RENDERER sized to FIGURE, creating a renderer-vecto when NIL.
-Reusing a renderer across frames keeps its font cache warm; its
-width/height slots are re-synced here because renderers memoize size."
+Width/height slots are re-synced here because renderers memoize size."
   (let ((w (mpl.containers:figure-width-px figure))
         (h (mpl.containers:figure-height-px figure)))
     (if renderer
@@ -26,6 +25,11 @@ width/height slots are re-synced here because renderers memoize size."
 with no arguments while the canvas is still live and return its value."
   (let ((w (mpl.backends:renderer-width renderer))
         (h (mpl.backends:renderer-height renderer)))
+    ;; vecto:with-canvas closes every font loader opened through
+    ;; vecto:get-font when it exits, but the renderer's font cache keeps
+    ;; them across canvases — stale entries would hit a closed stream on
+    ;; the next frame's lazy glyph reads. Re-resolve fonts per canvas.
+    (clrhash (mpl.backends:renderer-font-cache renderer))
     (vecto:with-canvas (:width w :height h)
       (setf (mpl.backends:renderer-active-p renderer) t)
       (unwind-protect
@@ -55,8 +59,8 @@ array because consumers (websocket-driver, SDL) require one."
 (defun render-figure-to-rgba (figure &key renderer)
   "Render FIGURE and return (values rgba-octets width height renderer).
 RGBA-OCTETS is a flat (unsigned-byte 8) vector, 4 bytes per pixel,
-row-major from the top-left. Pass the returned RENDERER back in to reuse
-its font cache across frames."
+row-major from the top-left. Pass the returned RENDERER back in to
+reuse it across frames."
   (let ((renderer (%ensure-renderer figure renderer)))
     (values (%render-figure-grabbing figure renderer #'%grab-rgba)
             (mpl.backends:renderer-width renderer)
