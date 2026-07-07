@@ -22,7 +22,8 @@
                (:file "facets")
                (:file "build")
                (:file "render")
-               (:file "ggsave"))
+               (:file "ggsave")
+               (:file "qplot"))
   :in-order-to ((asdf:test-op (asdf:test-op #:ggplot/tests))))
 
 (asdf:defsystem #:ggplot/tests

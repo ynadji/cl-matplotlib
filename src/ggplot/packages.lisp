@@ -19,6 +19,10 @@
    #:geom-bar #:geom-col
    #:geom-histogram #:geom-freqpoly #:geom-area #:geom-ribbon
    #:geom-density #:geom-boxplot #:geom-violin
+   #:geom-smooth #:geom-tile #:geom-raster #:geom-text #:geom-label
+   #:geom-segment #:geom-hline #:geom-vline #:geom-rect #:annotate
+   #:geom-step #:geom-rug #:geom-linerange #:geom-errorbar
+   #:geom-pointrange #:geom-qq
    ;; positions
    #:position-identity #:position-stack #:position-fill #:position-dodge
    #:position-jitter #:position-nudge
@@ -34,8 +38,13 @@
    #:scale-color-discrete #:scale-fill-discrete
    #:scale-color-manual #:scale-fill-manual
    #:scale-shape-manual #:scale-size #:scale-alpha
+   #:scale-color-gradient #:scale-fill-gradient
+   #:scale-x-log10 #:scale-y-log10
+   #:scale-color-grey #:scale-fill-grey
+   #:expand-limits
    ;; themes
    #:theme #:theme-gray #:theme-grey #:theme-minimal #:theme-bw
+   #:theme-classic #:theme-dark #:theme-void
    #:element-line #:element-rect #:element-text #:element-blank
    #:theme-set #:theme-get
    ;; aes marker

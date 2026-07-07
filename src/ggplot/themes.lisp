@@ -152,3 +152,36 @@ figure creation. Elements rc can't express are handled per-axes in render."
       (add "figure.facecolor"
            (%element-color (theme-element theme :plot-background) "white")))
     (nreverse alist)))
+
+;;; ============================================================
+;;; More built-in themes
+;;; ============================================================
+
+(defun theme-classic (&key (base-size 11))
+  "White panel, black axis lines, no grid."
+  (merge-themes
+   (theme-gray :base-size base-size)
+   (theme :panel-background (element-rect :fill "white")
+          :panel-grid-major (element-blank)
+          :panel-grid-minor (element-blank)
+          :axis-line (element-line :color "black" :linewidth 1.0))))
+
+(defun theme-dark (&key (base-size 11))
+  "Dark panel for thin colored lines to pop."
+  (merge-themes
+   (theme-gray :base-size base-size)
+   (theme :panel-background (element-rect :fill "#7F7F7F")
+          :panel-grid-major (element-line :color "#666666" :linewidth 1.0)
+          :panel-grid-minor (element-line :color "#737373" :linewidth 0.5))))
+
+(defun theme-void (&key (base-size 11))
+  "Nothing but the data layers."
+  (merge-themes
+   (theme-gray :base-size base-size)
+   (theme :panel-background (element-blank)
+          :panel-grid-major (element-blank)
+          :panel-grid-minor (element-blank)
+          :axis-line (element-blank)
+          :axis-ticks (element-blank)
+          :axis-text (element-blank)
+          :axis-title (element-blank))))

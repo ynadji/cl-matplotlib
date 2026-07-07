@@ -315,13 +315,9 @@ sizes proportional to sqrt of the rescaled value."))
       ((:y :ymin :ymax :yend)
        (if discrete (scale-y-discrete) (scale-y-continuous)))
       (:color
-       (if discrete
-           (scale-color-discrete)
-           (error "Continuous color scales arrive with the gradient slice")))
+       (if discrete (scale-color-discrete) (scale-color-gradient)))
       (:fill
-       (if discrete
-           (scale-fill-discrete)
-           (error "Continuous fill scales arrive with the gradient slice")))
+       (if discrete (scale-fill-discrete) (scale-fill-gradient)))
       (:shape (scale-shape-manual))
       (:size
        (if discrete
@@ -332,3 +328,117 @@ sizes proportional to sqrt of the rescaled value."))
            (error "Discrete alpha scales are not supported (use a manual scale)")
            (scale-alpha)))
       (t nil))))
+
+;;; ============================================================
+;;; Continuous color scales (gradients)
+;;; ============================================================
+
+(defun %parse-hex-color (hex)
+  "\"#RRGGBB\" -> (values r g b) in [0,1]."
+  (let ((rgba (cl-matplotlib.colors:to-rgba hex)))
+    (values (float (aref rgba 0) 1.0d0)
+            (float (aref rgba 1) 1.0d0)
+            (float (aref rgba 2) 1.0d0))))
+
+(defclass scale-gradient-obj (scale-continuous)
+  ((low :initarg :low :initform "#132B43" :reader scale-gradient-low)
+   (high :initarg :high :initform "#56B1F7" :reader scale-gradient-high))
+  (:documentation "Two-color continuous gradient (ggplot2/plotnine default
+blues: #132B43 -> #56B1F7), interpolated in RGB like mizani."))
+
+(defmethod scale-map ((scale scale-gradient-obj) values)
+  (destructuring-bind (lo hi) (scale-limits scale)
+    (let ((span (max (- hi lo) 1.0d-12)))
+      (multiple-value-bind (r0 g0 b0) (%parse-hex-color (scale-gradient-low scale))
+        (multiple-value-bind (r1 g1 b1) (%parse-hex-color (scale-gradient-high scale))
+          (map 'simple-vector
+               (lambda (v)
+                 (let ((u (max 0.0d0 (min 1.0d0 (/ (- (float v 1.0d0) lo) span)))))
+                   (%rgb-to-hex (+ r0 (* u (- r1 r0)))
+                                (+ g0 (* u (- g1 g0)))
+                                (+ b0 (* u (- b1 b0))))))
+               values))))))
+
+(defun scale-color-gradient (&rest args &key low high name breaks labels limits guide)
+  (declare (ignore low high name breaks labels limits guide))
+  (apply #'make-instance 'scale-gradient-obj :aesthetics '(:color) args))
+
+(defun scale-fill-gradient (&rest args &key low high name breaks labels limits guide)
+  (declare (ignore low high name breaks labels limits guide))
+  (apply #'make-instance 'scale-gradient-obj :aesthetics '(:fill) args))
+
+;;; ============================================================
+;;; Log10 positional scales
+;;; ============================================================
+;;; plotnine transforms the data into log space before stats and keeps the
+;;; axis linear, placing ticks at integer exponents. Same approach here.
+
+(defclass scale-log10-obj (scale-continuous) ())
+
+(defmethod scale-transform ((scale scale-log10-obj) values)
+  (map 'simple-vector
+       (lambda (v)
+         (let ((v (float v 1.0d0)))
+           (if (plusp v)
+               (log v 10.0d0)
+               (error "log10 scale: non-positive value ~S" v))))
+       values))
+
+(defmethod scale-breaks ((scale scale-log10-obj))
+  (let ((user (scale-user-breaks scale)))
+    (if (not (eq user :auto))
+        user
+        (destructuring-bind (lo hi) (scale-limits scale)
+          (loop for k from (ceiling (- lo 1.0d-9)) to (floor (+ hi 1.0d-9))
+                collect (float k 1.0d0))))))
+
+(defmethod scale-break-labels ((scale scale-log10-obj) breaks)
+  (let ((user (scale-user-labels scale)))
+    (if (not (eq user :auto))
+        user
+        (mapcar (lambda (k)
+                  (let ((v (expt 10.0d0 k)))
+                    (if (>= v 1.0d0)
+                        (format nil "~D" (round v))
+                        (format nil "~F" v))))
+                breaks))))
+
+(defun scale-x-log10 (&rest args &key name breaks labels limits expand)
+  (declare (ignore name breaks labels limits expand))
+  (apply #'make-instance 'scale-log10-obj :aesthetics '(:x :xmin :xmax :xend) args))
+
+(defun scale-y-log10 (&rest args &key name breaks labels limits expand)
+  (declare (ignore name breaks labels limits expand))
+  (apply #'make-instance 'scale-log10-obj :aesthetics '(:y :ymin :ymax :yend) args))
+
+;;; ============================================================
+;;; Grey palettes
+;;; ============================================================
+
+(defun grey-palette (n &key (start 0.2d0) (end 0.8d0))
+  "ggplot2's grey_pal: N evenly spaced greys from START to END luminance."
+  (loop for i from 0 below n
+        for g = (if (= n 1)
+                    start
+                    (+ start (* i (/ (- end start) (1- n)))))
+        collect (%rgb-to-hex g g g)))
+
+(defun scale-color-grey (&rest args &key start end name breaks labels limits guide)
+  (declare (ignore name breaks labels limits guide))
+  (let ((rest (loop for (k v) on args by #'cddr
+                    unless (member k '(:start :end)) append (list k v))))
+    (apply #'make-instance 'scale-discrete-palette
+           :aesthetics '(:color)
+           :palette (lambda (n) (grey-palette n :start (or start 0.2d0)
+                                                :end (or end 0.8d0)))
+           rest)))
+
+(defun scale-fill-grey (&rest args &key start end name breaks labels limits guide)
+  (declare (ignore name breaks labels limits guide))
+  (let ((rest (loop for (k v) on args by #'cddr
+                    unless (member k '(:start :end)) append (list k v))))
+    (apply #'make-instance 'scale-discrete-palette
+           :aesthetics '(:fill)
+           :palette (lambda (n) (grey-palette n :start (or start 0.2d0)
+                                                :end (or end 0.8d0)))
+           rest)))

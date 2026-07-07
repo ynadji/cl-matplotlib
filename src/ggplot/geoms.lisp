@@ -567,3 +567,449 @@ Default position is :stack, like ggplot2."
   (declare (ignore mapping data stat position show-legend inherit-aes
                    fill color width alpha))
   (%make-geom-layer 'geom-violin-obj args :stat :ydensity))
+
+;;; ============================================================
+;;; geom-smooth
+;;; ============================================================
+
+(defclass geom-smooth-obj (geom-ribbon-obj) ())
+
+(defmethod geom-default-aes ((geom geom-smooth-obj))
+  '(:color "#3366FF" :fill "#999999" :size 1.0d0 :alpha 0.4d0 :linetype :solid))
+
+(defmethod geom-draw-panel ((geom geom-smooth-obj) data panel axes)
+  (declare (ignore panel))
+  (loop for (nil . sub) in (gtable-split data :group) do
+    (let ((x (gtable-column sub :x))
+          (y (gtable-column sub :y))
+          (ymin (gtable-column sub :ymin))
+          (ymax (gtable-column sub :ymax)))
+      (when (and x y (> (length x) 1))
+        (when (and ymin ymax)
+          (cl-matplotlib.containers:fill-between
+           axes (coerce x 'list) (coerce ymin 'list) (coerce ymax 'list)
+           :color (%column-value sub :fill "#999999")
+           :alpha (%column-value sub :alpha 0.4d0)
+           :zorder 2))
+        (cl-matplotlib.containers:plot
+         axes (coerce x 'list) (coerce y 'list)
+         :color (%column-value sub :color "#3366FF")
+         :linewidth (size-to-linewidth (%column-value sub :size 1.0d0))
+         :zorder 3)))))
+
+(defun geom-smooth (&rest args &key mapping data stat position show-legend
+                                    inherit-aes method se level span n
+                                    color fill alpha &allow-other-keys)
+  "Smoothed conditional mean with confidence ribbon.
+:method :lm (default) or :loess."
+  (declare (ignore mapping data stat position show-legend inherit-aes
+                   color fill alpha))
+  (let ((clean (loop for (k v) on args by #'cddr
+                     unless (member k '(:method :se :level :span :n))
+                       append (list k v))))
+    (%make-geom-layer 'geom-smooth-obj
+                      (list* :stat (make-instance
+                                    'stat-smooth-obj
+                                    :method (or method :lm)
+                                    :se (if (member :se args) se t)
+                                    :level (or level 0.95d0)
+                                    :span (or span 0.75d0)
+                                    :n (or n 80))
+                             clean))))
+
+;;; ============================================================
+;;; geom-tile / geom-raster
+;;; ============================================================
+
+(defclass geom-tile-obj (geom) ())
+
+(defmethod geom-default-aes ((geom geom-tile-obj))
+  '(:fill "#333333" :color nil :size 0.1d0 :alpha 1.0d0))
+
+(defun %column-resolution (col)
+  "Smallest gap between distinct sorted numeric values, or 1.0."
+  (let ((vals (sort (remove-duplicates (coerce col 'list) :test #'=) #'<)))
+    (if (< (length vals) 2)
+        1.0d0
+        (loop for (a b) on vals while b minimize (- b a)))))
+
+(defmethod geom-setup-data ((geom geom-tile-obj) data &key)
+  "Tiles centered on (x, y) sized by :width/:height columns or the data
+resolution."
+  (let* ((x (gtable-column data :x))
+         (y (gtable-column data :y))
+         (n (length x))
+         (width-col (gtable-column data :width))
+         (height-col (gtable-column data :height))
+         (w-default (%column-resolution x))
+         (h-default (%column-resolution y))
+         (xmin (make-array n)) (xmax (make-array n))
+         (ymin (make-array n)) (ymax (make-array n)))
+    (dotimes (i n)
+      (let ((w (if width-col (float (svref width-col i) 1.0d0) w-default))
+            (h (if height-col (float (svref height-col i) 1.0d0) h-default))
+            (xc (float (svref x i) 1.0d0))
+            (yc (float (svref y i) 1.0d0)))
+        (setf (aref xmin i) (- xc (/ w 2.0d0))
+              (aref xmax i) (+ xc (/ w 2.0d0))
+              (aref ymin i) (- yc (/ h 2.0d0))
+              (aref ymax i) (+ yc (/ h 2.0d0)))))
+    (gtable-set-column
+     (gtable-set-column
+      (gtable-set-column
+       (gtable-set-column data :xmin xmin) :xmax xmax)
+      :ymin ymin)
+     :ymax ymax)))
+
+(defmethod geom-draw-panel ((geom geom-tile-obj) data panel axes)
+  (declare (ignore panel))
+  (let ((xmin (gtable-column data :xmin))
+        (xmax (gtable-column data :xmax))
+        (ymin (gtable-column data :ymin))
+        (ymax (gtable-column data :ymax))
+        (fill (gtable-column data :fill))
+        (alpha (gtable-column data :alpha)))
+    (dotimes (i (length xmin))
+      (let ((rect (make-instance 'cl-matplotlib.rendering:rectangle
+                                 :x0 (float (svref xmin i) 1.0d0)
+                                 :y0 (float (svref ymin i) 1.0d0)
+                                 :width (float (- (svref xmax i) (svref xmin i)) 1.0d0)
+                                 :height (float (- (svref ymax i) (svref ymin i)) 1.0d0)
+                                 :facecolor (if fill (svref fill i) "#333333")
+                                 :edgecolor nil
+                                 :linewidth 0.0d0
+                                 :zorder 2)))
+        (when alpha
+          (setf (cl-matplotlib.rendering:artist-alpha rect)
+                (float (svref alpha i) 1.0d0)))
+        (cl-matplotlib.containers:axes-add-patch axes rect)))))
+
+(defun geom-tile (&rest args &key mapping data stat position show-legend
+                                  inherit-aes fill alpha width height
+                                  &allow-other-keys)
+  "Rectangular tiles centered on (x, y) — heatmaps."
+  (declare (ignore mapping data stat position show-legend inherit-aes
+                   fill alpha width height))
+  (%make-geom-layer 'geom-tile-obj args))
+
+(defun geom-raster (&rest args)
+  "Alias for geom-tile (the backend draws tiles as rectangles either way)."
+  (apply #'geom-tile args))
+
+;;; ============================================================
+;;; geom-text / geom-label
+;;; ============================================================
+
+(defclass geom-text-obj (geom) ())
+
+(defmethod geom-default-aes ((geom geom-text-obj))
+  '(:color "black" :size 8.8d0 :alpha 1.0d0))
+
+(defmethod geom-draw-panel ((geom geom-text-obj) data panel axes)
+  (declare (ignore panel))
+  (let ((x (gtable-column data :x))
+        (y (gtable-column data :y))
+        (label (gtable-column data :label))
+        (color (gtable-column data :color))
+        (size (gtable-column data :size)))
+    (unless label
+      (error "geom-text requires a label aesthetic"))
+    (dotimes (i (length x))
+      (let ((artist (make-instance 'cl-matplotlib.rendering:text-artist
+                                   :x (float (svref x i) 1.0d0)
+                                   :y (float (svref y i) 1.0d0)
+                                   :text (princ-to-string (svref label i))
+                                   :fontsize (float (if size (svref size i) 8.8d0) 1.0d0)
+                                   :color (if color (svref color i) "black")
+                                   :horizontalalignment :center
+                                   :verticalalignment :center
+                                   :zorder 3)))
+        (setf (cl-matplotlib.rendering:artist-transform artist)
+              (cl-matplotlib.containers:axes-base-trans-data axes))
+        (push artist (cl-matplotlib.containers:axes-base-texts axes))))))
+
+(defun geom-text (&rest args &key mapping data stat position show-legend
+                                  inherit-aes color size &allow-other-keys)
+  "Text at (x, y) from the label aesthetic."
+  (declare (ignore mapping data stat position show-legend inherit-aes
+                   color size))
+  (%make-geom-layer 'geom-text-obj args))
+
+(defun geom-label (&rest args)
+  "Alias for geom-text (background boxes arrive with a later slice)."
+  (apply #'geom-text args))
+
+;;; ============================================================
+;;; geom-segment and reference lines
+;;; ============================================================
+
+(defclass geom-segment-obj (geom) ())
+
+(defmethod geom-default-aes ((geom geom-segment-obj))
+  '(:color "black" :size 0.5d0 :alpha 1.0d0 :linetype :solid))
+
+(defmethod geom-draw-panel ((geom geom-segment-obj) data panel axes)
+  (declare (ignore panel))
+  (let* ((x (gtable-column data :x))
+         (xend (gtable-column data :xend))
+         (y (gtable-column data :y))
+         (yend (gtable-column data :yend))
+         (segments (loop for i from 0 below (length x)
+                         collect (list (list (float (svref x i) 1.0d0)
+                                             (float (svref y i) 1.0d0))
+                                       (list (float (svref xend i) 1.0d0)
+                                             (float (svref yend i) 1.0d0))))))
+    (when segments
+      (let ((lc (make-instance 'cl-matplotlib.rendering:line-collection
+                               :segments segments
+                               :edgecolors (coerce (or (gtable-column data :color)
+                                                       #("black"))
+                                                   'list)
+                               :linewidths (list (size-to-linewidth
+                                                  (%column-value data :size 0.5d0)))
+                               :zorder 2)))
+        (setf (cl-matplotlib.rendering:artist-transform lc)
+              (cl-matplotlib.containers:axes-base-trans-data axes))
+        (cl-matplotlib.containers:axes-add-artist axes lc)))))
+
+(defun geom-segment (&rest args &key mapping data stat position show-legend
+                                     inherit-aes color size &allow-other-keys)
+  "Line segments from (x, y) to (xend, yend)."
+  (declare (ignore mapping data stat position show-legend inherit-aes
+                   color size))
+  (%make-geom-layer 'geom-segment-obj args))
+
+(defclass geom-hline-obj (geom) ())
+(defclass geom-vline-obj (geom) ())
+
+(defmethod geom-default-aes ((geom geom-hline-obj))
+  '(:color "black" :size 0.5d0 :alpha 1.0d0 :linetype :solid))
+(defmethod geom-default-aes ((geom geom-vline-obj))
+  '(:color "black" :size 0.5d0 :alpha 1.0d0 :linetype :solid))
+
+(defmethod geom-draw-panel ((geom geom-hline-obj) data panel axes)
+  (declare (ignore panel))
+  (let ((y (gtable-column data :yintercept)))
+    (dotimes (i (length y))
+      (cl-matplotlib.containers:axhline
+       axes (float (svref y i) 1.0d0)
+       :color (%column-value data :color "black")
+       :linewidth (size-to-linewidth (%column-value data :size 0.5d0))
+       :linestyle (%column-value data :linetype :solid)
+       :zorder 3))))
+
+(defmethod geom-draw-panel ((geom geom-vline-obj) data panel axes)
+  (declare (ignore panel))
+  (let ((x (gtable-column data :xintercept)))
+    (dotimes (i (length x))
+      (cl-matplotlib.containers:axvline
+       axes (float (svref x i) 1.0d0)
+       :color (%column-value data :color "black")
+       :linewidth (size-to-linewidth (%column-value data :size 0.5d0))
+       :linestyle (%column-value data :linetype :solid)
+       :zorder 3))))
+
+(defun geom-hline (&key yintercept color size linetype)
+  "Horizontal reference line(s)."
+  (let ((ys (if (listp yintercept) yintercept (list yintercept))))
+    (make-layer :geom (make-instance 'geom-hline-obj)
+                :data (list :yintercept (coerce ys 'vector))
+                :mapping (aes :yintercept :yintercept)
+                :inherit-aes nil
+                :show-legend nil
+                :params (append (when color (list :color color))
+                                (when size (list :size size))
+                                (when linetype (list :linetype linetype))))))
+
+(defun geom-vline (&key xintercept color size linetype)
+  "Vertical reference line(s)."
+  (let ((xs (if (listp xintercept) xintercept (list xintercept))))
+    (make-layer :geom (make-instance 'geom-vline-obj)
+                :data (list :xintercept (coerce xs 'vector))
+                :mapping (aes :xintercept :xintercept)
+                :inherit-aes nil
+                :show-legend nil
+                :params (append (when color (list :color color))
+                                (when size (list :size size))
+                                (when linetype (list :linetype linetype))))))
+
+(defclass geom-rect-obj (geom-bar-obj) ())
+
+(defmethod geom-setup-data ((geom geom-rect-obj) data &key)
+  ;; xmin/xmax/ymin/ymax come straight from the mapping
+  data)
+
+(defun geom-rect (&rest args &key mapping data stat position show-legend
+                                  inherit-aes fill color alpha
+                                  &allow-other-keys)
+  "Rectangles from mapped xmin/xmax/ymin/ymax."
+  (declare (ignore mapping data stat position show-legend inherit-aes
+                   fill color alpha))
+  (%make-geom-layer 'geom-rect-obj args))
+
+;;; ============================================================
+;;; annotate
+;;; ============================================================
+
+(defun annotate (geom &rest args &key x y xend yend label &allow-other-keys)
+  "One-off annotation layer: (annotate :text :x 3 :y 5 :label \"peak\").
+GEOM is a keyword naming the geom (:text, :segment, :rect, :point, ...)."
+  (declare (ignore xend yend label))
+  (let* ((fields (loop for (k v) on args by #'cddr
+                       when (member k '(:x :y :xend :yend :label
+                                        :xmin :xmax :ymin :ymax))
+                         append (list k v)))
+         (params (loop for (k v) on args by #'cddr
+                       unless (member k '(:x :y :xend :yend :label
+                                          :xmin :xmax :ymin :ymax))
+                         append (list k v)))
+         (n (max 1 (loop for (k v) on fields by #'cddr
+                         maximize (if (listp v) (length v) 1))))
+         (data (loop for (k v) on fields by #'cddr
+                     append (list k (coerce (if (listp v)
+                                                v
+                                                (make-list n :initial-element v))
+                                            'vector))))
+         (mapping (apply #'aes (loop for (k nil) on fields by #'cddr
+                                     append (list k k))))
+         (constructor (ecase geom
+                        (:text #'geom-text)
+                        (:label #'geom-label)
+                        (:segment #'geom-segment)
+                        (:rect #'geom-rect)
+                        (:point #'geom-point))))
+    (declare (ignore x y))
+    (apply constructor :data data :mapping mapping :inherit-aes nil
+           :show-legend nil params)))
+
+;;; ============================================================
+;;; geom-step / geom-rug / range geoms / ecdf / qq
+;;; ============================================================
+
+(defclass geom-step-obj (geom-path-obj) ())
+
+(defmethod geom-setup-data ((geom geom-step-obj) data &key)
+  (gtable-sort-by data :x))
+
+(defmethod geom-draw-panel ((geom geom-step-obj) data panel axes)
+  (declare (ignore panel))
+  (let ((x (gtable-column data :x))
+        (y (gtable-column data :y)))
+    (when (and x y (> (length x) 1))
+      (cl-matplotlib.containers:axes-step
+       axes (coerce x 'list) (coerce y 'list)
+       :color (%column-value data :color "black")
+       :linewidth (size-to-linewidth (%column-value data :size 0.5d0))
+       :zorder 2))))
+
+(defun geom-step (&rest args &key mapping data stat position show-legend
+                                  inherit-aes color size &allow-other-keys)
+  "Step function: horizontal then vertical segments between points."
+  (declare (ignore mapping data stat position show-legend inherit-aes color size))
+  (%make-geom-layer 'geom-step-obj args))
+
+(defclass geom-rug-obj (geom) ())
+
+(defmethod geom-default-aes ((geom geom-rug-obj))
+  '(:color "black" :size 0.5d0 :alpha 1.0d0))
+
+(defmethod geom-draw-panel ((geom geom-rug-obj) data panel axes)
+  (let* ((x (gtable-column data :x))
+         (y-range (getf panel :y-range))
+         (rug-h (* 0.03d0 (- (second y-range) (first y-range))))
+         (y0 (first y-range))
+         (segments (when x
+                     (loop for i from 0 below (length x)
+                           collect (list (list (float (svref x i) 1.0d0) y0)
+                                         (list (float (svref x i) 1.0d0)
+                                               (+ y0 rug-h)))))))
+    (when segments
+      (let ((lc (make-instance 'cl-matplotlib.rendering:line-collection
+                               :segments segments
+                               :edgecolors (list (%column-value data :color "black"))
+                               :linewidths (list (size-to-linewidth
+                                                  (%column-value data :size 0.5d0)))
+                               :zorder 3)))
+        (setf (cl-matplotlib.rendering:artist-transform lc)
+              (cl-matplotlib.containers:axes-base-trans-data axes))
+        (cl-matplotlib.containers:axes-add-artist axes lc)))))
+
+(defun geom-rug (&rest args &key mapping data stat position show-legend
+                                 inherit-aes color size &allow-other-keys)
+  "Marginal tick marks along the x axis."
+  (declare (ignore mapping data stat position show-legend inherit-aes color size))
+  (%make-geom-layer 'geom-rug-obj args))
+
+(defclass geom-linerange-obj (geom) ())
+(defclass geom-errorbar-obj (geom-linerange-obj) ())
+(defclass geom-pointrange-obj (geom-linerange-obj) ())
+
+(defmethod geom-default-aes ((geom geom-linerange-obj))
+  '(:color "black" :size 0.5d0 :alpha 1.0d0))
+
+(defmethod geom-draw-panel ((geom geom-linerange-obj) data panel axes)
+  (declare (ignore panel))
+  (let ((x (gtable-column data :x))
+        (ymin (gtable-column data :ymin))
+        (ymax (gtable-column data :ymax))
+        (color (%column-value data :color "black"))
+        (lw (size-to-linewidth (%column-value data :size 0.5d0))))
+    (unless (and x ymin ymax)
+      (error "linerange-family geoms require x, ymin, ymax aesthetics"))
+    (dotimes (i (length x))
+      (let ((xi (float (svref x i) 1.0d0)))
+        (cl-matplotlib.containers:plot
+         axes (list xi xi)
+         (list (float (svref ymin i) 1.0d0) (float (svref ymax i) 1.0d0))
+         :color color :linewidth lw :zorder 2)
+        ;; errorbar caps
+        (when (typep geom 'geom-errorbar-obj)
+          (let ((cap 0.05d0))
+            (dolist (yv (list (svref ymin i) (svref ymax i)))
+              (cl-matplotlib.containers:plot
+               axes (list (- xi cap) (+ xi cap))
+               (list (float yv 1.0d0) (float yv 1.0d0))
+               :color color :linewidth lw :zorder 2))))
+        ;; pointrange midpoint
+        (when (typep geom 'geom-pointrange-obj)
+          (let ((y-col (gtable-column data :y)))
+            (when y-col
+              (cl-matplotlib.containers:scatter
+               axes (list xi) (list (float (svref y-col i) 1.0d0))
+               :c color :s (size-to-scatter-s 1.5d0 0.5d0) :zorder 3))))))))
+
+(defun geom-linerange (&rest args &key mapping data stat position show-legend
+                                       inherit-aes color size &allow-other-keys)
+  "Vertical line from ymin to ymax at each x."
+  (declare (ignore mapping data stat position show-legend inherit-aes color size))
+  (%make-geom-layer 'geom-linerange-obj args))
+
+(defun geom-errorbar (&rest args &key mapping data stat position show-legend
+                                      inherit-aes color size &allow-other-keys)
+  "Linerange with caps."
+  (declare (ignore mapping data stat position show-legend inherit-aes color size))
+  (%make-geom-layer 'geom-errorbar-obj args))
+
+(defun geom-pointrange (&rest args &key mapping data stat position show-legend
+                                        inherit-aes color size &allow-other-keys)
+  "Linerange with a point at y."
+  (declare (ignore mapping data stat position show-legend inherit-aes color size))
+  (%make-geom-layer 'geom-pointrange-obj args))
+
+(defun geom-qq (&rest args &key mapping data position show-legend
+                                inherit-aes color size &allow-other-keys)
+  "Normal quantile-quantile points (stat-qq over the sample aesthetic)."
+  (declare (ignore mapping data position show-legend inherit-aes color size))
+  (let ((clean (loop for (k v) on args by #'cddr
+                     unless (eq k :stat) append (list k v))))
+    (destructuring-bind (&key mapping data (show-legend :auto) (inherit-aes t)
+                              &allow-other-keys)
+        clean
+      (let ((params (loop for (k v) on clean by #'cddr
+                          unless (member k '(:mapping :data :show-legend
+                                             :inherit-aes))
+                            append (list k v))))
+        (make-layer :geom (make-instance 'geom-point-obj)
+                    :stat :qq :position :identity
+                    :mapping mapping :data data :params params
+                    :show-legend show-legend :inherit-aes inherit-aes)))))

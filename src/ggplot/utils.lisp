@@ -264,3 +264,59 @@ theme mapping targets standard matplotlib names; not all exist here)."
              (funcall thunk))
         (dolist (kv saved)
           (ignore-errors (setf (cl-matplotlib.rc:rc (car kv)) (cdr kv))))))))
+
+;;; ============================================================
+;;; Statistical helpers for stat-smooth / stat-qq
+;;; ============================================================
+
+(defun inverse-normal-cdf (p)
+  "Acklam's rational approximation to the standard normal quantile
+function (relative error < 1.15e-9)."
+  (let ((p (float p 1.0d0)))
+    (cond
+      ((or (<= p 0.0d0) (>= p 1.0d0))
+       (error "inverse-normal-cdf: p must be in (0,1), got ~S" p))
+      ((< p 0.02425d0)
+       (let ((q (sqrt (* -2.0d0 (log p)))))
+         (/ (+ (* (+ (* (+ (* (+ (* (+ (* -0.007784894002430293d0 q)
+                                       -0.3223964580411365d0) q)
+                                 -2.400758277161838d0) q)
+                           -2.549732539343734d0) q)
+                     4.374664141464968d0) q)
+               2.938163982698783d0)
+            (+ (* (+ (* (+ (* (+ (* 0.007784695709041462d0 q)
+                                 0.3224671290700398d0) q)
+                           2.445134137142996d0) q)
+                     3.754408661907416d0) q)
+               1.0d0))))
+      ((> p 0.97575d0)
+       (- (inverse-normal-cdf (- 1.0d0 p))))
+      (t
+       (let* ((q (- p 0.5d0))
+              (r (* q q)))
+         (/ (* q (+ (* (+ (* (+ (* (+ (* (+ (* -39.69683028665376d0 r)
+                                            220.9460984245205d0) r)
+                                      -275.9285104469687d0) r)
+                                138.3577518672690d0) r)
+                          -30.66479806614716d0) r)
+                    2.506628277459239d0))
+            (+ (* (+ (* (+ (* (+ (* (+ (* -54.47609879822406d0 r)
+                                       161.5858368580409d0) r)
+                                 -155.6989798598866d0) r)
+                           66.80131188771972d0) r)
+                     -13.28068155288572d0) r)
+               1.0d0)))))))
+
+(defun student-t-quantile (p df)
+  "Approximate Student-t quantile via a Cornish-Fisher expansion around
+the normal quantile. Plenty accurate for confidence ribbons (df >= 3)."
+  (let* ((z (inverse-normal-cdf p))
+         (z3 (* z z z))
+         (z5 (* z3 z z))
+         (z7 (* z5 z z))
+         (df (float df 1.0d0)))
+    (+ z
+       (/ (+ z3 z) (* 4.0d0 df))
+       (/ (+ (* 5.0d0 z5) (* 16.0d0 z3) (* 3.0d0 z)) (* 96.0d0 df df))
+       (/ (+ (* 3.0d0 z7) (* 19.0d0 z5) (* 17.0d0 z3) (* -15.0d0 z))
+          (* 384.0d0 df df df)))))

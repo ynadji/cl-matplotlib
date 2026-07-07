@@ -291,6 +291,29 @@ explicit plot scales win, others are inferred from the data."
                                  :panel
                                  (facet-assign-panels facet layout raw)))))
                       layers raw-tables)))
+    ;; 1.5 explicit-scale forward transforms (log10 etc.) happen BEFORE
+    ;; stats, like plotnine: densities/bins operate on transformed data
+    (setf layer-tables
+          (mapcar (lambda (entry)
+                    (destructuring-bind (layer . table) entry
+                      (let ((result table))
+                        (dolist (spec (list (cons :x *x-aesthetics*)
+                                            (cons :y *y-aesthetics*)))
+                          (let ((scale (find-if
+                                        (lambda (sc)
+                                          (member (car spec)
+                                                  (scale-aesthetics sc)))
+                                        (plot-scales plot))))
+                            (when scale
+                              (dolist (aes (cdr spec))
+                                (let ((col (gtable-column result aes)))
+                                  (when col
+                                    (setf result
+                                          (gtable-set-column
+                                           result aes
+                                           (scale-transform scale col)))))))))
+                        (cons layer result))))
+                  layer-tables))
     ;; 2. stats (per layer), then after-stat resolution. Stats run before
     ;; scale inference: stat-count creates the y column a bar plot's y
     ;; scale is inferred from.

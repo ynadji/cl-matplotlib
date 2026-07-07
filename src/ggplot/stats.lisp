@@ -42,7 +42,10 @@
                (:bin (make-instance 'stat-bin-obj))
                (:density (make-instance 'stat-density-obj))
                (:boxplot (make-instance 'stat-boxplot-obj))
-               (:ydensity (make-instance 'stat-ydensity-obj))))))
+               (:ydensity (make-instance 'stat-ydensity-obj))
+               (:smooth (make-instance 'stat-smooth-obj))
+               (:ecdf (make-instance 'stat-ecdf-obj))
+               (:qq (make-instance 'stat-qq-obj))))))
 
 (defun %carry-group-constants (source result)
   "Copy the (constant within a group) non-positional aesthetic columns of
@@ -330,3 +333,193 @@ rbind the results."
     (gtable-set-column result :violinwidth
                        (map 'vector (lambda (d) (/ d (max dmax 1.0d-300)))
                             density))))
+
+;;; ============================================================
+;;; stat-smooth (plotnine: method lm/loess, level 0.95, n=80 grid,
+;;; loess span 0.75)
+;;; ============================================================
+
+(defclass stat-smooth-obj (stat)
+  ((method :initarg :method :initform :lm :reader stat-smooth-method)
+   (se :initarg :se :initform t :reader stat-smooth-se-p)
+   (level :initarg :level :initform 0.95d0 :reader stat-smooth-level)
+   (n :initarg :n :initform 80 :reader stat-smooth-n)
+   (span :initarg :span :initform 0.75d0 :reader stat-smooth-span)))
+
+(defun %ols-fit (xs ys)
+  "Ordinary least squares y = a + b x.
+Returns (values a b s2 xbar sxx n) where s2 is the residual variance."
+  (let* ((n (length xs))
+         (xbar (/ (reduce #'+ xs) n))
+         (ybar (/ (reduce #'+ ys) n))
+         (sxx (reduce #'+ xs :key (lambda (x) (expt (- x xbar) 2))))
+         (sxy (loop for x across xs for y across ys
+                    sum (* (- x xbar) (- y ybar))))
+         (b (if (zerop sxx) 0.0d0 (/ sxy sxx)))
+         (a (- ybar (* b xbar)))
+         (ss (loop for x across xs for y across ys
+                   sum (expt (- y a (* b x)) 2)))
+         (s2 (if (> n 2) (/ ss (- n 2)) 0.0d0)))
+    (values a b s2 xbar sxx n)))
+
+(defun %smooth-lm (xs ys grid level se-p)
+  (multiple-value-bind (a b s2 xbar sxx n) (%ols-fit xs ys)
+    (let ((tq (if (and se-p (> n 2))
+                  (student-t-quantile (- 1.0d0 (/ (- 1.0d0 level) 2.0d0))
+                                      (- n 2))
+                  0.0d0)))
+      (values
+       (map 'simple-vector (lambda (x) (+ a (* b x))) grid)
+       (when se-p
+         (map 'simple-vector
+              (lambda (x)
+                (* tq (sqrt (* s2 (+ (/ 1.0d0 n)
+                                     (if (zerop sxx)
+                                         0.0d0
+                                         (/ (expt (- x xbar) 2) sxx)))))))
+              grid))))))
+
+(defun %smooth-loess (xs ys grid level se-p span)
+  "Local linear regression with tricube weights. The se ribbon uses the
+equivalent-kernel norm ||l(x)|| with a pooled residual variance — the
+standard first-order loess variance approximation."
+  (let* ((n (length xs))
+         (q (max 2 (ceiling (* span n))))
+         (order (sort (loop for i from 0 below n collect i) #'<
+                      :key (lambda (i) (svref xs i))))
+         (sx (map 'simple-vector (lambda (i) (svref xs i)) order))
+         (sy (map 'simple-vector (lambda (i) (svref ys i)) order))
+         (fitted (make-array n))
+         (fit-at (lambda (x0 &optional collect-l)
+                   ;; q nearest neighbours of x0
+                   (let* ((dists (map 'simple-vector
+                                      (lambda (x) (abs (- x x0))) sx))
+                          (idx (subseq (sort (loop for i from 0 below n collect i)
+                                             #'< :key (lambda (i) (svref dists i)))
+                                       0 q))
+                          (dmax (max (reduce #'max idx
+                                             :key (lambda (i) (svref dists i)))
+                                     1.0d-12))
+                          (w (mapcar (lambda (i)
+                                       (let ((u (/ (svref dists i) dmax)))
+                                         (if (< u 1.0d0)
+                                             (expt (- 1.0d0 (expt u 3)) 3)
+                                             0.0d0)))
+                                     idx))
+                          (sw (reduce #'+ w))
+                          (wx (loop for i in idx for wi in w
+                                    sum (* wi (svref sx i))))
+                          (xb (/ wx (max sw 1.0d-12)))
+                          (sxx (loop for i in idx for wi in w
+                                     sum (* wi (expt (- (svref sx i) xb) 2))))
+                          ;; weighted local linear equivalent kernel
+                          (l (mapcar (lambda (i wi)
+                                       (* (/ wi (max sw 1.0d-12))
+                                          (+ 1.0d0
+                                             (if (zerop sxx)
+                                                 0.0d0
+                                                 (/ (* (- x0 xb)
+                                                       (- (svref sx i) xb)
+                                                       sw)
+                                                    sxx)))))
+                                     idx w)))
+                     (values (loop for i in idx for li in l
+                                   sum (* li (svref sy i)))
+                             (when collect-l
+                               (loop for li in l sum (* li li))))))))
+    ;; residual variance from in-sample fits
+    (dotimes (i n)
+      (setf (svref fitted i) (funcall fit-at (svref sx i))))
+    (let* ((s2 (if (> n 2)
+                   (/ (loop for i from 0 below n
+                            sum (expt (- (svref sy i) (svref fitted i)) 2))
+                      (- n 2))
+                   0.0d0))
+           (tq (if (and se-p (> n 2))
+                   (student-t-quantile (- 1.0d0 (/ (- 1.0d0 level) 2.0d0))
+                                       (- n 2))
+                   0.0d0))
+           (yhat (make-array (length grid)))
+           (half (when se-p (make-array (length grid)))))
+      (loop for gi from 0 below (length grid)
+            do (multiple-value-bind (fit lnorm)
+                   (funcall fit-at (svref grid gi) se-p)
+                 (setf (svref yhat gi) fit)
+                 (when se-p
+                   (setf (svref half gi) (* tq (sqrt (* s2 lnorm)))))))
+      (values yhat half))))
+
+(defmethod stat-compute-panel ((stat stat-smooth-obj) data scales &key)
+  (declare (ignore scales))
+  (%map-stat-groups
+   data
+   (lambda (sub)
+     (let ((x-col (gtable-column sub :x))
+           (y-col (gtable-column sub :y)))
+       (unless (and x-col y-col)
+         (error "stat-smooth requires x and y aesthetics"))
+       (when (> (length x-col) 2)
+         (let* ((xs (map 'simple-vector (lambda (v) (float v 1.0d0)) x-col))
+                (ys (map 'simple-vector (lambda (v) (float v 1.0d0)) y-col))
+                (lo (reduce #'min xs))
+                (hi (reduce #'max xs))
+                (grid (%linspace lo hi (stat-smooth-n stat)))
+                (se-p (stat-smooth-se-p stat)))
+           (multiple-value-bind (yhat half)
+               (ecase (stat-smooth-method stat)
+                 (:lm (%smooth-lm xs ys grid (stat-smooth-level stat) se-p))
+                 (:loess (%smooth-loess xs ys grid (stat-smooth-level stat)
+                                        se-p (stat-smooth-span stat))))
+             (let ((table (make-gtable :x grid :y yhat)))
+               (if (and se-p half)
+                   (gtable-set-column
+                    (gtable-set-column
+                     table :ymin (map 'simple-vector #'- yhat half))
+                    :ymax (map 'simple-vector #'+ yhat half))
+                   table)))))))))
+
+;;; ============================================================
+;;; stat-ecdf / stat-qq
+;;; ============================================================
+
+(defclass stat-ecdf-obj (stat) ())
+
+(defmethod stat-default-aes ((stat stat-ecdf-obj))
+  (list :y (after-stat :ecdf)))
+
+(defmethod stat-compute-panel ((stat stat-ecdf-obj) data scales &key)
+  (declare (ignore scales))
+  (%map-stat-groups
+   data
+   (lambda (sub)
+     (let ((x-col (gtable-column sub :x)))
+       (unless x-col (error "stat-ecdf requires an x aesthetic"))
+       (let* ((sorted (%sorted-doubles x-col))
+              (n (length sorted)))
+         (make-gtable
+          :x sorted
+          :ecdf (coerce (loop for i from 1 to n
+                              collect (/ (float i 1.0d0) n))
+                        'vector)))))))
+
+(defclass stat-qq-obj (stat) ())
+
+(defmethod stat-compute-panel ((stat stat-qq-obj) data scales &key)
+  (declare (ignore scales))
+  (%map-stat-groups
+   data
+   (lambda (sub)
+     (let ((sample-col (or (gtable-column sub :sample)
+                           (gtable-column sub :y)
+                           (gtable-column sub :x))))
+       (unless sample-col (error "stat-qq requires a sample aesthetic"))
+       (let* ((sorted (%sorted-doubles sample-col))
+              (n (length sorted))
+              ;; R's ppoints: (i - a)/(n + 1 - 2a), a = 3/8 for n<=10 else 1/2
+              (a (if (<= n 10) 0.375d0 0.5d0)))
+         (make-gtable
+          :x (coerce (loop for i from 1 to n
+                           collect (inverse-normal-cdf
+                                    (/ (- i a) (+ n 1.0d0 (* -2.0d0 a)))))
+                     'vector)
+          :y sorted))))))
