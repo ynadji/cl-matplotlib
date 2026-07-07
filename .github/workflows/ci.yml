@@ -42,3 +42,6 @@ jobs:
 
       - name: Run Testing Infrastructure Tests
         run: ./tools/ci-run.sh cl-matplotlib-testing --test
+
+      - name: Run ggplot Tests
+        run: ./tools/ci-run.sh ggplot --test

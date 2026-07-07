@@ -1,0 +1,42 @@
+;;;; packages.lisp — package definition for the ggplot system
+
+(defpackage #:ggplot
+  (:nicknames #:gg)
+  (:use #:cl)
+  ;; NOTE: deliberately does NOT :use cl-matplotlib.pyplot or .containers —
+  ;; their exports (plot, bar, text, position, ...) clash with grammar names.
+  ;; Backend calls are package-qualified.
+  (:export
+   ;; core entry points
+   #:ggplot #:aes #:stack #:ggsave #:ggdraw #:ggbuild #:ggrender #:qplot
+   ;; data protocol
+   #:ggcolumns #:ggcolumn #:ggnrows #:ggdata-p
+   #:ggdata #:make-ggdata
+   ;; component folding
+   #:ggadd
+   ;; layers / geoms
+   #:layer #:geom-blank #:geom-point #:geom-line #:geom-path
+   #:geom-bar #:geom-col
+   #:geom-histogram #:geom-freqpoly #:geom-area #:geom-ribbon
+   #:geom-density #:geom-boxplot #:geom-violin
+   ;; positions
+   #:position-identity #:position-stack #:position-fill #:position-dodge
+   #:position-jitter #:position-nudge
+   ;; coords
+   #:coord-cartesian #:coord-flip
+   ;; facets
+   #:facet-wrap
+   ;; helpers
+   #:labs #:xlab #:ylab #:ggtitle #:lims #:xlim #:ylim
+   ;; scales
+   #:scale-x-continuous #:scale-y-continuous
+   #:scale-x-discrete #:scale-y-discrete
+   #:scale-color-discrete #:scale-fill-discrete
+   #:scale-color-manual #:scale-fill-manual
+   #:scale-shape-manual #:scale-size #:scale-alpha
+   ;; themes
+   #:theme #:theme-gray #:theme-grey #:theme-minimal #:theme-bw
+   #:element-line #:element-rect #:element-text #:element-blank
+   #:theme-set #:theme-get
+   ;; aes marker
+   #:after-stat))
