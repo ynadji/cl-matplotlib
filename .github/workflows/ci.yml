@@ -45,3 +45,9 @@ jobs:
 
       - name: Run ggplot Tests
         run: ./tools/ci-run.sh ggplot --test
+
+      - name: Run show Tests
+        run: ./tools/ci-run.sh cl-matplotlib-show --test
+
+      - name: Run show-web Tests
+        run: ./tools/ci-run.sh cl-matplotlib-show-web --test

@@ -46,9 +46,11 @@ returned array is safe to keep."
   (zpng:image-data (vecto::image vecto::*graphics-state*)))
 
 (defun %grab-png ()
-  "The canvas encoded as PNG octets, in memory."
-  (flexi-streams:with-output-to-sequence (s)
-    (vecto:save-png-stream s)))
+  "The canvas encoded as PNG octets, in memory. Coerced to a simple
+array because consumers (websocket-driver, SDL) require one."
+  (coerce (flexi-streams:with-output-to-sequence (s)
+            (vecto:save-png-stream s))
+          '(simple-array (unsigned-byte 8) (*))))
 
 (defun render-figure-to-rgba (figure &key renderer)
   "Render FIGURE and return (values rgba-octets width height renderer).

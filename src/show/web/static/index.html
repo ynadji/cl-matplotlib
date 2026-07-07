@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>cl-matplotlib</title>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #f4f4f4; }
+  #toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px; background: #e8e8e8; border-bottom: 1px solid #ccc;
+  }
+  #toolbar button {
+    padding: 4px 14px; border: 1px solid #aaa; border-radius: 4px;
+    background: #fff; cursor: pointer; font-size: 13px;
+  }
+  #toolbar button:hover { background: #f0f0f0; }
+  #coords {
+    margin-left: auto; font-family: monospace; font-size: 13px; color: #333;
+    min-width: 22ch; text-align: right;
+  }
+  #status { font-size: 12px; color: #a00; }
+  #fig-wrap { padding: 8px; }
+  canvas { background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.25); cursor: crosshair; }
+</style>
+</head>
+<body>
+<div id="toolbar">
+  <button id="home" title="Reset view (or double-click the plot)">Home</button>
+  <button id="save" title="Download the current frame as PNG">Save</button>
+  <span id="status"></span>
+  <span id="coords"></span>
+</div>
+<div id="fig-wrap"><canvas id="fig"></canvas></div>
+<script src="/app.js"></script>
+</body>
+</html>
