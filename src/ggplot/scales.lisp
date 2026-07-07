@@ -71,9 +71,10 @@
   (let ((user (scale-user-breaks scale)))
     (if (not (eq user :auto))
         user
-        (destructuring-bind (lo hi) (scale-limits scale)
-          ;; Breaks are computed on the unexpanded limits (plotnine), then
-          ;; the renderer keeps only those inside the expanded range.
+        (destructuring-bind (lo hi) (scale-expanded-range scale)
+          ;; Breaks are computed on the EXPANDED limits (plotnine >= 0.15;
+          ;; verified against 0.15.7), then the renderer keeps only those
+          ;; inside the panel range.
           (extended-breaks lo hi 5)))))
 
 (defun %decimals-needed (x &optional (max-decimals 10))
@@ -442,3 +443,162 @@ blues: #132B43 -> #56B1F7), interpolated in RGB like mizani."))
            :palette (lambda (n) (grey-palette n :start (or start 0.2d0)
                                                 :end (or end 0.8d0)))
            rest)))
+
+;;; ============================================================
+;;; Date scales
+;;; ============================================================
+;;; Dates in gg are Common Lisp universal times (integers). The scale
+;;; positions them as fractional days and generates calendar-aware breaks
+;;; and strftime-style labels. All conversions use GMT so results don't
+;;; depend on the host timezone (pandas datetimes are naive/UTC-like).
+
+(defconstant +seconds-per-day+ 86400)
+
+(defun date (year month day &optional (hour 0) (minute 0) (second 0))
+  "A date value for gg data columns: universal time at GMT."
+  (encode-universal-time second minute hour day month year 0))
+
+(defun %ut-to-days (ut)
+  (/ (float ut 1.0d0) +seconds-per-day+))
+
+(defun %days-to-ut (days)
+  (round (* days +seconds-per-day+)))
+
+(defparameter *month-abbrevs*
+  #("Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec"))
+(defparameter *month-names*
+  #("January" "February" "March" "April" "May" "June" "July" "August"
+    "September" "October" "November" "December"))
+
+(defun format-date (ut fmt)
+  "Format universal-time UT with strftime-style directives:
+%Y year, %m month (2-digit), %d day (2-digit), %e day (no pad),
+%b abbreviated month, %B full month, %y 2-digit year."
+  (multiple-value-bind (sec min hour day month year)
+      (decode-universal-time ut 0)
+    (declare (ignore sec min hour))
+    (with-output-to-string (out)
+      (loop with i = 0
+            while (< i (length fmt))
+            do (let ((ch (char fmt i)))
+                 (if (and (char= ch #\%) (< (1+ i) (length fmt)))
+                     (progn
+                       (case (char fmt (1+ i))
+                         (#\Y (format out "~D" year))
+                         (#\y (format out "~2,'0D" (mod year 100)))
+                         (#\m (format out "~2,'0D" month))
+                         (#\d (format out "~2,'0D" day))
+                         (#\e (format out "~D" day))
+                         (#\b (write-string (aref *month-abbrevs* (1- month)) out))
+                         (#\B (write-string (aref *month-names* (1- month)) out))
+                         (#\% (write-char #\% out))
+                         (t (write-char #\% out)
+                            (write-char (char fmt (1+ i)) out)))
+                       (incf i 2))
+                     (progn (write-char ch out) (incf i)))))
+      out)))
+
+(defclass scale-date-obj (scale-continuous)
+  ((date-breaks :initarg :date-breaks :initform nil
+                :reader scale-date-breaks-spec
+                :documentation "NIL for auto, or (:unit n) with unit one of
+:year :month :week :day, e.g. (:month 6).")
+   (date-labels :initarg :date-labels :initform nil
+                :reader scale-date-labels-fmt
+                :documentation "strftime-style format string, or NIL for
+an automatic choice based on the break unit.")))
+
+(defmethod scale-transform ((scale scale-date-obj) values)
+  (map 'simple-vector (lambda (v) (%ut-to-days v)) values))
+
+(defun %date-add-months (year month n)
+  "(values year month) N months after YEAR-MONTH."
+  (let ((total (+ (* year 12) (1- month) n)))
+    (values (floor total 12) (1+ (mod total 12)))))
+
+(defun %date-break-uts (lo-ut hi-ut spec)
+  "Universal times of calendar breaks covering [LO-UT, HI-UT]."
+  (multiple-value-bind (s mi h d mo y) (decode-universal-time lo-ut 0)
+    (declare (ignore s mi h))
+    (destructuring-bind (unit n) spec
+      (ecase unit
+        ;; Sequences anchor at the first unit boundary AT/AFTER lo and step
+        ;; by N from there (plotnine phase: Jan..Dec data with '6 months'
+        ;; shows Dec/Jun breaks, anchored inside the expanded range).
+        (:year
+         (let ((y0 (if (>= (encode-universal-time 0 0 0 1 1 y 0)
+                           (- lo-ut +seconds-per-day+))
+                       y
+                       (1+ y))))
+           (loop for yy from y0 by n
+                 for ut = (encode-universal-time 0 0 0 1 1 yy 0)
+                 while (<= ut (+ hi-ut +seconds-per-day+))
+                 collect ut)))
+        (:month
+         (multiple-value-bind (y0 m0)
+             (if (>= (encode-universal-time 0 0 0 1 mo y 0)
+                     (- lo-ut +seconds-per-day+))
+                 (values y mo)
+                 (%date-add-months y mo 1))
+           (loop with yy = y0 and mm = m0
+                 for ut = (encode-universal-time 0 0 0 1 mm yy 0)
+                 while (<= ut (+ hi-ut +seconds-per-day+))
+                 collect ut
+                 do (multiple-value-setq (yy mm) (%date-add-months yy mm n)))))
+        ((:week :day)
+         (let ((step (* n (if (eq unit :week) 7 1) +seconds-per-day+))
+               (start (encode-universal-time 0 0 0 d mo y 0)))
+           (loop for ut = start then (+ ut step)
+                 while (<= ut hi-ut)
+                 when (>= ut lo-ut) collect ut)))))))
+
+(defun %auto-date-spec (span-days)
+  (cond ((> span-days 1460) (list :year 1))
+        ((> span-days 730) (list :month 6))
+        ((> span-days 240) (list :month 3))
+        ((> span-days 60) (list :month 1))
+        ((> span-days 14) (list :week 1))
+        (t (list :day 1))))
+
+(defun %auto-date-fmt (spec)
+  (ecase (first spec)
+    (:year "%Y")
+    (:month "%Y-%m")
+    ((:week :day) "%b %e")))
+
+(defmethod scale-breaks ((scale scale-date-obj))
+  (let ((user (scale-user-breaks scale)))
+    (if (not (eq user :auto))
+        user
+        ;; plotnine anchors the break sequence at the first calendar unit
+        ;; inside the EXPANDED range (that is why a Jan-Dec span shows a
+        ;; December break before the data starts)
+        (destructuring-bind (lo hi) (scale-expanded-range scale)   ; in days
+          (let* ((lo-ut (%days-to-ut lo))
+                 (hi-ut (%days-to-ut hi))
+                 (spec (or (scale-date-breaks-spec scale)
+                           (%auto-date-spec (- hi lo)))))
+            (mapcar #'%ut-to-days (%date-break-uts lo-ut hi-ut spec)))))))
+
+(defmethod scale-break-labels ((scale scale-date-obj) breaks)
+  (let ((user (scale-user-labels scale)))
+    (if (not (eq user :auto))
+        user
+        (let ((fmt (or (scale-date-labels-fmt scale)
+                       (%auto-date-fmt (or (scale-date-breaks-spec scale)
+                                           (destructuring-bind (lo hi)
+                                               (scale-limits scale)
+                                             (%auto-date-spec (- hi lo))))))))
+          (mapcar (lambda (b) (format-date (%days-to-ut b) fmt)) breaks)))))
+
+(defun scale-x-date (&rest args &key date-breaks date-labels
+                                     name breaks labels limits expand)
+  "Date x axis for universal-time columns:
+(scale-x-date :date-breaks '(:month 6) :date-labels \"%b %Y\")."
+  (declare (ignore date-breaks date-labels name breaks labels limits expand))
+  (apply #'make-instance 'scale-date-obj :aesthetics '(:x :xmin :xmax :xend) args))
+
+(defun scale-y-date (&rest args &key date-breaks date-labels
+                                     name breaks labels limits expand)
+  (declare (ignore date-breaks date-labels name breaks labels limits expand))
+  (apply #'make-instance 'scale-date-obj :aesthetics '(:y :ymin :ymax :yend) args))

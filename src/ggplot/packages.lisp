@@ -40,6 +40,7 @@
    #:scale-shape-manual #:scale-size #:scale-alpha
    #:scale-color-gradient #:scale-fill-gradient
    #:scale-x-log10 #:scale-y-log10
+   #:scale-x-date #:scale-y-date #:date #:format-date
    #:scale-color-grey #:scale-fill-grey
    #:expand-limits
    ;; themes

@@ -143,6 +143,32 @@
     (is (<= 3 (length breaks) 6))))
 
 ;;; ============================================================
+;;; Date scales
+;;; ============================================================
+
+(test date-breaks-anchor
+  ;; plotnine phase: '6 months' over a range starting 2022-11-25 anchors
+  ;; at the first month-start inside the range (2022-12), not the month
+  ;; containing lo.
+  (let* ((lo (gg:date 2022 11 25))
+         (hi (gg:date 2024 12 15))
+         (uts (ggplot::%date-break-uts lo hi '(:month 6))))
+    (is (equal '("2022-12" "2023-06" "2023-12" "2024-06" "2024-12")
+               (mapcar (lambda (ut) (gg:format-date ut "%Y-%m")) uts))))
+  ;; Yearly breaks skip a year-start before lo.
+  (let* ((lo (gg:date 2021 3 1))
+         (hi (gg:date 2024 6 1))
+         (uts (ggplot::%date-break-uts lo hi '(:year 1))))
+    (is (equal '("2022" "2023" "2024")
+               (mapcar (lambda (ut) (gg:format-date ut "%Y")) uts)))))
+
+(test format-date-directives
+  (let ((ut (gg:date 2024 3 7)))
+    (is (string= "2024-03-07" (gg:format-date ut "%Y-%m-%d")))
+    (is (string= "Mar 7" (gg:format-date ut "%b %e")))
+    (is (string= "March 24" (gg:format-date ut "%B %y")))))
+
+;;; ============================================================
 ;;; Build pipeline
 ;;; ============================================================
 

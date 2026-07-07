@@ -79,8 +79,15 @@ in custom mapping syntaxes."))
 ;;; ============================================================
 
 (defstruct (after-stat-ref (:constructor after-stat (name)))
-  "Marker for an aesthetic computed by the layer's stat, e.g.
-(aes :y (after-stat :density))."
+  "Marker for an aesthetic computed by the layer's stat.
+NAME is either a column keyword of the stat's output, e.g.
+  (aes :y (after-stat :density))
+or a function of the stat-output table (per panel), enabling computed
+aesthetics over stat results, e.g. percentages:
+  (aes :y (after-stat (lambda (tbl)
+                        (let* ((c (ggcolumn tbl :count))
+                               (total (reduce #'+ c)))
+                          (map 'vector (lambda (v) (/ v total)) c)))))"
   name)
 
 ;;; ============================================================

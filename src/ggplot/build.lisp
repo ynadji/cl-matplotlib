@@ -86,10 +86,19 @@ semantics: a discrete x splits stats into per-category groups."
     (when mapping
       (loop for (aesthetic . ref) in (aes-alist mapping)
             when (after-stat-ref-p ref)
-              do (let ((col (gtable-column table (after-stat-ref-name ref))))
+              do (let* ((name-or-fn (after-stat-ref-name ref))
+                        (col (if (functionp name-or-fn)
+                                 (let ((v (coerce (funcall name-or-fn table)
+                                                  'simple-vector)))
+                                   (unless (= (length v) (gtable-nrows table))
+                                     (error "after-stat function returned ~D ~
+                                             values for ~D stat rows"
+                                            (length v) (gtable-nrows table)))
+                                   v)
+                                 (gtable-column table name-or-fn))))
                    (unless col
                      (error "after-stat: the stat produced no ~S column"
-                            (after-stat-ref-name ref)))
+                            name-or-fn))
                    (setf result (gtable-set-column result aesthetic col)))))
     result))
 
