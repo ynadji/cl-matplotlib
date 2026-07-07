@@ -34,19 +34,20 @@ Returns a list of counts (length = (1- (length bin-edges)))."
          (n-edges (length edges)))
     (dolist (val (coerce data 'list))
       (let ((v (float val 1.0d0)))
-        ;; Binary search for bin
         (when (and (>= v (aref edges 0))
                    (<= v (aref edges (1- n-edges))))
-          (let ((bin (1- n-bins)))  ; default to last bin
-            ;; Linear search (simple, correct)
-            (loop for i from 0 below n-bins
-                  when (and (>= v (aref edges i))
-                            (< v (aref edges (1+ i))))
-                    do (setf bin i) (return))
-            ;; Include right edge in last bin
-            (when (= v (aref edges (1- n-edges)))
-              (setf bin (1- n-bins)))
-            (incf (aref counts bin))))))
+          ;; Binary search: find the largest i with edges[i] <= v
+          ;; (bisect-right minus one)
+          (let ((lo 0)
+                (hi n-edges))
+            (loop while (< lo hi)
+                  do (let ((mid (floor (+ lo hi) 2)))
+                       (if (<= (aref edges mid) v)
+                           (setf lo (1+ mid))
+                           (setf hi mid))))
+            ;; Clamp so the right edge is included in the last bin
+            (let ((bin (min (1- lo) (1- n-bins))))
+              (incf (aref counts bin)))))))
     (coerce counts 'list)))
 
 (defun %normalize-to-density (counts bin-edges)

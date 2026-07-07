@@ -47,7 +47,10 @@ Replaces & < > \" with their XML entity equivalents."
            :documentation "Canvas height in pixels (needed for Y-flip in text/image).")
    (font-cache :initform (make-hash-table :test 'equal)
                :accessor renderer-svg-font-cache
-               :documentation "Cache of zpb-ttf font loaders keyed by path string."))
+               :documentation "Cache of zpb-ttf font loaders keyed by path string.")
+   (clip-cache :initform (make-hash-table :test 'equal)
+               :accessor renderer-svg-clip-cache
+               :documentation "Cache of emitted <clipPath> IDs keyed by rect geometry."))
   (:documentation "Renderer implementation producing SVG markup.
 Accumulates SVG elements as strings into output-stream and defs-stream,
 which are assembled into a complete SVG document by print-svg."))
@@ -303,21 +306,27 @@ way the Vecto backend does or strokes render dpi/72 too thin."
 
 (defun %emit-clip-path (renderer gc)
   "If GC has a clip-rectangle, emit a <clipPath> into the defs-stream.
-Returns the clip ID string (e.g. \"clip-1\") or NIL if no clip rectangle."
+Returns the clip ID string (e.g. \"clip-1\") or NIL if no clip rectangle.
+Identical clip rectangles share a single <clipPath> definition (cached
+by geometry)."
   (let ((clip-rect (mpl.rendering:gc-clip-rectangle gc)))
     (when clip-rect
-      (let* ((clip-id (%next-id renderer "clip"))
-             (x0 (mpl.primitives:bbox-x0 clip-rect))
-             (y0 (mpl.primitives:bbox-y0 clip-rect))
-             (x1 (mpl.primitives:bbox-x1 clip-rect))
-             (y1 (mpl.primitives:bbox-y1 clip-rect))
-             (defs (renderer-svg-defs-stream renderer)))
-        (format defs "<clipPath id=\"~A\">~%" clip-id)
-        (format defs "<rect x=\"~A\" y=\"~A\" width=\"~A\" height=\"~A\"/>~%"
-                (%format-float x0) (%format-float y0)
-                (%format-float (- x1 x0)) (%format-float (- y1 y0)))
-        (format defs "</clipPath>~%")
-        clip-id))))
+      (let* ((x0-str (%format-float (mpl.primitives:bbox-x0 clip-rect)))
+             (y0-str (%format-float (mpl.primitives:bbox-y0 clip-rect)))
+             (w-str (%format-float (- (mpl.primitives:bbox-x1 clip-rect)
+                                      (mpl.primitives:bbox-x0 clip-rect))))
+             (h-str (%format-float (- (mpl.primitives:bbox-y1 clip-rect)
+                                      (mpl.primitives:bbox-y0 clip-rect))))
+             (key (list x0-str y0-str w-str h-str))
+             (cache (renderer-svg-clip-cache renderer)))
+        (or (gethash key cache)
+            (let ((clip-id (%next-id renderer "clip"))
+                  (defs (renderer-svg-defs-stream renderer)))
+              (format defs "<clipPath id=\"~A\">~%" clip-id)
+              (format defs "<rect x=\"~A\" y=\"~A\" width=\"~A\" height=\"~A\"/>~%"
+                      x0-str y0-str w-str h-str)
+              (format defs "</clipPath>~%")
+              (setf (gethash key cache) clip-id)))))))
 
 
 ;;; ============================================================

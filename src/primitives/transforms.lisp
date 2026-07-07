@@ -166,10 +166,16 @@ Returns (values new-x new-y)."
 
 (defun set-children (parent &rest children)
   "Register PARENT as a dependent of each child.
-Uses weak pointers so children don't prevent parent from being GC'd."
+Uses weak pointers so children don't prevent parent from being GC'd.
+Dead weak pointers are pruned and registration is deduplicated by
+identity, so repeated composition against long-lived children doesn't
+grow their parents lists without bound."
   (dolist (child children)
-    (push (trivial-garbage:make-weak-pointer parent)
-          (transform-node-parents child))))
+    (prune-dead-parents child)
+    (unless (member parent (transform-node-parents child)
+                    :key #'trivial-garbage:weak-pointer-value)
+      (push (trivial-garbage:make-weak-pointer parent)
+            (transform-node-parents child)))))
 
 ;;; ============================================================
 ;;; Transform — abstract base for actual transformations

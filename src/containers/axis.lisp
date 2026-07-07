@@ -174,7 +174,15 @@ Ported from matplotlib.axis.Tick."))
     (minor-grid-linestyle :initform :solid
                           :accessor axis-minor-grid-linestyle)
     (minor-grid-alpha :initform 1.0
-                      :accessor axis-minor-grid-alpha))
+                      :accessor axis-minor-grid-alpha)
+    ;; Tick caches — ticks are requested several times per draw
+    ;; (grid pass, tick pass, ylabel measurement); memoize per key
+    (major-ticks-cache :initform nil
+                       :accessor axis-major-ticks-cache
+                       :documentation "Cons (key . ticks) memoizing AXIS-GET-MAJOR-TICKS.")
+    (minor-ticks-cache :initform nil
+                       :accessor axis-minor-ticks-cache
+                       :documentation "Cons (key . ticks) memoizing AXIS-GET-MINOR-TICKS."))
   (:default-initargs :zorder 1.5)
   (:documentation "Base class for axes axis objects.
 Ported from matplotlib.axis.Axis."))
@@ -290,7 +298,9 @@ The scale sets default locators and formatters."
 ;;; ============================================================
 
 (defun axis-get-major-ticks (axis)
-  "Generate tick objects for major ticks."
+  "Generate tick objects for major ticks.
+Memoized per (view-interval, locator, formatter, tick/grid params) —
+the cache is checked first and refreshed when any key component changes."
   (multiple-value-bind (vmin vmax) (axis-get-view-interval axis)
     ;; Apply scale-specific range limiting for log scales
     (let ((scale (axis-scale axis)))
@@ -299,7 +309,29 @@ The scale sets default locators and formatters."
           (let ((minpos (if (> data-min 0.0d0) data-min 1.0d-300)))
             (multiple-value-setq (vmin vmax)
               (scale-limit-range-for-scale scale vmin vmax minpos))))))
-    (let* ((locator (axis-major-locator axis))
+    (let ((key (list vmin vmax
+                     (axis-major-locator axis)
+                     (axis-major-formatter axis)
+                     (axis-axes axis)
+                     (axis-tick-size-major axis)
+                     (axis-tick-direction axis)
+                     (axis-tick-label-fontsize axis)
+                     (axis-tick-label-color axis)
+                     (axis-grid-on-p axis)
+                     (axis-grid-color axis)
+                     (axis-grid-linewidth axis)
+                     (axis-grid-linestyle axis)
+                     (axis-grid-alpha axis)))
+          (cache (axis-major-ticks-cache axis)))
+      (when (and cache (equal (car cache) key))
+        (return-from axis-get-major-ticks (cdr cache)))
+      (let ((ticks (%axis-compute-major-ticks axis vmin vmax)))
+        (setf (axis-major-ticks-cache axis) (cons key ticks))
+        ticks))))
+
+(defun %axis-compute-major-ticks (axis vmin vmax)
+  "Compute the major tick objects for the (scale-adjusted) view interval."
+  (let* ((locator (axis-major-locator axis))
            (formatter (axis-major-formatter axis))
            (locs (locator-tick-values locator vmin vmax))
             ;; Filter to visible range (with small tolerance)
@@ -329,10 +361,12 @@ The scale sets default locators and formatters."
                                             :grid-linestyle (axis-grid-linestyle axis)
                                             :grid-alpha (axis-grid-alpha axis))))
                      (setf (tick-label-text tk) label)
-                     tk)))))
+                     tk))))
 
 (defun axis-get-minor-ticks (axis)
-  "Generate tick objects for minor ticks."
+  "Generate tick objects for minor ticks.
+Memoized per (view-interval, locator, tick/grid params) — the cache is
+checked first and refreshed when any key component changes."
   (multiple-value-bind (vmin vmax) (axis-get-view-interval axis)
     ;; Apply scale-specific range limiting for log scales
     (let ((scale (axis-scale axis)))
@@ -341,7 +375,28 @@ The scale sets default locators and formatters."
           (let ((minpos (if (> data-min 0.0d0) data-min 1.0d-300)))
             (multiple-value-setq (vmin vmax)
               (scale-limit-range-for-scale scale vmin vmax minpos))))))
-    (let* ((locator (axis-minor-locator axis))
+    (let ((key (list vmin vmax
+                     (axis-minor-locator axis)
+                     (axis-axes axis)
+                     (axis-tick-size-minor axis)
+                     (axis-tick-direction axis)
+                     (axis-tick-label-fontsize axis)
+                     (axis-tick-label-color axis)
+                     (axis-minor-grid-on-p axis)
+                     (axis-minor-grid-color axis)
+                     (axis-minor-grid-linewidth axis)
+                     (axis-minor-grid-linestyle axis)
+                     (axis-minor-grid-alpha axis)))
+          (cache (axis-minor-ticks-cache axis)))
+      (when (and cache (equal (car cache) key))
+        (return-from axis-get-minor-ticks (cdr cache)))
+      (let ((ticks (%axis-compute-minor-ticks axis vmin vmax)))
+        (setf (axis-minor-ticks-cache axis) (cons key ticks))
+        ticks))))
+
+(defun %axis-compute-minor-ticks (axis vmin vmax)
+  "Compute the minor tick objects for the (scale-adjusted) view interval."
+  (let* ((locator (axis-minor-locator axis))
             (locs (locator-tick-values locator vmin vmax))
            ;; Use min/max to handle inverted axes (vmin > vmax)
            (real-min (min vmin vmax))
@@ -365,7 +420,7 @@ The scale sets default locators and formatters."
                                   :grid-color (axis-minor-grid-color axis)
                                   :grid-linewidth (axis-minor-grid-linewidth axis)
                                   :grid-linestyle (axis-minor-grid-linestyle axis)
-                                  :grid-alpha (axis-minor-grid-alpha axis))))))
+                                  :grid-alpha (axis-minor-grid-alpha axis)))))
 
 ;;; ============================================================
 ;;; XAxis — horizontal axis

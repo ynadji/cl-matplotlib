@@ -234,8 +234,16 @@ Returns a FONT-ENTRY or NIL on error."
 ;;; ============================================================
 
 (defmethod initialize-instance :after ((fm font-manager) &key)
-  "Discover fonts and build the database."
-  (build-font-database fm))
+  "Discover fonts and build the database.
+Tries the on-disk font cache first; falls back to a full system scan
+(and refreshes the cache) when the cache is missing, stale, or empty."
+  (unless (and (not (font-cache-stale-p))
+               (load-font-cache fm)
+               (fm-ttf-list fm))
+    (build-font-database fm)
+    ;; Cache write failures (e.g. read-only home) are non-fatal.
+    (handler-case (save-font-cache fm)
+      (error () nil))))
 
 (defun build-font-database (fm)
   "Scan for fonts and populate the font manager database."
@@ -362,6 +370,27 @@ The font-loader is cached."
   "Return the path for the font cache file."
   (merge-pathnames ".cache/cl-matplotlib/fontlist.cache"
                    (user-homedir-pathname)))
+
+(defun font-cache-stale-p ()
+  "Return T if the on-disk font cache is missing or older than any font
+directory. Cheap staleness check: only the mtimes of the top-level font
+directories and their immediate subdirectories are examined."
+  (let ((cache (probe-file (font-cache-path))))
+    (if (null cache)
+        t
+        (let ((cache-date (file-write-date cache)))
+          (flet ((dir-newer-p (dir)
+                   (handler-case
+                       (let ((d (probe-file dir)))
+                         (when d
+                           (or (> (file-write-date d) cache-date)
+                               (loop for sub in (uiop:subdirectories d)
+                                     thereis (> (file-write-date sub) cache-date)))))
+                     ;; Treat lookup errors as stale — a rescan is always safe.
+                     (error () t))))
+            (or (some #'dir-newer-p *system-font-directories*)
+                (let ((shipped (shipped-font-directory)))
+                  (and shipped (dir-newer-p shipped)))))))))
 
 (defun save-font-cache (fm)
   "Serialize the font list to disk."

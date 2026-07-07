@@ -153,49 +153,58 @@ forming a connected contour path."
   (and (< (abs (- (first p1) (first p2))) tol)
        (< (abs (- (second p1) (second p2))) tol)))
 
+(defun %ms-point-key (p &optional (tol 1.0d-10))
+  "Hash key for a point: coordinates rounded to TOL so endpoints within
+TOL of each other land in the same bucket."
+  (cons (round (first p) tol)
+        (round (second p) tol)))
+
 (defun %ms-connect-segments (segments)
   "Connect raw line segments into continuous polyline paths.
 Each segment is ((x1 y1) (x2 y2)). Returns list of paths,
-where each path is a list of (x y) points."
+where each path is a list of (x y) points.
+Uses a hash table keyed on segment endpoints so assembly is near-linear
+in the number of segments (each bucket holds only the few segments
+incident to that point)."
   (when (null segments)
     (return-from %ms-connect-segments nil))
-  (let ((remaining (copy-list segments))
-        (paths nil))
-    (loop while remaining do
-      ;; Start a new path with the first remaining segment
-      (let* ((seg (pop remaining))
-             (path (list (first seg) (second seg)))
-             (changed t))
-        ;; Keep extending the path in both directions
-        (loop while (and changed remaining) do
-          (setf changed nil)
-          (let ((new-remaining nil))
-            (dolist (s remaining)
-              (let ((s-start (first s))
-                    (s-end (second s))
-                    (path-start (first path))
-                    (path-end (car (last path))))
-                (cond
-                  ;; s-start matches path-end → extend forward
-                  ((%ms-point-equal-p s-start path-end)
-                   (setf path (append path (list s-end)))
-                   (setf changed t))
-                  ;; s-end matches path-end → extend forward (reversed)
-                  ((%ms-point-equal-p s-end path-end)
-                   (setf path (append path (list s-start)))
-                   (setf changed t))
-                  ;; s-end matches path-start → prepend
-                  ((%ms-point-equal-p s-end path-start)
-                   (setf path (cons s-start path))
-                   (setf changed t))
-                  ;; s-start matches path-start → prepend (reversed)
-                  ((%ms-point-equal-p s-start path-start)
-                   (setf path (cons s-end path))
-                   (setf changed t))
-                  ;; No match — keep for later
-                  (t (push s new-remaining)))))
-            (setf remaining (nreverse new-remaining))))
-        (push path paths)))
+  (let* ((seg-vec (coerce segments 'simple-vector))
+         (n (length seg-vec))
+         (used (make-array n :element-type 'bit :initial-element 0))
+         (endpoint-table (make-hash-table :test #'equal))
+         (paths nil))
+    ;; Index each segment under both endpoint keys
+    (loop for idx from (1- n) downto 0
+          for seg = (svref seg-vec idx)
+          do (push idx (gethash (%ms-point-key (first seg)) endpoint-table))
+             (push idx (gethash (%ms-point-key (second seg)) endpoint-table)))
+    (flet ((take-segment-at (point)
+             ;; Find the first unused segment incident to POINT, mark it
+             ;; used, and return its other endpoint (nil if none).
+             (loop for idx in (gethash (%ms-point-key point) endpoint-table)
+                   when (zerop (sbit used idx))
+                     do (let ((seg (svref seg-vec idx)))
+                          (setf (sbit used idx) 1)
+                          (return (if (%ms-point-equal-p (first seg) point)
+                                      (second seg)
+                                      (first seg)))))))
+      (dotimes (idx n)
+        (when (zerop (sbit used idx))
+          ;; Start a new path with this segment
+          (setf (sbit used idx) 1)
+          (let* ((seg (svref seg-vec idx))
+                 ;; Build reversed so the growing end is the list head
+                 (rev-path (list (second seg) (first seg))))
+            ;; Extend forward from the path end
+            (loop for next = (take-segment-at (first rev-path))
+                  while next
+                  do (push next rev-path))
+            ;; Extend backward from the path start
+            (let ((path (nreverse rev-path)))
+              (loop for next = (take-segment-at (first path))
+                    while next
+                    do (push next path))
+              (push path paths))))))
     (nreverse paths)))
 
 ;;; ============================================================
@@ -239,28 +248,51 @@ and constructs filled regions from the grid cells that fall within the band."
          (xc-vec (coerce x-coords 'vector))
          (yc-vec (coerce y-coords 'vector))
          (polygons nil))
-    ;; For each grid cell, check if it overlaps the band
+    ;; For each grid cell, check if it overlaps the band.
+    ;; Cells entirely inside the band contribute their full rectangle, so
+    ;; horizontal runs of such cells are merged into a single rectangle to
+    ;; avoid emitting one polygon per grid cell.
     (loop for j from 0 below (1- ny) do
-      (loop for i from 0 below (1- nx) do
-        (let* ((x0 (float (aref xc-vec i) 1.0d0))
-               (x1 (float (aref xc-vec (1+ i)) 1.0d0))
-               (y0 (float (aref yc-vec j) 1.0d0))
-               (y1 (float (aref yc-vec (1+ j)) 1.0d0))
-               (z-bl (float (aref z-data j i) 1.0d0))
-               (z-br (float (aref z-data j (1+ i)) 1.0d0))
-               (z-tr (float (aref z-data (1+ j) (1+ i)) 1.0d0))
-               (z-tl (float (aref z-data (1+ j) i) 1.0d0))
-               (lo (float level-lo 1.0d0))
-               (hi (float level-hi 1.0d0))
-               (zmin (min z-bl z-br z-tr z-tl))
-               (zmax (max z-bl z-br z-tr z-tl)))
-          ;; Skip cells entirely outside the band
-          (unless (or (> zmin hi) (< zmax lo))
-            ;; Build polygon from clipped cell corners + edge crossings
-            (let ((poly (%ms-cell-band-polygon
-                         x0 y0 x1 y1 z-bl z-br z-tr z-tl lo hi)))
-              (when (and poly (>= (length poly) 3))
-                (push poly polygons)))))))
+      (let ((y0 (float (aref yc-vec j) 1.0d0))
+            (y1 (float (aref yc-vec (1+ j)) 1.0d0))
+            (run-start nil))
+        (flet ((flush-run (end-col)
+                 ;; Emit one rectangle for the run of fully-in-band cells
+                 ;; ending at column END-COL (exclusive).
+                 (when run-start
+                   (let ((rx0 (float (aref xc-vec run-start) 1.0d0))
+                         (rx1 (float (aref xc-vec end-col) 1.0d0)))
+                     (push (list (list rx0 y0) (list rx1 y0)
+                                 (list rx1 y1) (list rx0 y1))
+                           polygons))
+                   (setf run-start nil))))
+          (loop for i from 0 below (1- nx) do
+            (let* ((x0 (float (aref xc-vec i) 1.0d0))
+                   (x1 (float (aref xc-vec (1+ i)) 1.0d0))
+                   (z-bl (float (aref z-data j i) 1.0d0))
+                   (z-br (float (aref z-data j (1+ i)) 1.0d0))
+                   (z-tr (float (aref z-data (1+ j) (1+ i)) 1.0d0))
+                   (z-tl (float (aref z-data (1+ j) i) 1.0d0))
+                   (lo (float level-lo 1.0d0))
+                   (hi (float level-hi 1.0d0))
+                   (zmin (min z-bl z-br z-tr z-tl))
+                   (zmax (max z-bl z-br z-tr z-tl)))
+              (cond
+                ;; Entirely outside the band — skip
+                ((or (> zmin hi) (< zmax lo))
+                 (flush-run i))
+                ;; Entirely inside the band — the cell polygon is the full
+                ;; cell rectangle; extend the current run instead
+                ((and (>= zmin lo) (<= zmax hi))
+                 (unless run-start (setf run-start i)))
+                ;; Band boundary crosses the cell — emit the clipped polygon
+                (t
+                 (flush-run i)
+                 (let ((poly (%ms-cell-band-polygon
+                              x0 y0 x1 y1 z-bl z-br z-tr z-tl lo hi)))
+                   (when (and poly (>= (length poly) 3))
+                     (push poly polygons)))))))
+          (flush-run (1- nx)))))
     (nreverse polygons)))
 
 (defun %ms-cell-band-polygon (x0 y0 x1 y1 z-bl z-br z-tr z-tl lo hi)
