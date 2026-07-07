@@ -32,6 +32,18 @@ cl-images:
 	done
 	@echo "CL images generated in $(EXAMPLES_DIR)/"
 
+# Parallel variants: warm-compile once, then one process per example
+# across all cores. See tools/parallel-images.sh.
+cl-images-par:
+	tools/parallel-images.sh base
+
+gg-images-par:
+	tools/parallel-images.sh gg
+
+reference-images-par:
+	tools/parallel-images.sh reference
+	tools/parallel-images.sh gg-reference
+
 compare: cl-images
 	@echo "Running combined comparison (PNG + SVG + PDF)..."
 	$(PYTHON) $(COMPARISON_TOOL) \

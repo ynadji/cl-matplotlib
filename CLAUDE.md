@@ -49,7 +49,16 @@ make setup-python      # One-time: create Python venv
 make reference-images  # Generate Python reference images
 make compare           # Generate CL images + compare all formats
 make compare-png       # Compare PNG only
+
+# Parallel variants (all cores; warm-compiles once, then one process per
+# example): cl-images-par, gg-images-par, reference-images-par.
+# tools/compare.py takes --jobs N (default: all cores).
 ```
+
+**FASL discipline**: never edit `src/` while an image-generation run is in
+flight — a concurrent compile can stamp a fresh FASL from stale source and
+later runs will silently load it. Parallel image generation must always
+warm-compile first (tools/parallel-images.sh does this).
 
 ## Architecture
 
