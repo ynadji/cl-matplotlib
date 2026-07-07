@@ -28,11 +28,13 @@
 (defparameter *theme-element-names*
   '(:panel-background :panel-border
     :panel-grid-major :panel-grid-minor
-    :axis-line :axis-ticks :axis-text :axis-text-x :axis-text-y
+    :axis-line :axis-ticks :axis-ticks-length :axis-ticks-length-minor
+    :axis-ticks-pad :axis-text :axis-text-x :axis-text-y
     :axis-title :axis-title-x :axis-title-y
     :plot-title :plot-background
     :legend-position :legend-background :legend-key
     :strip-background :strip-text
+    :plot-margin-extra
     :base-size :base-family)
   "Recognized theme element names (grows with later slices).")
 
@@ -185,3 +187,80 @@ figure creation. Elements rc can't express are handled per-axes in render."
           :axis-ticks (element-blank)
           :axis-text (element-blank)
           :axis-title (element-blank))))
+
+;;; ============================================================
+;;; plotnine parity themes (element values from plotnine's themeable
+;;; properties + pixel measurements of its renders)
+;;; ============================================================
+
+(defun theme-538 (&key (base-size 11))
+  "FiveThirtyEight: everything #F0F0F0, strong gray grid, no ticks."
+  (merge-themes
+   (theme-gray :base-size base-size)
+   (theme :panel-background (element-rect :fill "#F0F0F0")
+          :plot-background (element-rect :fill "#F0F0F0")
+          :panel-grid-major (element-line :color "#D5D5D5" :linewidth 1.0)
+          :panel-grid-minor (element-blank)
+          :axis-ticks (element-blank))))
+
+(defun theme-light (&key (base-size 11))
+  "White panel with a light gray border and grid."
+  (merge-themes
+   (theme-gray :base-size base-size)
+   (theme :panel-background (element-rect :fill "white")
+          :panel-border (element-rect :color "#B3B3B3" :linewidth 1.0)
+          :panel-grid-major (element-line :color "#D9D9D9" :linewidth 0.5)
+          :panel-grid-minor (element-line :color "#EDEDED" :linewidth 0.25)
+          :axis-ticks (element-line :color "#B3B3B3" :linewidth 0.5))))
+
+(defun theme-linedraw (&key (base-size 11))
+  "Black-and-white line drawing: black border, hairline black grid."
+  (merge-themes
+   (theme-gray :base-size base-size)
+   (theme :panel-background (element-rect :fill "white")
+          :panel-border (element-rect :color "black" :linewidth 1.0)
+          :panel-grid-major (element-line :color "black" :linewidth 0.1)
+          :panel-grid-minor (element-line :color "black" :linewidth 0.02)
+          :axis-ticks (element-line :color "black" :linewidth 0.5)
+          :axis-text (element-text :size (* 0.8 base-size) :color "black"))))
+
+(defun theme-matplotlib (&key (base-size 10))
+  "matplotlib's default look: white panel, black box, no grid; matplotlib
+text sizes (base 10) and tick geometry (3.5px ticks, 3.5px pad). The
+margin extras are measured against plotnine's render - its matplotlib
+theme follows mpl's layout, not the gg base-size scaling."
+  (merge-themes
+   (theme-gray :base-size base-size)
+   (theme :panel-background (element-rect :fill "white")
+          :panel-border (element-rect :color "black" :linewidth 0.8)
+          :panel-grid-major (element-blank)
+          :panel-grid-minor (element-blank)
+          :axis-ticks-length 3.5d0
+          :axis-ticks-pad 3.5d0
+          :plot-margin-extra '(:left 1.5d0 :top 3.0d0 :bottom 4.5d0)
+          :axis-text (element-text :size base-size :color "black"))))
+
+(defun theme-seaborn (&key (base-size 12))
+  "Seaborn darkgrid: #EAEAF2 panel, white grid, seaborn's longer tick
+marks (major 6px, minor 3px, pad 7) and base text size 12."
+  (merge-themes
+   (theme-gray :base-size base-size)
+   (theme :panel-background (element-rect :fill "#EAEAF2")
+          :panel-grid-major (element-line :color "white" :linewidth 1.0)
+          :panel-grid-minor (element-line :color "white" :linewidth 0.5)
+          :axis-ticks (element-line :color "#262626" :linewidth 1.0)
+          :axis-ticks-length 6.0d0
+          :axis-ticks-length-minor 3.0d0
+          :axis-ticks-pad 7.0d0
+          :axis-text (element-text :size (* 0.8 base-size)
+                                   :color "#262626"))))
+
+(defun theme-tufte (&key (base-size 11))
+  "Maximal data-ink: no panel, no grid, no border; ticks only."
+  (merge-themes
+   (theme-gray :base-size base-size)
+   (theme :panel-background (element-blank)
+          :plot-background (element-rect :fill "white")
+          :panel-grid-major (element-blank)
+          :panel-grid-minor (element-blank)
+          :axis-ticks (element-line :color "#333333" :linewidth 1.0))))

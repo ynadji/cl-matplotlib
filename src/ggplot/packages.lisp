@@ -59,6 +59,8 @@
    ;; themes
    #:theme #:theme-gray #:theme-grey #:theme-minimal #:theme-bw
    #:theme-classic #:theme-dark #:theme-void
+   #:theme-538 #:theme-light #:theme-linedraw #:theme-matplotlib
+   #:theme-seaborn #:theme-tufte
    #:element-line #:element-rect #:element-text #:element-blank
    #:theme-set #:theme-get
    ;; aes marker

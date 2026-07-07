@@ -39,8 +39,36 @@ coord-flip by ggbuild), else mapping fallback, else stat fallback."
         while b
         collect (/ (+ a b) 2.0d0)))
 
+(defun %apply-panel-border-and-axis-lines (theme axes)
+  "panel-border: stroke the panel rectangle; axis-line (element-line with
+a color): show the left/bottom spines in that color/width. Both were
+previously accepted-but-ignored theme elements."
+  (let ((border (theme-element theme :panel-border))
+        (axis-line (theme-element theme :axis-line))
+        (trans-axes (cl-matplotlib.containers:axes-base-trans-axes axes)))
+    (when (and (element-rect-p border) (element-rect-color border))
+      (let ((rect (make-instance
+                   'cl-matplotlib.rendering:rectangle
+                   :x0 0.0d0 :y0 0.0d0 :width 1.0d0 :height 1.0d0
+                   :facecolor "none"
+                   :edgecolor (element-rect-color border)
+                   :linewidth (or (element-rect-linewidth border) 1.0d0)
+                   :zorder 6)))
+        (setf (cl-matplotlib.rendering:artist-transform rect) trans-axes)
+        (cl-matplotlib.containers:axes-add-patch axes rect)))
+    (when (and (element-line-p axis-line) (element-line-color axis-line))
+      (let ((spines (cl-matplotlib.containers:axes-base-spines axes)))
+        (when spines
+          (dolist (side (list "left" "bottom"))
+            (let ((spine (cl-matplotlib.containers:spines-ref spines side)))
+              (when spine
+                (cl-matplotlib.containers:spine-set-visible spine t)
+                (cl-matplotlib.containers:spine-set-color
+                 spine (element-line-color axis-line))))))))))
+
 (defun %apply-panel-theme (theme axes panel)
   "Stage-2 theme application: per-axes settings rc can't express."
+  (%apply-panel-border-and-axis-lines theme axes)
   (let ((major (theme-element theme :panel-grid-major))
         (minor (theme-element theme :panel-grid-minor)))
     (when (element-line-p major)
@@ -218,6 +246,29 @@ the average advance."
                   (not (eq (scale-guide scale) :none)))
           return scale))
 
+(defun %resolved-element (theme name &rest fallbacks)
+  "First non-nil theme element among NAME then FALLBACKS, enabling
+per-side elements (:axis-text-x falls back to :axis-text) with zero
+behavior change when the specific element is unset."
+  (or (theme-element theme name)
+      (loop for f in fallbacks
+            for el = (theme-element theme f)
+            when el return el)))
+
+(defun %legend-key-fill (theme)
+  "Legend key background: the :legend-key element's fill, else plotnine's
+#F2F2F2."
+  (let ((el (theme-element theme :legend-key)))
+    (or (and (element-rect-p el) (element-rect-fill el)) "#F2F2F2")))
+
+(defun %legend-side (theme)
+  "Legend position from the theme: :right (default), :left, :top,
+:bottom, or :none."
+  (let ((pos (theme-element theme :legend-position)))
+    (case pos
+      ((:none :left :top :bottom) pos)
+      (t :right))))
+
 (defun %legend-width-px (built theme dpi)
   "Horizontal space to reserve right of the panel for legends, in px."
   (when (%gradient-scale built)
@@ -225,7 +276,10 @@ the average advance."
     ;; from plotnine tile references: panel right at 553/640)
     (return-from %legend-width-px (* 87.0d0 (/ dpi 100.0d0))))
   (let ((legends (ggbuilt-legends built)))
-    (if (null legends)
+    (if (or (null legends)
+            ;; only a :right legend reserves the right margin (:left is
+            ;; handled by %compute-margins via %legend-width-for-side)
+            (not (eq (%legend-side theme) :right)))
         0.0d0
         (let* ((axis-text (theme-element theme :axis-text))
                (label-size (or (and (element-text-p axis-text)
@@ -250,6 +304,26 @@ the average advance."
                                                       dpi))))))
           (+ (* (+ *legend-gap-px* *legend-right-margin-px*) scale) inner)))))
 
+(defun %legend-width-for-side (built theme dpi)
+  "The legend block width (gap + widest entry + edge margin) without the
+side gating in %legend-width-px - used for :left margins."
+  (let* ((axis-text (theme-element theme :axis-text))
+         (label-size (or (and (element-text-p axis-text)
+                              (element-text-size axis-text))
+                         8.8d0))
+         (title-size 11.0d0)
+         (scale (/ dpi 100.0d0))
+         (inner 0.0d0))
+    (dolist (spec (ggbuilt-legends built))
+      (setf inner (max inner
+                       (%mpl-text-width-px (getf spec :title)
+                                           title-size dpi)))
+      (dolist (label (getf spec :labels))
+        (setf inner (max inner
+                         (+ (* (+ *legend-key-px* 3.5d0) scale)
+                            (%mpl-text-width-px label label-size dpi))))))
+    (+ (* (+ *legend-gap-px* *legend-right-margin-px*) scale) inner)))
+
 (defun %compute-margins (built theme width-px height-px dpi)
   "Panel margins in figure fractions, adapting the left margin to the
 widest y tick label and the right margin to any legend, like plotnine's
@@ -270,7 +344,31 @@ layout engine does."
                                                                  dpi))
                                       :initial-value 0.0d0)))
          (scale (/ dpi 100.0d0))    ; constants measured at dpi 100
-         (left-px (fround (+ (* *panel-left-base-px* scale) max-ytick-w)))
+         ;; plotnine's fixed margin parts scale with the base font size
+         ;; (probed: left +1.55px/pt, bottom +2.55px/pt around base 11)
+         (base-size (or (theme-element theme :base-size) 11))
+         ;; tick geometry participates in the margins: blank ticks
+         ;; reclaim the tick+pad band (538); longer ticks/pads push the
+         ;; panel in (seaborn's 6px ticks, 7px pad)
+         (tick-delta-px
+           (if (element-blank-p (theme-element theme :axis-ticks))
+               (* -7.15d0 scale)
+               (* (+ (- (or (theme-element theme :axis-ticks-length) 2.75d0)
+                        2.75d0)
+                     (- (or (theme-element theme :axis-ticks-pad) 4.4d0)
+                        4.4d0))
+                  scale)))
+         ;; per-theme measured margin corrections (:plot-margin-extra)
+         (extra (theme-element theme :plot-margin-extra))
+         (left-base-px (+ (* *panel-left-base-px* scale)
+                          (* 1.55d0 (- base-size 11) scale)
+                          tick-delta-px
+                          (* (or (getf extra :left) 0.0d0) scale)))
+         (bottom-base-px (+ (* *panel-bottom-px* scale)
+                            (* 2.55d0 (- base-size 11) scale)
+                            tick-delta-px
+                            (* (or (getf extra :bottom) 0.0d0) scale)))
+         (left-px (fround (+ left-base-px max-ytick-w)))
          ;; plotnine widens the right margin when the last x tick label
          ;; would overflow the figure: the label may overhang its break by
          ;; the scale-expansion gap minus ~8px before the margin grows
@@ -309,17 +407,33 @@ layout engine does."
                  0.0d0))))
     ;; Snap the panel edges to whole pixels: a fractional edge antialiases
     ;; into two columns and costs visible SSIM against plotnine's crisp box.
-    (list :left (/ left-px width-px)
-          ;; a legend/colorbar reservation REPLACES the bare right margin
-          ;; (plotnine's measured totals already include the figure-edge gap)
-          :right (- 1.0d0 (/ (fround (max (+ (* *panel-right-px* scale)
-                                             label-overflow-px)
-                                          (%legend-width-px built theme dpi)))
-                             width-px))
-          :top (- 1.0d0 (/ (fround (+ (* *panel-top-px* scale)
-                                      top-overflow-px))
-                           height-px))
-          :bottom (/ (fround (* *panel-bottom-px* scale)) height-px))))
+    (let* ((side (%legend-side theme))
+           (has-legends (and (ggbuilt-legends built) (not (eq side :none))))
+           ;; :left legends move the whole reservation to the left margin
+           ;; (measured mirror of the right-side constants)
+           (left-legend-px (if (and has-legends (eq side :left))
+                               (%legend-width-for-side built theme dpi)
+                               0.0d0))
+           ;; :bottom/:top legends add one key row + padding (measured:
+           ;; keys 22px sitting 9px above the figure edge, +14px gap)
+           (row-legend-px (if (and has-legends (member side '(:bottom :top)))
+                              (* 45.0d0 scale)
+                              0.0d0)))
+      (list :left (/ (fround (+ left-px left-legend-px)) width-px)
+            ;; a legend/colorbar reservation REPLACES the bare right margin
+            ;; (plotnine's measured totals already include the figure-edge gap)
+            :right (- 1.0d0 (/ (fround (max (+ (* *panel-right-px* scale)
+                                               label-overflow-px)
+                                            (%legend-width-px built theme dpi)))
+                               width-px))
+            :top (- 1.0d0 (/ (fround (+ (* *panel-top-px* scale)
+                                        top-overflow-px
+                                        (* (or (getf extra :top) 0.0d0) scale)
+                                        (if (eq side :top) row-legend-px 0.0d0)))
+                             height-px))
+            :bottom (/ (fround (+ bottom-base-px
+                                  (if (eq side :bottom) row-legend-px 0.0d0)))
+                       height-px)))))
 
 (defun %panel-facecolor (theme)
   (let ((panel (theme-element theme :panel-background)))
@@ -435,31 +549,126 @@ on the panel; white tick marks inside both bar edges at the breaks; labels
        (* (1- n) (* *legend-key-pitch-px* scale)))))
 
 (defun %draw-legends (built theme specs axes margins width-px height-px dpi)
-  "Stack all legend blocks vertically (11px apart), centered as a group
-on the panel area, like plotnine draws multiple guides."
+  "Draw all legends at the theme's legend-position: vertical stacks for
+:right/:left (11px apart, centered as a group on the panel), one
+horizontal row for :bottom/:top, nothing for :none."
+  (let ((side (%legend-side theme)))
+    (case side
+      (:none nil)
+      ((:bottom :top)
+       (%draw-legend-row built theme (first specs) axes margins
+                         width-px height-px dpi side))
+      (t
+       (let* ((scale (/ dpi 100.0d0))
+              (gap (* 11.0d0 scale))
+              (heights (mapcar (lambda (s) (%legend-block-height-px s scale))
+                               specs))
+              (total (+ (reduce #'+ heights)
+                        (* (max 0 (1- (length specs))) gap)))
+              (offset (/ total 2.0d0)))  ; top of the stack vs center
+         (loop for spec in specs
+               for h in heights
+               do (%draw-legend built theme spec axes margins
+                                width-px height-px dpi
+                                :block-top-offset offset :side side)
+                  (decf offset (+ h gap))))))))
+
+(defun %draw-legend-row (built theme spec axes margins width-px height-px
+                         dpi side)
+  "Horizontal legend row for :bottom/:top positions: title, then
+key+label entries left to right, centered on the panel; keys sit 9px
+from the figure edge (measured from plotnine)."
+  (declare (ignore built margins))
   (let* ((scale (/ dpi 100.0d0))
-         (gap (* 11.0d0 scale))
-         (heights (mapcar (lambda (s) (%legend-block-height-px s scale))
-                          specs))
-         (total (+ (reduce #'+ heights)
-                   (* (max 0 (1- (length specs))) gap)))
-         (offset (/ total 2.0d0)))   ; top of the stack relative to center
-    (loop for spec in specs
-          for h in heights
-          do (%draw-legend built theme spec axes margins
-                           width-px height-px dpi
-                           :block-top-offset offset)
-             (decf offset (+ h gap)))))
+         (key (* *legend-key-px* scale))
+         (label-size 8.8d0)
+         (entry-labels (getf spec :labels))
+         (values (getf spec :values))
+         (geom (getf spec :geom))
+         (aesthetic (getf spec :aesthetic))
+         (glyph (geom-key-glyph geom))
+         (title (getf spec :title))
+         (title-w (%mpl-text-width-px title 11.0d0 dpi))
+         (label-gap (* 3.5d0 scale))
+         (entry-gap (* 8.0d0 scale))
+         (entry-widths (mapcar (lambda (l)
+                                 (+ key label-gap
+                                    (%mpl-text-width-px l label-size dpi)))
+                               entry-labels))
+         (total-w (+ title-w (* 5.0d0 scale)
+                     (reduce #'+ entry-widths)
+                     (* (max 0 (1- (length entry-labels))) entry-gap)))
+         ;; anchor panel box for fraction conversion
+         (anchor-pos (cl-matplotlib.containers:axes-base-position axes))
+         (left-px (* (first anchor-pos) width-px))
+         (panel-w (* (third anchor-pos) width-px))
+         (anchor-bottom-px (* (second anchor-pos) height-px))
+         (panel-h (* (fourth anchor-pos) height-px))
+         (panel-center-x (+ left-px (/ panel-w 2.0d0)))
+         (x (- panel-center-x (/ total-w 2.0d0)))
+         (key-y0 (if (eq side :top)
+                     (- height-px (* 31.0d0 scale))
+                     (* 9.0d0 scale)))
+         (cy (+ key-y0 (/ key 2.0d0)))
+         (trans-axes (cl-matplotlib.containers:axes-base-trans-axes axes)))
+    (flet ((fx (px) (/ (- px left-px) panel-w))
+           (fy (px) (/ (- px anchor-bottom-px) panel-h))
+           (add-rect (x0 y0 w h color &optional (zorder 4))
+             (let ((rect (make-instance
+                          'cl-matplotlib.rendering:rectangle
+                          :x0 (/ (- x0 left-px) panel-w)
+                          :y0 (/ (- y0 anchor-bottom-px) panel-h)
+                          :width (/ w panel-w) :height (/ h panel-h)
+                          :facecolor color :edgecolor nil
+                          :linewidth 0.0d0 :zorder zorder)))
+               (setf (cl-matplotlib.rendering:artist-transform rect)
+                     trans-axes)
+               (cl-matplotlib.containers:axes-add-patch axes rect))))
+      (%axes-fraction-text axes title (fx x) (fy cy)
+                           :fontsize 11.0d0 :ha :left :zorder 5)
+      (incf x (+ title-w (* 5.0d0 scale)))
+      (loop for label in entry-labels
+            for v in values
+            for w in entry-widths
+            do (add-rect x key-y0 key key (%legend-key-fill theme))
+               (let ((color (if (member aesthetic '(:shape :size))
+                                "black" v)))
+                 (ecase glyph
+                   (:rect (add-rect x key-y0 key key color 4.5d0))
+                   (:line (let ((lw (* (size-to-linewidth
+                                        (%legend-glyph-size spec))
+                                       (/ dpi 72.0d0))))
+                            (add-rect x (- cy (/ lw 2.0d0)) key lw color
+                                      4.5d0)))
+                   (:point
+                    (let* ((size (or (getf (getf spec :params) :size) 1.5d0))
+                           (d-px (* (sqrt (size-to-scatter-s size))
+                                    (/ dpi 72.0d0)))
+                           (dot (make-instance
+                                 'cl-matplotlib.rendering:ellipse
+                                 :center (list (fx (+ x (/ key 2.0d0)))
+                                               (fy cy))
+                                 :width (/ d-px panel-w)
+                                 :height (/ d-px panel-h)
+                                 :facecolor color :edgecolor nil
+                                 :linewidth 0.0d0 :zorder 5)))
+                      (setf (cl-matplotlib.rendering:artist-transform dot)
+                            trans-axes)
+                      (cl-matplotlib.containers:axes-add-patch axes dot)))))
+               (%axes-fraction-text axes label
+                                    (fx (+ x key label-gap)) (fy cy)
+                                    :fontsize label-size :ha :left :zorder 5)
+               (incf x (+ w entry-gap))))))
 
 (defun %draw-legend (built theme spec axes margins width-px height-px dpi
-                     &key block-top-offset)
+                     &key block-top-offset (side :right))
   "plotnine-style legend right of the panel: #F2F2F2 key boxes with geom
 glyphs, labels right of the keys, title above. Without BLOCK-TOP-OFFSET
 the block is vertically centered on the panel area; with it, the block's
 top sits OFFSET px above the panel center (multi-legend stacking). All
 geometry constants are pixel measurements of plotnine 0.15.7 output
 (see *legend-*-px* above)."
-  (declare (ignore built theme))
+  (declare (ignore built))
   (let* ((scale (/ dpi 100.0d0))
          ;; grid area (all panels) in figure px: drives centering and the
          ;; legend x position
@@ -486,7 +695,11 @@ geometry constants are pixel measurements of plotnine 0.15.7 output
          (block-h (+ title-lh title-gap keys-h))
          (block-top (+ (/ (+ bottom-px top-px) 2.0d0)
                        (or block-top-offset (/ block-h 2.0d0))))
-         (key-x0 (+ right-px (* *legend-gap-px* scale)))
+         (key-x0 (if (eq side :left)
+                     ;; measured: left legends put the key box 8px from
+                     ;; the figure edge
+                     (* 8.0d0 scale)
+                     (+ right-px (* *legend-gap-px* scale))))
          (label-x (+ key-x0 key (* *legend-label-gap-px* scale)))
          (trans-axes (cl-matplotlib.containers:axes-base-trans-axes axes))
          (glyph (geom-key-glyph geom)))
@@ -514,7 +727,7 @@ geometry constants are pixel measurements of plotnine 0.15.7 output
             for v in values
             for key-top = (- block-top title-lh title-gap (* i pitch))
             for cy = (- key-top (/ key 2.0d0))
-            do (add-rect key-x0 (- key-top key) key key "#F2F2F2")
+            do (add-rect key-x0 (- key-top key) key key (%legend-key-fill theme))
                (let ((color (if (member aesthetic '(:shape :size))
                                 "black"
                                 v)))
@@ -569,8 +782,15 @@ above the panel (axes-fraction y in [1, 1+strip-frac])."
     (setf (cl-matplotlib.rendering:artist-transform rect)
           (cl-matplotlib.containers:axes-base-trans-axes axes))
     (cl-matplotlib.containers:axes-add-patch axes rect)
-    (%axes-fraction-text axes label 0.5d0 (+ 1.0d0 (/ strip-frac 2.0d0))
-                         :fontsize 8.8d0 :color "#1A1A1A" :zorder 5)))
+    (let ((st (%resolved-element theme :strip-text :axis-text)))
+      (%axes-fraction-text axes label 0.5d0 (+ 1.0d0 (/ strip-frac 2.0d0))
+                           :fontsize (or (and (element-text-p st)
+                                              (element-text-size st))
+                                         8.8d0)
+                           :color (or (and (element-text-p st)
+                                           (element-text-color st))
+                                      "#1A1A1A")
+                           :zorder 5))))
 
 (defun %draw-strip-right (axes label theme strip-frac)
   "facet-grid row strip: a #D9D9D9 band right of the panel (axes-fraction
@@ -612,7 +832,12 @@ x in [1, 1+strip-frac]) with the label rotated -90."
               (fig (or figure
                        (cl-matplotlib.containers:make-figure
                         :figsize (list (float width 1.0d0) (float height 1.0d0))
-                        :dpi dpi)))
+                        :dpi dpi
+                        :facecolor (let ((bg (theme-element
+                                              theme :plot-background)))
+                                     (or (and (element-rect-p bg)
+                                              (element-rect-fill bg))
+                                         "white")))))
               (margins (%compute-margins built theme width-px height-px dpi))
               ;; facet-grid: one strip band above the whole top row and
               ;; (with row vars) right of the last column, carved out of
@@ -735,9 +960,19 @@ x in [1, 1+strip-frac]) with the label rotated -90."
                       :labelcolor (or (element-text-color axis-text) "black")
                       :which :both))
                    (cl-matplotlib.containers:axis-set-tick-params
-                    axis :size 2.75 :which :major)
+                    axis
+                    :size (if (element-blank-p
+                               (theme-element theme :axis-ticks))
+                              0.0
+                              (or (theme-element theme :axis-ticks-length)
+                                  2.75))
+                    :pad (or (theme-element theme :axis-ticks-pad) 3.5)
+                    :which :major)
                    (cl-matplotlib.containers:axis-set-tick-params
-                    axis :size 0.0 :which :minor)))
+                    axis
+                    :size (or (theme-element theme :axis-ticks-length-minor)
+                              0.0)
+                    :which :minor)))
                (when multi
                  (unless (or free-x (= row (1- nrow)))
                    (cl-matplotlib.containers:axis-set-tick-params

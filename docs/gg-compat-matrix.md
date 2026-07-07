@@ -11,6 +11,10 @@ justified exceptions). Updated: 2026-07-07.
 |---|---|---|
 | gg-boxplot | 0.969 | pass |
 | gg-brewer | 0.957 | pass |
+| gg-legend-none | 0.952 | pass |
+| gg-theme-tufte | 0.945 | pass |
+| gg-theme-538 | 0.934 | pass |
+| gg-theme-matplotlib | 0.930 | pass |
 | gg-abline | 0.954 | pass |
 | gg-crossbar | 0.936 | pass |
 | gg-reverse | 0.934 | pass |
@@ -31,6 +35,10 @@ justified exceptions). Updated: 2026-07-07.
 | gg-segment-text | 0.929 | pass |
 | gg-bar-dodge | 0.926 | pass |
 | gg-line-basic | 0.921 | pass |
+| gg-legend-left | 0.916 | pass |
+| gg-legend-bottom | 0.914 | pass |
+| gg-theme-light | 0.905 | pass |
+| gg-theme-seaborn | 0.904 | pass |
 | gg-smooth-lm | 0.909 | pass |
 | gg-annotate | 0.903 | pass |
 | gg-ecdf-step | 0.890 | step AA + 3px margin |
@@ -43,6 +51,7 @@ justified exceptions). Updated: 2026-07-07.
 | gg-freqpoly | 0.858 | line AA detail |
 | gg-facet-free | 0.842 | strip/gap detail |
 | gg-log10-scatter | 0.841 | log minor-grid AA |
+| gg-theme-linedraw | 0.874 | hairline-grid AA |
 | gg-facet-grid | 0.808 | strip band detail |
 
 Systemic fixes that lifted the suite (in discovery order): spine
@@ -90,11 +99,21 @@ All: identity stack fill dodge jitter nudge. (dodge2/jitterdodge planned.)
   + title, geometry measured from plotnine). Tick placement detail still
   costs the heatmap example ~0.14.
 - Multiple legends stack vertically (11px apart), centered as a group.
+- legend-position :left mirrors the right geometry at the figure's left
+  edge; :bottom/:top draw one horizontal key row (measured: keys 22px,
+  9px from the figure edge); :none skips and reclaims the margin.
 
 ### themes
 gray/grey (plotnine default, pixel-calibrated), bw, minimal, classic,
-dark, void + element-line/rect/text/blank and theme/theme-set/theme-get.
-Planned: 538, xkcd-style, per-side element variants.
+dark, void, 538, light, linedraw, matplotlib, seaborn, tufte +
+element-line/rect/text/blank and theme/theme-set/theme-get.
+Consumed elements now include panel-border (stroked), drawn axis-line
+colors, strip-text, legend-key/legend-background fills, per-side
+axis-text/-title fallbacks (%resolved-element), tick length/pad
+(:axis-ticks-length/-minor, :axis-ticks-pad participate in margins),
+per-theme :plot-margin-extra, and legend-position
+(:right/:left/:bottom/:top/:none). Planned: xkcd (blocked on path
+effects/handwriting font).
 
 ### helpers
 labs xlab ylab ggtitle annotate qplot after-stat ggsave ggdraw
