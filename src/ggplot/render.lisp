@@ -259,10 +259,16 @@ layout engine does."
          (tick-size (or (and (element-text-p axis-text)
                              (element-text-size axis-text))
                         8.8d0))
-         (max-ytick-w (reduce #'max (getf panel :y-labels)
-                              :key (lambda (l)
-                                     (%mpl-text-width-px l tick-size dpi))
-                              :initial-value 0.0d0))
+         ;; widest y tick label in the FIRST panel column (free-scale
+         ;; labels of inner columns live in the panel spacing instead)
+         (max-ytick-w (loop for p in (ggbuilt-panels built)
+                            when (zerop (or (getf p :col) 0))
+                              maximize
+                              (reduce #'max (getf p :y-labels)
+                                      :key (lambda (l)
+                                             (%mpl-text-width-px l tick-size
+                                                                 dpi))
+                                      :initial-value 0.0d0)))
          (scale (/ dpi 100.0d0))    ; constants measured at dpi 100
          (left-px (fround (+ (* *panel-left-base-px* scale) max-ytick-w)))
          ;; plotnine widens the right margin when the last x tick label
@@ -502,16 +508,6 @@ of plotnine 0.15.7 output (see *legend-*-px* above)."
 (defparameter *strip-height-px* 19.0d0)
 (defparameter *panel-spacing-px* 7.0d0)
 
-(defun %gtable-panel-subset (table panel-index)
-  "Rows of TABLE belonging to PANEL-INDEX (all rows when no :panel column)."
-  (let ((panel-col (gtable-column table :panel)))
-    (if (null panel-col)
-        table
-        (gtable-select table
-                       (loop for i from 0 below (gtable-nrows table)
-                             when (eql (svref panel-col i) panel-index)
-                               collect i)))))
-
 (defun %draw-strip (axes label theme strip-frac)
   "Facet strip: a #D9D9D9 band with a centered label, sitting directly
 above the panel (axes-fraction y in [1, 1+strip-frac])."
@@ -532,10 +528,36 @@ above the panel (axes-fraction y in [1, 1+strip-frac])."
     (%axes-fraction-text axes label 0.5d0 (+ 1.0d0 (/ strip-frac 2.0d0))
                          :fontsize 8.8d0 :color "#1A1A1A" :zorder 5)))
 
+(defun %draw-strip-right (axes label theme strip-frac)
+  "facet-grid row strip: a #D9D9D9 band right of the panel (axes-fraction
+x in [1, 1+strip-frac]) with the label rotated -90."
+  (let* ((strip-bg (theme-element theme :strip-background))
+         (fill (if (element-rect-p strip-bg)
+                   (or (element-rect-fill strip-bg) "#D9D9D9")
+                   "#D9D9D9"))
+         (rect (make-instance 'cl-matplotlib.rendering:rectangle
+                              :x0 1.0d0 :y0 0.0d0
+                              :width strip-frac :height 1.0d0
+                              :facecolor fill
+                              :edgecolor nil
+                              :linewidth 0.0d0
+                              :zorder 4)))
+    (setf (cl-matplotlib.rendering:artist-transform rect)
+          (cl-matplotlib.containers:axes-base-trans-axes axes))
+    (cl-matplotlib.containers:axes-add-patch axes rect)
+    (%axes-fraction-text axes label (+ 1.0d0 (/ strip-frac 2.0d0)) 0.5d0
+                         :rotation -90.0d0
+                         :fontsize 8.8d0 :color "#1A1A1A" :zorder 5)))
+
 (defmethod ggrender ((built ggbuilt) &key figure (width 6.4d0) (height 4.8d0) (dpi 100))
   (let* ((theme (ggbuilt-theme built))
          (nrow (or (ggbuilt-nrow built) 1))
          (ncol (or (ggbuilt-ncol built) 1))
+         (facet (or (plot-facet (ggbuilt-plot built))
+                    (make-instance 'facet-null-obj)))
+         (grid-p (typep facet 'facet-grid-obj))
+         (free-x (facet-free-x-p facet))
+         (free-y (facet-free-y-p facet))
          (multi (> (length (ggbuilt-panels built)) 1)))
     (call-with-rc-alist
      (theme-rc-alist theme)
@@ -548,19 +570,68 @@ above the panel (axes-fraction y in [1, 1+strip-frac])."
                         :figsize (list (float width 1.0d0) (float height 1.0d0))
                         :dpi dpi)))
               (margins (%compute-margins built theme width-px height-px dpi))
-              (strip-px (if multi (* *strip-height-px* scale) 0.0d0))
-              (spacing-px (if multi (* *panel-spacing-px* scale) 0.0d0))
+              ;; facet-grid: one strip band above the whole top row and
+              ;; (with row vars) right of the last column, carved out of
+              ;; the margins; facet-wrap: a strip above every cell
+              (grid-strip-top-p (and grid-p
+                                     (facet-col-vars facet)
+                                     multi))
+              (grid-strip-right-p (and grid-p
+                                       (facet-row-vars facet)
+                                       multi))
+              (margins (if (or grid-strip-top-p grid-strip-right-p)
+                           (list :left (getf margins :left)
+                                 :right (- (getf margins :right)
+                                           (if grid-strip-right-p
+                                               (/ (* *strip-height-px* scale)
+                                                  width-px)
+                                               0.0d0))
+                                 :top (- (getf margins :top)
+                                         (if grid-strip-top-p
+                                             (/ (* *strip-height-px* scale)
+                                                height-px)
+                                             0.0d0))
+                                 :bottom (getf margins :bottom))
+                           margins))
+              (strip-px (if (and multi (not grid-p))
+                            (* *strip-height-px* scale)
+                            0.0d0))
+              ;; free scales: inner panels keep their tick labels, so the
+              ;; spacing widens to fit them (measured: 7px + label + 7px)
+              (spacing-x-px
+                (if multi
+                    (+ (* *panel-spacing-px* scale)
+                       (if free-y
+                           (let ((label-size 8.8d0))
+                             (+ (* *panel-spacing-px* scale)
+                                (loop for p in (ggbuilt-panels built)
+                                      when (plusp (or (getf p :col) 0))
+                                        maximize
+                                        (reduce
+                                         #'max (getf p :y-labels)
+                                         :key (lambda (l)
+                                                (%mpl-text-width-px
+                                                 l label-size dpi))
+                                         :initial-value 0.0d0))))
+                           0.0d0))
+                    0.0d0))
+              (spacing-y-px
+                (if multi
+                    (+ (* *panel-spacing-px* scale)
+                       ;; free-x inner rows keep x labels: one line box
+                       (if free-x (* 18.0d0 scale) 0.0d0))
+                    0.0d0))
               (area-w (* (- (getf margins :right) (getf margins :left)) width-px))
               (area-h (* (- (getf margins :top) (getf margins :bottom)) height-px))
-              (cell-w (/ (- area-w (* (1- ncol) spacing-px)) ncol))
-              (cell-h (/ (- area-h (* (1- nrow) spacing-px)) nrow))
+              (cell-w (/ (- area-w (* (1- ncol) spacing-x-px)) ncol))
+              (cell-h (/ (- area-h (* (1- nrow) spacing-y-px)) nrow))
               (panel-h (- cell-h strip-px))
               (axes-list '()))
          (apply #'cl-matplotlib.containers:figure-subplots-adjust
                 fig (append margins
                             (when multi
-                              (list :wspace (/ spacing-px cell-w)
-                                    :hspace (/ spacing-px cell-h)))))
+                              (list :wspace (/ spacing-x-px cell-w)
+                                    :hspace (/ spacing-y-px cell-h)))))
          ;; One axes per panel; the top strip-px of each grid cell is
          ;; reserved for the strip, so the axes box is shrunk after
          ;; add-subplot computes the cell.
@@ -594,13 +665,14 @@ above the panel (axes-fraction y in [1, 1+strip-frac])."
               axes (getf panel :x-breaks) :labels (getf panel :x-labels))
              (cl-matplotlib.containers:axes-set-yticks
               axes (getf panel :y-breaks) :labels (getf panel :y-labels))
-             ;; Shared-axis tick label suppression (plotnine fixed scales)
+             ;; Shared-axis tick label suppression (fixed dims only:
+             ;; free scales label every panel, like plotnine)
              (when multi
-               (unless (= row (1- nrow))
+               (unless (or free-x (= row (1- nrow)))
                  (setf (cl-matplotlib.containers:axis-tick-labels-visible-p
                         (cl-matplotlib.containers:axes-base-xaxis axes))
                        nil))
-               (unless (zerop col)
+               (unless (or free-y (zerop col))
                  (setf (cl-matplotlib.containers:axis-tick-labels-visible-p
                         (cl-matplotlib.containers:axes-base-yaxis axes))
                        nil)))
@@ -623,10 +695,10 @@ above the panel (axes-fraction y in [1, 1+strip-frac])."
                    (cl-matplotlib.containers:axis-set-tick-params
                     axis :size 0.0 :which :minor)))
                (when multi
-                 (unless (= row (1- nrow))
+                 (unless (or free-x (= row (1- nrow)))
                    (cl-matplotlib.containers:axis-set-tick-params
                     x-axis :size 0.0 :which :major))
-                 (unless (zerop col)
+                 (unless (or free-y (zerop col))
                    (cl-matplotlib.containers:axis-set-tick-params
                     y-axis :size 0.0 :which :major))))
              (%apply-panel-theme theme axes panel)
@@ -635,10 +707,20 @@ above the panel (axes-fraction y in [1, 1+strip-frac])."
                    for subset = (%gtable-panel-subset table idx)
                    when (plusp (gtable-nrows subset))
                      do (geom-draw-panel (layer-geom layer) subset panel axes))
-             ;; Strip
-             (when (and multi (getf panel :label))
-               (%draw-strip axes (getf panel :label) theme
-                            (/ strip-px panel-h)))))
+             ;; Strips: facet-wrap above every cell; facet-grid above the
+             ;; top row and right of the last column, in the margin bands
+             (cond
+               (grid-p
+                (let ((sf-h (/ (* *strip-height-px* scale) panel-h))
+                      (sf-w (/ (* *strip-height-px* scale) cell-w)))
+                  (when (getf panel :label)
+                    (%draw-strip axes (getf panel :label) theme sf-h))
+                  (when (getf panel :row-label)
+                    (%draw-strip-right axes (getf panel :row-label) theme
+                                       sf-w))))
+               ((and multi (getf panel :label))
+                (%draw-strip axes (getf panel :label) theme
+                             (/ strip-px panel-h))))))
          (setf axes-list (nreverse axes-list))
          ;; Colorbar guide for continuous color/fill
          (let ((gscale (%gradient-scale built)))

@@ -29,7 +29,7 @@
    ;; coords
    #:coord-cartesian #:coord-flip
    ;; facets
-   #:facet-wrap
+   #:facet-wrap #:facet-grid
    ;; helpers
    #:labs #:xlab #:ylab #:ggtitle #:lims #:xlim #:ylim
    ;; scales

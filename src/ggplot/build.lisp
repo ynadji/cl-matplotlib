@@ -218,6 +218,38 @@ explicit plot scales win, others are inferred from the data."
           (when (and col y-scale (typep y-scale 'scale-continuous))
             (scale-train y-scale col)))))))
 
+(defun %fresh-panel-scale (scale)
+  "A copy of positional SCALE with fresh (untrained) range state, for
+per-panel training under free facet scales."
+  (unless (typep scale 'scale-continuous)
+    (error "free facet scales require continuous positional scales"))
+  (make-instance (class-of scale)
+                 :aesthetics (scale-aesthetics scale)
+                 :name (scale-name scale)
+                 :breaks (scale-user-breaks scale)
+                 :labels (scale-user-labels scale)
+                 :expand (scale-user-expand scale)))
+
+(defun %panel-scale-params (scale aesthetics layer-tables panel-index prefix)
+  "Panel-local range/breaks plist (:x-range :x-breaks :x-labels :x-minor
+or the y equivalents) from a fresh scale trained on the panel's rows."
+  (let ((local (%fresh-panel-scale scale)))
+    (loop for (nil . table) in layer-tables
+          for subset = (%gtable-panel-subset table panel-index)
+          do (dolist (aes aesthetics)
+               (let ((col (gtable-column subset aes)))
+                 (when col (scale-train local col)))))
+    (let* ((range (scale-expanded-range local))
+           (breaks (remove-if-not
+                    (lambda (b) (<= (first range) b (second range)))
+                    (scale-breaks local))))
+      (list (intern (format nil "~A-RANGE" prefix) :keyword) range
+            (intern (format nil "~A-BREAKS" prefix) :keyword) breaks
+            (intern (format nil "~A-LABELS" prefix) :keyword)
+            (scale-break-labels local breaks)
+            (intern (format nil "~A-MINOR" prefix) :keyword)
+            (scale-minor-breaks local breaks range)))))
+
 (defun %panel-params (scales &key flipped)
   (let* ((x-scale (%scale-for scales :x))
          (y-scale (%scale-for scales :y))
@@ -386,9 +418,26 @@ explicit plot scales win, others are inferred from the data."
      :layout layout
      :nrow nrow
      :ncol ncol
-     :panels (let ((base (%panel-params scales :flipped flipped)))
+     :panels (let ((base (%panel-params scales :flipped flipped))
+                   (free-x (facet-free-x-p facet))
+                   (free-y (facet-free-y-p facet)))
+               (when (and flipped (or free-x free-y))
+                 (error "free facet scales with coord-flip are not supported"))
                (loop for entry in layout
-                     collect (append entry (copy-list base))))
+                     for idx = (getf entry :index)
+                     collect
+                     (append entry
+                             ;; free dims override the shared params with
+                             ;; panel-locally trained ranges/breaks
+                             (when free-x
+                               (%panel-scale-params
+                                (%scale-for scales :x) *x-aesthetics*
+                                layer-tables idx "X"))
+                             (when free-y
+                               (%panel-scale-params
+                                (%scale-for scales :y) *y-aesthetics*
+                                layer-tables idx "Y"))
+                             (copy-list base))))
      :legends (%collect-legends plot scales layer-tables)
      :theme (merge-themes (theme-get) (plot-theme plot))
      :labs (if flipped

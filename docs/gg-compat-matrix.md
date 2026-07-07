@@ -34,7 +34,9 @@ justified exceptions). Updated: 2026-07-06.
 | gg-facet-wrap | 0.876 | strip/point detail |
 | gg-qq-basic | 0.882 | point AA detail |
 | gg-freqpoly | 0.858 | line AA detail |
+| gg-facet-free | 0.842 | strip/gap detail |
 | gg-log10-scatter | 0.841 | log minor-grid AA |
+| gg-facet-grid | 0.808 | strip band detail |
 
 Systemic fixes that lifted the suite (in discovery order): spine
 visibility used the wrong key type (black frame everywhere); minor tick
@@ -70,7 +72,10 @@ All: identity stack fill dodge jitter nudge. (dodge2/jitterdodge planned.)
 
 ### coords / facets
 - coord-cartesian, coord-flip. Planned: coord-fixed/equal/trans.
-- facet-wrap (fixed scales). Planned: facet-grid, free scales, labellers.
+- facet-wrap and facet-grid (row/column strips), :scales :fixed/:free/
+  :free-x/:free-y (continuous scales; free dims get per-panel limits,
+  breaks, and tick labels with plotnine's widened panel spacing),
+  labellers :value/:both/function.
 
 ### guides
 - Discrete legends (color/fill/shape) drawn outside-right via proxy artists.

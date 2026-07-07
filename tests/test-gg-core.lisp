@@ -213,6 +213,57 @@
       (delete-file path))))
 
 ;;; ============================================================
+;;; Facets: grid layout, labellers, free scales
+;;; ============================================================
+
+(test facet-grid-layout
+  (let* ((p (gg:ggadd
+             (gg:ggadd (gg:ggplot '(:g #("u" "u" "v" "v")
+                                   :h #("p" "q" "p" "q")
+                                   :x #(1.0d0 2.0d0 3.0d0 4.0d0)
+                                   :y #(1.0d0 2.0d0 3.0d0 4.0d0))
+                                 (gg:aes :x :x :y :y))
+                       (gg:geom-point))
+             (gg:facet-grid :rows :g :cols :h)))
+         (built (gg:ggbuild p))
+         (panels (ggplot::ggbuilt-panels built)))
+    (is (= 4 (length panels)))
+    (is (= 2 (ggplot::ggbuilt-nrow built)))
+    (is (= 2 (ggplot::ggbuilt-ncol built)))
+    ;; top strips only on row 0, right strips only on last col
+    (let ((p00 (first panels)) (p11 (fourth panels)))
+      (is (string= "p" (getf p00 :label)))
+      (is (null (getf p00 :row-label)))
+      (is (null (getf p11 :label)))
+      (is (string= "v" (getf p11 :row-label))))))
+
+(test facet-labeller-both
+  (multiple-value-bind (layout nrow ncol)
+      (ggplot::facet-layout
+       (gg:facet-wrap :g :labeller :both)
+       (list (ggplot::make-gtable :g #("a" "b"))))
+    (declare (ignore nrow ncol))
+    (is (string= "g: a" (getf (first layout) :label)))))
+
+(test facet-free-y-panels
+  (let* ((p (gg:ggadd
+             (gg:ggadd (gg:ggplot '(:g #("a" "a" "b" "b")
+                                   :x #(1.0d0 2.0d0 1.0d0 2.0d0)
+                                   :y #(1.0d0 2.0d0 100.0d0 200.0d0))
+                                 (gg:aes :x :x :y :y))
+                       (gg:geom-point))
+             (gg:facet-wrap :g :scales :free-y)))
+         (built (gg:ggbuild p))
+         (panels (ggplot::ggbuilt-panels built)))
+    (destructuring-bind (y0-lo y0-hi) (getf (first panels) :y-range)
+      (destructuring-bind (y1-lo y1-hi) (getf (second panels) :y-range)
+        ;; panel a spans ~1..2, panel b ~100..200
+        (is (< y0-hi 10.0d0))
+        (is (> y1-lo 10.0d0))
+        (is (< y0-lo y0-hi))
+        (is (< y1-lo y1-hi))))))
+
+;;; ============================================================
 ;;; Extension API (gg.ext)
 ;;; ============================================================
 ;;; A miniature third-party extension: a custom stat registered under a
