@@ -893,12 +893,22 @@ TRANSPARENT — if T, use transparent background."
                            :facecolor facecolor :edgecolor edgecolor
                            :transparent transparent))
 
-(defun show ()
-  "Display the current figure (no-op for non-interactive backend).
-In a non-interactive backend, this does nothing.
-For interactive use, consider using savefig instead."
-  (format t "~&; pyplot: Non-interactive backend — use (savefig \"file.png\") to save.~%")
-  (values))
+(defvar *show-hook* nil
+  "When bound to a function (figure &key block), (show) displays the
+current figure through it. Set by loading the cl-matplotlib-show system;
+pyplot itself carries no display-backend dependency.")
+
+(defun show (&key block)
+  "Display the current figure.
+With an interactive display system loaded (cl-matplotlib-show plus a
+backend such as cl-matplotlib-show-web or -sdl2) this opens a live
+window; BLOCK T returns only after it is closed. Otherwise it is a
+no-op that suggests savefig."
+  (if *show-hook*
+      (funcall *show-hook* (gcf) :block block)
+      (progn
+        (format t "~&; pyplot: No display backend loaded — use (savefig \"file.png\"), or (ql:quickload :cl-matplotlib-show-web) for interactive display.~%")
+        (values))))
 
 ;;; ============================================================
 ;;; Long-tail plot wrappers
