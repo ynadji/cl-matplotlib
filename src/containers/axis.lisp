@@ -526,7 +526,11 @@ to ensure they appear behind data artists (matplotlib grid zorder=0.5)."
       (when (and labels-visible
                  (axis-label-text axis)
                  (> (length (axis-label-text axis)) 0))
-        (%draw-x-axis-label renderer ax axis trans-axes side))))
+        (%draw-x-axis-label renderer ax axis trans-axes side))
+      ;; Formatter offset string (ConciseDateFormatter context, scalar
+      ;; magnitude offsets) at the axis end
+      (when labels-visible
+        (%draw-x-axis-offset renderer axis trans-axes side))))
   (setf (mpl.rendering:artist-stale axis) nil))
 
 (defun %draw-x-tick (renderer ax tk trans-data trans-axes &optional (labels-visible t) (skip-grid nil) (side :bottom))
@@ -646,6 +650,38 @@ SIDE is :bottom (default) or :top for twin axes."
                                       :angle 0.0
                                       :ha :center
                                       :va (if top-p :bottom :top))))
+
+(defun %draw-x-axis-offset (renderer axis trans-axes side)
+  "Draw the formatter's offset string (e.g. ConciseDateFormatter's
+\"2024-Mar\") at the right end of the x axis, below the tick labels
+(matplotlib placement)."
+  (let ((offset-text (let ((fmt (axis-major-formatter axis)))
+                       (and fmt (tick-formatter-offset-string fmt)))))
+    (when (and offset-text (plusp (length offset-text)))
+      (let* ((top-p (eq side :top))
+             (dpi (mpl.rendering:renderer-dpi renderer))
+             (pts->px (/ dpi 72.0d0))
+             (p-end (mpl.primitives:transform-point
+                     trans-axes (list 1.0d0 (if top-p 1.0d0 0.0d0))))
+             (tick-fontsize-pts (float (axis-tick-label-fontsize axis) 1.0d0))
+             (tick-label-height (* tick-fontsize-pts pts->px 0.9754d0))
+             (tick-size-px (* (float (axis-tick-size-major axis) 1.0d0)
+                              pts->px))
+             (tick-pad-px (* (float (axis-tick-pad axis) 1.0d0) pts->px))
+             (offset (+ tick-size-px tick-pad-px tick-label-height
+                        (* 4.0d0 pts->px)))
+             (y-pos (if top-p
+                        (+ (aref p-end 1) offset)
+                        (- (aref p-end 1) offset)))
+             (fontsize-px (* tick-fontsize-pts pts->px))
+             (gc (mpl.rendering:make-gc :foreground "black"
+                                        :linewidth fontsize-px :alpha 1.0)))
+        (mpl.rendering:renderer-draw-text renderer gc
+                                          (aref p-end 0) y-pos
+                                          offset-text
+                                          :angle 0.0
+                                          :ha :right
+                                          :va (if top-p :bottom :top))))))
 
 ;;; ============================================================
 ;;; YAxis — vertical axis

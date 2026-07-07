@@ -490,6 +490,16 @@
             #:max-n-locator-integer-p #:max-n-locator-symmetric-p
             #:max-n-locator-prune #:max-n-locator-min-n-ticks
             #:auto-locator
+            ;; dates (src/containers/dates.lisp)
+            #:date-locator #:auto-date-locator
+            #:year-locator #:month-locator #:week-locator #:day-locator
+            #:hour-locator #:minute-locator
+            #:date-formatter #:concise-date-formatter
+            #:tick-formatter-offset-string
+            #:date-to-num #:num-to-date #:ut-to-num #:num-to-ut
+            #:format-date #:date-break-uts #:date-add-months
+            #:auto-date-spec #:auto-date-fmt
+            #:register-unit-converter #:find-unit-converter
             #:auto-minor-locator #:auto-minor-locator-num-subdivisions
             #:log-locator #:log-locator-base #:log-locator-subs
             ;; Ticker — Formatter base
@@ -688,7 +698,19 @@ Manages global figure state for convenience.")
              ;; Output
            #:savefig #:show
            ;; State management
-           #:*figures* #:*current-figure* #:*figure-counter*))
+           #:*figures* #:*current-figure* #:*figure-counter*
+           ;; Dates (re-exported from containers)
+           #:date-to-num #:num-to-date #:ut-to-num #:num-to-ut
+           #:date-formatter #:concise-date-formatter
+           #:auto-date-locator #:year-locator #:month-locator
+           #:week-locator #:day-locator #:hour-locator #:minute-locator
+           #:register-unit-converter)
+  (:import-from #:cl-matplotlib.containers
+                #:date-to-num #:num-to-date #:ut-to-num #:num-to-ut
+                #:date-formatter #:concise-date-formatter
+                #:auto-date-locator #:year-locator #:month-locator
+                #:week-locator #:day-locator #:hour-locator #:minute-locator
+                #:register-unit-converter))
 
 (defpackage #:cl-matplotlib
   (:use #:cl)

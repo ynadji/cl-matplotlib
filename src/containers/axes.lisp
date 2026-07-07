@@ -18,6 +18,36 @@ fill(), fill_between() methods."))
 ;;; plot — plot y versus x as lines
 ;;; ============================================================
 
+(defun %maybe-convert-units (ax data which)
+  "Probe DATA's first element against the unit-converter registry
+(src/containers/dates.lisp). On a match, return the converted sequence
+and switch the axis scale (only while it is still the default linear),
+so e.g. local-time timestamps plot directly with date ticks. WHICH is
+:x or :y. Returns DATA unchanged when no converter matches."
+  (let ((first-el (if (listp data)
+                      (first data)
+                      (and (plusp (length data)) (elt data 0)))))
+    (if (null first-el)
+        data
+        (let ((converter (find-unit-converter first-el)))
+          (if (null converter)
+              data
+              (let ((converted (map (if (listp data) 'list 'vector)
+                                    (getf converter :convert)
+                                    data))
+                    (scale-kw (getf converter :scale)))
+                (unless (eq scale-kw :linear)
+                  (let* ((axis (ecase which
+                                 (:x (axes-base-xaxis ax))
+                                 (:y (axes-base-yaxis ax))))
+                         (current (axis-scale axis)))
+                    (when (or (null current)
+                              (string= (scale-name current) "linear"))
+                      (ecase which
+                        (:x (axes-set-xscale ax scale-kw))
+                        (:y (axes-set-yscale ax scale-kw))))))
+                converted))))))
+
 (defun plot (ax xdata ydata &key (color nil) (linewidth 1.5) (linestyle :solid)
                                  (marker :none) (label "") (zorder 2)
                                  (markersize nil) (markeredgecolor nil) (markeredgewidth nil))
@@ -37,6 +67,8 @@ LABEL - string label for legend.
 ZORDER - drawing order (default 2).
 
 Returns a list containing the created Line2D."
+  (setf xdata (%maybe-convert-units ax xdata :x)
+        ydata (%maybe-convert-units ax ydata :y))
   (let* ((effective-color (if color
                               color
                               (prog1 (format nil "C~D" (mod (axes-base-color-cycle-index ax) 10))
@@ -87,6 +119,8 @@ ZORDER — drawing order (default 1).
 ALPHA — transparency (nil for opaque).
 
 Returns the PathCollection artist."
+  (setf xdata (%maybe-convert-units ax xdata :x)
+        ydata (%maybe-convert-units ax ydata :y))
   ;; Detect categorical (string) x-data and convert to numeric positions
   (when (and (listp xdata) (not (null xdata)) (stringp (first xdata)))
     (let* ((existing-loc (axis-major-locator (axes-base-xaxis ax)))
@@ -211,6 +245,7 @@ ZORDER — drawing order (default 1).
 ALIGN — :center or :edge (default :center).
 
 Returns a list of Rectangle patches."
+  (setf x (%maybe-convert-units ax x :x))
   ;; Detect categorical (string) x-data and convert to numeric positions
   (when (and (listp x) (not (null x)) (stringp (first x)))
     (let* ((existing-loc (axis-major-locator (axes-base-xaxis ax)))

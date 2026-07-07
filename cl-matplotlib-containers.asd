@@ -5,12 +5,13 @@
 (asdf:defsystem #:cl-matplotlib-containers
   :description "Container hierarchy for cl-matplotlib: Figure, Axes, layout engines"
   :version "0.2.0"
-  :depends-on (#:cl-matplotlib-backends)
+  :depends-on (#:cl-matplotlib-backends #:local-time)
   :serial t
   :components ((:module "src/containers"
                 :components ((:file "layout-engine")
                              (:file "figure")
                              (:file "ticker")
+                             (:file "dates")
                              (:file "scale")
                              (:file "spines")
                              (:file "axis")
@@ -48,7 +49,8 @@
                (:file "test-contour")
                  (:file "test-image")
                 (:file "test-plot-types")
-                (:file "test-polar"))
+                (:file "test-polar")
+                (:file "test-dates"))
    :perform (asdf:test-op (o c)
                   (uiop:symbol-call '#:cl-matplotlib.tests.figure '#:run-figure-tests)
                   (uiop:symbol-call '#:cl-matplotlib.tests.axes '#:run-axes-tests)
@@ -60,4 +62,5 @@
                   (uiop:symbol-call '#:cl-matplotlib.tests.contour '#:run-contour-tests)
                   (uiop:symbol-call '#:cl-matplotlib.tests.image '#:run-image-tests)
                   (uiop:symbol-call '#:cl-matplotlib.tests.plot-types '#:run-plot-types-tests)
-                  (uiop:symbol-call '#:cl-matplotlib.tests.polar '#:run-polar-tests)))
+                  (uiop:symbol-call '#:cl-matplotlib.tests.polar '#:run-polar-tests)
+                  (uiop:symbol-call '#:cl-matplotlib.tests.dates '#:run-dates-tests)))

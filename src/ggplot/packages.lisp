@@ -6,6 +6,10 @@
   ;; NOTE: deliberately does NOT :use cl-matplotlib.pyplot or .containers —
   ;; their exports (plot, bar, text, position, ...) clash with grammar names.
   ;; Backend calls are package-qualified.
+  (:import-from #:cl-matplotlib.containers
+                ;; shared calendar/date engine (src/containers/dates.lisp)
+                #:format-date #:date-break-uts #:date-add-months
+                #:auto-date-spec #:auto-date-fmt #:ut-to-num #:num-to-ut)
   (:export
    ;; core entry points
    #:ggplot #:aes #:stack #:ggsave #:ggdraw #:ggbuild #:ggrender #:qplot

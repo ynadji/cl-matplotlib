@@ -753,51 +753,17 @@ plotnine compatibility and ignored (the palette name is unambiguous)."
 ;;; and strftime-style labels. All conversions use GMT so results don't
 ;;; depend on the host timezone (pandas datetimes are naive/UTC-like).
 
-(defconstant +seconds-per-day+ 86400)
-
 (defun date (year month day &optional (hour 0) (minute 0) (second 0))
   "A date value for gg data columns: universal time at GMT."
   (encode-universal-time second minute hour day month year 0))
 
-(defun %ut-to-days (ut)
-  (/ (float ut 1.0d0) +seconds-per-day+))
+;; The calendar engine (format-date, date-break-uts, auto-date-spec,
+;; auto-date-fmt, ut/num conversions) lives in the containers layer
+;; (src/containers/dates.lisp), imported via src/ggplot/packages.lisp.
+;; Scale positions are days since the 1970 epoch (matplotlib date2num).
 
-(defun %days-to-ut (days)
-  (round (* days +seconds-per-day+)))
-
-(defparameter *month-abbrevs*
-  #("Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec"))
-(defparameter *month-names*
-  #("January" "February" "March" "April" "May" "June" "July" "August"
-    "September" "October" "November" "December"))
-
-(defun format-date (ut fmt)
-  "Format universal-time UT with strftime-style directives:
-%Y year, %m month (2-digit), %d day (2-digit), %e day (no pad),
-%b abbreviated month, %B full month, %y 2-digit year."
-  (multiple-value-bind (sec min hour day month year)
-      (decode-universal-time ut 0)
-    (declare (ignore sec min hour))
-    (with-output-to-string (out)
-      (loop with i = 0
-            while (< i (length fmt))
-            do (let ((ch (char fmt i)))
-                 (if (and (char= ch #\%) (< (1+ i) (length fmt)))
-                     (progn
-                       (case (char fmt (1+ i))
-                         (#\Y (format out "~D" year))
-                         (#\y (format out "~2,'0D" (mod year 100)))
-                         (#\m (format out "~2,'0D" month))
-                         (#\d (format out "~2,'0D" day))
-                         (#\e (format out "~D" day))
-                         (#\b (write-string (aref *month-abbrevs* (1- month)) out))
-                         (#\B (write-string (aref *month-names* (1- month)) out))
-                         (#\% (write-char #\% out))
-                         (t (write-char #\% out)
-                            (write-char (char fmt (1+ i)) out)))
-                       (incf i 2))
-                     (progn (write-char ch out) (incf i)))))
-      out)))
+(defun %ut-to-days (ut) (ut-to-num ut))
+(defun %days-to-ut (days) (num-to-ut days))
 
 (defclass scale-date-obj (scale-continuous)
   ((date-breaks :initarg :date-breaks :initform nil
@@ -812,60 +778,10 @@ an automatic choice based on the break unit.")))
 (defmethod scale-transform ((scale scale-date-obj) values)
   (map 'simple-vector (lambda (v) (%ut-to-days v)) values))
 
-(defun %date-add-months (year month n)
-  "(values year month) N months after YEAR-MONTH."
-  (let ((total (+ (* year 12) (1- month) n)))
-    (values (floor total 12) (1+ (mod total 12)))))
-
-(defun %date-break-uts (lo-ut hi-ut spec)
-  "Universal times of calendar breaks covering [LO-UT, HI-UT]."
-  (multiple-value-bind (s mi h d mo y) (decode-universal-time lo-ut 0)
-    (declare (ignore s mi h))
-    (destructuring-bind (unit n) spec
-      (ecase unit
-        ;; Sequences anchor at the first unit boundary AT/AFTER lo and step
-        ;; by N from there (plotnine phase: Jan..Dec data with '6 months'
-        ;; shows Dec/Jun breaks, anchored inside the expanded range).
-        (:year
-         (let ((y0 (if (>= (encode-universal-time 0 0 0 1 1 y 0)
-                           (- lo-ut +seconds-per-day+))
-                       y
-                       (1+ y))))
-           (loop for yy from y0 by n
-                 for ut = (encode-universal-time 0 0 0 1 1 yy 0)
-                 while (<= ut (+ hi-ut +seconds-per-day+))
-                 collect ut)))
-        (:month
-         (multiple-value-bind (y0 m0)
-             (if (>= (encode-universal-time 0 0 0 1 mo y 0)
-                     (- lo-ut +seconds-per-day+))
-                 (values y mo)
-                 (%date-add-months y mo 1))
-           (loop with yy = y0 and mm = m0
-                 for ut = (encode-universal-time 0 0 0 1 mm yy 0)
-                 while (<= ut (+ hi-ut +seconds-per-day+))
-                 collect ut
-                 do (multiple-value-setq (yy mm) (%date-add-months yy mm n)))))
-        ((:week :day)
-         (let ((step (* n (if (eq unit :week) 7 1) +seconds-per-day+))
-               (start (encode-universal-time 0 0 0 d mo y 0)))
-           (loop for ut = start then (+ ut step)
-                 while (<= ut hi-ut)
-                 when (>= ut lo-ut) collect ut)))))))
-
-(defun %auto-date-spec (span-days)
-  (cond ((> span-days 1460) (list :year 1))
-        ((> span-days 730) (list :month 6))
-        ((> span-days 240) (list :month 3))
-        ((> span-days 60) (list :month 1))
-        ((> span-days 14) (list :week 1))
-        (t (list :day 1))))
-
-(defun %auto-date-fmt (spec)
-  (ecase (first spec)
-    (:year "%Y")
-    (:month "%Y-%m")
-    ((:week :day) "%b %e")))
+(defun %date-add-months (year month n) (date-add-months year month n))
+(defun %date-break-uts (lo hi spec) (date-break-uts lo hi spec))
+(defun %auto-date-spec (span-days) (auto-date-spec span-days))
+(defun %auto-date-fmt (spec) (auto-date-fmt spec))
 
 (defmethod scale-breaks ((scale scale-date-obj))
   (let ((user (scale-user-breaks scale)))

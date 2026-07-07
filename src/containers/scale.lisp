@@ -58,6 +58,24 @@ Ported from matplotlib.scale.LinearScale."))
   (axis-set-minor-formatter axis (make-instance 'null-formatter))
   (axis-set-minor-locator axis (make-instance 'null-locator)))
 
+
+;;; ============================================================
+;;; DateScale — linear transform, date locators/formatters
+;;; ============================================================
+
+(defclass date-scale (linear-scale)
+  ()
+  (:default-initargs :name "date")
+  (:documentation "Linear scale whose values are days since the 1970
+epoch; installs calendar-aware locators and the concise date formatter.
+See src/containers/dates.lisp."))
+
+(defmethod scale-set-default-locators-and-formatters ((scale date-scale) axis)
+  (axis-set-major-locator axis (make-instance 'auto-date-locator))
+  (axis-set-major-formatter axis (make-instance 'concise-date-formatter))
+  (axis-set-minor-formatter axis (make-instance 'null-formatter))
+  (axis-set-minor-locator axis (make-instance 'null-locator)))
+
 ;;; ============================================================
 ;;; LogScale — logarithmic scale
 ;;; ============================================================
@@ -251,6 +269,7 @@ Additional keyword arguments are passed to the scale constructor."
   (declare (ignore axis))
   (let ((scale-class (case scale-name
                        (:linear 'linear-scale)
+                       (:date 'date-scale)
                        (:log 'log-scale)
                        (:symlog 'symlog-scale)
                        (:logit 'logit-scale)
