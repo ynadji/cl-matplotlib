@@ -256,7 +256,7 @@ ignored negative left bearings — both fixed alongside the kerning bug.
   risk) — foundation, primitives, and meta `.asd`s.
 - [ ] `cl-matplotlib-containers.asd` modules lack `:serial t` internally — incremental/parallel
   builds have no ordering guarantee for order-dependent files.
-- [ ] `with-style` loads style files at macroexpansion time (freezes key set into compiled code,
+- [x] `with-style` loads style files at macroexpansion time (freezes key set into compiled code,
   requires stylelib at compile time) — `style.lisp:94-120`. Do it at runtime like `rc-context`.
 - [x] `with-rc` and `rc-context` are byte-identical duplicates — `rcsetup.lisp:549-567,601-620`.
   FIXED: `rc-context` now expands into `with-rc`.
@@ -276,7 +276,7 @@ ignored negative left bearings — both fixed alongside the kerning bug.
   (0.7px misalignment between edged and un-edged shapes) — `backend-vecto.lisp:441-470,393`.
 - [ ] colorbar mutates parent position in place; pre-existing twins don't follow —
   `colorbar.lisp:91,115`.
-- [ ] `label_outer` ignores share mode (`:row`/`:col`) — `gridspec.lisp:424-450`.
+- [x] `label_outer` ignores share mode (`:row`/`:col`) — `gridspec.lisp:424-450`.
 - [ ] repeated `suptitle` accumulates artists — `figure.lisp:247-274`.
 - [ ] `hlines`/`vlines` reject vectors, silently truncate short `colors` — `axes.lisp:1446-1490`;
   `stem` errors on empty data — `:1001-1002`.

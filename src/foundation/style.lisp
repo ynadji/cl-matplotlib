@@ -91,6 +91,24 @@ Example: (use-style :ggplot)
                 ;; Unknown key, skip silently
                 nil)))))))
 
+(defun call-with-style (style-names thunk)
+  "Apply STYLE-NAMES around THUNK, restoring modified rcParams on exit.
+Style files are read HERE, at run time - reading them at macroexpansion
+time froze the key set into compiled code and required the stylelib to
+exist at compile time."
+  (let* ((names (if (listp style-names) style-names (list style-names)))
+         (all-keys '()))
+    (dolist (name names)
+      (dolist (pair (load-style name))
+        (pushnew (car pair) all-keys :test #'string=)))
+    (let ((saved (loop for key in all-keys collect (cons key (rc key)))))
+      (unwind-protect
+           (progn
+             (use-style style-names)
+             (funcall thunk))
+        (dolist (pair saved)
+          (setf (gethash (car pair) *rc-params*) (cdr pair)))))))
+
 (defmacro with-style (style-names &body body)
   "Temporarily apply one or more style sheets for the duration of BODY.
 STYLE-NAMES can be a single style name or a list of names.
@@ -100,24 +118,7 @@ Example:
   (with-style (:ggplot)
     (plot x y))  ; Uses ggplot style
   ;; Restored to original after"
-  (let ((names (if (listp style-names) style-names (list style-names))))
-    ;; Collect all keys that will be modified
-    (let ((all-keys nil))
-      (dolist (name names)
-        (let ((params (load-style name)))
-          (dolist (pair params)
-            (pushnew (car pair) all-keys :test #'string=))))
-      
-      ;; Generate the macro expansion
-      (let ((saved (gensym "SAVED")))
-        `(let ((,saved (list ,@(loop for key in all-keys
-                                     collect `(cons ,key (rc ,key))))))
-           (unwind-protect
-                (progn
-                  (use-style ',style-names)
-                  ,@body)
-             (dolist (pair ,saved)
-               (setf (gethash (car pair) *rc-params*) (cdr pair)))))))))
+  `(call-with-style ',style-names (lambda () ,@body)))
 
 ;;; ============================================================
 ;;; Initialization

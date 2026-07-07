@@ -421,14 +421,16 @@ Returns a 2D array of axes (or squeezed version)."
                     (:col (aref axarr 0 col)))))
             (when (and share-target (not (eq ax share-target)))
               (axes-share-x ax share-target)))))
-      ;; Suppress x-axis tick labels on non-bottom rows (label_outer behavior)
-      (dotimes (row nrows)
-        (dotimes (col ncols)
-          (let ((ax (aref axarr row col)))
-            (when (< row (1- nrows))
-              ;; Not the bottom row: hide x-axis tick labels
-              (setf (axis-tick-labels-visible-p
-                     (axes-base-xaxis ax)) nil))))))
+      ;; label_outer: hide inner x tick labels only when rows actually
+      ;; share x (:all or :col); :row shares within a row, so every row
+      ;; keeps its own x labels
+      (when (member sx '(:all :col))
+        (dotimes (row nrows)
+          (dotimes (col ncols)
+            (let ((ax (aref axarr row col)))
+              (when (< row (1- nrows))
+                (setf (axis-tick-labels-visible-p
+                       (axes-base-xaxis ax)) nil)))))))
     (when (not (eq sy :none))
       (dotimes (row nrows)
         (dotimes (col ncols)
@@ -440,14 +442,16 @@ Returns a 2D array of axes (or squeezed version)."
                     (:col (aref axarr 0 col)))))
             (when (and share-target (not (eq ax share-target)))
               (axes-share-y ax share-target)))))
-      ;; Suppress y-axis tick labels on non-left columns (label_outer behavior)
-      (dotimes (row nrows)
-        (dotimes (col ncols)
-          (let ((ax (aref axarr row col)))
-            (when (> col 0)
-              ;; Not the leftmost column: hide y-axis tick labels
-              (setf (axis-tick-labels-visible-p
-                     (axes-base-yaxis ax)) nil))))))
+      ;; label_outer: hide inner y tick labels only when columns actually
+      ;; share y (:all or :row); :col shares within a column, so every
+      ;; column keeps its own y labels
+      (when (member sy '(:all :row))
+        (dotimes (row nrows)
+          (dotimes (col ncols)
+            (let ((ax (aref axarr row col)))
+              (when (> col 0)
+                (setf (axis-tick-labels-visible-p
+                       (axes-base-yaxis ax)) nil)))))))
     ;; Squeeze if requested
     (if squeeze
         (cond ((and (= nrows 1) (= ncols 1))
