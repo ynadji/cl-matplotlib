@@ -492,7 +492,9 @@ geometry constants are pixel measurements of plotnine 0.15.7 output
          (glyph (geom-key-glyph geom)))
     (flet ((fx (px) (/ (- px left-px) panel-w))
            (fy (px) (/ (- px anchor-bottom-px) panel-h))
-           (add-rect (x0-px y0-px w-px h-px color)
+           (add-rect (x0-px y0-px w-px h-px color &optional (zorder 4))
+             ;; glyphs get zorder 4.5 so they always paint over the
+             ;; #F2F2F2 key background regardless of insertion order
              (let ((rect (make-instance
                           'cl-matplotlib.rendering:rectangle
                           :x0 (/ (- x0-px left-px) panel-w)
@@ -500,7 +502,7 @@ geometry constants are pixel measurements of plotnine 0.15.7 output
                           :width (/ w-px panel-w)
                           :height (/ h-px panel-h)
                           :facecolor color :edgecolor nil
-                          :linewidth 0.0d0 :zorder 4)))
+                          :linewidth 0.0d0 :zorder zorder)))
                (setf (cl-matplotlib.rendering:artist-transform rect)
                      trans-axes)
                (cl-matplotlib.containers:axes-add-patch axes rect))))
@@ -517,12 +519,13 @@ geometry constants are pixel measurements of plotnine 0.15.7 output
                                 "black"
                                 v)))
                  (ecase glyph
-                   (:rect (add-rect key-x0 (- key-top key) key key color))
+                   (:rect (add-rect key-x0 (- key-top key) key key color
+                                    4.5d0))
                    (:line (let ((lw-px (* (size-to-linewidth
                                            (%legend-glyph-size spec))
                                           (/ dpi 72.0d0))))
                             (add-rect key-x0 (- cy (/ lw-px 2.0d0))
-                                      key lw-px color)))
+                                      key lw-px color 4.5d0)))
                    (:point
                     (let* ((size (if (eq aesthetic :size)
                                      v   ; mapped size IS the entry value
