@@ -163,8 +163,20 @@ existing one."))
 ;; label at the legend text size.
 (defparameter *legend-base-px* 42.0d0)
 
+(defun %gradient-scale (built)
+  "The first continuous color/fill scale needing a colorbar guide, or NIL."
+  (loop for (aes . scale) in (ggbuilt-scales built)
+        when (and (member aes '(:color :fill))
+                  (typep scale 'scale-gradient-obj)
+                  (not (eq (scale-guide scale) :none)))
+          return scale))
+
 (defun %legend-width-px (built theme dpi)
   "Horizontal space to reserve right of the panel for legends, in px."
+  (when (%gradient-scale built)
+    ;; colorbar guide: 19px gap + 20px bar + labels + margin (measured
+    ;; from plotnine tile references: panel right at 553/640)
+    (return-from %legend-width-px (* 81.0d0 (/ dpi 100.0d0))))
   (let ((legends (ggbuilt-legends built)))
     (if (null legends)
         0.0d0
@@ -211,6 +223,75 @@ layout engine does."
 
 (defun %hide-spines-p (theme)
   (element-blank-p (theme-element theme :axis-line)))
+
+(defun %draw-colorbar (built theme gscale axes margins width-px height-px dpi)
+  "Vertical colorbar right of the panel, drawn as a stack of gradient
+rectangles in the anchor panel's axes-fraction coordinates. Geometry
+measured from plotnine: 19px gap, 20px bar, 161px tall, centered on the
+panel, value labels right of the bar, title above."
+  (declare (ignore theme))
+  (let* ((scale (/ dpi 100.0d0))
+         (left-px (* (getf margins :left) width-px))
+         (right-px (* (getf margins :right) width-px))
+         (bottom-px (* (getf margins :bottom) height-px))
+         (top-px (* (getf margins :top) height-px))
+         (panel-w (- right-px left-px))
+         (panel-h (- top-px bottom-px))
+         (bar-x0-px (+ right-px (* 19.0d0 scale)))
+         (bar-w-px (* 20.0d0 scale))
+         (bar-h-px (* 161.0d0 scale))
+         (bar-y0-px (- (/ (+ bottom-px top-px) 2.0d0) (/ bar-h-px 2.0d0)))
+         ;; axes-fraction coordinates of the bar
+         (fx0 (/ (- bar-x0-px left-px) panel-w))
+         (fw (/ bar-w-px panel-w))
+         (fy0 (/ (- bar-y0-px bottom-px) panel-h))
+         (fh (/ bar-h-px panel-h))
+         (n-steps 64)
+         (limits (scale-limits gscale))
+         (lo (first limits))
+         (hi (second limits))
+         (trans-axes (cl-matplotlib.containers:axes-base-trans-axes axes)))
+    ;; gradient bar as a stack of rectangles
+    (dotimes (i n-steps)
+      (let* ((v (+ lo (* (/ (+ i 0.5d0) n-steps) (- hi lo))))
+             (color (svref (scale-map gscale (vector v)) 0))
+             (rect (make-instance 'cl-matplotlib.rendering:rectangle
+                                  :x0 fx0
+                                  :y0 (+ fy0 (* fh (/ (float i 1.0d0) n-steps)))
+                                  :width fw
+                                  :height (* fh (/ 1.05d0 n-steps))
+                                  :facecolor color
+                                  :edgecolor nil
+                                  :linewidth 0.0d0
+                                  :zorder 4)))
+        (setf (cl-matplotlib.rendering:artist-transform rect) trans-axes)
+        (cl-matplotlib.containers:axes-add-patch axes rect)))
+    ;; tick labels right of the bar
+    (let ((breaks (remove-if-not (lambda (b) (<= lo b hi))
+                                 (extended-breaks lo hi 5))))
+      (loop for b in breaks
+            for label in (%format-break-set breaks)
+            do (%axes-fraction-text
+                axes label
+                (+ fx0 fw (/ (* 10.0d0 scale) panel-w))
+                (+ fy0 (* fh (/ (- b lo) (max (- hi lo) 1.0d-12))))
+                :fontsize 8.8d0 :color "#4D4D4D" :zorder 5)))
+    ;; title above the bar
+    (let ((title (or (scale-name gscale)
+                     (let* ((plot (ggbuilt-plot built))
+                            (mapping (plot-mapping plot))
+                            (ref (and mapping
+                                      (or (aes-ref mapping :fill)
+                                          (aes-ref mapping :color)))))
+                       (typecase ref
+                         (string ref)
+                         (symbol (string-downcase (symbol-name ref)))
+                         (t ""))))))
+      (when (plusp (length title))
+        (%axes-fraction-text axes title
+                             (+ fx0 (/ fw 2.0d0))
+                             (+ fy0 fh (/ (* 14.0d0 scale) panel-h))
+                             :fontsize 11.0d0 :zorder 5)))))
 
 ;; Facet cell geometry, measured from plotnine facet_wrap renders at
 ;; dpi 100: strips are 19px tall above each panel, panels separated by 7px.
@@ -293,9 +374,10 @@ above the panel (axes-fraction y in [1, 1+strip-frac])."
                              (- (fourth pos) (/ strip-px height-px))))))
              (push (cons idx axes) axes-list)
              (when (%hide-spines-p theme)
+               ;; the spines container is keyed by STRINGS
                (let ((spines (cl-matplotlib.containers:axes-base-spines axes)))
                  (when spines
-                   (dolist (side (list :left :right :top :bottom))
+                   (dolist (side (list "left" "right" "top" "bottom"))
                      (let ((spine (cl-matplotlib.containers:spines-ref spines side)))
                        (when spine
                          (cl-matplotlib.containers:spine-set-visible spine nil)))))))
@@ -318,17 +400,22 @@ above the panel (axes-fraction y in [1, 1+strip-frac])."
                  (setf (cl-matplotlib.containers:axis-tick-labels-visible-p
                         (cl-matplotlib.containers:axes-base-yaxis axes))
                        nil)))
-             ;; Theme: tick label size/color
+             ;; Theme: tick label size/color; plotnine tick geometry
+             ;; (2.75px major marks, NO minor marks - only minor gridlines)
              (let ((axis-text (theme-element theme :axis-text)))
-               (when (element-text-p axis-text)
-                 (dolist (axis (list (cl-matplotlib.containers:axes-base-xaxis axes)
-                                     (cl-matplotlib.containers:axes-base-yaxis axes)))
-                   (when axis
+               (dolist (axis (list (cl-matplotlib.containers:axes-base-xaxis axes)
+                                   (cl-matplotlib.containers:axes-base-yaxis axes)))
+                 (when axis
+                   (when (element-text-p axis-text)
                      (cl-matplotlib.containers:axis-set-tick-params
                       axis
                       :labelsize (element-text-size axis-text)
                       :labelcolor (or (element-text-color axis-text) "black")
-                      :which :both)))))
+                      :which :both))
+                   (cl-matplotlib.containers:axis-set-tick-params
+                    axis :size 2.75 :which :major)
+                   (cl-matplotlib.containers:axis-set-tick-params
+                    axis :size 0.0 :which :minor))))
              (%apply-panel-theme theme axes panel)
              ;; Layers, filtered to this panel
              (loop for (layer . table) in (ggbuilt-layer-tables built)
@@ -340,6 +427,12 @@ above the panel (axes-fraction y in [1, 1+strip-frac])."
                (%draw-strip axes (getf panel :label) theme
                             (/ strip-px panel-h)))))
          (setf axes-list (nreverse axes-list))
+         ;; Colorbar guide for continuous color/fill
+         (let ((gscale (%gradient-scale built)))
+           (when gscale
+             (%draw-colorbar built theme gscale
+                             (cdr (assoc (1- ncol) axes-list))
+                             margins (* width dpi) (* height dpi) dpi)))
          ;; Legend on the first panel of the last column (anchored outside)
          (let ((spec (first (ggbuilt-legends built))))
            (when spec

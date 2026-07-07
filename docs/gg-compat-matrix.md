@@ -9,27 +9,30 @@ justified exceptions). Updated: 2026-07-06.
 
 | example | SSIM | status |
 |---|---|---|
-| ggblank | 0.903 | pass |
-| gg-scatter-basic | 0.903 | pass |
-| gg-bar-flip | 0.899 | near |
-| gg-bar-basic | 0.881 | near |
-| gg-line-basic | 0.872 | near |
-| gg-area-stacked | 0.866 | near |
-| gg-bar-stacked | 0.840 | text-strip gap |
-| gg-scatter-color | 0.839 | text-strip + legend gap |
-| gg-smooth-lm | 0.830 | text-strip gap |
-| gg-density | 0.819 | text-strip gap |
-| gg-histogram | 0.804 | text-strip gap |
-| gg-bar-dodge | 0.804 | text-strip + legend gap |
-| gg-violin | 0.800 | text-strip gap |
-| gg-facet-wrap | 0.789 | text-strip gap (4x tick labels) |
-| gg-boxplot | 0.786 | text-strip gap |
-| gg-tile-heatmap | 0.644 | missing colorbar guide |
+| ggblank | 0.951 | pass |
+| gg-scatter-basic | 0.950 | pass |
+| gg-bar-flip | 0.942 | pass |
+| gg-bar-basic | 0.926 | pass |
+| gg-line-basic | 0.921 | pass |
+| gg-area-stacked | 0.904 | pass |
+| gg-scatter-color | 0.878 | legend geometry |
+| gg-bar-stacked | 0.876 | legend geometry |
+| gg-facet-wrap | 0.872 | strip/tick detail |
+| gg-smooth-lm | 0.868 | ribbon AA detail |
+| gg-density | 0.858 | curve detail |
+| gg-bar-dodge | 0.843 | legend geometry |
+| gg-violin | 0.842 | outline detail |
+| gg-histogram | 0.842 | bin edge detail |
+| gg-boxplot | 0.831 | whisker/median weight |
+| gg-tile-heatmap | 0.764 | colorbar tick/label detail |
 
-The recurring "text-strip gap" is a single cross-cutting item: the
-backend's glyph rasterization differs from matplotlib Agg's, dragging the
-tick/axis-label strips ~0.03-0.10 SSIM per plot. Fixing it (or scoring
-text regions separately) lifts every example at once.
+Earlier scores were dragged 0.03-0.10 per plot by two backend-side bugs,
+both fixed: a black frame drawn because spine visibility used the wrong
+key type, and minor tick MARKS drawn outside the panel (plotnine draws
+only minor gridlines). Glyph rasterization itself matches matplotlib's
+almost exactly (ink ratio 1.016, aligned cosine 0.987 on identical
+strings). The remaining spread is per-plot geometry detail, chiefly
+legend-box layout.
 
 ## plotnine API surface
 
@@ -57,8 +60,9 @@ All: identity stack fill dodge jitter nudge. (dodge2/jitterdodge planned.)
 
 ### guides
 - Discrete legends (color/fill/shape) drawn outside-right via proxy artists.
-- **Colorbar for continuous color/fill: not yet drawn** (the tile heatmap's
-  0.64 is mostly this). Planned: scalar-mappable + make-colorbar wiring.
+- Colorbar for continuous color/fill: drawn (gradient bar + value labels
+  + title, geometry measured from plotnine). Tick placement detail still
+  costs the heatmap example ~0.14.
 - One legend per plot for now; multi-aesthetic guide merging planned.
 
 ### themes
