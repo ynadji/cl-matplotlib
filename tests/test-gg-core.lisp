@@ -213,6 +213,31 @@
       (delete-file path))))
 
 ;;; ============================================================
+;;; Scale long tail
+;;; ============================================================
+
+(test brewer-palette-values
+  ;; mizani brewer_pal('qual', 'Set2')(3)
+  (is (equal '("#66C2A5" "#FC8D62" "#8DA0CB")
+             (ggplot::brewer-palette "Set2" 3)))
+  (signals error (ggplot::brewer-palette "Set2" 99))
+  (signals error (ggplot::brewer-palette "NoSuch" 3)))
+
+(test gradient2-midpoint-maps-mid-color
+  (let ((scale (gg:scale-fill-gradient2 :low "#000000" :mid "#FFFFFF"
+                                        :high "#0000FF" :midpoint 0)))
+    (ggplot::scale-train scale #(-2.0d0 2.0d0))
+    (is (string-equal "#FFFFFF"
+                      (svref (ggplot::scale-map scale #(0.0d0)) 0)))))
+
+(test reverse-scale-negates-and-relabels
+  (let ((scale (gg:scale-y-reverse)))
+    (is (equalp #(-1.0d0 -2.0d0)
+                (ggplot::scale-transform scale #(1.0d0 2.0d0))))
+    (is (equal '("1" "2")
+               (ggplot::scale-break-labels scale '(-1.0d0 -2.0d0))))))
+
+;;; ============================================================
 ;;; Facets: grid layout, labellers, free scales
 ;;; ============================================================
 

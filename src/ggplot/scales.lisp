@@ -474,6 +474,246 @@ interpolated like mizani."))
   (apply #'make-instance 'scale-log10-obj :aesthetics '(:y :ymin :ymax :yend) args))
 
 ;;; ============================================================
+;;; ColorBrewer palettes (hex values extracted from mizani's brewer_pal,
+;;; which plotnine uses; qualitative palettes at max size, sequential and
+;;; diverging at 9 levels, interpolated when more are needed)
+;;; ============================================================
+
+(defparameter *brewer-palettes*
+  '(;; qualitative
+    ("Set1" "#E41A1C" "#377EB8" "#4DAF4A" "#984EA3" "#FF7F00" "#FFFF33" "#A65628" "#F781BF" "#999999")
+    ("Set2" "#66C2A5" "#FC8D62" "#8DA0CB" "#E78AC3" "#A6D854" "#FFD92F" "#E5C494" "#B3B3B3")
+    ("Set3" "#8DD3C7" "#FFFFB3" "#BEBADA" "#FB8072" "#80B1D3" "#FDB462" "#B3DE69" "#FCCDE5" "#D9D9D9" "#BC80BD" "#CCEBC5" "#FFED6F")
+    ("Dark2" "#1B9E77" "#D95F02" "#7570B3" "#E7298A" "#66A61E" "#E6AB02" "#A6761D" "#666666")
+    ("Paired" "#A6CEE3" "#1F78B4" "#B2DF8A" "#33A02C" "#FB9A99" "#E31A1C" "#FDBF6F" "#FF7F00" "#CAB2D6" "#6A3D9A" "#FFFF99" "#B15928")
+    ("Accent" "#7FC97F" "#BEAED4" "#FDC086" "#FFFF99" "#386CB0" "#F0027F" "#BF5B17" "#666666")
+    ("Pastel1" "#FBB4AE" "#B3CDE3" "#CCEBC5" "#DECBE4" "#FED9A6" "#FFFFCC" "#E5D8BD" "#FDDAEC" "#F2F2F2")
+    ("Pastel2" "#B3E2CD" "#FDCDAC" "#CBD5E8" "#F4CAE4" "#E6F5C9" "#FFF2AE" "#F1E2CC" "#CCCCCC")
+    ;; sequential
+    ("Blues" "#F7FBFF" "#DEEBF7" "#C6DBEF" "#9ECAE1" "#6BAED6" "#4292C6" "#2171B5" "#08519C" "#08306B")
+    ("Greens" "#F7FCF5" "#E5F5E0" "#C7E9C0" "#A1D99B" "#74C476" "#41AB5D" "#238B45" "#006D2C" "#00441B")
+    ("Reds" "#FFF5F0" "#FEE0D2" "#FCBBA1" "#FC9272" "#FB6A4A" "#EF3B2C" "#CB181D" "#A50F15" "#67000D")
+    ("Oranges" "#FFF5EB" "#FEE6CE" "#FDD0A2" "#FDAE6B" "#FD8D3C" "#F16913" "#D94801" "#A63603" "#7F2704")
+    ("Purples" "#FCFBFD" "#EFEDF5" "#DADAEB" "#BCBDDC" "#9E9AC8" "#807DBA" "#6A51A3" "#54278F" "#3F007D")
+    ("Greys" "#FFFFFF" "#F0F0F0" "#D9D9D9" "#BDBDBD" "#969696" "#737373" "#525252" "#252525" "#000000")
+    ("YlOrBr" "#FFFFE5" "#FFF7BC" "#FEE391" "#FEC44F" "#FE9929" "#EC7014" "#CC4C02" "#993404" "#662506")
+    ("YlGnBu" "#FFFFD9" "#EDF8B1" "#C7E9B4" "#7FCDBB" "#41B6C4" "#1D91C0" "#225EA8" "#253494" "#081D58")
+    ;; diverging
+    ("RdBu" "#B2182B" "#D6604D" "#F4A582" "#FDDBC7" "#F7F7F7" "#D1E5F0" "#92C5DE" "#4393C3" "#2166AC")
+    ("RdYlBu" "#D73027" "#F46D43" "#FDAE61" "#FEE090" "#FFFFBF" "#E0F3F8" "#ABD9E9" "#74ADD1" "#4575B4")
+    ("BrBG" "#8C510A" "#BF812D" "#DFC27D" "#F6E8C3" "#F5F5F5" "#C7EAE5" "#80CDC1" "#35978F" "#01665E")
+    ("PiYG" "#C51B7D" "#DE77AE" "#F1B6DA" "#FDE0EF" "#F7F7F7" "#E6F5D0" "#B8E186" "#7FBC41" "#4D9221")
+    ("PRGn" "#762A83" "#9970AB" "#C2A5CF" "#E7D4E8" "#F7F7F7" "#D9F0D3" "#A6DBA0" "#5AAE61" "#1B7837")
+    ("Spectral" "#D53E4F" "#F46D43" "#FDAE61" "#FEE08B" "#FFFFBF" "#E6F598" "#ABDDA4" "#66C2A5" "#3288BD")))
+
+(defun brewer-palette (palette n)
+  "First N colors of the ColorBrewer PALETTE (a name string), erroring
+past the palette's size like mizani does for qualitative palettes."
+  (let ((colors (cdr (assoc palette *brewer-palettes* :test #'string-equal))))
+    (unless colors
+      (error "Unknown brewer palette ~S. Known: ~{~A~^ ~}"
+             palette (mapcar #'car *brewer-palettes*)))
+    (when (> n (length colors))
+      (error "Brewer palette ~A has only ~D colors (asked for ~D)"
+             palette (length colors) n))
+    (subseq colors 0 n)))
+
+(defun scale-color-brewer (&rest args &key (palette "Set1") type name breaks
+                                           labels limits guide)
+  "Discrete colors from a ColorBrewer palette. TYPE is accepted for
+plotnine compatibility and ignored (the palette name is unambiguous)."
+  (declare (ignore type name breaks labels limits guide))
+  (let ((clean (loop for (k v) on args by #'cddr
+                     unless (member k '(:palette :type)) append (list k v))))
+    (apply #'make-instance 'scale-discrete-palette
+           :aesthetics '(:color)
+           :palette (lambda (n) (brewer-palette palette n))
+           clean)))
+
+(defun scale-fill-brewer (&rest args &key (palette "Set1") type name breaks
+                                          labels limits guide)
+  "Discrete fills from a ColorBrewer palette."
+  (declare (ignore type name breaks labels limits guide))
+  (let ((clean (loop for (k v) on args by #'cddr
+                     unless (member k '(:palette :type)) append (list k v))))
+    (apply #'make-instance 'scale-discrete-palette
+           :aesthetics '(:fill)
+           :palette (lambda (n) (brewer-palette palette n))
+           clean)))
+
+;;; ============================================================
+;;; Diverging and multi-stop gradients (mizani gradient_n_pal: linear
+;;; RGB interpolation between stops)
+;;; ============================================================
+
+(defclass scale-gradientn-obj (scale-continuous)
+  ((colors :initarg :colors :reader scale-gradientn-colors)
+   (stop-values :initarg :stop-values :initform nil
+                :reader scale-gradientn-values
+                :documentation "Stop positions in [0,1]; NIL = even.")
+   (midpoint :initarg :midpoint :initform nil
+             :reader scale-gradientn-midpoint
+             :documentation "Data value mapped to the middle stop
+(gradient2); NIL maps limits linearly onto [0,1]."))
+  (:documentation "Continuous color scale interpolating a color list."))
+
+(defmethod scale-map ((scale scale-gradientn-obj) values)
+  (destructuring-bind (lo hi) (scale-limits scale)
+    (let* ((colors (scale-gradientn-colors scale))
+           (n (length colors))
+           (stops (or (scale-gradientn-values scale)
+                      (loop for i from 0 below n
+                            collect (/ (float i 1.0d0) (max 1 (1- n))))))
+           (rgbs (mapcar (lambda (c)
+                           (multiple-value-list (%parse-hex-color c)))
+                         colors))
+           (mid (scale-gradientn-midpoint scale)))
+      (flet ((to-unit (v)
+               (let ((v (float v 1.0d0)))
+                 (if mid
+                     ;; symmetric around the midpoint (gradient2)
+                     (let ((half (max (- hi mid) (- mid lo) 1.0d-12)))
+                       (max 0.0d0 (min 1.0d0
+                                       (+ 0.5d0 (/ (- v mid) (* 2 half))))))
+                     (max 0.0d0 (min 1.0d0 (/ (- v lo)
+                                              (max (- hi lo) 1.0d-12)))))))
+             (interp (u)
+               (loop for (s0 s1) on stops
+                     for (c0 c1) on rgbs
+                     while s1
+                     when (<= u s1)
+                       return (let ((f (/ (- u s0) (max (- s1 s0) 1.0d-12))))
+                                (%rgb-to-hex
+                                 (+ (first c0) (* f (- (first c1) (first c0))))
+                                 (+ (second c0) (* f (- (second c1) (second c0))))
+                                 (+ (third c0) (* f (- (third c1) (third c0))))))
+                     finally (return (apply #'%rgb-to-hex (car (last rgbs)))))))
+        (map 'simple-vector (lambda (v) (interp (to-unit v))) values)))))
+
+(defun scale-color-gradient2 (&rest args &key (low "#832424") (mid "#FFFFFF")
+                                              (high "#3A3A98") (midpoint 0.0d0)
+                                              name breaks labels limits guide)
+  "Diverging gradient: LOW at one end, MID at MIDPOINT, HIGH at the other
+(plotnine defaults #832424/white/#3A3A98, midpoint 0)."
+  (declare (ignore name breaks labels limits guide))
+  (let ((clean (loop for (k v) on args by #'cddr
+                     unless (member k '(:low :mid :high :midpoint))
+                       append (list k v))))
+    (apply #'make-instance 'scale-gradientn-obj
+           :aesthetics '(:color)
+           :colors (list low mid high) :midpoint midpoint clean)))
+
+(defun scale-fill-gradient2 (&rest args &key (low "#832424") (mid "#FFFFFF")
+                                             (high "#3A3A98") (midpoint 0.0d0)
+                                             name breaks labels limits guide)
+  "Diverging fill gradient (see scale-color-gradient2)."
+  (declare (ignore name breaks labels limits guide))
+  (let ((clean (loop for (k v) on args by #'cddr
+                     unless (member k '(:low :mid :high :midpoint))
+                       append (list k v))))
+    (apply #'make-instance 'scale-gradientn-obj
+           :aesthetics '(:fill)
+           :colors (list low mid high) :midpoint midpoint clean)))
+
+(defun scale-color-gradientn (&rest args &key colors values name breaks
+                                              labels limits guide)
+  "Continuous colors through an arbitrary stop list."
+  (declare (ignore name breaks labels limits guide))
+  (let ((clean (loop for (k v) on args by #'cddr
+                     unless (member k '(:colors :values)) append (list k v))))
+    (apply #'make-instance 'scale-gradientn-obj
+           :aesthetics '(:color) :colors colors :stop-values values clean)))
+
+(defun scale-fill-gradientn (&rest args &key colors values name breaks
+                                             labels limits guide)
+  "Continuous fills through an arbitrary stop list."
+  (declare (ignore name breaks labels limits guide))
+  (let ((clean (loop for (k v) on args by #'cddr
+                     unless (member k '(:colors :values)) append (list k v))))
+    (apply #'make-instance 'scale-gradientn-obj
+           :aesthetics '(:fill) :colors colors :stop-values values clean)))
+
+;;; ============================================================
+;;; sqrt / reverse positional transforms
+;;; ============================================================
+
+(defclass scale-sqrt-obj (scale-continuous) ())
+
+(defmethod scale-transform ((scale scale-sqrt-obj) values)
+  (map 'simple-vector
+       (lambda (v)
+         (let ((v (float v 1.0d0)))
+           (if (minusp v)
+               (error "sqrt scale: negative value ~S" v)
+               (sqrt v))))
+       values))
+
+(defmethod scale-break-labels ((scale scale-sqrt-obj) breaks)
+  (let ((user (scale-user-labels scale)))
+    (if (not (eq user :auto))
+        user
+        ;; label with the untransformed values
+        (%format-break-set (mapcar (lambda (b) (* b b)) breaks)))))
+
+(defun scale-x-sqrt (&rest args &key name breaks labels limits expand)
+  (declare (ignore name breaks labels limits expand))
+  (apply #'make-instance 'scale-sqrt-obj :aesthetics '(:x :xmin :xmax :xend) args))
+
+(defun scale-y-sqrt (&rest args &key name breaks labels limits expand)
+  (declare (ignore name breaks labels limits expand))
+  (apply #'make-instance 'scale-sqrt-obj :aesthetics '(:y :ymin :ymax :yend) args))
+
+(defclass scale-reverse-obj (scale-continuous) ())
+
+(defmethod scale-transform ((scale scale-reverse-obj) values)
+  (map 'simple-vector (lambda (v) (- (float v 1.0d0))) values))
+
+(defmethod scale-break-labels ((scale scale-reverse-obj) breaks)
+  (let ((user (scale-user-labels scale)))
+    (if (not (eq user :auto))
+        user
+        (%format-break-set (mapcar #'- breaks)))))
+
+(defun scale-x-reverse (&rest args &key name breaks labels limits expand)
+  (declare (ignore name breaks labels limits expand))
+  (apply #'make-instance 'scale-reverse-obj :aesthetics '(:x :xmin :xmax :xend) args))
+
+(defun scale-y-reverse (&rest args &key name breaks labels limits expand)
+  (declare (ignore name breaks labels limits expand))
+  (apply #'make-instance 'scale-reverse-obj :aesthetics '(:y :ymin :ymax :yend) args))
+
+;;; ============================================================
+;;; Identity scales: values used as-is
+;;; ============================================================
+
+(defclass scale-identity-obj (scale)
+  ())
+
+(defmethod scale-train ((scale scale-identity-obj) values)
+  (declare (ignore values)))
+(defmethod scale-transform ((scale scale-identity-obj) values) values)
+(defmethod scale-map ((scale scale-identity-obj) values) values)
+(defmethod scale-limits ((scale scale-identity-obj)) (list 0 1))
+(defmethod scale-breaks ((scale scale-identity-obj)) '())
+(defmethod scale-break-labels ((scale scale-identity-obj) breaks)
+  (declare (ignore breaks))
+  '())
+
+(defun scale-color-identity ()
+  "Use the mapped column's values directly as colors."
+  (make-instance 'scale-identity-obj :aesthetics '(:color) :guide :none))
+
+(defun scale-fill-identity ()
+  "Use the mapped column's values directly as fills."
+  (make-instance 'scale-identity-obj :aesthetics '(:fill) :guide :none))
+
+(defun scale-shape-identity ()
+  (make-instance 'scale-identity-obj :aesthetics '(:shape) :guide :none))
+
+(defun scale-size-identity ()
+  (make-instance 'scale-identity-obj :aesthetics '(:size) :guide :none))
+
+;;; ============================================================
 ;;; Grey palettes
 ;;; ============================================================
 

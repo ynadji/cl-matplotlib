@@ -214,7 +214,7 @@ the average advance."
   "The first continuous color/fill scale needing a colorbar guide, or NIL."
   (loop for (aes . scale) in (ggbuilt-scales built)
         when (and (member aes '(:color :fill))
-                  (typep scale 'scale-gradient-obj)
+                  (typep scale '(or scale-gradient-obj scale-gradientn-obj))
                   (not (eq (scale-guide scale) :none)))
           return scale))
 

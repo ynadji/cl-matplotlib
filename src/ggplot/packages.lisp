@@ -40,6 +40,12 @@
    #:scale-shape-manual #:scale-size #:scale-alpha
    #:scale-color-gradient #:scale-fill-gradient
    #:scale-color-cmap #:scale-fill-cmap
+   #:scale-color-gradient2 #:scale-fill-gradient2
+   #:scale-color-gradientn #:scale-fill-gradientn
+   #:scale-color-brewer #:scale-fill-brewer
+   #:scale-x-sqrt #:scale-y-sqrt #:scale-x-reverse #:scale-y-reverse
+   #:scale-color-identity #:scale-fill-identity
+   #:scale-shape-identity #:scale-size-identity
    #:scale-x-log10 #:scale-y-log10
    #:scale-x-date #:scale-y-date #:date #:format-date
    #:scale-color-grey #:scale-fill-grey

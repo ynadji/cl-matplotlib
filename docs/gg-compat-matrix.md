@@ -10,6 +10,9 @@ justified exceptions). Updated: 2026-07-06.
 | example | SSIM | status |
 |---|---|---|
 | gg-boxplot | 0.969 | pass |
+| gg-brewer | 0.957 | pass |
+| gg-reverse | 0.934 | pass |
+| gg-gradient2 | 0.910 | pass |
 | gg-area-stacked | 0.968 | pass |
 | gg-density | 0.964 | pass |
 | gg-violin | 0.958 | pass |
@@ -68,7 +71,7 @@ All: identity stack fill dodge jitter nudge. (dodge2/jitterdodge planned.)
 ### scales
 | implemented | planned | notes |
 |---|---|---|
-| x/y continuous + discrete, x/y log10, x/y date, color/fill discrete (HLS = plotnine default), manual, gradient, grey; shape manual; size (area palette); alpha; xlim/ylim/lims; expand-limits | sqrt/reverse/datetime; brewer/cmap/gradient2/gradientn; identity scales | log10 transforms data + integer-exponent ticks, like plotnine. Date scales take universal-time values (see `gg:date`), `:date-breaks '(:month 6)` calendar breaks, `:date-labels` strftime subset |
+| x/y continuous + discrete, x/y log10, x/y sqrt, x/y reverse, x/y date, color/fill discrete (HLS = plotnine default), manual, brewer (22 ColorBrewer palettes), gradient, gradient2, gradientn, cmap (viridis default), grey, identity (color/fill/shape/size); shape manual; size (area palette); alpha; xlim/ylim/lims; expand-limits | datetime | log10 transforms data + integer-exponent ticks, like plotnine. Date scales take universal-time values (see `gg:date`), `:date-breaks '(:month 6)` calendar breaks, `:date-labels` strftime subset |
 
 ### coords / facets
 - coord-cartesian, coord-flip. Planned: coord-fixed/equal/trans.
