@@ -355,3 +355,66 @@
     (unless (results-status results)
       (error "gg tests failed"))
     results))
+
+;;; ============================================================
+;;; Coord protocol: polar math, trans breaks, munching
+;;; ============================================================
+
+(test coord-polar-transform-math
+  (let ((coord (gg:coord-polar :theta :x))
+        (panel '(:x-raw-range (0.0d0 10.0d0) :y-raw-range (0.0d0 1.0d0)
+                 :x-range (0.0d0 10.0d0) :y-range (0.0d0 1.0d0))))
+    ;; theta 0 at 12 o'clock: (0, r) -> (0, r)
+    (multiple-value-bind (xs ys)
+        (ggplot::coord-transform-points coord '(0.0d0) '(1.0d0) panel)
+      (is (< (abs (first xs)) 1d-9))
+      (is (< (abs (- (first ys) 1.0d0)) 1d-9)))
+    ;; quarter turn clockwise: x = 2.5 -> 3 o'clock = (1, 0)
+    (multiple-value-bind (xs ys)
+        (ggplot::coord-transform-points coord '(2.5d0) '(1.0d0) panel)
+      (is (< (abs (- (first xs) 1.0d0)) 1d-9))
+      (is (< (abs (first ys)) 1d-9))))
+  ;; direction -1 goes anticlockwise
+  (let ((coord (gg:coord-polar :theta :x :direction -1))
+        (panel '(:x-raw-range (0.0d0 10.0d0) :y-raw-range (0.0d0 1.0d0)
+                 :x-range (0.0d0 10.0d0) :y-range (0.0d0 1.0d0))))
+    (multiple-value-bind (xs ys)
+        (ggplot::coord-transform-points coord '(2.5d0) '(1.0d0) panel)
+      (declare (ignore ys))
+      (is (< (abs (- (first xs) -1.0d0)) 1d-9)))))
+
+(test coord-munch-counts
+  (multiple-value-bind (xs ys)
+      (ggplot::%munch-segments '(0.0d0 1.0d0 2.0d0) '(0.0d0 1.0d0 0.0d0)
+                               :n 10)
+    ;; 2 segments x 10 + final point
+    (is (= 21 (length xs)))
+    (is (= 21 (length ys)))))
+
+(test coord-trans-break-positions
+  (let ((coord (gg:coord-trans :x :log10)))
+    (is (equal '(0.0d0 1.0d0 2.0d0)
+               (mapcar (lambda (v) (float v 1d0))
+                       (ggplot::coord-adjust-breaks
+                        coord '(1.0d0 10.0d0 100.0d0) :x))))
+    ;; y untransformed
+    (is (equal '(5.0d0) (ggplot::coord-adjust-breaks coord '(5.0d0) :y)))))
+
+(test coord-flip-through-protocol
+  (let ((table (ggplot::make-gtable :x #(1.0d0) :y #(2.0d0))))
+    (let ((flipped (ggplot::coord-transform-table (gg:coord-flip) table nil)))
+      (is (= 2.0d0 (svref (ggplot::gtable-column flipped :x) 0)))
+      (is (= 1.0d0 (svref (ggplot::gtable-column flipped :y) 0))))
+    ;; cartesian is identity
+    (is (eq table (ggplot::coord-transform-table (gg:coord-cartesian)
+                                                 table nil)))))
+
+(test coord-pie-renders
+  (let ((p (gg:stack (gg:ggplot '(:cat #("a" "b") :value #(30.0d0 70.0d0))
+                                (gg:aes :x 0 :y :value :fill :cat))
+             (gg:geom-bar :stat :identity :width 1)
+             (gg:coord-polar :theta :y))))
+    (let ((path (format nil "/tmp/gg-pie-test-~D.png" (get-universal-time))))
+      (finishes (gg:ggsave p path))
+      (is-true (probe-file path))
+      (when (probe-file path) (delete-file path)))))

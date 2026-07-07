@@ -33,7 +33,8 @@
    #:position-identity #:position-stack #:position-fill #:position-dodge
    #:position-jitter #:position-nudge
    ;; coords
-   #:coord-cartesian #:coord-flip
+   #:coord-cartesian #:coord-flip #:coord-fixed #:coord-equal
+   #:coord-trans #:coord-polar
    ;; facets
    #:facet-wrap #:facet-grid
    ;; helpers

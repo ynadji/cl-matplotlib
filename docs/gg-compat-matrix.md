@@ -27,6 +27,8 @@ justified exceptions). Updated: 2026-07-07.
 | ggblank | 0.951 | pass |
 | gg-bar-basic | 0.950 | pass |
 | gg-rug-scatter | 0.939 | pass |
+| gg-coord-fixed | 0.949 | pass |
+| gg-coord-trans-log10 | 0.933 | pass |
 | gg-errorbar | 0.937 | pass |
 | gg-bar-percent | 0.935 | pass |
 | gg-scatter-color | 0.934 | pass |
@@ -87,7 +89,15 @@ All: identity stack fill dodge jitter nudge. (dodge2/jitterdodge planned.)
 | x/y continuous + discrete, x/y log10, x/y sqrt, x/y reverse, x/y date, color/fill discrete (HLS = plotnine default), manual, brewer (22 ColorBrewer palettes), gradient, gradient2, gradientn, cmap (viridis default), grey, identity (color/fill/shape/size); shape manual; size (area palette); alpha; xlim/ylim/lims; expand-limits | datetime | log10 transforms data + integer-exponent ticks, like plotnine. Date scales take universal-time values (see `gg:date`), `:date-breaks '(:month 6)` calendar breaks, `:date-labels` strftime subset |
 
 ### coords / facets
-- coord-cartesian, coord-flip. Planned: coord-fixed/equal/trans.
+- Full coord protocol (coord-transform-table/-points, munching, aspect,
+  coord-drawn grids - exported via gg.ext for extensions):
+  coord-cartesian, coord-flip (routed through the protocol, still the
+  calibrated column swap), coord-fixed/coord-equal (panel aspect),
+  coord-trans (:log10/:sqrt/:reverse positions after stats, breaks
+  labeled in data space), and coord-polar (:theta :x/:y, :start,
+  :direction; bars munch into wedges - pie/coxcomb charts). NOTE:
+  plotnine has NO coord_polar, so gg-pie/gg-coxcomb ship as
+  unit-tested demos without SSIM references - this exceeds plotnine.
 - facet-wrap and facet-grid (row/column strips), :scales :fixed/:free/
   :free-x/:free-y (continuous scales; free dims get per-panel limits,
   breaks, and tick labels with plotnine's widened panel spacing),

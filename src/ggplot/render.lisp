@@ -25,7 +25,8 @@ the axis with the computed column's name (\"count\")."
   "Label for KEY (:x :y :title ...): explicit labs (already swapped for
 coord-flip by ggbuild), else mapping fallback, else stat fallback."
   (or (cdr (assoc key (ggbuilt-labs built)))
-      (let* ((flipped (typep (plot-coord (ggbuilt-plot built)) 'coord-flip-obj))
+      (let* ((flipped (let ((c (plot-coord (ggbuilt-plot built))))
+                        (and c (coord-flipped-p c))))
              (aesthetic (case key
                           (:x (if flipped :y :x))
                           (:y (if flipped :x :y))
@@ -813,12 +814,88 @@ x in [1, 1+strip-frac]) with the label rotated -90."
                          :rotation -90.0d0
                          :fontsize 8.8d0 :color "#1A1A1A" :zorder 5)))
 
+(defun %draw-layer-polar (coord layer table panel axes)
+  "Draw one layer under a polar-like coord: rect-family rows become
+munched, transformed polygons (bars -> wedges); paths/lines munch and
+bend; points map directly. Unsupported geoms warn once."
+  (let ((geom (layer-geom layer)))
+    (cond
+      ;; rect family: xmin/xmax/ymin/ymax columns
+      ((and (gtable-column table :xmin) (gtable-column table :ymin))
+       (dotimes (i (gtable-nrows table))
+         (flet ((col (name &optional default)
+                  (let ((c (gtable-column table name)))
+                    (if (and c (svref c i)) (svref c i) default))))
+           (let* ((x0 (float (col :xmin) 1d0)) (x1 (float (col :xmax) 1d0))
+                  (y0 (float (col :ymin) 1d0)) (y1 (float (col :ymax) 1d0))
+                  (outline-x (list x0 x1 x1 x0 x0))
+                  (outline-y (list y0 y0 y1 y1 y0)))
+             (multiple-value-bind (mx my)
+                 (%munch-segments outline-x outline-y :n 20)
+               (multiple-value-bind (px py)
+                   (coord-transform-points coord mx my panel)
+                 (let* ((fill (or (col :fill) "#595959"))
+                        (color (col :color))
+                        (poly (make-instance
+                               'cl-matplotlib.rendering:polygon
+                               :xy (mapcar #'list px py)
+                               :closed t
+                               :facecolor fill
+                               :edgecolor (or color fill)
+                               :linewidth (if color
+                                              (size-to-linewidth
+                                               (or (col :size) 0.5d0))
+                                              0.5d0)
+                               :zorder 2)))
+                   (let ((alpha (col :alpha)))
+                     (when (and alpha (< (float alpha 1d0) 1.0d0))
+                       (setf (cl-matplotlib.rendering:artist-alpha poly)
+                             (float alpha 1d0))))
+                   (setf (cl-matplotlib.rendering:artist-transform poly)
+                         (cl-matplotlib.containers:axes-base-trans-data
+                          axes))
+                   (cl-matplotlib.containers:axes-add-patch axes poly))))))))
+      ;; path/line family
+      ((typep geom 'geom-path-obj)
+       (let ((x (gtable-column table :x))
+             (y (gtable-column table :y)))
+         (when (and x y (> (length x) 1))
+           (multiple-value-bind (mx my)
+               (%munch-segments (coerce x 'list) (coerce y 'list) :n 20)
+             (multiple-value-bind (px py)
+                 (coord-transform-points coord mx my panel)
+               (cl-matplotlib.containers:plot
+                axes px py
+                :color (%column-value table :color "black")
+                :linewidth (size-to-linewidth
+                            (%column-value table :size 0.5d0))
+                :zorder 2))))))
+      ;; points
+      ((typep geom 'geom-point-obj)
+       (let ((x (gtable-column table :x))
+             (y (gtable-column table :y)))
+         (when (and x y)
+           (multiple-value-bind (px py)
+               (coord-transform-points coord (coerce x 'list)
+                                       (coerce y 'list) panel)
+             (cl-matplotlib.containers:scatter
+              axes px py
+              :c (%column-value table :color "black")
+              :s (size-to-scatter-s (%column-value table :size 1.5d0))
+              :zorder 2)))))
+      (t
+       (warn "geom ~a is not supported under coord-polar yet"
+             (type-of geom))))))
+
 (defmethod ggrender ((built ggbuilt) &key figure (width 6.4d0) (height 4.8d0) (dpi 100))
   (let* ((theme (ggbuilt-theme built))
          (nrow (or (ggbuilt-nrow built) 1))
          (ncol (or (ggbuilt-ncol built) 1))
          (facet (or (plot-facet (ggbuilt-plot built))
                     (make-instance 'facet-null-obj)))
+         (coord (or (plot-coord (ggbuilt-plot built))
+                    (make-instance 'coord-cartesian-obj)))
+         (polar-like (not (coord-uses-axes-frame-p coord)))
          (grid-p (typep facet 'facet-grid-obj))
          (free-x (facet-free-x-p facet))
          (free-y (facet-free-y-p facet))
@@ -916,6 +993,34 @@ x in [1, 1+strip-frac]) with the label rotated -90."
                  (setf (cl-matplotlib.containers:axes-base-position axes)
                        (list (first pos) (second pos) (third pos)
                              (- (fourth pos) (/ strip-px height-px))))))
+             ;; coord aspect (coord-fixed ratio, polar 1): shrink the
+             ;; panel box inside its cell, centered
+             (let ((ratio (coord-aspect coord panel)))
+               (when ratio
+                 (destructuring-bind (x0 x1) (if polar-like
+                                                 '(-1.25d0 1.25d0)
+                                                 (getf panel :x-range))
+                   (destructuring-bind (y0 y1) (if polar-like
+                                                   '(-1.25d0 1.25d0)
+                                                   (getf panel :y-range))
+                     (let* ((pos (cl-matplotlib.containers:axes-base-position
+                                  axes))
+                            (w-px (* (third pos) width-px))
+                            (h-px (* (fourth pos) height-px))
+                            (want-h/w (* ratio (/ (- y1 y0) (- x1 x0))))
+                            (have-h/w (/ h-px w-px)))
+                       (multiple-value-bind (new-w new-h)
+                           (if (> have-h/w want-h/w)
+                               (values w-px (* w-px want-h/w))
+                               (values (/ h-px want-h/w) h-px))
+                         (setf (cl-matplotlib.containers:axes-base-position
+                                axes)
+                               (list (+ (first pos)
+                                        (/ (- w-px new-w) 2 width-px))
+                                     (+ (second pos)
+                                        (/ (- h-px new-h) 2 height-px))
+                                     (/ new-w width-px)
+                                     (/ new-h height-px)))))))))
              (push (cons idx axes) axes-list)
              (when (%hide-spines-p theme)
                ;; the spines container is keyed by STRINGS
@@ -925,15 +1030,35 @@ x in [1, 1+strip-frac]) with the label rotated -90."
                      (let ((spine (cl-matplotlib.containers:spines-ref spines side)))
                        (when spine
                          (cl-matplotlib.containers:spine-set-visible spine nil)))))))
-             ;; Ranges and ticks (fixed scales: identical on every panel)
-             (destructuring-bind (x0 x1) (getf panel :x-range)
-               (cl-matplotlib.containers:axes-set-xlim axes :min x0 :max x1))
-             (destructuring-bind (y0 y1) (getf panel :y-range)
-               (cl-matplotlib.containers:axes-set-ylim axes :min y0 :max y1))
-             (cl-matplotlib.containers:axes-set-xticks
-              axes (getf panel :x-breaks) :labels (getf panel :x-labels))
-             (cl-matplotlib.containers:axes-set-yticks
-              axes (getf panel :y-breaks) :labels (getf panel :y-labels))
+             ;; Ranges and ticks (fixed scales: identical on every panel).
+             ;; Polar-like coords own their frame: unit box, no ticks,
+             ;; hidden spines; the coord draws grid/labels itself.
+             (cond
+               (polar-like
+                (cl-matplotlib.containers:axes-set-xlim
+                 axes :min -1.25d0 :max 1.25d0)
+                (cl-matplotlib.containers:axes-set-ylim
+                 axes :min -1.25d0 :max 1.25d0)
+                (cl-matplotlib.containers:axes-set-xticks axes '())
+                (cl-matplotlib.containers:axes-set-yticks axes '())
+                (let ((spines (cl-matplotlib.containers:axes-base-spines
+                               axes)))
+                  (when spines
+                    (dolist (side (list "left" "right" "top" "bottom"))
+                      (let ((spine (cl-matplotlib.containers:spines-ref
+                                    spines side)))
+                        (when spine
+                          (cl-matplotlib.containers:spine-set-visible
+                           spine nil)))))))
+               (t
+                (destructuring-bind (x0 x1) (getf panel :x-range)
+                  (cl-matplotlib.containers:axes-set-xlim axes :min x0 :max x1))
+                (destructuring-bind (y0 y1) (getf panel :y-range)
+                  (cl-matplotlib.containers:axes-set-ylim axes :min y0 :max y1))
+                (cl-matplotlib.containers:axes-set-xticks
+                 axes (getf panel :x-breaks) :labels (getf panel :x-labels))
+                (cl-matplotlib.containers:axes-set-yticks
+                 axes (getf panel :y-breaks) :labels (getf panel :y-labels))))
              ;; Shared-axis tick label suppression (fixed dims only:
              ;; free scales label every panel, like plotnine)
              (when multi
@@ -980,12 +1105,17 @@ x in [1, 1+strip-frac]) with the label rotated -90."
                  (unless (or free-y (zerop col))
                    (cl-matplotlib.containers:axis-set-tick-params
                     y-axis :size 0.0 :which :major))))
-             (%apply-panel-theme theme axes panel)
+             (if polar-like
+                 (coord-draw-grid coord panel axes theme)
+                 (%apply-panel-theme theme axes panel))
              ;; Layers, filtered to this panel
              (loop for (layer . table) in (ggbuilt-layer-tables built)
                    for subset = (%gtable-panel-subset table idx)
                    when (plusp (gtable-nrows subset))
-                     do (geom-draw-panel (layer-geom layer) subset panel axes))
+                     do (if polar-like
+                            (%draw-layer-polar coord layer subset panel axes)
+                            (geom-draw-panel (layer-geom layer) subset panel
+                                             axes)))
              ;; Strips: facet-wrap above every cell; facet-grid above the
              ;; top row and right of the last column, in the margin bands
              (cond

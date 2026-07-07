@@ -250,8 +250,9 @@ or the y equivalents) from a fresh scale trained on the panel's rows."
             (intern (format nil "~A-MINOR" prefix) :keyword)
             (scale-minor-breaks local breaks range)))))
 
-(defun %panel-params (scales &key flipped)
-  (let* ((x-scale (%scale-for scales :x))
+(defun %panel-params (scales &key flipped coord)
+  (let* ((coord (or coord (make-instance 'coord-cartesian-obj)))
+         (x-scale (%scale-for scales :x))
          (y-scale (%scale-for scales :y))
          (x-range (scale-expanded-range x-scale))
          (y-range (scale-expanded-range y-scale))
@@ -259,16 +260,40 @@ or the y equivalents) from a fresh scale trained on the panel's rows."
                                   (scale-breaks x-scale)))
          (y-breaks (remove-if-not (lambda (b) (<= (first y-range) b (second y-range)))
                                   (scale-breaks y-scale)))
+         ;; labels come from the UNtransformed breaks; coord-trans then
+         ;; maps break/range POSITIONS (identity for other coords)
+         (x-labels (scale-break-labels x-scale x-breaks))
+         (y-labels (scale-break-labels y-scale y-breaks))
+         (x-minor (scale-minor-breaks x-scale x-breaks x-range))
+         (y-minor (scale-minor-breaks y-scale y-breaks y-range))
+         (x-range (sort (coord-adjust-breaks coord x-range :x) #'<))
+         (y-range (sort (coord-adjust-breaks coord y-range :y) #'<))
+         (x-breaks (coord-adjust-breaks coord x-breaks :x))
+         (y-breaks (coord-adjust-breaks coord y-breaks :y))
+         (x-minor (coord-adjust-breaks coord x-minor :x))
+         (y-minor (coord-adjust-breaks coord y-minor :y))
+         ;; raw (unexpanded) ranges for coord-polar's theta/r rescaling:
+         ;; ggplot2 closes the circle over the data extent, not the
+         ;; expanded view (discrete axes span the outer bar edges)
+         (x-raw (if (typep x-scale 'scale-discrete)
+                    (let ((n (length (scale-levels x-scale))))
+                      (list 0.5d0 (+ n 0.5d0)))
+                    (scale-limits x-scale)))
+         (y-raw (if (typep y-scale 'scale-discrete)
+                    (let ((n (length (scale-levels y-scale))))
+                      (list 0.5d0 (+ n 0.5d0)))
+                    (scale-limits y-scale)))
          (params (list :index 0
                        :x-range x-range
                        :y-range y-range
+                       :x-raw-range x-raw
+                       :y-raw-range y-raw
                        :x-breaks x-breaks
-                       :x-labels (scale-break-labels x-scale x-breaks)
-                       :x-minor (scale-minor-breaks x-scale x-breaks x-range)
+                       :x-labels x-labels
+                       :x-minor x-minor
                        :y-breaks y-breaks
-                       :y-labels (scale-break-labels y-scale y-breaks)
-                       :y-minor (scale-minor-breaks y-scale y-breaks
-                                                    y-range))))
+                       :y-labels y-labels
+                       :y-minor y-minor)))
     (if flipped
         (list :index 0
               :x-range (getf params :y-range)
@@ -372,7 +397,8 @@ or the y equivalents) from a fresh scale trained on the panel's rows."
 
 (defmethod ggbuild ((plot ggplot))
   (let* ((layers (%plot-effective-layers plot))
-         (flipped (typep (plot-coord plot) 'coord-flip-obj))
+         (coord (or (plot-coord plot) (make-instance 'coord-cartesian-obj)))
+         (flipped (coord-flipped-p coord))
          (facet (or (plot-facet plot) (make-instance 'facet-null-obj)))
          (raw-tables (mapcar (lambda (layer) (%layer-table plot layer)) layers)))
     (multiple-value-bind (layout nrow ncol) (facet-layout facet raw-tables)
@@ -449,13 +475,14 @@ or the y equivalents) from a fresh scale trained on the panel's rows."
                   layer-tables))
     ;; 6. train continuous positional scales on the final geometry
     (%train-positional-scales scales layer-tables)
-    ;; 7. coord-flip: swap aesthetic columns; panel params swap ranges
-    (when flipped
-      (setf layer-tables
-            (mapcar (lambda (entry)
-                      (destructuring-bind (layer . table) entry
-                        (cons layer (%flip-table table))))
-                    layer-tables)))
+    ;; 7. coord table transform (flip's column swap, trans's post-stat
+    ;; position transform; identity for cartesian/polar)
+    (setf layer-tables
+          (mapcar (lambda (entry)
+                    (destructuring-bind (layer . table) entry
+                      (cons layer (coord-transform-table coord table plot))))
+                  layer-tables))
+
     (%make-ggbuilt
      :plot plot
      :layer-tables layer-tables
@@ -463,7 +490,8 @@ or the y equivalents) from a fresh scale trained on the panel's rows."
      :layout layout
      :nrow nrow
      :ncol ncol
-     :panels (let ((base (%panel-params scales :flipped flipped))
+     :panels (let ((base (%panel-params scales :flipped flipped
+                                              :coord coord))
                    (free-x (facet-free-x-p facet))
                    (free-y (facet-free-y-p facet)))
                (when (and flipped (or free-x free-y))

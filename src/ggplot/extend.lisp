@@ -21,8 +21,16 @@
                 #:scale-train #:scale-transform #:scale-map #:scale-limits
                 #:scale-breaks #:scale-break-labels #:scale-expanded-range
                 #:scale-minor-breaks
+                ;; coord protocol
+                #:coord-transform-table #:coord-flipped-p
+                #:coord-transform-points #:coord-munch-p #:coord-aspect
+                #:coord-uses-axes-frame-p #:coord-draw-grid
+                #:coord-adjust-breaks
                 ;; layers and composition
-                #:make-layer #:make-geom-layer #:ggadd
+                #:coord-transform-table #:coord-flipped-p
+   #:coord-transform-points #:coord-munch-p #:coord-aspect
+   #:coord-uses-axes-frame-p #:coord-draw-grid #:coord-adjust-breaks
+   #:make-layer #:make-geom-layer #:ggadd
                 ;; registries
                 #:register-stat #:register-position #:register-aesthetic
                 #:resolve-stat #:resolve-position
@@ -45,6 +53,9 @@
    #:scale-train #:scale-transform #:scale-map #:scale-limits
    #:scale-breaks #:scale-break-labels #:scale-expanded-range
    #:scale-minor-breaks
+   #:coord-transform-table #:coord-flipped-p
+   #:coord-transform-points #:coord-munch-p #:coord-aspect
+   #:coord-uses-axes-frame-p #:coord-draw-grid #:coord-adjust-breaks
    #:make-layer #:make-geom-layer #:ggadd
    #:register-stat #:register-position #:register-aesthetic
    #:resolve-stat #:resolve-position
