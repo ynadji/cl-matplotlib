@@ -211,30 +211,30 @@ ignored negative left bearings — both fixed alongside the kerning bug.
 
 ## P3 — performance
 
-- [ ] **O(n²) `%coll-nth` in line/poly/quad-mesh/quiver draw loops** — `collections.lisp:312-329,
+- [x] **O(n²) `%coll-nth` in line/poly/quad-mesh/quiver draw loops** — `collections.lisp:312-329,
   494-512,621-637`, `quiver.lisp:167-186`. Base method already has the fix (`%coll-nth-vec`);
   apply it to the four overriding methods. pcolormesh 100×100 ≈ 10⁸ list traversals per draw.
-- [ ] **Marching-squares segment joining quadratic-plus** (`append`/`last` inside rescan loop) —
+- [x] **Marching-squares segment joining quadratic-plus** (`append`/`last` inside rescan loop) —
   `marching-squares.lisp:156-199`. Hash on endpoints → near-linear. Multiplied by level count.
 - [ ] **contourf emits one polygon per grid cell per band** + seam-hiding strokes —
   `marching-squares.lisp:228-264`, `contour.lisp:213-223`. 500×500×8 bands ≈ 2M micro-polygons.
-- [ ] Font manager: full system TTF scan on first use; `load-font-cache`/`save-font-cache` are
+- [x] Font manager: full system TTF scan on first use; `load-font-cache`/`save-font-cache` are
   dead code; no `find-font` memoization; annotation loads a font per draw —
   `font-manager.lisp:236-253,296-329,361-410`.
 - [ ] `%draw-y-axis-label` opens a fresh zpb-ttf loader every draw, no unwind-protect (leaks on
   error) — `axis.lisp:798-830`. Use the caching `load-font`.
-- [ ] Ticks regenerated 2-3× per draw (grid pass, tick pass, ylabel measurement) — `axis.lisp` +
+- [x] Ticks regenerated 2-3× per draw (grid pass, tick pass, ylabel measurement) — `axis.lisp` +
   `axes-base.lisp:492-503`. Cache on the axis.
 - [ ] `%path-axis-aligned-p` transforms all vertices, then trace transforms them again (2N
   transforms + 4N allocations per polyline) — see P2 backends entry.
-- [ ] `scalar-mappable-autoscale` uses `(apply #'min vals)` — exceeds call-arguments-limit on
+- [x] `scalar-mappable-autoscale` uses `(apply #'min vals)` — exceeds call-arguments-limit on
   CCL at 65536 elements — `colors.lisp:713-717`. Use reduce.
-- [ ] SVG emits identical `<clipPath>` per clipped draw (~15 dups in simple-line.svg) —
+- [x] SVG emits identical `<clipPath>` per clipped draw (~15 dups in simple-line.svg) —
   `backend-svg.lisp:297-313`. Dedup by rect.
-- [ ] `hatch-get-path` rebuilt per fill per draw; collection get-paths recons arrays + gc per
+- [x] `hatch-get-path` rebuilt per fill per draw; collection get-paths recons arrays + gc per
   item per draw — `hatch.lisp:283-348`, `collections.lisp:222-257,539-605`.
-- [ ] `%histogram-counts` linear scan per point (comment claims binary search) — `hist.lisp:36-45`.
-- [ ] `compose` grows weak-parent lists on long-lived children per draw; `transform-wrapper-set`
+- [x] `%histogram-counts` linear scan per point (comment claims binary search) — `hist.lisp:36-45`.
+- [x] `compose` grows weak-parent lists on long-lived children per draw; `transform-wrapper-set`
   never detaches old child — `transforms.lisp:167-172,666-673`.
 
 ## P4 — architecture & design
