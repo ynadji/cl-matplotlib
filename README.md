@@ -71,7 +71,9 @@ themes, composed with the `stack` macro (the analogue of ggplot2's `+`):
 `gg:ggcolumn`, and `gg:ggnrows` for your own data structure and every gg
 feature works with it. Column alists/plists, hash-tables, lists of row
 plists, and `gg:make-ggdata` array wrappers are supported out of the box.
-`gg:qplot` gives one-line quick plots.
+`gg:qplot` gives one-line quick plots. Third-party geoms, stats,
+positions, and scales plug in through the `gg.ext` extension package —
+see [docs/gg-extending.md](docs/gg-extending.md).
 
 Output parity is validated pixel-wise against
 [plotnine](https://plotnine.org) with the same SSIM harness used for the

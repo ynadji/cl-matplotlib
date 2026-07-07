@@ -213,6 +213,62 @@
       (delete-file path))))
 
 ;;; ============================================================
+;;; Extension API (gg.ext)
+;;; ============================================================
+;;; A miniature third-party extension: a custom stat registered under a
+;;; keyword and a custom geom, both defined purely against gg.ext.
+
+(defclass test-stat-double (gg.ext:stat) ())
+
+(defmethod gg.ext:stat-compute-panel ((stat test-stat-double) data scales &key)
+  (declare (ignore scales))
+  (gg.ext:map-stat-groups
+   data
+   (lambda (sub)
+     (let ((x (gg.ext:gtable-column sub :x))
+           (y (gg.ext:gtable-column sub :y)))
+       (gg.ext:make-gtable
+        :x x
+        :y (map 'simple-vector (lambda (v) (* 2 v)) y))))))
+
+(defclass test-geom-dot (gg.ext:geom) ())
+
+(defmethod gg.ext:geom-default-aes ((geom test-geom-dot))
+  '(:color "black" :size 1.5d0 :alpha 1.0d0 :stroke 0.5d0 :shape :o))
+
+(defmethod gg.ext:geom-key-glyph ((geom test-geom-dot)) :point)
+
+(defmethod gg.ext:geom-draw-panel ((geom test-geom-dot) data panel axes)
+  (declare (ignore panel))
+  (let ((x (gg.ext:gtable-column data :x))
+        (y (gg.ext:gtable-column data :y)))
+    (cl-matplotlib.containers:scatter
+     axes (coerce x 'list) (coerce y 'list)
+     :s (gg.ext:size-to-scatter-s 1.5d0) :zorder 2)))
+
+(test extension-stat-and-geom
+  (gg.ext:register-stat :test-double 'test-stat-double)
+  (let* ((layer (gg.ext:make-geom-layer 'test-geom-dot
+                                        '() :stat :test-double))
+         (p (gg:ggadd (gg:ggplot '(:x #(1.0d0 2.0d0 3.0d0)
+                                   :y #(1.0d0 2.0d0 3.0d0))
+                                 (gg:aes :x :x :y :y))
+                      layer))
+         (built (gg:ggbuild p))
+         (table (cdr (first (ggplot::ggbuilt-layer-tables built)))))
+    ;; the custom stat doubled y
+    (is (equalp #(2.0d0 4.0d0 6.0d0) (gg.ext:gtable-column table :y)))
+    ;; and the custom geom renders
+    (let ((path (format nil "/tmp/gg-test-ext-~D.png" (get-universal-time))))
+      (finishes (gg:ggsave p path))
+      (is-true (probe-file path))
+      (when (probe-file path) (delete-file path)))))
+
+(test extension-register-aesthetic
+  (gg.ext:register-aesthetic :height)
+  (finishes (gg:aes :x :a :height :h)))
+
+;;; ============================================================
 ;;; Runner
 ;;; ============================================================
 

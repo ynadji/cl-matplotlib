@@ -109,16 +109,31 @@ numpy RNGs can't produce identical streams.")
                                    (lambda (v) (+ v dy)) y))))
     result))
 
+(defvar *position-registry* (make-hash-table :test #'eq)
+  "Keyword -> position class, extensible via register-position.")
+
+(defun register-position (keyword class-name)
+  "Make (geom-* :position KEYWORD) resolve to CLASS-NAME. Extension API."
+  (setf (gethash keyword *position-registry*) class-name))
+
+(mapc (lambda (pair) (register-position (car pair) (cdr pair)))
+      '((:identity . position-identity-obj)
+        (:stack . position-stack-obj)
+        (:fill . position-fill-obj)
+        (:dodge . position-dodge-obj)
+        (:jitter . position-jitter-obj)
+        (:nudge . position-nudge-obj)))
+
 (defun resolve-position (designator)
   (etypecase designator
     (ggposition designator)
-    (keyword (ecase designator
-               (:identity (make-instance 'position-identity-obj))
-               (:stack (make-instance 'position-stack-obj))
-               (:fill (make-instance 'position-fill-obj))
-               (:dodge (make-instance 'position-dodge-obj))
-               (:jitter (make-instance 'position-jitter-obj))
-               (:nudge (make-instance 'position-nudge-obj))))))
+    (keyword
+     (let ((class (gethash designator *position-registry*)))
+       (unless class
+         (error "Unknown position ~S. Known: ~{~S~^ ~} (register-position adds more)"
+                designator
+                (loop for k being the hash-keys of *position-registry* collect k)))
+       (make-instance class)))))
 
 (defun position-identity () (make-instance 'position-identity-obj))
 (defun position-stack () (make-instance 'position-stack-obj))

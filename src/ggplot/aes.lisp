@@ -20,6 +20,12 @@ of the data) to visual properties."))
     (format stream "~{~(~a~)=~a~^ ~}"
             (loop for (k . v) in (aes-alist m) append (list k v)))))
 
+(defun register-aesthetic (keyword)
+  "Allow KEYWORD as an aesthetic in (aes ...). Extension API: a custom
+geom or stat that consumes a new aesthetic registers it here."
+  (pushnew keyword *known-aesthetics*)
+  keyword)
+
 (defun %canonicalize-aesthetic (key)
   (let ((key (if (eq key :colour) :color key)))
     (unless (member key *known-aesthetics*)

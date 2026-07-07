@@ -33,19 +33,34 @@
     (declare (ignore scales))
     data))
 
+(defvar *stat-registry* (make-hash-table :test #'eq)
+  "Keyword -> stat class, extensible via register-stat.")
+
+(defun register-stat (keyword class-name)
+  "Make (geom-* :stat KEYWORD) resolve to CLASS-NAME. Extension API."
+  (setf (gethash keyword *stat-registry*) class-name))
+
+(mapc (lambda (pair) (register-stat (car pair) (cdr pair)))
+      '((:identity . stat-identity-obj)
+        (:count . stat-count-obj)
+        (:bin . stat-bin-obj)
+        (:density . stat-density-obj)
+        (:boxplot . stat-boxplot-obj)
+        (:ydensity . stat-ydensity-obj)
+        (:smooth . stat-smooth-obj)
+        (:ecdf . stat-ecdf-obj)
+        (:qq . stat-qq-obj)))
+
 (defun resolve-stat (designator)
   (etypecase designator
     (stat designator)
-    (keyword (ecase designator
-               (:identity (make-instance 'stat-identity-obj))
-               (:count (make-instance 'stat-count-obj))
-               (:bin (make-instance 'stat-bin-obj))
-               (:density (make-instance 'stat-density-obj))
-               (:boxplot (make-instance 'stat-boxplot-obj))
-               (:ydensity (make-instance 'stat-ydensity-obj))
-               (:smooth (make-instance 'stat-smooth-obj))
-               (:ecdf (make-instance 'stat-ecdf-obj))
-               (:qq (make-instance 'stat-qq-obj))))))
+    (keyword
+     (let ((class (gethash designator *stat-registry*)))
+       (unless class
+         (error "Unknown stat ~S. Known: ~{~S~^ ~} (register-stat adds more)"
+                designator
+                (loop for k being the hash-keys of *stat-registry* collect k)))
+       (make-instance class)))))
 
 (defun %carry-group-constants (source result)
   "Copy the (constant within a group) non-positional aesthetic columns of
@@ -60,7 +75,7 @@ SOURCE onto every row of RESULT."
                                    (make-array n :initial-element (svref col 0)))))))
     result))
 
-(defun %map-stat-groups (data fn)
+(defun map-stat-groups (data fn)
   "Split DATA by :group, apply FN to each sub-table, carry group constants,
 rbind the results."
   (gtable-rbind
@@ -139,7 +154,7 @@ rbind the results."
 
 (defmethod stat-compute-panel ((stat stat-count-obj) data scales &key)
   (declare (ignore scales))
-  (%map-stat-groups
+  (map-stat-groups
    data
    (lambda (sub)
      (let ((x-col (gtable-column sub :x)))
@@ -187,7 +202,7 @@ rbind the results."
 
 (defmethod stat-compute-panel ((stat stat-bin-obj) data scales &key)
   (declare (ignore scales))
-  (%map-stat-groups
+  (map-stat-groups
    data
    (lambda (sub)
      (let ((x-col (gtable-column sub :x)))
@@ -252,7 +267,7 @@ rbind the results."
 
 (defmethod stat-compute-panel ((stat stat-density-obj) data scales &key)
   (declare (ignore scales))
-  (%map-stat-groups
+  (map-stat-groups
    data
    (lambda (sub)
      (let ((x-col (gtable-column sub :x)))
@@ -268,7 +283,7 @@ rbind the results."
 
 (defmethod stat-compute-panel ((stat stat-boxplot-obj) data scales &key)
   (declare (ignore scales))
-  (%map-stat-groups
+  (map-stat-groups
    data
    (lambda (sub)
      (let ((x-col (gtable-column sub :x))
@@ -310,7 +325,7 @@ rbind the results."
 (defmethod stat-compute-panel ((stat stat-ydensity-obj) data scales &key)
   (declare (ignore scales))
   (let* ((result
-           (%map-stat-groups
+           (map-stat-groups
             data
             (lambda (sub)
               (let ((x-col (gtable-column sub :x))
@@ -456,7 +471,7 @@ standard first-order loess variance approximation."
 
 (defmethod stat-compute-panel ((stat stat-smooth-obj) data scales &key)
   (declare (ignore scales))
-  (%map-stat-groups
+  (map-stat-groups
    data
    (lambda (sub)
      (let ((x-col (gtable-column sub :x))
@@ -494,7 +509,7 @@ standard first-order loess variance approximation."
 
 (defmethod stat-compute-panel ((stat stat-ecdf-obj) data scales &key)
   (declare (ignore scales))
-  (%map-stat-groups
+  (map-stat-groups
    data
    (lambda (sub)
      (let ((x-col (gtable-column sub :x)))
@@ -519,7 +534,7 @@ standard first-order loess variance approximation."
 
 (defmethod stat-compute-panel ((stat stat-qq-obj) data scales &key)
   (declare (ignore scales))
-  (%map-stat-groups
+  (map-stat-groups
    data
    (lambda (sub)
      (let ((sample-col (or (gtable-column sub :sample)

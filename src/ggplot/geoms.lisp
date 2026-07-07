@@ -293,7 +293,7 @@ passed as keywords; mapped aesthetics come from (aes ...)."
                   :mapping mapping :data data :params params
                   :show-legend show-legend :inherit-aes inherit-aes))))
 
-(defun %make-geom-layer (geom-class args &key (stat :identity) (position :identity))
+(defun make-geom-layer (geom-class args &key (stat :identity) (position :identity))
   "Generic layer constructor: keyword args other than the layer options
 become fixed-aesthetic params. STAT/POSITION defaults may be overridden
 per call via :stat/:position in ARGS."
@@ -425,7 +425,7 @@ Default position is :stack, like ggplot2."
                                   &allow-other-keys)
   "Area chart: filled region between the x axis and y, stacked by default."
   (declare (ignore mapping data stat show-legend inherit-aes fill color alpha))
-  (%make-geom-layer 'geom-area-obj args :position position))
+  (make-geom-layer 'geom-area-obj args :position position))
 
 (defun geom-ribbon (&rest args &key mapping data stat position show-legend
                                     inherit-aes fill color alpha
@@ -433,7 +433,7 @@ Default position is :stack, like ggplot2."
   "Filled band between ymin and ymax (both must be mapped)."
   (declare (ignore mapping data stat position show-legend inherit-aes
                    fill color alpha))
-  (%make-geom-layer 'geom-ribbon-obj args))
+  (make-geom-layer 'geom-ribbon-obj args))
 
 (defun geom-density (&rest args &key mapping data stat position show-legend
                                      inherit-aes fill color alpha bw adjust
@@ -444,7 +444,7 @@ Default position is :stack, like ggplot2."
   (let ((clean (loop for (k v) on args by #'cddr
                      unless (member k '(:bw :adjust))
                        append (list k v))))
-    (%make-geom-layer 'geom-density-obj
+    (make-geom-layer 'geom-density-obj
                       (list* :stat (make-instance
                                     'stat-density-obj
                                     :bw (or bw :nrd0)
@@ -529,7 +529,7 @@ Default position is :stack, like ggplot2."
   "Box-and-whisker summary per x group (stat-boxplot)."
   (declare (ignore mapping data stat position show-legend inherit-aes
                    fill color width alpha))
-  (%make-geom-layer 'geom-boxplot-obj args :stat :boxplot :position :dodge))
+  (make-geom-layer 'geom-boxplot-obj args :stat :boxplot :position :dodge))
 
 ;;; ============================================================
 ;;; geom-violin
@@ -576,7 +576,7 @@ Default position is :stack, like ggplot2."
   "Mirrored density (violin) per x group (stat-ydensity)."
   (declare (ignore mapping data stat position show-legend inherit-aes
                    fill color width alpha))
-  (%make-geom-layer 'geom-violin-obj args :stat :ydensity))
+  (make-geom-layer 'geom-violin-obj args :stat :ydensity))
 
 ;;; ============================================================
 ;;; geom-smooth
@@ -617,7 +617,7 @@ Default position is :stack, like ggplot2."
   (let ((clean (loop for (k v) on args by #'cddr
                      unless (member k '(:method :se :level :span :n))
                        append (list k v))))
-    (%make-geom-layer 'geom-smooth-obj
+    (make-geom-layer 'geom-smooth-obj
                       (list* :stat (make-instance
                                     'stat-smooth-obj
                                     :method (or method :lm)
@@ -700,7 +700,7 @@ resolution."
   "Rectangular tiles centered on (x, y) — heatmaps."
   (declare (ignore mapping data stat position show-legend inherit-aes
                    fill alpha width height))
-  (%make-geom-layer 'geom-tile-obj args))
+  (make-geom-layer 'geom-tile-obj args))
 
 (defun geom-raster (&rest args)
   "Alias for geom-tile (the backend draws tiles as rectangles either way)."
@@ -754,7 +754,7 @@ text in data units (shorthand for :position (position-nudge ...))."
       (setf args (list* :position (position-nudge :x (or nudge-x 0.0d0)
                                                   :y (or nudge-y 0.0d0))
                         args)))
-    (%make-geom-layer 'geom-text-obj args)))
+    (make-geom-layer 'geom-text-obj args)))
 
 (defun geom-label (&rest args)
   "Alias for geom-text (background boxes arrive with a later slice)."
@@ -799,7 +799,7 @@ text in data units (shorthand for :position (position-nudge ...))."
   "Line segments from (x, y) to (xend, yend)."
   (declare (ignore mapping data stat position show-legend inherit-aes
                    color size))
-  (%make-geom-layer 'geom-segment-obj args))
+  (make-geom-layer 'geom-segment-obj args))
 
 (defclass geom-hline-obj (geom) ())
 (defclass geom-vline-obj (geom) ())
@@ -867,7 +867,7 @@ text in data units (shorthand for :position (position-nudge ...))."
   "Rectangles from mapped xmin/xmax/ymin/ymax."
   (declare (ignore mapping data stat position show-legend inherit-aes
                    fill color alpha))
-  (%make-geom-layer 'geom-rect-obj args))
+  (make-geom-layer 'geom-rect-obj args))
 
 ;;; ============================================================
 ;;; annotate
@@ -937,7 +937,7 @@ GEOM is a keyword naming the geom (:text, :segment, :rect, :point, ...)."
                                   inherit-aes color size &allow-other-keys)
   "Step function: horizontal then vertical segments between points."
   (declare (ignore mapping data stat position show-legend inherit-aes color size))
-  (%make-geom-layer 'geom-step-obj args))
+  (make-geom-layer 'geom-step-obj args))
 
 (defclass geom-rug-obj (geom) ())
 
@@ -969,7 +969,7 @@ GEOM is a keyword naming the geom (:text, :segment, :rect, :point, ...)."
                                  inherit-aes color size &allow-other-keys)
   "Marginal tick marks along the x axis."
   (declare (ignore mapping data stat position show-legend inherit-aes color size))
-  (%make-geom-layer 'geom-rug-obj args))
+  (make-geom-layer 'geom-rug-obj args))
 
 (defclass geom-linerange-obj (geom) ())
 (defmethod geom-key-glyph ((geom geom-linerange-obj)) :line)
@@ -1015,19 +1015,19 @@ GEOM is a keyword naming the geom (:text, :segment, :rect, :point, ...)."
                                        inherit-aes color size &allow-other-keys)
   "Vertical line from ymin to ymax at each x."
   (declare (ignore mapping data stat position show-legend inherit-aes color size))
-  (%make-geom-layer 'geom-linerange-obj args))
+  (make-geom-layer 'geom-linerange-obj args))
 
 (defun geom-errorbar (&rest args &key mapping data stat position show-legend
                                       inherit-aes color size &allow-other-keys)
   "Linerange with caps."
   (declare (ignore mapping data stat position show-legend inherit-aes color size))
-  (%make-geom-layer 'geom-errorbar-obj args))
+  (make-geom-layer 'geom-errorbar-obj args))
 
 (defun geom-pointrange (&rest args &key mapping data stat position show-legend
                                         inherit-aes color size &allow-other-keys)
   "Linerange with a point at y."
   (declare (ignore mapping data stat position show-legend inherit-aes color size))
-  (%make-geom-layer 'geom-pointrange-obj args))
+  (make-geom-layer 'geom-pointrange-obj args))
 
 (defun geom-qq (&rest args &key mapping data position show-legend
                                 inherit-aes color size &allow-other-keys)

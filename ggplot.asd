@@ -23,7 +23,8 @@
                (:file "build")
                (:file "render")
                (:file "ggsave")
-               (:file "qplot"))
+               (:file "qplot")
+               (:file "extend"))
   :in-order-to ((asdf:test-op (asdf:test-op #:ggplot/tests))))
 
 (asdf:defsystem #:ggplot/tests
