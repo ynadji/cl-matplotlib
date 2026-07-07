@@ -671,6 +671,10 @@ Uses zpng to encode a PNG via temp file, then cl-pdf's make-image/draw-image API
                  (pdf:set-rgb-stroke (float (first edge-color) 1.0)
                                      (float (second edge-color) 1.0)
                                      (float (third edge-color) 1.0))
+                 (when (and (fourth edge-color)
+                            (< (* (fourth edge-color) (float alpha 1.0)) 1.0))
+                   (pdf:set-stroke-transparency
+                    (float (* (fourth edge-color) alpha) 1.0)))
                  (%trace-path-to-pdf path final-transform)
                  (pdf:fill-and-stroke))
                 ;; Fill only
@@ -685,6 +689,10 @@ Uses zpng to encode a PNG via temp file, then cl-pdf's make-image/draw-image API
                  (pdf:set-rgb-stroke (float (first edge-color) 1.0)
                                      (float (second edge-color) 1.0)
                                      (float (third edge-color) 1.0))
+                 (when (and (fourth edge-color)
+                            (< (* (fourth edge-color) (float alpha 1.0)) 1.0))
+                   (pdf:set-stroke-transparency
+                    (float (* (fourth edge-color) alpha) 1.0)))
                  (%trace-path-to-pdf path final-transform)
                  (pdf:stroke))))))))))
 

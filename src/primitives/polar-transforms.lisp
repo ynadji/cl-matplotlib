@@ -48,19 +48,35 @@ Output: (r*cos(theta), r*sin(theta))."))
                   (prev-r     (aref verts (1- i) 1))
                   (r-eps (* 1.0d-6 (max (abs prev-r) (abs r) 1.0d0))))
              (if (< (abs (- r prev-r)) r-eps)
-                 ;; Constant-r: generate arc
+                 ;; Constant-r: generate arc. path-arc always sweeps CCW,
+                 ;; so a decreasing theta must build the reversed arc
+                 ;; (t2 -> t1 walked backwards), not the complementary one.
                  (let* ((t1-deg (* prev-theta (/ 180.0d0 pi)))
                         (t2-deg (* theta (/ 180.0d0 pi)))
-                        (arc (path-arc t1-deg t2-deg))
+                        (cw (> t1-deg t2-deg))
+                        (arc (if cw
+                                 (path-arc t2-deg t1-deg)
+                                 (path-arc t1-deg t2-deg)))
                         (arc-verts (mpl-path-vertices arc))
                         (arc-codes (mpl-path-codes arc))
                         (arc-n (array-dimension arc-verts 0)))
-                   ;; Scale arc by r and skip first vertex (already added as previous MOVETO)
-                   (loop for j from 1 below arc-n do
-                     (push (list (* r (aref arc-verts j 0))
-                                 (* r (aref arc-verts j 1)))
-                           result-verts)
-                     (push (aref arc-codes j) result-codes)))
+                   (if cw
+                       ;; walk the CCW arc backwards, skipping its LAST
+                       ;; vertex (= the already-emitted previous point);
+                       ;; Bezier control points reverse cleanly
+                       (loop for j from (- arc-n 2) downto 0 do
+                         (push (list (* r (aref arc-verts j 0))
+                                     (* r (aref arc-verts j 1)))
+                               result-verts)
+                         ;; shifting codes by one assigns each reversed
+                         ;; vertex the code of the segment it terminates
+                         (push (aref arc-codes (1+ j)) result-codes))
+                       ;; skip first vertex (already added as previous MOVETO)
+                       (loop for j from 1 below arc-n do
+                         (push (list (* r (aref arc-verts j 0))
+                                     (* r (aref arc-verts j 1)))
+                               result-verts)
+                         (push (aref arc-codes j) result-codes))))
                  ;; Non-constant-r: just transform
                  (progn
                    (push (list (* r (cos theta)) (* r (sin theta))) result-verts)

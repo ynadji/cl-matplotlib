@@ -99,22 +99,10 @@ Ported from matplotlib.text.Annotation."))
   ;; Draw text bounding box if bbox specified
   (when (annotation-bbox ann)
     (%draw-annotation-bbox ann renderer))
-  ;; Draw the text itself (via parent text-artist draw)
-  (let* ((gc (make-gc :foreground (text-color ann)
-                      :alpha (or (artist-alpha ann) 1.0)
-                      :linewidth (text-fontsize ann)))
-         ;; Apply transform to convert from axes/data coords to pixel coords
-         (transform (get-artist-transform ann))
-         (px (text-x ann))
-         (py (text-y ann)))
-    (when transform
-      (let ((pt (mpl.primitives:transform-point transform (list px py))))
-        (setf px (aref pt 0)
-              py (aref pt 1))))
-    (renderer-draw-text renderer gc
-                        px py
-                        (text-text ann)
-                        :angle (text-rotation ann)))
+  ;; Draw the text itself through the text-artist method so ha/va,
+  ;; fontsize, and rotation are honored (the old manual draw dropped them
+  ;; and duplicated the transform logic)
+  (call-next-method)
   (setf (artist-stale ann) nil))
 
 (defun %draw-annotation-bbox (ann renderer)

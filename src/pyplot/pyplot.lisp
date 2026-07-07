@@ -70,16 +70,34 @@ Returns the current mpl-figure object."
       (gethash *current-figure* *figures*)
       (figure)))
 
+(defvar *current-axes* nil
+  "The current axes, tracked explicitly like matplotlib's pyplot: sca and
+axes-creating calls set it; gca returns it while it still belongs to the
+current figure.")
+
+(defun sca (axes)
+  "Make AXES the current axes (matplotlib's sca). Also makes its figure
+current when it is registered in *figures*."
+  (maphash (lambda (num fig)
+             (when (member axes (mpl.containers:figure-axes fig))
+               (setf *current-figure* num)))
+           *figures*)
+  (setf *current-axes* axes))
+
 (defun gca ()
   "Get the current axes. Creates figure and axes if needed.
 Returns the current axes object."
   (let* ((fig (gcf))
          (axes-list (mpl.containers:figure-axes fig)))
-    (if axes-list
-        ;; Return the most recently added axes (first in the list)
-        (first axes-list)
-        ;; No axes — create default subplot (1,1,1)
-        (mpl.containers:add-subplot fig 1 1 1))))
+    (cond
+      ;; explicit current axes still valid for the current figure
+      ((and *current-axes* (member *current-axes* axes-list))
+       *current-axes*)
+      (axes-list
+       ;; fall back to the most recently added axes
+       (setf *current-axes* (first axes-list)))
+      (t
+       (setf *current-axes* (mpl.containers:add-subplot fig 1 1 1))))))
 
 (defun close-figure (&optional (num :current))
   "Close figure(s).
@@ -174,6 +192,12 @@ Returns (values figure axes) where axes is a single axes, 1D array, or 2D array.
                                          :sharex sharex :sharey sharey
                                          :squeeze squeeze
                                          :projection projection)))
+     ;; matplotlib makes the last-created subplot current
+     (setf *current-axes*
+           (cond ((arrayp axes)
+                  (row-major-aref axes (1- (array-total-size axes))))
+                 ((listp axes) (car (last axes)))
+                 (t axes)))
      (values fig axes)))
 
 ;;; ============================================================
@@ -839,13 +863,13 @@ Returns list of Line2D objects."
   "Create a twin axes sharing the x-axis with the current axes,
 with an independent y-axis on the right side.
 Returns the new twin axes (which becomes the current axes)."
-  (mpl.containers:axes-twinx (gca)))
+  (setf *current-axes* (mpl.containers:axes-twinx (gca))))
 
 (defun twiny ()
   "Create a twin axes sharing the y-axis with the current axes,
 with an independent x-axis on the top side.
 Returns the new twin axes (which becomes the current axes)."
-  (mpl.containers:axes-twiny (gca)))
+  (setf *current-axes* (mpl.containers:axes-twiny (gca))))
 
 ;;; ============================================================
 ;;; Output functions

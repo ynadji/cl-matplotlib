@@ -675,7 +675,7 @@
 Provides a procedural interface wrapping the OO Figure/Axes API.
 Manages global figure state for convenience.")
   (:export ;; Figure management
-           #:figure #:gcf #:gca #:close-figure #:clf #:cla
+           #:figure #:gcf #:gca #:sca #:close-figure #:clf #:cla
            ;; Subplot creation
            #:subplots
            ;; Plot functions

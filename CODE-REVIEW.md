@@ -128,7 +128,7 @@ ignored negative left bearings — both fixed alongside the kerning bug.
 - [x] Dash patterns computed 3 different ways (px vs pt scaling, different clamping) —
   `backend-vecto.lisp:123-151`, `backend-svg.lisp:269-290`, `backend-pdf.lisp:77-93`. Explicit
   `gc-dashes` in Vecto not converted from points.
-- [ ] PDF `draw-path-collection` never applies alpha to strokes — `backend-pdf.lisp:650-678`.
+- [x] PDF `draw-path-collection` never applies alpha to strokes — `backend-pdf.lisp:650-678`.
 - [ ] Hatch silently skipped when transform is nil (Vecto+PDF) — `backend-vecto.lisp:381-389`,
   `backend-pdf.lisp:272-280`. Vertex accumulation wrapped in `(when transform ...)`.
 - [ ] `%path-axis-aligned-p` misclassifies densely-sampled curves (every segment dx<0.5 → whole
@@ -163,20 +163,20 @@ ignored negative left bearings — both fixed alongside the kerning bug.
   `axis.lisp:299-313` + `ticker.lisp:437-442` (format by index among ALL locator ticks).
 - [ ] `log-locator` yields zero ticks for sub-decade ranges (view (2,5) → no ticks/labels) —
   `ticker.lisp:372-388`. Needs numdec<1 → subs fallback.
-- [ ] Log autoscale with nonpositive data explodes range to ~10^-315 — `axes-base.lisp:308-329`
+- [x] Log autoscale with nonpositive data explodes range to ~10^-315 — `axes-base.lisp:308-329`
   (`-300.0d0` fallback); should ignore nonpositive data like matplotlib.
 - [ ] `%nonsingular` both-inputs-~0 case returns unchanged instead of expanding — `ticker.lisp:60-64`.
 - [ ] errorbar/bar `capsize` converted pts→data with hardcoded 0.01 — `axes.lisp:299,311,883,897`.
   Cap size depends on data range.
 - [ ] `axhline`/`axvline`/`axhspan`/`axvspan` bake current limits as data coords —
   `axes.lisp:1386-1434,522-582`. Needs blended transform; `axhline` before `plot` yields a short line.
-- [ ] Shared-axes limit propagation not transitive — `axes-base.lisp:740-772` +
+- [x] Shared-axes limit propagation not transitive — `axes-base.lisp:740-772` +
   `gridspec.lisp:413-423` (all wired to axarr[0,0] only).
 - [ ] figure frame `rgba-edge` shadowed by malformed duplicate binding — `figure.lisp:383-389`
   (`multiple-value-list` of a vector). Masked by lw 0 default; delete the second binding.
 - [ ] `wedge :width` normalization wrong for r≠1 — `patches.lisp:240-246`; should be
   `(/ (- r width) r)`. Masked by pie's r=1.
-- [ ] annotation draw drops ha/va and duplicates text-artist draw — `annotation.lisp:99-113`;
+- [x] annotation draw drops ha/va and duplicates text-artist draw — `annotation.lisp:99-113`;
   annotation bbox mixes data coords with point units then applies data transform — `:116-139`.
 - [ ] `colormap-call` coerces ints to float, breaking `boundary-norm` LUT indexing —
   `colors.lisp:161-193,644-681`. Needs an `(integerp value)` direct-index branch.
@@ -184,10 +184,10 @@ ignored negative left bearings — both fixed alongside the kerning bug.
   `colors.lisp:353-365`.
 - [ ] rcParams file round-trip corrupts values (`nil`→"None" dead branch; `#`-hex colors eaten
   as comments on re-read) — `rcsetup.lisp:680-695` + `matplotlibrc-parser.lisp:11-23`.
-- [ ] Polar constant-r arcs always CCW (decreasing theta renders complementary 270° arc) —
+- [x] Polar constant-r arcs always CCW (decreasing theta renders complementary 270° arc) —
   `polar-transforms.lisp:47-60`.
-- [ ] `polar-affine-update` mutates matrix without invalidating parents — `polar-transforms.lisp:142-159`.
-- [ ] Double-closing in `path-create-closed` / `path-unit-rectangle` (start vertex 3×; crashes on
+- [x] `polar-affine-update` mutates matrix without invalidating parents — `polar-transforms.lisp:142-159`.
+- [x] Double-closing in `path-create-closed` / `path-unit-rectangle` (start vertex 3×; crashes on
   empty input) — `path.lisp:1111-1116,882-888,203-218`.
 - [ ] imshow `origin :upper` + user extent inverts the whole y-axis — `plotting/image.lisp:94-97`;
   `:aspect` numeric/`:auto` documented but unimplemented (`:99`).
@@ -202,7 +202,7 @@ ignored negative left bearings — both fixed alongside the kerning bug.
   by slot writes (`:358-362`).
 
 ### pyplot design
-- [ ] **No current-axes tracking** — `pyplot.lisp:73-82`. `gca` returns last-created axes; no
+- [x] **No current-axes tracking** — `pyplot.lisp:73-82`. `gca` returns last-created axes; no
   `sca`/`subplot` switching. After `(subplots 2 2)` all pyplot calls target one axes.
 - [ ] Figure registry: eql-keyed nums (1 vs 1.0 distinct), no string labels, `close-figure`
   rejects figure objects, `:all` doesn't reset counter, no locking — `pyplot.lisp:19-120`.
@@ -257,7 +257,7 @@ ignored negative left bearings — both fixed alongside the kerning bug.
 - [ ] `with-style` loads style files at macroexpansion time (freezes key set into compiled code,
   requires stylelib at compile time) — `style.lisp:94-120`. Do it at runtime like `rc-context`.
 - [ ] `with-rc` and `rc-context` are byte-identical duplicates — `rcsetup.lisp:549-567,601-620`.
-- [ ] zorder draws rely on `sort` stability (unspecified in CL) — `axes-base.lisp:447`,
+- [x] zorder draws rely on `sort` stability (unspecified in CL) — `axes-base.lisp:447`,
   `figure.lisp:356`. Use `stable-sort`.
 - [ ] Dead package `cl-matplotlib.foundation` exports 8 undefined symbols, 2 colliding with real
   primitives exports — `packages.lisp:78-85`. `cl-matplotlib:version` exported, never defined

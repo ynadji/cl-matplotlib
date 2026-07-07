@@ -896,7 +896,8 @@ If CURVES is NIL, flatten all curves to line segments."
     "Return a Path of the unit rectangle from (0,0) to (1,1)."
     (or cached
         (setf cached
-              (make-path :vertices '((0.0 0.0) (1.0 0.0) (1.0 1.0) (0.0 1.0) (0.0 0.0))
+              ;; :closed t appends the closing vertex itself
+              (make-path :vertices '((0.0 0.0) (1.0 0.0) (1.0 1.0) (0.0 1.0))
                          :closed t :readonly t)))))
 
 (defun path-unit-circle ()
@@ -1122,7 +1123,8 @@ inner arc reversed (theta2->theta1), close."
 
 (defun path-create-closed (vertices-list)
   "Create a closed polygonal path going through VERTICES-LIST.
-Unlike (make-path :closed t), this adds the closing vertex automatically."
-  (let* ((n (length vertices-list))
-         (closed-verts (append vertices-list (list (first vertices-list)))))
-    (make-path :vertices closed-verts :closed t)))
+make-path's :closed t already appends the closing vertex; adding another
+copy here used to triple the start vertex."
+  (when (null vertices-list)
+    (error "path-create-closed: empty vertex list"))
+  (make-path :vertices vertices-list :closed t))
