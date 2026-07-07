@@ -9,37 +9,44 @@ justified exceptions). Updated: 2026-07-06.
 
 | example | SSIM | status |
 |---|---|---|
+| gg-boxplot | 0.969 | pass |
+| gg-area-stacked | 0.968 | pass |
 | gg-density | 0.964 | pass |
-| ggblank | 0.951 | pass |
+| gg-violin | 0.958 | pass |
+| gg-bar-flip | 0.954 | pass |
 | gg-scatter-basic | 0.950 | pass |
-| gg-violin | 0.950 | pass |
-| gg-bar-flip | 0.942 | pass |
-| gg-bar-basic | 0.926 | pass |
+| ggblank | 0.951 | pass |
+| gg-bar-basic | 0.950 | pass |
+| gg-rug-scatter | 0.939 | pass |
+| gg-errorbar | 0.937 | pass |
+| gg-bar-percent | 0.935 | pass |
+| gg-scatter-color | 0.934 | pass |
+| gg-bar-stacked | 0.933 | pass |
+| gg-dates | 0.930 | pass |
+| gg-segment-text | 0.929 | pass |
+| gg-bar-dodge | 0.926 | pass |
 | gg-line-basic | 0.921 | pass |
-| gg-bar-percent | 0.917 | pass |
-| gg-area-stacked | 0.904 | pass |
-| gg-scatter-color | 0.878 | legend geometry |
-| gg-bar-stacked | 0.876 | legend geometry |
-| gg-facet-wrap | 0.872 | strip/tick detail |
-| gg-smooth-lm | 0.868 | ribbon AA detail |
-| gg-bar-dodge | 0.843 | legend geometry |
-| gg-dates | 0.842 | label-aware right margin |
-| gg-histogram | 0.842 | bin edge detail |
-| gg-boxplot | 0.828 | whisker/median weight |
-| gg-tile-heatmap | 0.764 | colorbar tick/label detail |
+| gg-smooth-lm | 0.909 | pass |
+| gg-annotate | 0.903 | pass |
+| gg-ecdf-step | 0.890 | step AA + 3px margin |
+| gg-tile-heatmap | 0.880 | tile edge AA |
+| gg-histogram | 0.877 | 4px right margin + bar AA |
+| gg-facet-wrap | 0.876 | strip/point detail |
+| gg-qq-basic | 0.882 | point AA detail |
+| gg-freqpoly | 0.858 | line AA detail |
+| gg-log10-scatter | 0.841 | log minor-grid AA |
 
-Earlier scores were dragged 0.03-0.10 per plot by two backend-side bugs,
-both fixed: a black frame drawn because spine visibility used the wrong
-key type, and minor tick MARKS drawn outside the panel (plotnine draws
-only minor gridlines). Glyph rasterization itself matches matplotlib's
-almost exactly (ink ratio 1.016, aligned cosine 0.987 on identical
-strings). The remaining spread is per-plot geometry detail, chiefly
-legend-box layout. A third systemic fix: continuous axis breaks are
-computed over the EXPANDED limits (plotnine >= 0.15 behavior; earlier
-docs assumed unexpanded), which alone moved gg-density 0.86 -> 0.96 and
-gg-violin 0.84 -> 0.95. plotnine also widens the right margin when the
-final x tick label would overflow the figure (visible on gg-dates);
-label-aware margins are not implemented yet.
+Systemic fixes that lifted the suite (in discovery order): spine
+visibility used the wrong key type (black frame everywhere); minor tick
+MARKS drawn where plotnine has only gridlines; continuous axis breaks
+computed over the EXPANDED limits (plotnine >= 0.15); legends drawn
+manually to plotnine's measured geometry instead of through axes-legend;
+margin/legend text measured with matplotlib's DejaVu advance-width table
+(our rasterizer's ink extents run ~14% narrower and skewed every
+margin); label-aware right/top margins when a tick label would overflow;
+boxplot y-range trained over outliers (ymin/ymax-final). The remaining
+sub-0.90 examples differ by antialiasing detail and 3-4px of empirical
+margin rule, not by structure.
 
 ## plotnine API surface
 

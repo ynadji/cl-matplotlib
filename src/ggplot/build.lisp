@@ -21,7 +21,11 @@
   labs)
 
 (defparameter *x-aesthetics* '(:x :xmin :xmax :xend :xintercept))
-(defparameter *y-aesthetics* '(:y :ymin :ymax :yend :yintercept))
+;; :ymin-final/:ymax-final are stat outputs (boxplot) that extend the
+;; trained range to cover outliers without moving the whiskers, like
+;; plotnine's ymin_final/ymax_final.
+(defparameter *y-aesthetics* '(:y :ymin :ymax :yend :yintercept
+                               :ymin-final :ymax-final))
 (defparameter *non-positional-aesthetics* '(:color :fill :shape :size :alpha :linetype))
 
 (defun %plot-effective-layers (plot)
@@ -228,16 +232,21 @@ explicit plot scales win, others are inferred from the data."
                        :y-range y-range
                        :x-breaks x-breaks
                        :x-labels (scale-break-labels x-scale x-breaks)
+                       :x-minor (scale-minor-breaks x-scale x-breaks x-range)
                        :y-breaks y-breaks
-                       :y-labels (scale-break-labels y-scale y-breaks))))
+                       :y-labels (scale-break-labels y-scale y-breaks)
+                       :y-minor (scale-minor-breaks y-scale y-breaks
+                                                    y-range))))
     (if flipped
         (list :index 0
               :x-range (getf params :y-range)
               :y-range (getf params :x-range)
               :x-breaks (getf params :y-breaks)
               :x-labels (getf params :y-labels)
+              :x-minor (getf params :y-minor)
               :y-breaks (getf params :x-breaks)
-              :y-labels (getf params :x-labels))
+              :y-labels (getf params :x-labels)
+              :y-minor (getf params :x-minor))
         params)))
 
 ;;; ============================================================

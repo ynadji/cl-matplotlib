@@ -294,7 +294,12 @@ rbind the results."
           :middle (vector q2)
           :upper (vector q3)
           :ymax (vector ymax)
-          :outliers (vector (coerce outliers 'list))))))))
+          :outliers (vector (coerce outliers 'list))
+          ;; extend the trained y range over the outliers (plotnine's
+          ;; ymin_final/ymax_final)
+          :ymin-final (vector (reduce #'min outliers :initial-value ymin))
+          :ymax-final (vector (reduce #'max outliers
+                                      :initial-value ymax))))))))
 
 ;;; ============================================================
 ;;; stat-ydensity (violin: per-group KDE over the group's own data range
@@ -496,10 +501,18 @@ standard first-order loess variance approximation."
        (unless x-col (error "stat-ecdf requires an x aesthetic"))
        (let* ((sorted (%sorted-doubles x-col))
               (n (length sorted)))
+         ;; plotnine pads the curve with (-Inf, 0) and (+Inf, 1) so the
+         ;; step runs to the panel edges; the infinities are excluded from
+         ;; scale training (finite-range) and clipped at draw time.
          (make-gtable
-          :x sorted
-          :ecdf (coerce (loop for i from 1 to n
-                              collect (/ (float i 1.0d0) n))
+          :x (concatenate 'vector
+                          (vector float-features:double-float-negative-infinity)
+                          sorted
+                          (vector float-features:double-float-positive-infinity))
+          :ecdf (coerce (cons 0.0d0
+                              (append (loop for i from 1 to n
+                                            collect (/ (float i 1.0d0) n))
+                                      (list 1.0d0)))
                         'vector)))))))
 
 (defclass stat-qq-obj (stat) ())

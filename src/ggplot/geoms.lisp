@@ -728,7 +728,10 @@ resolution."
       (let ((artist (make-instance 'cl-matplotlib.rendering:text-artist
                                    :x (float (svref x i) 1.0d0)
                                    :y (float (svref y i) 1.0d0)
-                                   :text (princ-to-string (svref label i))
+                                   ;; print doubles without the d0 suffix
+                                   :text (let ((*read-default-float-format*
+                                                 'double-float))
+                                           (princ-to-string (svref label i)))
                                    :fontsize (float (if size (svref size i) 8.8d0) 1.0d0)
                                    :color (if color (svref color i) "black")
                                    :horizontalalignment :center
@@ -739,11 +742,19 @@ resolution."
         (push artist (cl-matplotlib.containers:axes-base-texts axes))))))
 
 (defun geom-text (&rest args &key mapping data stat position show-legend
-                                  inherit-aes color size &allow-other-keys)
-  "Text at (x, y) from the label aesthetic."
-  (declare (ignore mapping data stat position show-legend inherit-aes
-                   color size))
-  (%make-geom-layer 'geom-text-obj args))
+                                  inherit-aes color size nudge-x nudge-y
+                                  &allow-other-keys)
+  "Text at (x, y) from the label aesthetic. :nudge-x/:nudge-y offset the
+text in data units (shorthand for :position (position-nudge ...))."
+  (declare (ignore mapping data stat show-legend inherit-aes color size))
+  (let ((args (loop for (k v) on args by #'cddr
+                    unless (member k '(:nudge-x :nudge-y))
+                      append (list k v))))
+    (when (and (or nudge-x nudge-y) (null position))
+      (setf args (list* :position (position-nudge :x (or nudge-x 0.0d0)
+                                                  :y (or nudge-y 0.0d0))
+                        args)))
+    (%make-geom-layer 'geom-text-obj args)))
 
 (defun geom-label (&rest args)
   "Alias for geom-text (background boxes arrive with a later slice)."
@@ -903,15 +914,24 @@ GEOM is a keyword naming the geom (:text, :segment, :rect, :point, ...)."
   (gtable-sort-by data :x))
 
 (defmethod geom-draw-panel ((geom geom-step-obj) data panel axes)
-  (declare (ignore panel))
-  (let ((x (gtable-column data :x))
-        (y (gtable-column data :y)))
+  (let* ((x (gtable-column data :x))
+         (y (gtable-column data :y))
+         (x-range (getf panel :x-range)))
     (when (and x y (> (length x) 1))
-      (cl-matplotlib.containers:axes-step
-       axes (coerce x 'list) (coerce y 'list)
-       :color (%column-value data :color "black")
-       :linewidth (size-to-linewidth (%column-value data :size 0.5d0))
-       :zorder 2))))
+      ;; stat-ecdf pads with +/-Inf so the step runs to the panel edges;
+      ;; clamp the infinities to the expanded x range
+      (let ((xs (loop for v across x
+                      collect (let ((v (float v 1.0d0)))
+                                (if (float-features:float-infinity-p v)
+                                    (if (plusp v)
+                                        (second x-range)
+                                        (first x-range))
+                                    v)))))
+        (cl-matplotlib.containers:axes-step
+         axes xs (coerce y 'list)
+         :color (%column-value data :color "black")
+         :linewidth (size-to-linewidth (%column-value data :size 0.5d0))
+         :zorder 2)))))
 
 (defun geom-step (&rest args &key mapping data stat position show-legend
                                   inherit-aes color size &allow-other-keys)

@@ -32,6 +32,16 @@
 (defgeneric scale-expanded-range (scale)
   (:documentation "(min max) limits after applying the scale's expansion."))
 
+(defgeneric scale-minor-breaks (scale breaks range)
+  (:documentation "Positions of minor gridlines given the major BREAKS
+and the expanded RANGE. plotnine default: midpoints between majors;
+log scales place them at 2..9 x 10^k.")
+  (:method ((scale scale) breaks range)
+    (declare (ignore range))
+    (loop for (a b) on breaks
+          while b
+          collect (/ (+ a b) 2.0d0))))
+
 ;;; ============================================================
 ;;; Continuous scales
 ;;; ============================================================
@@ -434,12 +444,26 @@ interpolated like mizani."))
   (let ((user (scale-user-labels scale)))
     (if (not (eq user :auto))
         user
-        (mapcar (lambda (k)
-                  (let ((v (expt 10.0d0 k)))
-                    (if (>= v 1.0d0)
-                        (format nil "~D" (round v))
-                        (format nil "~F" v))))
-                breaks))))
+        ;; mizani log_format: plain decimals while every exponent is in
+        ;; [-4, 4]; once any break reaches 1e5 (or 1e-5) ALL labels switch
+        ;; to 1eN notation
+        (if (some (lambda (k) (or (>= k 5.0d0) (<= k -5.0d0))) breaks)
+            (mapcar (lambda (k) (format nil "1e~D" (round k))) breaks)
+            (mapcar (lambda (k)
+                      (let ((v (expt 10.0d0 k)))
+                        (if (>= v 1.0d0)
+                            (format nil "~D" (round v))
+                            (format nil "~F" v))))
+                    breaks)))))
+
+(defmethod scale-minor-breaks ((scale scale-log10-obj) breaks range)
+  "Log minors: 2..9 x 10^k between decades (positions in log10 space)."
+  (declare (ignore breaks))
+  (destructuring-bind (lo hi) range
+    (loop for k from (1- (floor lo)) to (ceiling hi)
+          append (loop for m from 2 to 9
+                       for pos = (+ k (log (float m 1.0d0) 10.0d0))
+                       when (<= lo pos hi) collect pos))))
 
 (defun scale-x-log10 (&rest args &key name breaks labels limits expand)
   (declare (ignore name breaks labels limits expand))

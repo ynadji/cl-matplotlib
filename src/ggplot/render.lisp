@@ -53,10 +53,13 @@ coord-flip by ggbuild), else mapping fallback, else stat fallback."
        :linewidth (or (element-line-linewidth major) 1.0)
        :linestyle :solid
        :alpha 1.0))
-    ;; plotnine's minor gridlines sit at the midpoints between major breaks
+    ;; minor gridlines: scale-provided positions (midpoints for linear
+    ;; scales, 2..9 x 10^k for log scales), midpoint fallback
     (when (element-line-p minor)
-      (let ((x-minor (%midpoints (getf panel :x-breaks)))
-            (y-minor (%midpoints (getf panel :y-breaks))))
+      (let ((x-minor (or (getf panel :x-minor)
+                         (%midpoints (getf panel :x-breaks))))
+            (y-minor (or (getf panel :y-minor)
+                         (%midpoints (getf panel :y-breaks)))))
         (when x-minor
           (cl-matplotlib.containers:axis-set-minor-locator
            (cl-matplotlib.containers:axes-base-xaxis axes)
@@ -144,10 +147,10 @@ existing one."))
 ;;; the panel's left edge sits a fixed 39px (y-title column + tick + pads)
 ;;; plus the widest y tick label from the panel edge; the other three
 ;;; margins are constant when an x title is present.
-;; 37.7 rather than the raw measured 39: the base is calibrated so that
-;; base + THIS BACKEND's tick-label widths reproduces plotnine's panel edge
-;; (its font metrics run ~1.5px narrower than ours at 8.8pt).
-(defparameter *panel-left-base-px* 37.7d0)
+;; 34.2: calibrated so base + matplotlib-metric tick-label widths
+;; (%mpl-text-width-px) reproduces plotnine's panel edge (verified:
+;; '10' -> panel left 50, '10.0' -> 61, at dpi 100).
+(defparameter *panel-left-base-px* 34.2d0)
 (defparameter *panel-right-px* 6.0d0)
 (defparameter *panel-top-px* 6.0d0)
 (defparameter *panel-bottom-px* 46.0d0)
@@ -159,6 +162,39 @@ existing one."))
         (cl-matplotlib.rendering:get-text-extents text loader
                                                   (float fontsize-pt 1.0d0)))
        (/ dpi 72.0d0))))
+
+(defparameter *dejavu-advance-table*
+  ;; DejaVu Sans horizontal advances for ASCII 32..126, in 1/8 em units
+  ;; (extracted from matplotlib's FT2Font; divide by 8 for em fractions).
+  ;; plotnine's layout is driven by these metrics, so margin/legend
+  ;; geometry must measure text the same way matplotlib does - our own
+  ;; rasterizer's ink extents run ~14% narrower.
+  (make-array 95 :element-type 'double-float :initial-contents
+   '(2.543d0 3.207d0 3.681d0 6.702d0 5.090d0 7.601d0 6.238d0 2.200d0
+     3.121d0 3.122d0 3.999d0 6.704d0 2.542d0 2.887d0 2.542d0 2.695d0
+     5.089d0 5.089d0 5.090d0 5.090d0 5.090d0 5.089d0 5.090d0 5.090d0
+     5.090d0 5.090d0 2.695d0 2.695d0 6.704d0 6.704d0 6.704d0 4.246d0
+     8.000d0 5.473d0 5.488d0 5.586d0 6.160d0 5.055d0 4.601d0 6.199d0
+     6.015d0 2.359d0 2.359d0 5.246d0 4.457d0 6.902d0 5.984d0 6.296d0
+     4.824d0 6.296d0 5.559d0 5.077d0 4.888d0 5.855d0 5.473d0 7.910d0
+     5.480d0 4.887d0 5.480d0 3.121d0 2.695d0 3.122d0 6.703d0 4.000d0
+     4.000d0 4.902d0 5.079d0 4.398d0 5.078d0 4.922d0 2.817d0 5.078d0
+     5.071d0 2.223d0 2.223d0 4.634d0 2.223d0 7.794d0 5.071d0 4.895d0
+     5.079d0 5.078d0 3.289d0 4.168d0 3.137d0 5.071d0 4.734d0 6.543d0
+     4.734d0 4.734d0 4.200d0 5.090d0 2.696d0 5.090d0 6.704d0)))
+
+(defun %mpl-text-width-px (text fontsize-pt dpi)
+  "Width of TEXT in pixels using matplotlib's DejaVu Sans advance widths
+(what plotnine's layout engine sees). Non-ASCII characters fall back to
+the average advance."
+  (let ((em 0.0d0))
+    (loop for ch across text
+          for code = (char-code ch)
+          do (incf em (/ (if (<= 32 code 126)
+                             (aref *dejavu-advance-table* (- code 32))
+                             5.0d0)
+                         8.0d0)))
+    (* em (float fontsize-pt 1.0d0) (/ dpi 72.0d0))))
 
 ;; Legend geometry, measured from plotnine 0.15.7 right-side legends at
 ;; dpi 100 (probe plots with controlled title/label widths):
@@ -198,20 +234,20 @@ existing one."))
                (title-size 11.0d0)
                (scale (/ dpi 100.0d0))
                (inner 0.0d0))
-          ;; widest of: title, or key box + gap + label. The 1.145 factor
-          ;; converts our ink-extent widths to matplotlib's advance widths
-          ;; (the constants were calibrated against matplotlib metrics).
+          ;; widest of: title, or key box + gap + label, in matplotlib
+          ;; advance-width metrics (what the plotnine constants were
+          ;; calibrated against)
           (dolist (spec legends)
             (setf inner (max inner
-                             (* 1.145d0 (%text-width-px (getf spec :title)
-                                                        title-size dpi))))
+                             (%mpl-text-width-px (getf spec :title)
+                                                 title-size dpi)))
             ;; label contribution: key + 3.5px box gap + label advance width
             ;; (probes p1/p3: reserve 62 with 'a', 132 with 'gamma-long')
             (dolist (label (getf spec :labels))
               (setf inner (max inner
                                (+ (* (+ *legend-key-px* 3.5d0) scale)
-                                  (* 1.145d0 (%text-width-px label label-size
-                                                             dpi)))))))
+                                  (%mpl-text-width-px label label-size
+                                                      dpi))))))
           (+ (* (+ *legend-gap-px* *legend-right-margin-px*) scale) inner)))))
 
 (defun %compute-margins (built theme width-px height-px dpi)
@@ -224,7 +260,8 @@ layout engine does."
                              (element-text-size axis-text))
                         8.8d0))
          (max-ytick-w (reduce #'max (getf panel :y-labels)
-                              :key (lambda (l) (%text-width-px l tick-size dpi))
+                              :key (lambda (l)
+                                     (%mpl-text-width-px l tick-size dpi))
                               :initial-value 0.0d0))
          (scale (/ dpi 100.0d0))    ; constants measured at dpi 100
          (left-px (fround (+ (* *panel-left-base-px* scale) max-ytick-w)))
@@ -240,13 +277,13 @@ layout engine does."
                  (let* ((x0 (first x-range)) (x1 (second x-range))
                         (f (/ (- (car (last x-breaks)) x0)
                               (max (- x1 x0) 1.0d-12)))
-                        (hw (* 0.5d0 1.145d0
-                               (%text-width-px (car (last x-labels))
-                                               tick-size dpi)))
+                        (hw (* 0.5d0
+                               (%mpl-text-width-px (car (last x-labels))
+                                                   tick-size dpi)))
                         (slack (* (- 1.0d0 f)
                                   (- width-px left-px
                                      (* *panel-right-px* scale)))))
-                   (max 0.0d0 (+ (- hw slack) (* 8.0d0 scale))))
+                   (max 0.0d0 (+ (- hw slack) (* 4.3d0 scale))))
                  0.0d0)))
          ;; vertical analogue for the top margin: a y break at the very
          ;; top edge pushes the panel down so its label fits (tile refs:
@@ -568,10 +605,12 @@ above the panel (axes-fraction y in [1, 1+strip-frac])."
                         (cl-matplotlib.containers:axes-base-yaxis axes))
                        nil)))
              ;; Theme: tick label size/color; plotnine tick geometry
-             ;; (2.75px major marks, NO minor marks - only minor gridlines)
-             (let ((axis-text (theme-element theme :axis-text)))
-               (dolist (axis (list (cl-matplotlib.containers:axes-base-xaxis axes)
-                                   (cl-matplotlib.containers:axes-base-yaxis axes)))
+             ;; (2.75px major marks, NO minor marks - only minor gridlines;
+             ;; inner facet panels get no tick marks at all)
+             (let ((axis-text (theme-element theme :axis-text))
+                   (x-axis (cl-matplotlib.containers:axes-base-xaxis axes))
+                   (y-axis (cl-matplotlib.containers:axes-base-yaxis axes)))
+               (dolist (axis (list x-axis y-axis))
                  (when axis
                    (when (element-text-p axis-text)
                      (cl-matplotlib.containers:axis-set-tick-params
@@ -582,7 +621,14 @@ above the panel (axes-fraction y in [1, 1+strip-frac])."
                    (cl-matplotlib.containers:axis-set-tick-params
                     axis :size 2.75 :which :major)
                    (cl-matplotlib.containers:axis-set-tick-params
-                    axis :size 0.0 :which :minor))))
+                    axis :size 0.0 :which :minor)))
+               (when multi
+                 (unless (= row (1- nrow))
+                   (cl-matplotlib.containers:axis-set-tick-params
+                    x-axis :size 0.0 :which :major))
+                 (unless (zerop col)
+                   (cl-matplotlib.containers:axis-set-tick-params
+                    y-axis :size 0.0 :which :major))))
              (%apply-panel-theme theme axes panel)
              ;; Layers, filtered to this panel
              (loop for (layer . table) in (ggbuilt-layer-tables built)
