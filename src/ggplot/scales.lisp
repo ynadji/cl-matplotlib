@@ -315,10 +315,11 @@ sizes proportional to sqrt of the rescaled value."))
        (if discrete (scale-x-discrete) (scale-x-continuous)))
       ((:y :ymin :ymax :yend)
        (if discrete (scale-y-discrete) (scale-y-continuous)))
+      ;; plotnine >= 0.13: default continuous color/fill is viridis
       (:color
-       (if discrete (scale-color-discrete) (scale-color-gradient)))
+       (if discrete (scale-color-discrete) (scale-color-cmap)))
       (:fill
-       (if discrete (scale-fill-discrete) (scale-fill-gradient)))
+       (if discrete (scale-fill-discrete) (scale-fill-cmap)))
       (:shape (scale-shape-manual))
       (:size
        (if discrete
@@ -343,22 +344,39 @@ sizes proportional to sqrt of the rescaled value."))
 
 (defclass scale-gradient-obj (scale-continuous)
   ((low :initarg :low :initform "#132B43" :reader scale-gradient-low)
-   (high :initarg :high :initform "#56B1F7" :reader scale-gradient-high))
-  (:documentation "Two-color continuous gradient (ggplot2/plotnine default
-blues: #132B43 -> #56B1F7), interpolated in RGB like mizani."))
+   (high :initarg :high :initform "#56B1F7" :reader scale-gradient-high)
+   (cmap :initarg :cmap :initform nil :reader scale-gradient-cmap
+         :documentation "A cl-matplotlib colormap designator; when set it
+takes precedence over low/high. plotnine >= 0.13 defaults continuous
+color/fill to the viridis colormap."))
+  (:documentation "Continuous color scale: either a registered colormap
+(:cmap) or a two-color RGB gradient (ggplot2's blues #132B43 -> #56B1F7),
+interpolated like mizani."))
+
+(defun %gradient-fraction-color (scale u)
+  "Hex color for U in [0,1] under SCALE's cmap or low/high gradient."
+  (let ((cmap (scale-gradient-cmap scale)))
+    (if cmap
+        (let ((rgba (cl-matplotlib.primitives:colormap-call
+                     (cl-matplotlib.primitives:get-colormap cmap) u)))
+          (%rgb-to-hex (aref rgba 0) (aref rgba 1) (aref rgba 2)))
+        (multiple-value-bind (r0 g0 b0)
+            (%parse-hex-color (scale-gradient-low scale))
+          (multiple-value-bind (r1 g1 b1)
+              (%parse-hex-color (scale-gradient-high scale))
+            (%rgb-to-hex (+ r0 (* u (- r1 r0)))
+                         (+ g0 (* u (- g1 g0)))
+                         (+ b0 (* u (- b1 b0)))))))))
 
 (defmethod scale-map ((scale scale-gradient-obj) values)
   (destructuring-bind (lo hi) (scale-limits scale)
     (let ((span (max (- hi lo) 1.0d-12)))
-      (multiple-value-bind (r0 g0 b0) (%parse-hex-color (scale-gradient-low scale))
-        (multiple-value-bind (r1 g1 b1) (%parse-hex-color (scale-gradient-high scale))
-          (map 'simple-vector
-               (lambda (v)
-                 (let ((u (max 0.0d0 (min 1.0d0 (/ (- (float v 1.0d0) lo) span)))))
-                   (%rgb-to-hex (+ r0 (* u (- r1 r0)))
-                                (+ g0 (* u (- g1 g0)))
-                                (+ b0 (* u (- b1 b0))))))
-               values))))))
+      (map 'simple-vector
+           (lambda (v)
+             (%gradient-fraction-color
+              scale
+              (max 0.0d0 (min 1.0d0 (/ (- (float v 1.0d0) lo) span)))))
+           values))))
 
 (defun scale-color-gradient (&rest args &key low high name breaks labels limits guide)
   (declare (ignore low high name breaks labels limits guide))
@@ -367,6 +385,25 @@ blues: #132B43 -> #56B1F7), interpolated in RGB like mizani."))
 (defun scale-fill-gradient (&rest args &key low high name breaks labels limits guide)
   (declare (ignore low high name breaks labels limits guide))
   (apply #'make-instance 'scale-gradient-obj :aesthetics '(:fill) args))
+
+(defun scale-color-cmap (&rest args &key (cmap-name "viridis") name breaks
+                                         labels limits guide)
+  "Continuous color scale through a registered matplotlib colormap
+(viridis by default, like plotnine)."
+  (declare (ignore name breaks labels limits guide))
+  (let ((clean (loop for (k v) on args by #'cddr
+                     unless (eq k :cmap-name) append (list k v))))
+    (apply #'make-instance 'scale-gradient-obj
+           :aesthetics '(:color) :cmap cmap-name clean)))
+
+(defun scale-fill-cmap (&rest args &key (cmap-name "viridis") name breaks
+                                        labels limits guide)
+  "Continuous fill scale through a registered matplotlib colormap."
+  (declare (ignore name breaks labels limits guide))
+  (let ((clean (loop for (k v) on args by #'cddr
+                     unless (eq k :cmap-name) append (list k v))))
+    (apply #'make-instance 'scale-gradient-obj
+           :aesthetics '(:fill) :cmap cmap-name clean)))
 
 ;;; ============================================================
 ;;; Log10 positional scales

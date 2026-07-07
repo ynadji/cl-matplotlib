@@ -26,6 +26,12 @@ breaks) computed at build time."))
   (:documentation "Return a detached proxy artist representing one legend key.")
   (:method ((geom geom) key-plist) (declare (ignore key-plist)) nil))
 
+(defgeneric geom-key-glyph (geom)
+  (:documentation "How this geom's legend key is drawn inside the gray key
+box: :point (marker at the center), :line (horizontal line across the key),
+or :rect (fill the whole key), matching plotnine's draw_key functions.")
+  (:method ((geom geom)) :rect))
+
 ;;; ============================================================
 ;;; Layer construction
 ;;; ============================================================
@@ -134,6 +140,8 @@ the first row; per-row aesthetics arrive with the scale-mapping slice."
          :alpha (%column-value data :alpha 1.0d0)
          :zorder 2)))))
 
+(defmethod geom-key-glyph ((geom geom-point-obj)) :point)
+
 (defmethod geom-legend-artist ((geom geom-point-obj) key-plist)
   (make-instance 'cl-matplotlib.rendering:line-2d
                  :xdata '(0.0d0) :ydata '(0.0d0)
@@ -162,6 +170,8 @@ passed as keywords; mapped aesthetics come from (aes ...)."
 
 (defclass geom-path-obj (geom) ())
 (defclass geom-line-obj (geom-path-obj) ())
+
+(defmethod geom-key-glyph ((geom geom-path-obj)) :line)
 
 (defmethod geom-default-aes ((geom geom-path-obj))
   '(:color "black" :size 0.5d0 :alpha 1.0d0 :linetype :solid))
@@ -744,6 +754,7 @@ resolution."
 ;;; ============================================================
 
 (defclass geom-segment-obj (geom) ())
+(defmethod geom-key-glyph ((geom geom-segment-obj)) :line)
 
 (defmethod geom-default-aes ((geom geom-segment-obj))
   '(:color "black" :size 0.5d0 :alpha 1.0d0 :linetype :solid))
@@ -941,8 +952,10 @@ GEOM is a keyword naming the geom (:text, :segment, :rect, :point, ...)."
   (%make-geom-layer 'geom-rug-obj args))
 
 (defclass geom-linerange-obj (geom) ())
+(defmethod geom-key-glyph ((geom geom-linerange-obj)) :line)
 (defclass geom-errorbar-obj (geom-linerange-obj) ())
 (defclass geom-pointrange-obj (geom-linerange-obj) ())
+(defmethod geom-key-glyph ((geom geom-pointrange-obj)) :point)
 
 (defmethod geom-default-aes ((geom geom-linerange-obj))
   '(:color "black" :size 0.5d0 :alpha 1.0d0))
