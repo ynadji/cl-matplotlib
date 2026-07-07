@@ -35,7 +35,16 @@ Returns the colormap object, or signals an error if not found."
                      (when (string-equal k sname)
                        (return v)))
                    *colormaps*)
-          (error "Unknown colormap: ~S" name)))))
+          nil)
+        ;; Lazy _r resolution: "<base>_r" reverses a registered <base>,
+        ;; so user-registered custom maps get _r variants for free
+        (let ((len (length sname)))
+          (when (and (> len 2) (string-equal "_r" sname :start2 (- len 2)))
+            (let ((base (ignore-errors
+                          (get-colormap (subseq sname 0 (- len 2))))))
+              (when base
+                (register-colormap (colormap-reversed base) :force t)))))
+        (error "Unknown colormap: ~S" name))))
 
 (defun list-colormaps ()
   "Return a sorted list of all registered colormap names."
@@ -1601,6 +1610,37 @@ COLOR-DATA is a list of (R G B) lists."
      (make-listed-colormap colors :name name)
      :name name :force t)))
 
+(defun %hex-lut-to-rows (hex-string)
+  "Unpack a generated RRGGBB-per-entry hex string into (r g b) rows."
+  (loop for i from 0 below (length hex-string) by 6
+        collect (list (/ (parse-integer hex-string :start i :end (+ i 2)
+                                        :radix 16)
+                         255.0d0)
+                      (/ (parse-integer hex-string :start (+ i 2) :end (+ i 4)
+                                        :radix 16)
+                         255.0d0)
+                      (/ (parse-integer hex-string :start (+ i 4) :end (+ i 6)
+                                        :radix 16)
+                         255.0d0))))
+
+(defun colormap-reversed (cmap-or-name)
+  "A new colormap sampling CMAP-OR-NAME right-to-left, named \"<name>_r\"
+(matplotlib's reversed() / _r convention). Works for any colormap class
+by sampling the 256-entry LUT."
+  (let* ((cmap (if (typep cmap-or-name 'colormap)
+                   cmap-or-name
+                   (get-colormap cmap-or-name)))
+         (n (colormap-n cmap))
+         (colors (loop for i from (1- n) downto 0
+                       collect (let ((rgba (colormap-call
+                                            cmap (/ (float i 1.0d0)
+                                                    (max 1 (1- n))))))
+                                 (vector (aref rgba 0) (aref rgba 1)
+                                         (aref rgba 2) (aref rgba 3))))))
+    (make-listed-colormap colors
+                          :name (concatenate 'string
+                                             (colormap-name cmap) "_r"))))
+
 (defun initialize-colormaps ()
   "Register all built-in colormaps."
   ;; Clear existing
@@ -1634,8 +1674,20 @@ COLOR-DATA is a list of (R G B) lists."
   (%register-listed-cmap "magma" *magma-data*)
   (%register-listed-cmap "cividis" *cividis-data*)
 
+  ;; Extended matplotlib parity tables (generated; see colormap-data.lisp)
+  (loop for (name . hex) in *extended-lut-colormaps*
+        do (%register-listed-cmap name (%hex-lut-to-rows hex)))
+  (loop for (name . hex) in *extended-listed-colormaps*
+        do (%register-listed-cmap name (%hex-lut-to-rows hex)))
+
   ;; Aliases
   (setf (gethash "grey" *colormaps*) (gethash "gray" *colormaps*))
+
+  ;; Reversed (_r) variants for every registered map, like matplotlib
+  (let ((bases (loop for name being the hash-keys of *colormaps*
+                     collect name)))
+    (dolist (name bases)
+      (register-colormap (colormap-reversed name) :force t)))
 
   (format t "~&; cl-matplotlib.primitives: ~D colormaps registered.~%"
           (hash-table-count *colormaps*)))

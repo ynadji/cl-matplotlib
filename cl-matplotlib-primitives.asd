@@ -15,6 +15,7 @@
                               (:file "scale-transforms")
                               (:file "polar-transforms")
                              (:file "colors")
+                             (:file "colormap-data")
                              (:file "colormaps"))))
   :in-order-to ((test-op (test-op #:cl-matplotlib-primitives/tests))))
 

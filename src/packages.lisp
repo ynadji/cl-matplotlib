@@ -186,6 +186,7 @@
            #:listed-colormap #:make-listed-colormap
            ;; Colormap registry
            #:*colormaps* #:register-colormap #:get-colormap #:list-colormaps
+           #:colormap-reversed
            #:initialize-colormaps
            ;; Normalize classes
            #:normalize #:make-normalize #:normalize-call #:normalize-inverse
