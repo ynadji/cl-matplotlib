@@ -187,8 +187,14 @@ vertices and a marker at each vertex. Ported from matplotlib.lines.Line2D."))
                       :capstyle (if (eq (line-2d-linestyle line) :solid)
                                     (line-2d-solid-capstyle line)
                                     (line-2d-dash-capstyle line)))))
-    ;; Draw the line path
-    (renderer-draw-path renderer gc path transform :stroke t)
+    ;; Draw the line path — unless linestyle is :none (marker-only plot,
+    ;; matching matplotlib: no connecting line is stroked)
+    (let ((ls (line-2d-linestyle line)))
+      (unless (or (null ls)
+                  (eq ls :none)
+                  (and (stringp ls)
+                       (member ls '("none" "" " ") :test #'string-equal)))
+        (renderer-draw-path renderer gc path transform :stroke t)))
     ;; Draw markers at each vertex if marker is set
     (let ((marker (line-2d-marker line)))
       (when (and marker (not (eq marker :none)))

@@ -65,10 +65,17 @@ SHOWMEDIANS — if T, draw a line at the median (default T).
 SHOWEXTREMA — if T, draw lines at min and max (default T).
 
 Returns NIL."
-  ;; Normalize datasets — ensure list of lists
-  (let* ((dsets (if (and (listp datasets) (listp (first datasets)))
-                    datasets
-                    (list datasets)))
+  ;; Normalize datasets — ensure a list of datasets (accept lists or
+  ;; vectors at either level)
+  (let* ((dsets (let ((d (if (and (typep datasets 'sequence)
+                                  (not (stringp datasets)))
+                             (coerce datasets 'list)
+                             (list datasets))))
+                  (if (and d
+                           (typep (first d) 'sequence)
+                           (not (stringp (first d))))
+                      d
+                      (list d))))
          (n-violins (length dsets))
          (pos (or positions (loop for i from 1 to n-violins
                                   collect (float i 1.0d0)))))

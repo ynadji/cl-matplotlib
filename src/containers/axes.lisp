@@ -151,6 +151,38 @@ Returns the PathCollection artist."
     pc))
 
 ;;; ============================================================
+;;; Helper: convert a length in points to data units along an axis
+;;; ============================================================
+
+(defun %points-to-data-units (ax points axis)
+  "Convert a length in POINTS to data units along AXIS (:x or :y) of AX.
+Uses the axes bbox size in points and the current data (or view) interval.
+Falls back to the proportional heuristic POINTS * 0.01 when the axes
+geometry or data range is unavailable."
+  (let* ((fig (axes-base-figure ax))
+         (pos (axes-base-position ax))
+         (datalim (axes-base-data-lim ax))
+         (range (cond ((and datalim (not (mpl.primitives:bbox-null-p datalim)))
+                       (if (eq axis :x)
+                           (- (mpl.primitives:bbox-x1 datalim)
+                              (mpl.primitives:bbox-x0 datalim))
+                           (- (mpl.primitives:bbox-y1 datalim)
+                              (mpl.primitives:bbox-y0 datalim))))
+                      (t (multiple-value-bind (v0 v1)
+                             (if (eq axis :x) (axes-get-xlim ax) (axes-get-ylim ax))
+                           (abs (- v1 v0)))))))
+    (if (and fig pos (plusp range))
+        (let* ((dpi (float (figure-dpi fig) 1.0d0))
+               (len-px (if (eq axis :x)
+                           (* (third pos) (float (figure-width-px fig) 1.0d0))
+                           (* (fourth pos) (float (figure-height-px fig) 1.0d0))))
+               (len-pt (* len-px (/ 72.0d0 dpi))))
+          (if (plusp len-pt)
+              (* (float points 1.0d0) (/ range len-pt))
+              (* (float points 1.0d0) 0.01d0)))
+        (* (float points 1.0d0) 0.01d0))))
+
+;;; ============================================================
 ;;; bar — bar chart
 ;;; ============================================================
 
@@ -296,7 +328,7 @@ Returns a list of Rectangle patches."
                                  (y-hi (+ center-y ye)))
                             (push (list (list xi y-lo) (list xi y-hi)) error-segments)
                             (when (plusp capsize)
-                              (let ((cap-hw (* capsize 0.01d0)))
+                              (let ((cap-hw (%points-to-data-units ax capsize :x)))
                                 (push (list (list (- xi cap-hw) y-lo) (list (+ xi cap-hw) y-lo)) cap-segments)
                                 (push (list (list (- xi cap-hw) y-hi) (list (+ xi cap-hw) y-hi)) cap-segments)))))
                         ;; Horizontal error bars
@@ -308,7 +340,7 @@ Returns a list of Rectangle patches."
                                  (x-hi (+ xi xe)))
                             (push (list (list x-lo center-y) (list x-hi center-y)) error-segments)
                             (when (plusp capsize)
-                              (let ((cap-hw (* capsize 0.01d0)))
+                              (let ((cap-hw (%points-to-data-units ax capsize :y)))
                                 (push (list (list x-lo (- center-y cap-hw)) (list x-lo (+ center-y cap-hw))) cap-segments)
                                 (push (list (list x-hi (- center-y cap-hw)) (list x-hi (+ center-y cap-hw))) cap-segments)))))))))
          ;; Create LineCollection for error bar lines
@@ -880,7 +912,7 @@ Returns (values line error-lines caps)."
                        (push (list (list xi y-lo) (list xi y-hi)) error-segments)
                        ;; Caps
                        (when (plusp capsize)
-                         (let ((cap-hw (* capsize 0.01d0))) ; convert points to data approx
+                         (let ((cap-hw (%points-to-data-units ax capsize :x)))
                            (push (list (list (- xi cap-hw) y-lo) (list (+ xi cap-hw) y-lo)) cap-segments)
                            (push (list (list (- xi cap-hw) y-hi) (list (+ xi cap-hw) y-hi)) cap-segments)))))
                    ;; Horizontal error bars
@@ -894,7 +926,7 @@ Returns (values line error-lines caps)."
                        (push (list (list x-lo yi) (list x-hi yi)) error-segments)
                        ;; Caps
                        (when (plusp capsize)
-                         (let ((cap-hw (* capsize 0.01d0)))
+                         (let ((cap-hw (%points-to-data-units ax capsize :y)))
                            (push (list (list x-lo (- yi cap-hw)) (list x-lo (+ yi cap-hw))) cap-segments)
                            (push (list (list x-hi (- yi cap-hw)) (list x-hi (+ yi cap-hw))) cap-segments))))))))
       ;; Create LineCollection for error bars
@@ -1440,16 +1472,33 @@ Returns the created Line2D."
 ;;; hlines — multiple horizontal lines at data coordinates
 ;;; ============================================================
 
+(defun %hv-values-list (v)
+  "Coerce V to a list: sequences (lists/vectors, but not strings) are
+converted; anything else becomes a single-element list."
+  (if (and (typep v 'sequence) (not (stringp v)))
+      (coerce v 'list)
+      (list v)))
+
+(defun %hv-broadcast (v n)
+  "Broadcast V to a list of length N: a scalar (or 1-element sequence) is
+repeated; a shorter sequence is cycled."
+  (let* ((vl (%hv-values-list v))
+         (len (length vl)))
+    (if (= len 1)
+        (make-list n :initial-element (first vl))
+        (loop for i from 0 below n collect (nth (mod i len) vl)))))
+
 (defun hlines (ax y xmin xmax &key (colors "C0") (linestyles :solid)
                                     (linewidth 1.5) (alpha nil) (label "") (zorder 2))
   "Draw horizontal lines at each y in Y from xmin to xmax (all in DATA coordinates).
-Y — scalar or list of y values.
-XMIN, XMAX — x extent in data coordinates (scalar or list matching Y).
+Y — scalar or sequence of y values.
+XMIN, XMAX — x extent in data coordinates (scalar or sequence matching Y).
 Returns list of Line2D objects."
-  (let* ((ys (if (listp y) y (list y)))
-         (xmins (if (listp xmin) xmin (make-list (length ys) :initial-element xmin)))
-         (xmaxs (if (listp xmax) xmax (make-list (length ys) :initial-element xmax)))
-         (colorlist (if (listp colors) colors (make-list (length ys) :initial-element colors)))
+  (let* ((ys (%hv-values-list y))
+         (n (length ys))
+         (xmins (%hv-broadcast xmin n))
+         (xmaxs (%hv-broadcast xmax n))
+         (colorlist (%hv-broadcast colors n))
          (lines nil))
     (loop for yi in ys
           for x0 in xmins
@@ -1479,13 +1528,14 @@ Returns list of Line2D objects."
 (defun vlines (ax x ymin ymax &key (colors "C0") (linestyles :solid)
                                     (linewidth 1.5) (alpha nil) (label "") (zorder 2))
   "Draw vertical lines at each x in X from ymin to ymax (all in DATA coordinates).
-X — scalar or list of x values.
-YMIN, YMAX — y extent in data coordinates (scalar or list matching X).
+X — scalar or sequence of x values.
+YMIN, YMAX — y extent in data coordinates (scalar or sequence matching X).
 Returns list of Line2D objects."
-  (let* ((xs (if (listp x) x (list x)))
-         (ymins (if (listp ymin) ymin (make-list (length xs) :initial-element ymin)))
-         (ymaxs (if (listp ymax) ymax (make-list (length xs) :initial-element ymax)))
-         (colorlist (if (listp colors) colors (make-list (length xs) :initial-element colors)))
+  (let* ((xs (%hv-values-list x))
+         (n (length xs))
+         (ymins (%hv-broadcast ymin n))
+         (ymaxs (%hv-broadcast ymax n))
+         (colorlist (%hv-broadcast colors n))
          (lines nil))
     (loop for xi in xs
           for y0 in ymins

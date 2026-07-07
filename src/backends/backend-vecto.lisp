@@ -424,12 +424,20 @@ HATCH-PATH from hatch-get-path is in [0,1]x[0,1] unit space, scaled by tile-size
 (defmethod draw-path ((renderer renderer-vecto) gc path transform &optional rgbface)
   "Draw a path using Vecto. Handles fill, stroke, or fill+stroke.
 Must be called within an active canvas context (see canvas-vecto)."
-  (let ((edge-color (let ((ec (%gc-edge-color gc)))
+  (let ((edge-color (let ((ec (%gc-edge-color gc))
+                          (ls (mpl.rendering:gc-linestyle gc)))
                     ;; Treat fully-transparent edge-color (alpha=0.0) as no edge.
                     ;; Prevents anti-aliased seam artifacts at cell boundaries
                     ;; in pcolormesh: to-rgba("none") returns #(0 0 0 0) which is
                     ;; truthy but should not trigger the fill+stroke branch.
-                    (when (and ec (> (fourth ec) 0.0))
+                    ;; Likewise linestyle :none means no stroke at all
+                    ;; (matplotlib) — the dash handling would otherwise fall
+                    ;; through to a solid stroke.
+                    (when (and ec (> (fourth ec) 0.0)
+                               (not (eq ls :none))
+                               (not (and (stringp ls)
+                                         (member ls '("none" "" " ")
+                                                 :test #'string-equal))))
                       ec)))
         (face-color (%gc-face-color gc rgbface))
         (alpha (mpl.rendering:gc-alpha gc)))

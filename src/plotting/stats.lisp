@@ -73,10 +73,16 @@ ZORDER — drawing order.
 Returns a plist with :boxes :medians :whiskers :caps :fliers."
   (declare (ignore labels))
   (let* ((effective-color (or color "C0"))
-         ;; Normalize data to list of datasets
-         (datasets (if (and (listp data) (listp (first data)))
-                       data
-                       (list data)))
+         ;; Normalize data to a list of datasets (accept lists or vectors
+         ;; at either level)
+         (datasets (let ((d (if (and (typep data 'sequence) (not (stringp data)))
+                                (coerce data 'list)
+                                (list data))))
+                     (if (and d
+                              (typep (first d) 'sequence)
+                              (not (stringp (first d))))
+                         d
+                         (list d))))
          (n-boxes (length datasets))
          (pos (or positions (loop for i from 1 to n-boxes collect (float i 1.0d0))))
          (all-boxes nil)
