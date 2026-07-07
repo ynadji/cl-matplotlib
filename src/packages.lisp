@@ -524,7 +524,7 @@
             #:axis-major-formatter #:axis-minor-formatter
             #:axis-label-text #:axis-label-artist
              #:axis-tick-size-major #:axis-tick-size-minor
-             #:axis-tick-direction #:axis-tick-label-fontsize
+             #:axis-tick-direction #:axis-tick-label-fontsize #:axis-tick-label-color
              #:axis-tick-labels-visible-p
              #:axis-grid-on-p #:axis-grid-color #:axis-grid-linewidth
             #:axis-grid-linestyle #:axis-grid-alpha

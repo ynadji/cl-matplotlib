@@ -138,6 +138,9 @@ Ported from matplotlib.axis.Tick."))
    (tick-label-fontsize :initform 10.0
                         :accessor axis-tick-label-fontsize
                         :type real)
+   (tick-label-color :initform "black"
+                     :accessor axis-tick-label-color
+                     :documentation "Tick label text color.")
    (tick-pad :initform 3.5d0
              :accessor axis-tick-pad
              :type double-float)
@@ -319,6 +322,7 @@ The scale sets default locators and formatters."
                                             :size (axis-tick-size-major axis)
                                             :direction (axis-tick-direction axis)
                                             :label-fontsize (axis-tick-label-fontsize axis)
+                                            :label-color (axis-tick-label-color axis)
                                             :grid-on (axis-grid-on-p axis)
                                             :grid-color (axis-grid-color axis)
                                             :grid-linewidth (axis-grid-linewidth axis)
@@ -356,6 +360,7 @@ The scale sets default locators and formatters."
                                   :size (axis-tick-size-minor axis)
                                   :direction (axis-tick-direction axis)
                                   :label-fontsize (axis-tick-label-fontsize axis)
+                                  :label-color (axis-tick-label-color axis)
                                   :grid-on (axis-minor-grid-on-p axis)
                                   :grid-color (axis-minor-grid-color axis)
                                   :grid-linewidth (axis-minor-grid-linewidth axis)
@@ -840,19 +845,22 @@ SIDE is :left (default) or :right for twin axes."
 
 (defun axis-set-tick-params (axis &key (size nil) (width nil)
                                        (direction nil) (pad nil)
-                                       (labelsize nil) (which :major))
+                                       (labelsize nil) (labelcolor nil)
+                                       (which :major))
   "Set tick parameters on AXIS.
 WHICH is :major, :minor, or :both."
   (when (member which '(:major :both))
     (when size (setf (axis-tick-size-major axis) size))
     (when direction (setf (axis-tick-direction axis) direction))
     (when pad (setf (axis-tick-pad axis) (float pad 1.0d0)))
-    (when labelsize (setf (axis-tick-label-fontsize axis) labelsize)))
+    (when labelsize (setf (axis-tick-label-fontsize axis) labelsize))
+    (when labelcolor (setf (axis-tick-label-color axis) labelcolor)))
   (when (member which '(:minor :both))
     (when size (setf (axis-tick-size-minor axis) size))
     (when direction (setf (axis-tick-direction axis) direction))
     (when pad (setf (axis-tick-pad axis) (float pad 1.0d0)))
-    (when labelsize (setf (axis-tick-label-fontsize axis) labelsize)))
+    (when labelsize (setf (axis-tick-label-fontsize axis) labelsize))
+    (when labelcolor (setf (axis-tick-label-color axis) labelcolor)))
   (when (and (null (member which '(:major :minor :both)))
              (null which))
     ;; Default: apply to major

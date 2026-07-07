@@ -480,18 +480,24 @@ regions like axhspan/axvspan/fill-between."
     (return-from mpl.rendering:draw))
   ;; Ensure transforms are up to date
   (%setup-transforms ax)
-  ;; Propagate transData to child patches and lines. transData is a stable
-  ;; transform-wrapper (updated in place by %update-trans-data), so this
-  ;; mainly covers artists whose transform was never set at creation.
+  ;; Give transData to child artists whose transform was never set at
+  ;; creation. transData is a stable transform-wrapper (updated in place by
+  ;; %update-trans-data), so artists that already hold a transform —
+  ;; whether the wrapper or a deliberate alternative like transAxes —
+  ;; must be left alone.
   (let ((td (axes-base-trans-data ax)))
     (dolist (p (axes-base-patches ax))
-      (setf (mpl.rendering:artist-transform p) td))
+      (unless (mpl.rendering:artist-transform p)
+        (setf (mpl.rendering:artist-transform p) td)))
     (dolist (l (axes-base-lines ax))
-      (setf (mpl.rendering:artist-transform l) td))
+      (unless (mpl.rendering:artist-transform l)
+        (setf (mpl.rendering:artist-transform l) td)))
     (dolist (img (axes-base-images ax))
-      (setf (mpl.rendering:artist-transform img) td))
+      (unless (mpl.rendering:artist-transform img)
+        (setf (mpl.rendering:artist-transform img) td)))
     (dolist (a (axes-base-artists ax))
-      (setf (mpl.rendering:artist-transform a) td)))
+      (unless (mpl.rendering:artist-transform a)
+        (setf (mpl.rendering:artist-transform a) td))))
   ;; Draw background patch if frameon
   (when (and (axes-base-frameon-p ax) (axes-base-patch ax))
     (%draw-axes-background ax renderer))
