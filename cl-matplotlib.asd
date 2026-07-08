@@ -23,9 +23,17 @@
 ;;;;
 ;;;; Every subsystem carries its own <sys>/tests suite; this fans test-op
 ;;;; out across all of them, runs each even if an earlier one fails, and
-;;;; signals a single summary error at the end if any failed. The SDL2
-;;;; backend needs the libSDL2 foreign library, so it is load-guarded:
-;;;; a machine without it reports SDL2 as skipped instead of aborting.
+;;;; signals a single summary error at the end if any failed.
+;;;;
+;;;; The base library suites are hard :depends-on. The display backends
+;;;; (show / show-web / show-sdl2) are instead loaded lazily inside
+;;;; perform and guarded: an adapter that is unavailable — a native lib
+;;;; like libSDL2 that isn't installed, web deps not fetched, or a newly
+;;;; added .asd not yet in ASDF's source registry — is reported SKIPPED
+;;;; rather than aborting the whole run. (If a show suite is unexpectedly
+;;;; skipped right after adding these systems, refresh discovery with
+;;;; (asdf:clear-source-registry) — or (ql:register-local-projects) under
+;;;; a Quicklisp local-projects setup — then re-run.)
 (asdf:defsystem #:cl-matplotlib/tests
   :description "Aggregate: run every cl-matplotlib subsystem test suite via one test-system"
   :depends-on (#:cl-matplotlib-foundation/tests
@@ -35,9 +43,7 @@
                #:cl-matplotlib-containers/tests
                #:cl-matplotlib-pyplot/tests
                #:cl-matplotlib-testing/tests
-               #:ggplot/tests
-               #:cl-matplotlib-show/tests
-               #:cl-matplotlib-show-web/tests)
+               #:ggplot/tests)
   :perform (asdf:test-op (o c)
              (declare (ignore o c))
              (let ((required '("cl-matplotlib-foundation/tests"
@@ -47,11 +53,13 @@
                                "cl-matplotlib-containers/tests"
                                "cl-matplotlib-pyplot/tests"
                                "cl-matplotlib-testing/tests"
-                               "ggplot/tests"
-                               "cl-matplotlib-show/tests"
-                               "cl-matplotlib-show-web/tests"))
-                   ;; needs the libSDL2 foreign library — skip if absent
-                   (optional '("cl-matplotlib-show-sdl2/tests"))
+                               "ggplot/tests"))
+                   ;; Optional display backends: loaded lazily and
+                   ;; guarded so a missing native lib / undiscovered .asd
+                   ;; is skipped, not fatal.
+                   (optional '("cl-matplotlib-show/tests"
+                               "cl-matplotlib-show-web/tests"
+                               "cl-matplotlib-show-sdl2/tests"))
                    (failed '())
                    (skipped '()))
                (dolist (sys required)
@@ -64,6 +72,9 @@
                  (format t "~&~%;;; ==== ~A ====~%" sys)
                  (handler-case
                      (progn
+                       ;; load the primary system first so a missing
+                       ;; foreign lib / undiscovered .asd is caught here
+                       ;; as "unavailable" rather than a test failure
                        (asdf:load-system (subseq sys 0 (position #\/ sys)))
                        (handler-case (asdf:operate 'asdf:test-op sys)
                          (error (e)

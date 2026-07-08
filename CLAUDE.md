@@ -26,10 +26,15 @@ Tests use the FiveAM framework. Each ASDF system has its own test suite.
 ```bash
 # Run EVERY subsystem's suite in one shot (the cl-matplotlib/tests
 # aggregate; also reachable as (asdf:test-system :cl-matplotlib)). Runs
-# each suite even if an earlier one fails and prints a final summary;
-# the SDL2 backend is load-guarded, so a machine without libSDL2 reports
-# it skipped rather than aborting. Set SDL_VIDEODRIVER=dummy to exercise
-# the SDL2 smoke test headlessly.
+# each suite even if an earlier one fails and prints a final summary. The
+# base library suites are required; the display backends (show/-web/
+# -sdl2) are load-guarded, so an unavailable one — missing libSDL2, web
+# deps not fetched, or a freshly added .asd not yet in ASDF's registry —
+# is reported skipped rather than aborting. If a show suite is
+# unexpectedly skipped just after adding those systems, run
+# (asdf:clear-source-registry) (or (ql:register-local-projects) under a
+# Quicklisp local-projects setup) and re-run. Set SDL_VIDEODRIVER=dummy
+# to exercise the SDL2 smoke test headlessly.
 ros run -- --eval '(ql:quickload :cl-matplotlib/tests)' \
            --eval '(asdf:test-system :cl-matplotlib)' --quit
 
