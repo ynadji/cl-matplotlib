@@ -46,6 +46,20 @@
                #:ggplot/tests)
   :perform (asdf:test-op (o c)
              (declare (ignore o c))
+             ;; Running each child suite from inside this perform means a
+             ;; nested asdf:operate, which ASDF flags with a "Deprecated
+             ;; recursive use of OPERATE" warning. The nesting is
+             ;; intentional (run-all-and-collect can't be expressed as
+             ;; static test-op dependencies without stopping at the first
+             ;; failure), so muffle just that one warning.
+             (flet ((muffling (thunk)
+                      (handler-bind
+                          ((warning
+                             (lambda (w)
+                               (when (search "recursive use"
+                                             (princ-to-string w))
+                                 (muffle-warning w)))))
+                        (funcall thunk))))
              (let ((required '("cl-matplotlib-foundation/tests"
                                "cl-matplotlib-primitives/tests"
                                "cl-matplotlib-rendering/tests"
@@ -64,7 +78,7 @@
                    (skipped '()))
                (dolist (sys required)
                  (format t "~&~%;;; ==== ~A ====~%" sys)
-                 (handler-case (asdf:operate 'asdf:test-op sys)
+                 (handler-case (muffling (lambda () (asdf:operate 'asdf:test-op sys)))
                    (error (e)
                      (push sys failed)
                      (format t "~&;;; FAILED ~A: ~A~%" sys e))))
@@ -75,8 +89,11 @@
                        ;; load the primary system first so a missing
                        ;; foreign lib / undiscovered .asd is caught here
                        ;; as "unavailable" rather than a test failure
-                       (asdf:load-system (subseq sys 0 (position #\/ sys)))
-                       (handler-case (asdf:operate 'asdf:test-op sys)
+                       (muffling
+                        (lambda ()
+                          (asdf:load-system (subseq sys 0 (position #\/ sys)))))
+                       (handler-case
+                           (muffling (lambda () (asdf:operate 'asdf:test-op sys)))
                          (error (e)
                            (push sys failed)
                            (format t "~&;;; FAILED ~A: ~A~%" sys e))))
@@ -91,4 +108,4 @@
                (when failed
                  (format t "~&;;;   failed:  ~{~A~^, ~}~%" (reverse failed))
                  (error "cl-matplotlib: ~D test suite(s) failed: ~{~A~^, ~}"
-                        (length failed) (reverse failed))))))
+                        (length failed) (reverse failed)))))))
