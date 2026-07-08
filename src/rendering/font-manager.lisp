@@ -159,9 +159,13 @@ Ported from matplotlib's FontManager."))
 ;;; ============================================================
 
 (defun list-font-files (directory &key (extensions '("ttf" "otf" "ttc")))
-  "Recursively find font files in DIRECTORY matching EXTENSIONS."
+  "Recursively find font files in DIRECTORY matching EXTENSIONS.
+Any directory that cannot be parsed or probed on this platform is
+skipped — e.g. a Windows drive-letter path like \"C:/Windows/Fonts/\"
+errors when parsed on a Unix Lisp, so the whole scan is guarded."
   (let ((result '()))
-    (when (and directory (probe-file directory))
+    (when (and directory (ignore-errors (probe-file directory)))
+      (ignore-errors
       (dolist (ext extensions)
         (let ((pattern (merge-pathnames (make-pathname :name :wild :type ext)
                                          (pathname-as-directory directory))))
@@ -180,7 +184,7 @@ Ported from matplotlib's FontManager."))
                                                :name :wild :type ext)
                                 (pathname-as-directory directory))))
           (dolist (f (directory subdir-pattern2))
-            (push (namestring f) result)))))
+            (push (namestring f) result))))))
     (remove-duplicates result :test #'string=)))
 
 (defun pathname-as-directory (pathname)
