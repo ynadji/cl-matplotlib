@@ -74,13 +74,19 @@ cl-matplotlib-foundation   -- cbook utilities, RC params, color database, styles
                                    -- and src/plotting/ (contour, hexbin, hist, ...)
           -> cl-matplotlib-pyplot   -- procedural API (the user-facing entry point)
           -> ggplot                 -- Grammar of Graphics layer (package nickname `gg`)
+          -> cl-matplotlib-show     -- interactive display core (interactor + adapter protocol)
+             -> cl-matplotlib-show-web / -sdl2 / -capi  -- display backends
 cl-matplotlib              -- meta-system that loads everything
 cl-matplotlib-testing      -- SSIM image comparison infrastructure
 ```
 
 All package definitions live in `src/packages.lisp`, except the `ggplot`
-system which owns `src/ggplot/packages.lisp`. Each system's source is under
-`src/<module>/`, tests under `tests/`.
+system which owns `src/ggplot/packages.lisp` and the show systems which
+own `src/show/**/packages.lisp`. Each system's source is under
+`src/<module>/`, tests under `tests/`. The show/ggplot systems are
+optional and not referenced by the meta-system; `(pyplot:show)` reaches
+the display stack only through `mpl.pyplot:*show-hook*`
+(see `docs/interactive.md`).
 
 ### ggplot (gg)
 

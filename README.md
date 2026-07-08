@@ -45,6 +45,24 @@ Clone this repository into your Quicklisp local-projects directory, then:
 
 See the Lisp files in [examples](examples/) for other plots.
 
+## Interactive display (`show`)
+
+Optional display backends open figures in live windows with
+cursor-anchored zoom, drag pan, home/reset, save, and a data-coordinate
+readout — in the browser (works over SSH) or a native SDL2 window:
+
+```lisp
+(ql:quickload :cl-matplotlib-show-web)   ; or :cl-matplotlib-show-sdl2
+(use-package :cl-matplotlib.pyplot)
+
+(plot '(1 2 3 4) '(1 4 2 3))
+(show)              ; opens a browser tab / window
+(show :block t)     ; returns when it is closed
+```
+
+See [docs/interactive.md](docs/interactive.md) for backend selection,
+the interaction reference, and how to write a new display adapter.
+
 ## Grammar of Graphics (ggplot)
 
 The `ggplot` system (package nickname `gg`) layers a ggplot2/plotnine-style
