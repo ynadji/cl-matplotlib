@@ -12,9 +12,31 @@
 ;;; Font path configuration
 ;;; ============================================================
 
-(defparameter *default-font-path*
-  "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-  "Default font path for text rendering.")
+(defun resolve-default-font-path ()
+  "Resolve a usable default font path across platforms. Prefers the
+DejaVu Sans bundled with cl-matplotlib (data/fonts/ttf/, always present
+and used by the visual tests), so text rendering works on macOS and
+Windows without system font discovery; falls back to common system
+locations, then to the Linux DejaVu path."
+  (or
+   ;; Bundled font — present on every checkout, no discovery needed.
+   (let ((dir (ignore-errors (mpl.rendering:shipped-font-directory))))
+     (when dir
+       (let ((p (merge-pathnames "DejaVuSans.ttf" dir)))
+         (when (probe-file p) (namestring p)))))
+   ;; Common system fallbacks, should the bundle ever be missing.
+   (find-if #'probe-file
+            '("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf" ; Debian/Ubuntu
+              "/usr/share/fonts/dejavu/DejaVuSans.ttf"          ; Fedora/Arch
+              "/opt/homebrew/share/fonts/DejaVuSans.ttf"        ; Homebrew fonts
+              "/usr/local/share/fonts/DejaVuSans.ttf"))
+   ;; Last resort: original Linux path (keeps prior behavior).
+   "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"))
+
+(defparameter *default-font-path* (resolve-default-font-path)
+  "Default font path for text rendering. Resolved at load time,
+preferring the bundled DejaVu Sans so rendering works on any platform.
+Re-run RESOLVE-DEFAULT-FONT-PATH (or setf directly) to override.")
 
 ;;; ============================================================
 ;;; renderer-vecto — Vecto-based rasterizer

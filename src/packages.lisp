@@ -664,7 +664,7 @@
             ;; Convenience
             #:make-graphics-context #:render-to-png
             ;; Font config
-            #:*default-font-path*
+            #:*default-font-path* #:resolve-default-font-path
              ;; PDF renderer
              #:renderer-pdf #:renderer-pdf-font-cache
              ;; PDF canvas

@@ -55,12 +55,21 @@
 ;;; ============================================================
 
 (defparameter *system-font-directories*
-  (list "/usr/share/fonts/"
+  (list ;; Linux / X11
+        "/usr/share/fonts/"
         "/usr/local/share/fonts/"
         "/usr/X11R6/lib/X11/fonts/TTF/"
+        ;; macOS
+        "/System/Library/Fonts/"
+        "/Library/Fonts/"
+        (namestring (merge-pathnames "Library/Fonts/" (user-homedir-pathname)))
+        ;; Windows
+        "C:/Windows/Fonts/"
+        ;; user fonts (Linux)
         (namestring (merge-pathnames ".fonts/" (user-homedir-pathname)))
         (namestring (merge-pathnames ".local/share/fonts/" (user-homedir-pathname))))
-  "Directories to scan for system fonts (X11/Linux).")
+  "Directories to scan for system fonts. Non-existent entries are
+skipped, so all platforms' locations can be listed unconditionally.")
 
 ;;; ============================================================
 ;;; Font entry — metadata for a discovered font
