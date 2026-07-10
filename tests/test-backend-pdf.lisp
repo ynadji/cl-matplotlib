@@ -567,7 +567,9 @@
     (is (file-exists-and-valid-p output 1000))
     (is (pdf-header-valid-p output))
     ;; Copy to evidence
-    (let ((evidence-path ".sisyphus/evidence/phase3c-pdf-render.pdf"))
+    (let ((evidence-path (asdf:system-relative-pathname
+                          :cl-matplotlib-backends
+                          ".sisyphus/evidence/phase3c-pdf-render.pdf")))
       (ensure-directories-exist evidence-path)
       (uiop:copy-file output evidence-path))))
 

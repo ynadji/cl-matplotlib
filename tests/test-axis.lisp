@@ -500,7 +500,9 @@
   "Evidence: Generate ticks-labels.png for plan acceptance."
   (let* ((fig (make-figure))
          (ax (add-subplot fig 1 1 1))
-         (path ".sisyphus/evidence/phase4c-ticks-labels.png"))
+         (path (asdf:system-relative-pathname
+                :cl-matplotlib-containers
+                ".sisyphus/evidence/phase4c-ticks-labels.png")))
     (plot ax '(0 1 2 3 4) '(0 1 4 9 16))
     (ensure-directories-exist path)
     (savefig fig path)

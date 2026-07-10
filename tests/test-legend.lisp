@@ -480,7 +480,9 @@ well would draw it twice."
   "Generate evidence PNG for Phase 4d: legend with two lines."
   (let* ((fig (make-figure :figsize '(6.4 4.8) :dpi 100))
          (ax (add-subplot fig 1 1 1))
-         (evidence-dir ".sisyphus/evidence/")
+         (evidence-dir (namestring
+                        (asdf:system-relative-pathname
+                         :cl-matplotlib-containers ".sisyphus/evidence/")))
          (path (format nil "~Aphase4d-legend.png" evidence-dir)))
     ;; Ensure directory exists
     (ensure-directories-exist path)

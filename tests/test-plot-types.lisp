@@ -787,7 +787,9 @@ computes density first, then cumsum(density * bin_width))."
   "Generate evidence PNG: histogram of random data with 30 bins."
   (multiple-value-bind (ax fig) (make-test-axes)
     (let* ((data (loop repeat 1000 collect (+ 50.0 (* 15.0 (- (random 2.0) 1.0)))))
-           (path ".sisyphus/evidence/phase6b-hist.png"))
+           (path (asdf:system-relative-pathname
+                  :cl-matplotlib-containers
+                  ".sisyphus/evidence/phase6b-hist.png")))
       ;; Ensure directory exists
       (ensure-directories-exist path)
       (hist ax data :bins 30 :color "skyblue" :edgecolor "black")
