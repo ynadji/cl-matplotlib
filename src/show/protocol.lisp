@@ -30,6 +30,11 @@ available registered adapter; a keyword (:web, :sdl2, :capi) forces one;
 an adapter instance is used directly.")
 
 (defun %resolve-adapter ()
+  "Return the adapter instance selected by *show-backend*: for :auto, the
+highest-priority registered adapter whose availability check passes; for
+a keyword, that named adapter; otherwise *show-backend* is itself an
+adapter instance and is returned as-is. Signals an error when :auto finds
+no available backend or a named backend is not registered."
   (cond
     ((eq *show-backend* :auto)
      (let ((live (sort (remove-if-not (lambda (e) (funcall (third e)))
