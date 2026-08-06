@@ -18,6 +18,36 @@ fill(), fill_between() methods."))
 ;;; plot — plot y versus x as lines
 ;;; ============================================================
 
+(defun %maybe-convert-units (ax data which)
+  "Probe DATA's first element against the unit-converter registry
+(src/containers/dates.lisp). On a match, return the converted sequence
+and switch the axis scale (only while it is still the default linear),
+so e.g. local-time timestamps plot directly with date ticks. WHICH is
+:x or :y. Returns DATA unchanged when no converter matches."
+  (let ((first-el (if (listp data)
+                      (first data)
+                      (and (plusp (length data)) (elt data 0)))))
+    (if (null first-el)
+        data
+        (let ((converter (find-unit-converter first-el)))
+          (if (null converter)
+              data
+              (let ((converted (map (if (listp data) 'list 'vector)
+                                    (getf converter :convert)
+                                    data))
+                    (scale-kw (getf converter :scale)))
+                (unless (eq scale-kw :linear)
+                  (let* ((axis (ecase which
+                                 (:x (axes-base-xaxis ax))
+                                 (:y (axes-base-yaxis ax))))
+                         (current (axis-scale axis)))
+                    (when (or (null current)
+                              (string= (scale-name current) "linear"))
+                      (ecase which
+                        (:x (axes-set-xscale ax scale-kw))
+                        (:y (axes-set-yscale ax scale-kw))))))
+                converted))))))
+
 (defun plot (ax xdata ydata &key (color nil) (linewidth 1.5) (linestyle :solid)
                                  (marker :none) (label "") (zorder 2)
                                  (markersize nil) (markeredgecolor nil) (markeredgewidth nil))
@@ -37,6 +67,8 @@ LABEL - string label for legend.
 ZORDER - drawing order (default 2).
 
 Returns a list containing the created Line2D."
+  (setf xdata (%maybe-convert-units ax xdata :x)
+        ydata (%maybe-convert-units ax ydata :y))
   (let* ((effective-color (if color
                               color
                               (prog1 (format nil "C~D" (mod (axes-base-color-cycle-index ax) 10))
@@ -87,6 +119,8 @@ ZORDER — drawing order (default 1).
 ALPHA — transparency (nil for opaque).
 
 Returns the PathCollection artist."
+  (setf xdata (%maybe-convert-units ax xdata :x)
+        ydata (%maybe-convert-units ax ydata :y))
   ;; Detect categorical (string) x-data and convert to numeric positions
   (when (and (listp xdata) (not (null xdata)) (stringp (first xdata)))
     (let* ((existing-loc (axis-major-locator (axes-base-xaxis ax)))
@@ -151,6 +185,38 @@ Returns the PathCollection artist."
     pc))
 
 ;;; ============================================================
+;;; Helper: convert a length in points to data units along an axis
+;;; ============================================================
+
+(defun %points-to-data-units (ax points axis)
+  "Convert a length in POINTS to data units along AXIS (:x or :y) of AX.
+Uses the axes bbox size in points and the current data (or view) interval.
+Falls back to the proportional heuristic POINTS * 0.01 when the axes
+geometry or data range is unavailable."
+  (let* ((fig (axes-base-figure ax))
+         (pos (axes-base-position ax))
+         (datalim (axes-base-data-lim ax))
+         (range (cond ((and datalim (not (mpl.primitives:bbox-null-p datalim)))
+                       (if (eq axis :x)
+                           (- (mpl.primitives:bbox-x1 datalim)
+                              (mpl.primitives:bbox-x0 datalim))
+                           (- (mpl.primitives:bbox-y1 datalim)
+                              (mpl.primitives:bbox-y0 datalim))))
+                      (t (multiple-value-bind (v0 v1)
+                             (if (eq axis :x) (axes-get-xlim ax) (axes-get-ylim ax))
+                           (abs (- v1 v0)))))))
+    (if (and fig pos (plusp range))
+        (let* ((dpi (float (figure-dpi fig) 1.0d0))
+               (len-px (if (eq axis :x)
+                           (* (third pos) (float (figure-width-px fig) 1.0d0))
+                           (* (fourth pos) (float (figure-height-px fig) 1.0d0))))
+               (len-pt (* len-px (/ 72.0d0 dpi))))
+          (if (plusp len-pt)
+              (* (float points 1.0d0) (/ range len-pt))
+              (* (float points 1.0d0) 0.01d0)))
+        (* (float points 1.0d0) 0.01d0))))
+
+;;; ============================================================
 ;;; bar — bar chart
 ;;; ============================================================
 
@@ -179,6 +245,7 @@ ZORDER — drawing order (default 1).
 ALIGN — :center or :edge (default :center).
 
 Returns a list of Rectangle patches."
+  (setf x (%maybe-convert-units ax x :x))
   ;; Detect categorical (string) x-data and convert to numeric positions
   (when (and (listp x) (not (null x)) (stringp (first x)))
     (let* ((existing-loc (axis-major-locator (axes-base-xaxis ax)))
@@ -296,7 +363,7 @@ Returns a list of Rectangle patches."
                                  (y-hi (+ center-y ye)))
                             (push (list (list xi y-lo) (list xi y-hi)) error-segments)
                             (when (plusp capsize)
-                              (let ((cap-hw (* capsize 0.01d0)))
+                              (let ((cap-hw (%points-to-data-units ax capsize :x)))
                                 (push (list (list (- xi cap-hw) y-lo) (list (+ xi cap-hw) y-lo)) cap-segments)
                                 (push (list (list (- xi cap-hw) y-hi) (list (+ xi cap-hw) y-hi)) cap-segments)))))
                         ;; Horizontal error bars
@@ -308,7 +375,7 @@ Returns a list of Rectangle patches."
                                  (x-hi (+ xi xe)))
                             (push (list (list x-lo center-y) (list x-hi center-y)) error-segments)
                             (when (plusp capsize)
-                              (let ((cap-hw (* capsize 0.01d0)))
+                              (let ((cap-hw (%points-to-data-units ax capsize :y)))
                                 (push (list (list x-lo (- center-y cap-hw)) (list x-lo (+ center-y cap-hw))) cap-segments)
                                 (push (list (list x-hi (- center-y cap-hw)) (list x-hi (+ center-y cap-hw))) cap-segments)))))))))
          ;; Create LineCollection for error bar lines
@@ -880,7 +947,7 @@ Returns (values line error-lines caps)."
                        (push (list (list xi y-lo) (list xi y-hi)) error-segments)
                        ;; Caps
                        (when (plusp capsize)
-                         (let ((cap-hw (* capsize 0.01d0))) ; convert points to data approx
+                         (let ((cap-hw (%points-to-data-units ax capsize :x)))
                            (push (list (list (- xi cap-hw) y-lo) (list (+ xi cap-hw) y-lo)) cap-segments)
                            (push (list (list (- xi cap-hw) y-hi) (list (+ xi cap-hw) y-hi)) cap-segments)))))
                    ;; Horizontal error bars
@@ -894,7 +961,7 @@ Returns (values line error-lines caps)."
                        (push (list (list x-lo yi) (list x-hi yi)) error-segments)
                        ;; Caps
                        (when (plusp capsize)
-                         (let ((cap-hw (* capsize 0.01d0)))
+                         (let ((cap-hw (%points-to-data-units ax capsize :y)))
                            (push (list (list x-lo (- yi cap-hw)) (list x-lo (+ yi cap-hw))) cap-segments)
                            (push (list (list x-hi (- yi cap-hw)) (list x-hi (+ yi cap-hw))) cap-segments))))))))
       ;; Create LineCollection for error bars
@@ -1308,9 +1375,11 @@ Returns the created text-artist."
     ;; Set transform to transData (data coordinates)
     (setf (mpl.rendering:artist-transform txt)
           (axes-base-trans-data ax))
-    ;; Add to axes texts list and artists
+    ;; Add to axes texts list only — texts are drawn via axes-get-all-artists,
+    ;; so registering in axes-base-artists as well would draw them twice.
     (push txt (axes-base-texts ax))
-    (axes-add-artist ax txt)
+    (setf (mpl.rendering:artist-axes txt) ax
+          (mpl.rendering:artist-figure txt) (axes-base-figure ax))
     (setf (mpl.rendering:artist-stale ax) t)
     txt))
 
@@ -1365,10 +1434,11 @@ Returns the created Annotation."
     (when (mpl.rendering:annotation-arrow-patch ann)
       (setf (mpl.rendering:artist-transform (mpl.rendering:annotation-arrow-patch ann))
             (axes-base-trans-data ax)))
-    ;; Add to axes texts list
+    ;; Add to axes texts list only — texts are drawn via axes-get-all-artists,
+    ;; so registering in axes-base-artists as well would draw them twice.
     (push ann (axes-base-texts ax))
-    ;; Also add to artists for draw ordering
-    (axes-add-artist ax ann)
+    (setf (mpl.rendering:artist-axes ann) ax
+          (mpl.rendering:artist-figure ann) (axes-base-figure ax))
     ;; Mark stale
     (setf (mpl.rendering:artist-stale ax) t)
     ann))
@@ -1437,16 +1507,33 @@ Returns the created Line2D."
 ;;; hlines — multiple horizontal lines at data coordinates
 ;;; ============================================================
 
+(defun %hv-values-list (v)
+  "Coerce V to a list: sequences (lists/vectors, but not strings) are
+converted; anything else becomes a single-element list."
+  (if (and (typep v 'sequence) (not (stringp v)))
+      (coerce v 'list)
+      (list v)))
+
+(defun %hv-broadcast (v n)
+  "Broadcast V to a list of length N: a scalar (or 1-element sequence) is
+repeated; a shorter sequence is cycled."
+  (let* ((vl (%hv-values-list v))
+         (len (length vl)))
+    (if (= len 1)
+        (make-list n :initial-element (first vl))
+        (loop for i from 0 below n collect (nth (mod i len) vl)))))
+
 (defun hlines (ax y xmin xmax &key (colors "C0") (linestyles :solid)
                                     (linewidth 1.5) (alpha nil) (label "") (zorder 2))
   "Draw horizontal lines at each y in Y from xmin to xmax (all in DATA coordinates).
-Y — scalar or list of y values.
-XMIN, XMAX — x extent in data coordinates (scalar or list matching Y).
+Y — scalar or sequence of y values.
+XMIN, XMAX — x extent in data coordinates (scalar or sequence matching Y).
 Returns list of Line2D objects."
-  (let* ((ys (if (listp y) y (list y)))
-         (xmins (if (listp xmin) xmin (make-list (length ys) :initial-element xmin)))
-         (xmaxs (if (listp xmax) xmax (make-list (length ys) :initial-element xmax)))
-         (colorlist (if (listp colors) colors (make-list (length ys) :initial-element colors)))
+  (let* ((ys (%hv-values-list y))
+         (n (length ys))
+         (xmins (%hv-broadcast xmin n))
+         (xmaxs (%hv-broadcast xmax n))
+         (colorlist (%hv-broadcast colors n))
          (lines nil))
     (loop for yi in ys
           for x0 in xmins
@@ -1476,13 +1563,14 @@ Returns list of Line2D objects."
 (defun vlines (ax x ymin ymax &key (colors "C0") (linestyles :solid)
                                     (linewidth 1.5) (alpha nil) (label "") (zorder 2))
   "Draw vertical lines at each x in X from ymin to ymax (all in DATA coordinates).
-X — scalar or list of x values.
-YMIN, YMAX — y extent in data coordinates (scalar or list matching X).
+X — scalar or sequence of x values.
+YMIN, YMAX — y extent in data coordinates (scalar or sequence matching X).
 Returns list of Line2D objects."
-  (let* ((xs (if (listp x) x (list x)))
-         (ymins (if (listp ymin) ymin (make-list (length xs) :initial-element ymin)))
-         (ymaxs (if (listp ymax) ymax (make-list (length xs) :initial-element ymax)))
-         (colorlist (if (listp colors) colors (make-list (length xs) :initial-element colors)))
+  (let* ((xs (%hv-values-list x))
+         (n (length xs))
+         (ymins (%hv-broadcast ymin n))
+         (ymaxs (%hv-broadcast ymax n))
+         (colorlist (%hv-broadcast colors n))
          (lines nil))
     (loop for xi in xs
           for y0 in ymins
@@ -1637,16 +1725,20 @@ Returns the created mpl-axes or polar-axes."
          ;; Available area
          (total-w (- right left))
          (total-h (- top bottom))
-         ;; Spacing between subplots
-         (subplot-w (/ (- total-w (* wspace (1- ncols))) ncols))
-         (subplot-h (/ (- total-h (* hspace (1- nrows))) nrows))
+         ;; matplotlib (and gridspec-get-grid-positions) treat wspace/hspace
+         ;; as a fraction of the average subplot size, NOT of the figure:
+         ;; cell = total / (n + space*(n-1)), gap = space * cell
+         (subplot-w (/ total-w (+ ncols (* wspace (1- ncols)))))
+         (subplot-h (/ total-h (+ nrows (* hspace (1- nrows)))))
+         (gap-w (* wspace subplot-w))
+         (gap-h (* hspace subplot-h))
          ;; Convert 1-based index to row, col (0-based)
          (row (floor (1- index) ncols))      ; row 0 = top
          (col (mod (1- index) ncols))
          ;; Compute position in figure coordinates
-         ;; Row 0 is top, so we flip: pos-bottom = top - (row+1)*h - row*hspace
-         (pos-left (+ left (* col (+ subplot-w wspace))))
-         (pos-bottom (- top (* (1+ row) subplot-h) (* row hspace)))
+         ;; Row 0 is top, so we flip: pos-bottom = top - (row+1)*h - row*gap
+         (pos-left (+ left (* col (+ subplot-w gap-w))))
+         (pos-bottom (- top (* (1+ row) subplot-h) (* row gap-h)))
          (pos-width subplot-w)
          (pos-height subplot-h))
      ;; Ensure position is within bounds
@@ -1749,3 +1841,276 @@ Ported from matplotlib.axes.Axes.twiny."
     (push twin (figure-axes fig))
     (setf (mpl.rendering:artist-stale fig) t)
     twin))
+
+;;; ============================================================
+;;; eventplot — parallel event rasters (matplotlib eventplot)
+;;; ============================================================
+
+(defun eventplot (ax positions &key (orientation :horizontal)
+                                    (lineoffsets 1.0) (linelengths 1.0)
+                                    (linewidth 1.5) (colors "C0")
+                                    (alpha nil) (zorder 2))
+  "Draw one row of event ticks per group in POSITIONS.
+
+POSITIONS — a sequence of event values, or a sequence of such sequences
+(one raster row per group).
+LINEOFFSETS — center of each row (scalar or per-group sequence).
+LINELENGTHS — tick length (scalar or per-group sequence).
+COLORS — color (scalar or per-group sequence).
+ORIENTATION — :horizontal (events on x) or :vertical.
+
+Returns the list of created Line2D objects."
+  (let* ((groups (if (and (not (null positions))
+                          (typep (elt positions 0) 'sequence)
+                          (not (stringp (elt positions 0))))
+                     (map 'list (lambda (g) (coerce g 'list)) positions)
+                     (list (coerce positions 'list))))
+         (n (length groups))
+         (offsets (if (typep lineoffsets 'sequence)
+                      (coerce lineoffsets 'list)
+                      (loop for i from 0 below n
+                            collect (+ (float lineoffsets 1.0d0) i))))
+         (lengths (if (typep linelengths 'sequence)
+                      (coerce linelengths 'list)
+                      (make-list n :initial-element linelengths)))
+         (colorlist (if (and (typep colors 'sequence) (not (stringp colors)))
+                        (coerce colors 'list)
+                        (make-list n :initial-element colors)))
+         (lines '()))
+    (loop for events in groups
+          for offset in offsets
+          for len in lengths
+          for col in colorlist
+          do (let ((half (/ (float len 1.0d0) 2.0d0)))
+               (dolist (e events)
+                 (let* ((e (float e 1.0d0))
+                        (line (make-instance
+                               'mpl.rendering:line-2d
+                               :xdata (if (eq orientation :horizontal)
+                                          (list e e)
+                                          (list (- offset half) (+ offset half)))
+                               :ydata (if (eq orientation :horizontal)
+                                          (list (- offset half) (+ offset half))
+                                          (list e e))
+                               :color col
+                               :linewidth linewidth
+                               :zorder zorder)))
+                   (when alpha
+                     (setf (mpl.rendering:artist-alpha line)
+                           (float alpha 1.0d0)))
+                   (setf (mpl.rendering:artist-transform line)
+                         (axes-base-trans-data ax))
+                   (axes-add-line ax line)
+                   (push line lines)))
+               (when events
+                 ;; matplotlib EventCollection reports offset +/- FULL
+                 ;; linelength into the data limits (drawing uses half);
+                 ;; replicate for identical autoscaling
+                 (let ((lo (- offset (float len 1.0d0)))
+                       (hi (+ offset (float len 1.0d0))))
+                   (if (eq orientation :horizontal)
+                       (axes-update-datalim ax events (list lo hi))
+                       (axes-update-datalim ax (list lo hi) events))))))
+    (axes-autoscale-view ax)
+    (setf (mpl.rendering:artist-stale ax) t)
+    (nreverse lines)))
+
+;;; ============================================================
+;;; stairs — step outline/fill over bin edges (matplotlib stairs)
+;;; ============================================================
+
+(defun %stairs-outline (values edges)
+  "(values xs ys) of the step outline through EDGES/VALUES."
+  (let ((xs '()) (ys '()))
+    (loop for i from 0 below (length values)
+          for v = (float (elt values i) 1.0d0)
+          do (push (float (elt edges i) 1.0d0) xs) (push v ys)
+             (push (float (elt edges (1+ i)) 1.0d0) xs) (push v ys))
+    (values (nreverse xs) (nreverse ys))))
+
+(defun stairs (ax values &optional edges
+               &key (fill nil) (baseline 0.0) (color nil)
+                    (linewidth 1.5) (alpha nil) (label "") (zorder 2))
+  "Step function over bin EDGES (default 0..n), optionally filled down
+to BASELINE (matplotlib stairs).
+
+Returns the created Line2D (outline) or polygon artist (fill)."
+  (let* ((n (length values))
+         (edges (or edges (loop for i from 0 to n collect i)))
+         (effective-color
+           (or color
+               (prog1 (format nil "C~D"
+                              (mod (axes-base-color-cycle-index ax) 10))
+                 (incf (axes-base-color-cycle-index ax))))))
+    (multiple-value-bind (xs ys) (%stairs-outline values edges)
+      (if fill
+          ;; closed polygon down to the baseline; the baseline edge is
+          ;; sticky (matplotlib: no autoscale margin below a zero base)
+          (let ((poly-x (append xs (list (car (last xs)) (first xs))))
+                (poly-y (append ys (list (float baseline 1.0d0)
+                                         (float baseline 1.0d0)))))
+            (when (zerop (float baseline 1.0d0))
+              (setf (axes-base-sticky-y-min ax) t))
+            (axes-fill ax poly-x poly-y
+                       :color effective-color
+                       :alpha (or alpha 1.0)
+                       :label label :zorder zorder))
+          (let ((line (make-instance 'mpl.rendering:line-2d
+                                     :xdata xs :ydata ys
+                                     :color effective-color
+                                     :linewidth linewidth
+                                     :label label
+                                     :zorder zorder)))
+            (when alpha
+              (setf (mpl.rendering:artist-alpha line) (float alpha 1.0d0)))
+            (setf (mpl.rendering:artist-transform line)
+                  (axes-base-trans-data ax))
+            (axes-add-line ax line)
+            (axes-update-datalim ax xs ys)
+            (axes-autoscale-view ax)
+            (setf (mpl.rendering:artist-stale ax) t)
+            line)))))
+
+;;; ============================================================
+;;; broken-barh — horizontal bar segments (matplotlib broken_barh)
+;;; ============================================================
+
+(defun broken-barh (ax xranges yrange &key (facecolors "C0")
+                                           (edgecolor nil) (linewidth 0.0)
+                                           (alpha nil) (label "") (zorder 1))
+  "Horizontal bars at YRANGE = (ystart height), one per (xstart width)
+in XRANGES. FACECOLORS is a color or a sequence cycled across segments.
+
+Returns the list of Rectangle patches."
+  (destructuring-bind (y0 height) (coerce yrange 'list)
+    (let* ((ranges (map 'list (lambda (r) (coerce r 'list)) xranges))
+           (colorlist (if (and (typep facecolors 'sequence)
+                               (not (stringp facecolors)))
+                          (coerce facecolors 'list)
+                          (list facecolors)))
+           (rects '()))
+      (loop for (x0 width) in ranges
+            for i from 0
+            do (let ((rect (make-instance
+                            'mpl.rendering:rectangle
+                            :x0 (float x0 1.0d0)
+                            :y0 (float y0 1.0d0)
+                            :width (float width 1.0d0)
+                            :height (float height 1.0d0)
+                            :facecolor (elt colorlist
+                                            (mod i (length colorlist)))
+                            :edgecolor edgecolor
+                            :linewidth linewidth
+                            :zorder zorder)))
+                 (when alpha
+                   (setf (mpl.rendering:artist-alpha rect)
+                         (float alpha 1.0d0)))
+                 (when (and (zerop i) (stringp label) (plusp (length label)))
+                   (setf (mpl.rendering:artist-label rect) label))
+                 (setf (mpl.rendering:artist-transform rect)
+                       (axes-base-trans-data ax))
+                 (axes-add-patch ax rect)
+                 (axes-update-datalim ax
+                                      (list (float x0 1.0d0)
+                                            (+ (float x0 1.0d0)
+                                               (float width 1.0d0)))
+                                      (list (float y0 1.0d0)
+                                            (+ (float y0 1.0d0)
+                                               (float height 1.0d0))))
+                 (push rect rects)))
+      (axes-autoscale-view ax)
+      (setf (mpl.rendering:artist-stale ax) t)
+      (nreverse rects))))
+
+;;; ============================================================
+;;; axline — infinite line through a point (matplotlib axline)
+;;; ============================================================
+
+(defclass axline-2d (mpl.rendering:line-2d)
+  ((xy1 :initarg :xy1 :reader axline-xy1)
+   (xy2 :initarg :xy2 :initform nil :reader axline-xy2)
+   (slope :initarg :slope :initform nil :reader axline-slope))
+  (:documentation "A line of infinite extent through XY1 (and XY2 or with
+SLOPE); endpoints are recomputed against the axes view limits at draw
+time so later autoscaling can't clip it."))
+
+(defmethod mpl.rendering:draw :before ((line axline-2d) renderer)
+  (declare (ignore renderer))
+  (let ((ax (mpl.rendering:artist-axes line)))
+    (when ax
+      (multiple-value-bind (x0 x1) (axes-get-xlim ax)
+        (multiple-value-bind (y0 y1) (axes-get-ylim ax)
+          (destructuring-bind (px py) (axline-xy1 line)
+            (let ((slope (or (axline-slope line)
+                             (destructuring-bind (qx qy) (axline-xy2 line)
+                               (if (= qx px)
+                                   nil            ; vertical
+                                   (/ (- qy py) (- qx px)))))))
+              (if (null slope)
+                  (mpl.rendering:line-2d-set-data line (list px px)
+                                                  (list y0 y1))
+                  (mpl.rendering:line-2d-set-data
+                   line (list x0 x1)
+                   (list (+ py (* slope (- x0 px)))
+                         (+ py (* slope (- x1 px)))))))))))))
+
+(defun axline (ax xy1 &key xy2 slope (color nil) (linewidth 1.5)
+                           (linestyle :solid) (label "") (zorder 2))
+  "Infinite line through XY1 = (x y), defined by a second point XY2 or a
+SLOPE. Does not affect autoscaling (like matplotlib).
+
+Returns the created line artist."
+  (unless (or xy2 slope)
+    (error "axline: provide :xy2 or :slope"))
+  (let* ((effective-color
+           (or color
+               (prog1 (format nil "C~D"
+                              (mod (axes-base-color-cycle-index ax) 10))
+                 (incf (axes-base-color-cycle-index ax)))))
+         (line (make-instance 'axline-2d
+                              :xy1 (coerce xy1 'list)
+                              :xy2 (and xy2 (coerce xy2 'list))
+                              :slope (and slope (float slope 1.0d0))
+                              :xdata (list 0.0d0 1.0d0)
+                              :ydata (list 0.0d0 1.0d0)
+                              :color effective-color
+                              :linewidth linewidth
+                              :linestyle linestyle
+                              :label label
+                              :zorder zorder)))
+    (setf (mpl.rendering:artist-transform line) (axes-base-trans-data ax))
+    (axes-add-line ax line)
+    (setf (mpl.rendering:artist-stale ax) t)
+    line))
+
+;;; ============================================================
+;;; matshow / spy — matrix visualizations
+;;; ============================================================
+
+(defun matshow (ax z &key (cmap nil) (vmin nil) (vmax nil))
+  "Display matrix Z like matplotlib matshow: origin upper, equal aspect,
+x tick labels on top.
+
+Returns the image artist."
+  (let ((im (imshow ax z :cmap cmap :vmin vmin :vmax vmax
+                         :origin :upper :aspect :equal
+                         :interpolation :nearest)))
+    (setf (axis-side (axes-base-xaxis ax)) :top)
+    (setf (mpl.rendering:artist-stale ax) t)
+    im))
+
+(defun spy (ax z &key (precision 0.0))
+  "Sparsity pattern of matrix Z: cells with |z| > PRECISION are black,
+the rest white; matshow-style orientation.
+
+Returns the image artist."
+  (let* ((rows (array-dimension z 0))
+         (cols (array-dimension z 1))
+         (binary (make-array (list rows cols) :initial-element 0.0d0)))
+    (dotimes (i rows)
+      (dotimes (j cols)
+        (when (> (abs (float (aref z i j) 1.0d0)) precision)
+          (setf (aref binary i j) 1.0d0))))
+    (matshow ax binary
+             :cmap (mpl.primitives:get-colormap "binary")
+             :vmin 0.0d0 :vmax 1.0d0)))

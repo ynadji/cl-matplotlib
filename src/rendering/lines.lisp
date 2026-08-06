@@ -187,8 +187,14 @@ vertices and a marker at each vertex. Ported from matplotlib.lines.Line2D."))
                       :capstyle (if (eq (line-2d-linestyle line) :solid)
                                     (line-2d-solid-capstyle line)
                                     (line-2d-dash-capstyle line)))))
-    ;; Draw the line path
-    (renderer-draw-path renderer gc path transform :stroke t)
+    ;; Draw the line path — unless linestyle is :none (marker-only plot,
+    ;; matching matplotlib: no connecting line is stroked)
+    (let ((ls (line-2d-linestyle line)))
+      (unless (or (null ls)
+                  (eq ls :none)
+                  (and (stringp ls)
+                       (member ls '("none" "" " ") :test #'string-equal)))
+        (renderer-draw-path renderer gc path transform :stroke t)))
     ;; Draw markers at each vertex if marker is set
     (let ((marker (line-2d-marker line)))
       (when (and marker (not (eq marker :none)))
@@ -205,7 +211,7 @@ vertices and a marker at each vertex. Ported from matplotlib.lines.Line2D."))
                (marker-path (make-marker-path marker-key))
                (markersize (line-2d-markersize line))
                ;; Convert markersize from points to pixels (matching matplotlib behavior)
-               (markersize-px (mpl.backends:points-to-pixels renderer (float markersize 1.0d0)))
+               (markersize-px (* (float markersize 1.0d0) (/ (renderer-dpi renderer) 72.0d0)))
                (marker-trans (mpl.primitives:make-affine-2d
                               :scale (list markersize-px markersize-px)))
                ;; Determine face color for filled markers
@@ -222,8 +228,8 @@ vertices and a marker at each vertex. Ported from matplotlib.lines.Line2D."))
                                                    (line-2d-color line))
                                    :linewidth (line-2d-markeredgewidth line)
                                    :alpha (or (artist-alpha line) 1.0))))
-          (mpl.backends:draw-markers renderer marker-gc marker-path marker-trans
-                                     path transform face-color)))))
+          (renderer-draw-markers renderer marker-gc marker-path marker-trans
+                                 path transform face-color)))))
   (setf (artist-stale line) nil))
 
 ;;; ============================================================

@@ -397,7 +397,9 @@
 ;;; ============================================================
 
 (defun run-svg-backend-tests ()
-  "Run all backend-svg tests and return results."
+  "Run all svg backend tests, signaling an error on failure."
   (let ((results (run 'backend-svg-suite)))
     (explain! results)
+    (unless (results-status results)
+      (error "Svg backend tests failed"))
     results))

@@ -365,8 +365,10 @@ Takes into account Bézier curve extrema, not just control points."
                          (multiple-value-bind (qx qy)
                              (quadratic-bezier-point-at tv prev-x prev-y cx cy ex ey)
                            (update qx qy)))
-                       (setf prev-x ex prev-y ey))
-                     (incf i 2)))
+                       (setf prev-x ex prev-y ey)))
+                   ;; Advance unconditionally — a truncated curve must not
+                   ;; leave I unchanged (infinite loop)
+                   (incf i 2))
                   ((= code +curve4+)
                    (when (< (+ i 2) n)
                      (let ((c1x (aref verts i 0)) (c1y (aref verts i 1))
@@ -384,8 +386,10 @@ Takes into account Bézier curve extrema, not just control points."
                          (multiple-value-bind (cx cy)
                              (cubic-bezier-point-at tv prev-x prev-y c1x c1y c2x c2y ex ey)
                            (update cx cy)))
-                       (setf prev-x ex prev-y ey))
-                     (incf i 3)))
+                       (setf prev-x ex prev-y ey)))
+                   ;; Advance unconditionally — a truncated curve must not
+                   ;; leave I unchanged (infinite loop)
+                   (incf i 3))
                   ((= code +closepoly+)
                    (incf i))
                   ((= code +stop+)
@@ -470,8 +474,10 @@ Bézier curves are flattened."
                      (multiple-value-bind (x1 y1)
                          (quadratic-bezier-point-at t1 prev-x prev-y cx cy ex ey)
                        (push (list x0 y0 x1 y1) segments)))))
-               (setf prev-x ex prev-y ey))
-             (incf i 2)))
+               (setf prev-x ex prev-y ey)))
+           ;; Advance unconditionally — a truncated curve must not
+           ;; leave I unchanged (infinite loop)
+           (incf i 2))
           ((= code +curve4+)
            ;; Flatten cubic Bézier
            (when (< (+ i 2) n)
@@ -486,8 +492,10 @@ Bézier curves are flattened."
                      (multiple-value-bind (x1 y1)
                          (cubic-bezier-point-at t1 prev-x prev-y c1x c1y c2x c2y ex ey)
                        (push (list x0 y0 x1 y1) segments)))))
-               (setf prev-x ex prev-y ey))
-             (incf i 3)))
+               (setf prev-x ex prev-y ey)))
+           ;; Advance unconditionally — a truncated curve must not
+           ;; leave I unchanged (infinite loop)
+           (incf i 3))
           (t (incf i)))))
     (nreverse segments)))
 
@@ -642,8 +650,10 @@ If INSIDE is T, clips to inside of box; otherwise to outside."
                        (quadratic-bezier-point-at t-val
                                                    (car prev-pt) (cdr prev-pt)
                                                    cx cy ex ey)
-                     (push (cons qx qy) current-polygon)))))
-             (incf i 2)))
+                     (push (cons qx qy) current-polygon))))))
+           ;; Advance unconditionally — a curve with no active polygon or
+           ;; truncated data must not leave I unchanged (infinite loop)
+           (incf i 2))
           ((= code +curve4+)
            ;; Flatten cubic
            (when (and current-polygon (< (+ i 2) n))
@@ -657,8 +667,10 @@ If INSIDE is T, clips to inside of box; otherwise to outside."
                        (cubic-bezier-point-at t-val
                                                (car prev-pt) (cdr prev-pt)
                                                c1x c1y c2x c2y ex ey)
-                     (push (cons bx by) current-polygon)))))
-             (incf i 3)))
+                     (push (cons bx by) current-polygon))))))
+           ;; Advance unconditionally — a curve with no active polygon or
+           ;; truncated data must not leave I unchanged (infinite loop)
+           (incf i 3))
           (t (incf i)))))
     (when current-polygon
       (push (nreverse current-polygon) polygons))
@@ -884,7 +896,8 @@ If CURVES is NIL, flatten all curves to line segments."
     "Return a Path of the unit rectangle from (0,0) to (1,1)."
     (or cached
         (setf cached
-              (make-path :vertices '((0.0 0.0) (1.0 0.0) (1.0 1.0) (0.0 1.0) (0.0 0.0))
+              ;; :closed t appends the closing vertex itself
+              (make-path :vertices '((0.0 0.0) (1.0 0.0) (1.0 1.0) (0.0 1.0))
                          :closed t :readonly t)))))
 
 (defun path-unit-circle ()
@@ -1110,7 +1123,8 @@ inner arc reversed (theta2->theta1), close."
 
 (defun path-create-closed (vertices-list)
   "Create a closed polygonal path going through VERTICES-LIST.
-Unlike (make-path :closed t), this adds the closing vertex automatically."
-  (let* ((n (length vertices-list))
-         (closed-verts (append vertices-list (list (first vertices-list)))))
-    (make-path :vertices closed-verts :closed t)))
+make-path's :closed t already appends the closing vertex; adding another
+copy here used to triple the start vertex."
+  (when (null vertices-list)
+    (error "path-create-closed: empty vertex list"))
+  (make-path :vertices vertices-list :closed t))

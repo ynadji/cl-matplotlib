@@ -32,7 +32,8 @@
 (defun afm-to-float (s)
   "Convert string S to float, handling comma as decimal separator."
   (let ((clean (substitute #\. #\, (string-trim '(#\Space #\Tab #\Return) s))))
-    (float (read-from-string clean) 1.0d0)))
+    (let ((*read-eval* nil))
+      (float (read-from-string clean) 1.0d0))))
 
 (defun afm-to-bool (s)
   "Convert string S to boolean."

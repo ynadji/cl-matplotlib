@@ -390,7 +390,9 @@
     (is (file-exists-and-valid-p output 5000))
     (is (png-header-valid-p output))
     ;; Copy to evidence
-    (let ((evidence-path ".sisyphus/evidence/phase3b-backend-render.png"))
+    (let ((evidence-path (asdf:system-relative-pathname
+                          :cl-matplotlib-backends
+                          ".sisyphus/evidence/phase3b-backend-render.png")))
       (ensure-directories-exist evidence-path)
       (uiop:copy-file output evidence-path))))
 
@@ -413,7 +415,9 @@
     (is (file-exists-and-valid-p output))
     (is (png-header-valid-p output))
     ;; Copy to evidence
-    (let ((evidence-path ".sisyphus/evidence/phase3b-dashed-line.png"))
+    (let ((evidence-path (asdf:system-relative-pathname
+                          :cl-matplotlib-backends
+                          ".sisyphus/evidence/phase3b-dashed-line.png")))
       (ensure-directories-exist evidence-path)
       (uiop:copy-file output evidence-path))))
 
@@ -554,7 +558,9 @@
 ;;; ============================================================
 
 (defun run-backend-tests ()
-  "Run all backend-vecto tests and return results."
+  "Run all backend tests, signaling an error on failure."
   (let ((results (run 'backend-vecto-suite)))
     (explain! results)
+    (unless (results-status results)
+      (error "Backend tests failed"))
     results))

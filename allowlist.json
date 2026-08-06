@@ -3,5 +3,7 @@
   "pcolormesh": "Gouraud shading not implemented: CL uses flat-color quad approximation instead of smooth interpolation. Permanent limitation. PNG=0.694, SVG=0.698, PDF=0.717",
   "color-cycle": "Minor color rendering delta between CL and Python color cycling. PNG=0.946 (just below 0.95 threshold). Permanent difference in color sequence generation.",
   "hexbin-basic": "Hexbin dual-grid algorithm now matches matplotlib exactly (identical bins, counts, centers). Remaining SSIM gap due to colorbar width and axes layout differences in CL Vecto backend. PNG=0.862.",
-  "minor-ticks-demo": "Minor grid line alpha rendering differs slightly between CL Vecto backend and matplotlib Agg backend. PNG=0.9188. Layout and content correct, user visually approved."
+  "minor-ticks-demo": "Minor grid line alpha rendering differs slightly between CL Vecto backend and matplotlib Agg backend. PNG=0.9188. Layout and content correct, user visually approved.",
+  "streamplot-basic": "Streamline integration is now a faithful port of matplotlib's (RK12 adaptive stepping, mask-based density, boundary-spiral seeding, bidirectional integration), but trajectory selection is chaotically sensitive, so the individual arc positions/breaks cannot align pixel-wise with the Python reference. Pattern, density, arrows, and limits match visually. PNG=0.602.",
+  "streamplot-styled": "Same as streamplot-basic: faithful algorithm, chaotic trajectory selection prevents pixel alignment with the reference. PNG=0.546."
 }

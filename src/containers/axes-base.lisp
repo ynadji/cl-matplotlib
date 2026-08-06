@@ -186,6 +186,16 @@ Returns (values x0-px y0-px width-px height-px)."
                 (* width 640.0d0)
                 (* height 480.0d0)))))
 
+(defun %rewrap-transform (current new-child)
+  "Wrap NEW-CHILD in a transform-wrapper, reusing CURRENT when it is already
+a wrapper. Artists capture the wrapper, so recomputing a transform updates
+every reference in place instead of leaving stale objects behind."
+  (if (typep current 'mpl.primitives:transform-wrapper)
+      (progn
+        (mpl.primitives:transform-wrapper-set current new-child)
+        current)
+      (make-instance 'mpl.primitives:transform-wrapper :child new-child)))
+
 (defun %setup-transforms (ax)
   "Set up transAxes, transScale, and transData for the axes.
 Ported from _AxesBase._set_lim_and_transforms."
@@ -195,7 +205,8 @@ Ported from _AxesBase._set_lim_and_transforms."
     (let* ((display-bbox (mpl.primitives:make-bbox dx dy (+ dx dw) (+ dy dh)))
            (unit-bbox (mpl.primitives:make-bbox 0.0d0 0.0d0 1.0d0 1.0d0)))
       (setf (axes-base-trans-axes ax)
-            (mpl.primitives:make-bbox-transform unit-bbox display-bbox))))
+            (%rewrap-transform (axes-base-trans-axes ax)
+                               (mpl.primitives:make-bbox-transform unit-bbox display-bbox)))))
   ;; transScale: identity for linear; preserve if already set (e.g. log scale)
   (unless (axes-base-trans-scale ax)
     (setf (axes-base-trans-scale ax)
@@ -236,7 +247,8 @@ For identity transScale (linear), this reduces to viewLim→unit ∘ transAxes."
                       trans-scale
                       (mpl.primitives:compose view-to-unit
                                               (axes-base-trans-axes ax)))))
-    (setf (axes-base-trans-data ax) trans-data)))
+    (setf (axes-base-trans-data ax)
+          (%rewrap-transform (axes-base-trans-data ax) trans-data))))
 
 ;;; ============================================================
 ;;; Data limit tracking
@@ -305,8 +317,12 @@ If TIGHT is T, use exact data limits (no margin)."
           (let ((xscale (axis-scale (axes-base-xaxis ax))))
             (if (and xscale (typep xscale 'log-scale))
                 ;; Log space margin
-                (let* ((log-x0 (if (> x0 0.0d0) (log x0 10.0d0) -300.0d0))
-                       (log-x1 (if (> x1 0.0d0) (log x1 10.0d0) -300.0d0))
+                ;; nonpositive limits: matplotlib clamps to a decade
+                ;; below the top instead of exploding to 1e-300
+                (let* ((log-x1 (if (> x1 0.0d0) (log x1 10.0d0) 0.0d0))
+                       (log-x0 (if (> x0 0.0d0)
+                                   (log x0 10.0d0)
+                                   (- log-x1 1.0d0)))
                        (log-range (- log-x1 log-x0))
                        (log-margin (* log-range margin)))
                   (setf x0 (expt 10.0d0 (- log-x0 log-margin))
@@ -321,8 +337,12 @@ If TIGHT is T, use exact data limits (no margin)."
           (let ((yscale (axis-scale (axes-base-yaxis ax))))
             (if (and yscale (typep yscale 'log-scale))
                 ;; Log space margin: expand in log space
-                (let* ((log-y0 (if (> y0 0.0d0) (log y0 10.0d0) -300.0d0))
-                       (log-y1 (if (> y1 0.0d0) (log y1 10.0d0) -300.0d0))
+                ;; nonpositive limits: matplotlib clamps to a decade
+                ;; below the top instead of exploding to 1e-300
+                (let* ((log-y1 (if (> y1 0.0d0) (log y1 10.0d0) 0.0d0))
+                       (log-y0 (if (> y0 0.0d0)
+                                   (log y0 10.0d0)
+                                   (- log-y1 1.0d0)))
                        (log-range (- log-y1 log-y0))
                        (log-margin (* log-range margin)))
                   (setf y0 (expt 10.0d0 (- log-y0 log-margin))
@@ -332,7 +352,15 @@ If TIGHT is T, use exact data limits (no margin)."
                     (setf y1 (+ y1 y-margin))
                     (setf y0 (- y0 y-margin)
                           y1 (+ y1 y-margin)))))))
-      ;; Set view limits
+      ;; Set view limits, preserving any axis the user fixed via
+      ;; axes-set-xlim/axes-set-ylim (those clear the autoscale flags).
+      (let ((view (axes-base-view-lim ax)))
+        (unless (axes-base-autoscale-x-p ax)
+          (setf x0 (mpl.primitives:bbox-x0 view)
+                x1 (mpl.primitives:bbox-x1 view)))
+        (unless (axes-base-autoscale-y-p ax)
+          (setf y0 (mpl.primitives:bbox-y0 view)
+                y1 (mpl.primitives:bbox-y1 view))))
       (setf (axes-base-view-lim ax)
             (mpl.primitives:make-bbox x0 y0 x1 y1))
       ;; Update transData to reflect new view limits
@@ -444,11 +472,13 @@ regions like axhspan/axvspan/fill-between."
                      (axes-base-artists ax)
                      (axes-base-texts ax)
                      (axes-base-images ax))))
-    (sort (copy-list all) #'<
-          :key (lambda (a)
-                 (if (typep a 'mpl.rendering:artist)
-                     (mpl.rendering:artist-zorder a)
-                     0)))))
+    ;; stable-sort: CL's sort makes no stability promise, and equal-zorder
+    ;; artists must keep insertion order (matplotlib draws them in order)
+    (stable-sort (copy-list all) #'<
+                 :key (lambda (a)
+                        (if (typep a 'mpl.rendering:artist)
+                            (mpl.rendering:artist-zorder a)
+                            0)))))
 
 ;;; ============================================================
 ;;; Axes draw method
@@ -460,18 +490,24 @@ regions like axhspan/axvspan/fill-between."
     (return-from mpl.rendering:draw))
   ;; Ensure transforms are up to date
   (%setup-transforms ax)
-  ;; Propagate current transData to child patches and lines that may hold
-  ;; stale references from creation time (transData is re-created by
-  ;; %update-trans-data, so stored references become stale after autoscaling)
+  ;; Give transData to child artists whose transform was never set at
+  ;; creation. transData is a stable transform-wrapper (updated in place by
+  ;; %update-trans-data), so artists that already hold a transform —
+  ;; whether the wrapper or a deliberate alternative like transAxes —
+  ;; must be left alone.
   (let ((td (axes-base-trans-data ax)))
     (dolist (p (axes-base-patches ax))
-      (setf (mpl.rendering:artist-transform p) td))
+      (unless (mpl.rendering:artist-transform p)
+        (setf (mpl.rendering:artist-transform p) td)))
     (dolist (l (axes-base-lines ax))
-      (setf (mpl.rendering:artist-transform l) td))
+      (unless (mpl.rendering:artist-transform l)
+        (setf (mpl.rendering:artist-transform l) td)))
     (dolist (img (axes-base-images ax))
-      (setf (mpl.rendering:artist-transform img) td))
+      (unless (mpl.rendering:artist-transform img)
+        (setf (mpl.rendering:artist-transform img) td)))
     (dolist (a (axes-base-artists ax))
-      (setf (mpl.rendering:artist-transform a) td)))
+      (unless (mpl.rendering:artist-transform a)
+        (setf (mpl.rendering:artist-transform a) td))))
   ;; Draw background patch if frameon
   (when (and (axes-base-frameon-p ax) (axes-base-patch ax))
     (%draw-axes-background ax renderer))
@@ -700,9 +736,15 @@ Returns AX."
   "Link AX's X limits to OTHER's X limits.
 When either axes' X limits change, the other is updated."
   (unless (eq ax other)
-    ;; Add each to the other's share group
-    (pushnew other (axes-base-sharex-group ax))
-    (pushnew ax (axes-base-sharex-group other))
+    ;; merge the two share groups so sharing is transitive:
+    ;; A-B then B-C must put A, B, C in one group
+    (let ((union (remove-duplicates
+                  (append (list ax other)
+                          (axes-base-sharex-group ax)
+                          (axes-base-sharex-group other)))))
+      (dolist (member union)
+        (setf (axes-base-sharex-group member)
+              (remove member union))))
     ;; Sync current limits: use other's limits
     (multiple-value-bind (xmin xmax) (axes-get-xlim other)
       (unless (axes-base-%propagating-p ax)
@@ -721,8 +763,14 @@ When either axes' X limits change, the other is updated."
   "Link AX's Y limits to OTHER's Y limits.
 When either axes' Y limits change, the other is updated."
   (unless (eq ax other)
-    (pushnew other (axes-base-sharey-group ax))
-    (pushnew ax (axes-base-sharey-group other))
+    ;; merge the two share groups so sharing is transitive
+    (let ((union (remove-duplicates
+                  (append (list ax other)
+                          (axes-base-sharey-group ax)
+                          (axes-base-sharey-group other)))))
+      (dolist (member union)
+        (setf (axes-base-sharey-group member)
+              (remove member union))))
     ;; Sync current limits: use other's limits
     (multiple-value-bind (ymin ymax) (axes-get-ylim other)
       (unless (axes-base-%propagating-p ax)

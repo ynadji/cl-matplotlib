@@ -164,24 +164,38 @@ Returns a list of 7 (x y) pairs defining the arrow polygon."
                (alpha (or (artist-alpha qc) 1.0d0))
                (n (length paths)))
           (when (plusp n)
-            (loop for path in paths
-                  for i from 0
-                  do (let* ((facecolor (or (%coll-nth (collection-facecolors qc) i) "C0"))
-                            (edgecolor (%coll-nth (collection-edgecolors qc) i))
-                            (linewidth (or (%coll-nth (collection-linewidths qc) i) 1.0))
-                            (linestyle (or (%coll-nth (collection-linestyles qc) i) :solid))
-                            (antialiased (let ((aa (%coll-nth (collection-antialiaseds qc) i)))
-                                           (if (null (collection-antialiaseds qc)) t aa))))
-                (let ((gc (make-gc :foreground edgecolor
-                                   :background facecolor
-                                   :linewidth linewidth
-                                   :linestyle linestyle
-                                   :alpha (float alpha 1.0)
-                                   :antialiased antialiased
-                                   :capstyle (collection-capstyle qc)
-                                   :joinstyle (collection-joinstyle qc)
-                                   :clip-rectangle clip-rect)))
-                  (renderer-draw-path renderer gc path transform
-                                      :fill facecolor
-                                      :stroke edgecolor))))
+            ;; Coerce property lists to vectors once for O(1) cyclic access in the loop.
+            (multiple-value-bind (facecolors-vec facecolors-len) (%ensure-vector facecolors)
+              (multiple-value-bind (edgecolors-vec edgecolors-len) (%ensure-vector edgecolors)
+                (multiple-value-bind (linewidths-vec linewidths-len) (%ensure-vector linewidths)
+                  (multiple-value-bind (linestyles-vec linestyles-len) (%ensure-vector linestyles)
+                    (multiple-value-bind (antialiaseds-vec antialiaseds-len) (%ensure-vector antialiaseds)
+                      (loop for path in paths
+                            for i from 0
+                            do (let* ((facecolor (or (when (plusp facecolors-len)
+                                                       (%coll-nth-vec facecolors-vec facecolors-len i))
+                                                     "C0"))
+                                      (edgecolor (when (plusp edgecolors-len)
+                                                   (%coll-nth-vec edgecolors-vec edgecolors-len i)))
+                                      (linewidth (if (plusp linewidths-len)
+                                                     (%coll-nth-vec linewidths-vec linewidths-len i)
+                                                     1.0))
+                                      (linestyle (if (plusp linestyles-len)
+                                                     (%coll-nth-vec linestyles-vec linestyles-len i)
+                                                     :solid))
+                                      (antialiased (if (plusp antialiaseds-len)
+                                                       (%coll-nth-vec antialiaseds-vec antialiaseds-len i)
+                                                       t)))
+                                 (let ((gc (make-gc :foreground edgecolor
+                                                    :background facecolor
+                                                    :linewidth linewidth
+                                                    :linestyle linestyle
+                                                    :alpha (float alpha 1.0)
+                                                    :antialiased antialiased
+                                                    :capstyle (collection-capstyle qc)
+                                                    :joinstyle (collection-joinstyle qc)
+                                                    :clip-rectangle clip-rect)))
+                                   (renderer-draw-path renderer gc path transform
+                                                       :fill facecolor
+                                                       :stroke edgecolor)))))))))
             (setf (artist-stale qc) nil)))))))

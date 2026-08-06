@@ -614,3 +614,46 @@
       (let* ((normalized (normalize-call norm val))
              (recovered (normalize-inverse norm normalized)))
         (is (color-approx= val recovered 0.01))))))
+
+;;; ============================================================
+;;; Extended colormap registry (matplotlib parity tables + _r)
+;;; ============================================================
+
+(test extended-colormap-registry
+  ;; 23 hand-written + 59 generated + _r for every base + grey alias/_r
+  (is (>= (length (list-colormaps)) 160))
+  ;; spot values from the matplotlib extraction run (8-bit quantized)
+  (let ((turbo (colormap-call
+                (get-colormap "turbo") 0.5d0)))
+    (is (color-approx= (/ #xA4 255d0) (aref turbo 0) 0.01)))
+  (let ((tab0 (colormap-call
+               (get-colormap "tab10") 0.0d0)))
+    ;; tab10 first entry is #1F77B4
+    (is (color-approx= (/ #x1F 255d0) (aref tab0 0) 0.005))
+    (is (color-approx= (/ #x77 255d0) (aref tab0 1) 0.005))
+    (is (color-approx= (/ #xB4 255d0) (aref tab0 2) 0.005))))
+
+(test colormap-reversed-endpoints
+  (let* ((v (get-colormap "viridis"))
+         (vr (get-colormap "viridis_r"))
+         (v0 (colormap-call v 0.0d0))
+         (vr1 (colormap-call vr 1.0d0))
+         (v1 (colormap-call v 1.0d0))
+         (vr0 (colormap-call vr 0.0d0)))
+    (dotimes (i 3)
+      (is (color-approx= (aref v0 i) (aref vr1 i) 0.01))
+      (is (color-approx= (aref v1 i) (aref vr0 i) 0.01)))))
+
+(test colormap-lazy-underscore-r
+  ;; _r for a custom user-registered map resolves lazily
+  (register-colormap
+   (make-listed-colormap
+    (list #(1.0d0 0.0d0 0.0d0 1.0d0) #(0.0d0 0.0d0 1.0d0 1.0d0))
+    :name "testmap-xyz")
+   :force t)
+  (let ((rev (get-colormap "testmap-xyz_r")))
+    (is (not (null rev)))
+    (let ((c0 (colormap-call rev 0.0d0)))
+      ;; reversed: starts blue
+      (is (color-approx= 0.0d0 (aref c0 0) 0.01))
+      (is (color-approx= 1.0d0 (aref c0 2) 0.01)))))

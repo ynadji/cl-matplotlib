@@ -213,7 +213,9 @@
 ;;; ============================================================
 
 (defun run-legend-ported-tests ()
-  "Run all ported legend tests and return results."
+  "Run all legend ported tests, signaling an error on failure."
   (let ((results (run 'legend-ported-suite)))
     (explain! results)
-    (results-status results)))
+    (unless (results-status results)
+      (error "Legend ported tests failed"))
+    results))

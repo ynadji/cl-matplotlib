@@ -57,16 +57,19 @@ Ported from matplotlib.ticker.scale_range."
 Ported from matplotlib.transforms._nonsingular."
   (when (not (and (numberp vmin) (numberp vmax)))
     (return-from %nonsingular (values -0.001d0 0.001d0)))
-  (let ((maxabsv (max (abs vmin) (abs vmax))))
-    (when (or (<= maxabsv tiny)
-              (> (/ (- vmax vmin) maxabsv) tiny))
+  (let* ((vmin (float vmin 1.0d0))
+         (vmax (float vmax 1.0d0))
+         (maxabsv (max (abs vmin) (abs vmax))))
+    (cond
+      ;; Both inputs ~0: expand symmetrically about zero
+      ((< maxabsv tiny)
+       (values (- expander) expander))
+      ;; Interval vanishingly small relative to magnitude: expand both ends
+      ((<= (- vmax vmin) (* maxabsv tiny))
+       (values (- vmin (* (abs vmin) expander))
+               (+ vmax (* (abs vmax) expander))))
       ;; Not singular
-      (return-from %nonsingular (values (float vmin 1.0d0) (float vmax 1.0d0)))))
-  ;; vmin == vmax (singular)
-  (if (zerop vmin)
-      (values (- expander) expander)
-      (values (- vmin (* (abs vmin) expander))
-              (+ vmax (* (abs vmax) expander)))))
+      (t (values vmin vmax)))))
 
 ;;; ============================================================
 ;;; Locator base class
@@ -289,6 +292,20 @@ Ported from MaxNLocator._raw_ticks."
       (let* ((_vmin (- vmin offset))
              (_vmax (- vmax offset))
              (scaled-steps (mapcar (lambda (s) (* s scale)) extended-steps))
+             ;; integer=t: for steps > 1, keep only integer values
+             ;; (matplotlib MaxNLocator._raw_ticks)
+             (scaled-steps (if (max-n-locator-integer-p loc)
+                               (or (remove-if-not
+                                    (lambda (s)
+                                      (or (< s 1.0d0)
+                                          (< (abs (- s (fround s))) 0.001d0)))
+                                    scaled-steps)
+                                   scaled-steps)
+                               scaled-steps))
+             ;; integer=t: clamp step to >= 1 when the range spans enough integers
+             (integer-step-p (and (max-n-locator-integer-p loc)
+                                  (>= (- (floor _vmax) (ceiling _vmin))
+                                      (1- min-n-ticks))))
              (raw-step (/ (- _vmax _vmin) nbins))
              ;; Find steps >= raw-step
              (large-steps (remove-if (lambda (s) (< s raw-step)) scaled-steps))
@@ -299,6 +316,8 @@ Ported from MaxNLocator._raw_ticks."
         ;; Try from the smallest adequate step backwards
         (let ((candidates (sort (remove-if (lambda (s) (> s best-step)) scaled-steps) #'>)))
           (dolist (step (or candidates (list best-step)))
+            (when integer-step-p
+              (setf step (max 1.0d0 step)))
             (let* ((best-vmin (* (floor _vmin step) step))
                    (low (%edge-le (- _vmin best-vmin) step (abs offset)))
                    (high (%edge-ge (- _vmax best-vmin) step (abs offset)))
@@ -311,7 +330,7 @@ Ported from MaxNLocator._raw_ticks."
               (when (>= nticks min-n-ticks)
                 (return-from %max-n-locator-raw-ticks ticks))))
           ;; Fallback: use best-step
-          (let* ((step best-step)
+          (let* ((step (if integer-step-p (max 1.0d0 best-step) best-step))
                  (best-vmin (* (floor _vmin step) step))
                  (low (%edge-le (- _vmin best-vmin) step (abs offset)))
                  (high (%edge-ge (- _vmax best-vmin) step (abs offset))))
@@ -385,6 +404,15 @@ Ported from matplotlib.ticker.LogLocator."))
             (when (and (>= tick (* vmin 0.999d0))
                        (<= tick (* vmax 1.001d0)))
               (push tick ticks)))))
+      ;; Sub-decade range containing no tick (e.g. view (2, 5) with subs (1)):
+      ;; fall back to ticks at (1 2 5) * base^i, like matplotlib's subs fallback.
+      (when (null ticks)
+        (loop for i from (1- log-vmin) to (1+ log-vmax) do
+          (dolist (s '(1.0d0 2.0d0 5.0d0))
+            (let ((tick (* s (expt base (float i 1.0d0)))))
+              (when (and (>= tick (* vmin 0.999d0))
+                         (<= tick (* vmax 1.001d0)))
+                (push tick ticks))))))
       (sort (nreverse ticks) #'<))))
 
 ;;; ============================================================

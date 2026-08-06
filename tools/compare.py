@@ -16,6 +16,7 @@ import sys
 import shutil
 import subprocess
 import tempfile
+import multiprocessing
 from pathlib import Path
 
 import numpy as np
@@ -364,8 +365,80 @@ def rasterize_to_png(src_path, dpi, fmt):
 
 # ── Per-format comparison runner ────────────────────────────────
 
+def compare_single(ref_path, act_dir, fmt, threshold, dpi, allowlist, out_dir):
+    """Compare one reference image against its actual counterpart.
+
+    Pure per-file worker (also used by --jobs parallel mode): returns the
+    result dict and writes only this name's comparison sheet.
+    """
+    name = ref_path.stem
+    act_path = find_matching_actual(name, act_dir, fmt=fmt)
+    if act_path is None:
+        return {'name': name, 'reference': str(ref_path), 'actual': None,
+                'ssim': None, 'status': 'SKIP',
+                'note': 'No matching actual image found'}
+
+    ref_tmp_path = None
+    act_tmp_path = None
+    try:
+        if fmt in ('svg', 'pdf'):
+            ref_rast_path, ref_rast_err = rasterize_to_png(ref_path, dpi, fmt)
+            if ref_rast_err:
+                return {'name': name, 'reference': str(ref_path),
+                        'actual': str(act_path), 'ssim': None,
+                        'status': 'SKIP',
+                        'note': f'Reference rasterization failed: {ref_rast_err}'}
+            ref_tmp_path = ref_rast_path
+            ref_load_path = ref_rast_path
+
+            act_rast_path, act_rast_err = rasterize_to_png(act_path, dpi, fmt)
+            if act_rast_err:
+                return {'name': name, 'reference': str(ref_path),
+                        'actual': str(act_path), 'ssim': None,
+                        'status': 'SKIP',
+                        'note': f'Rasterization failed: {act_rast_err}'}
+            act_tmp_path = act_rast_path
+            act_load_path = act_rast_path
+        else:
+            ref_load_path = ref_path
+            act_load_path = act_path
+
+        try:
+            ref_arr = load_image_rgb(ref_load_path)
+            act_arr = load_image_rgb(act_load_path)
+        except Exception as e:
+            return {'name': name, 'reference': str(ref_path),
+                    'actual': str(act_path), 'ssim': None, 'status': 'SKIP',
+                    'note': f'Image load error: {e}'}
+
+        ssim_score, warning = compute_ssim(ref_arr, act_arr)
+        status = 'PASS' if ssim_score >= threshold else 'FAIL'
+
+        allow_reason = None
+        if status == 'FAIL' and name in allowlist:
+            status = 'ALLOW'
+            allow_reason = allowlist[name]
+
+        generate_comparison_sheet(name, ref_arr, act_arr, ssim_score, out_dir)
+
+        note = warning or ''
+        if allow_reason:
+            note = f"ALLOW: {allow_reason}" + (f" | {note}" if note else '')
+        return {'name': name, 'reference': str(ref_path),
+                'actual': str(act_path),
+                'ssim': round(float(ssim_score), 6),
+                'status': status, 'note': note}
+    finally:
+        for tmp in (ref_tmp_path, act_tmp_path):
+            if tmp:
+                try:
+                    os.unlink(tmp)
+                except OSError:
+                    pass
+
+
 def run_comparison(ref_dir, act_dir, out_dir, fmt, threshold, dpi, allowlist,
-                   quiet=False):
+                   quiet=False, jobs=1):
     """Run comparison for a single format.
 
     Returns (results_list, passed_count, failed_count, allowed_count, skipped_count).
@@ -388,118 +461,32 @@ def run_comparison(ref_dir, act_dir, out_dir, fmt, threshold, dpi, allowlist,
         print(f"  {fmt.upper()} comparison  ({len(ref_images)} examples, threshold={threshold:.2f})")
         print(f"{'='*60}")
 
-    results = []
-    for ref_path in ref_images:
-        name = ref_path.stem
-        if not quiet:
-            print(f"  {name:.<30s} ", end='', flush=True)
+    def emit(r):
+        if quiet:
+            return
+        print(f"  {r['name']:.<30s} ", end='')
+        if r['status'] == 'SKIP':
+            print(f"SKIP ({r['note']})")
+        else:
+            print(f"{r['ssim']:.4f}  {r['status']}", end='')
+            if r['note']:
+                print(f"  ({r['note']})", end='')
+            print()
 
-        act_path = find_matching_actual(name, act_dir, fmt=fmt)
-        if act_path is None:
-            if not quiet:
-                print("SKIP (no matching actual image)")
-            results.append({
-                'name': name,
-                'reference': str(ref_path),
-                'actual': None,
-                'ssim': None,
-                'status': 'SKIP',
-                'note': 'No matching actual image found',
-            })
-            continue
-
-        ref_tmp_path = None
-        act_tmp_path = None
-        try:
-            # Rasterize SVG/PDF to temp PNG if needed (both reference AND actual)
-            if fmt in ('svg', 'pdf'):
-                ref_rast_path, ref_rast_err = rasterize_to_png(ref_path, dpi, fmt)
-                if ref_rast_err:
-                    if not quiet:
-                        print(f"SKIP (rasterize ref: {ref_rast_err})")
-                    results.append({
-                        'name': name,
-                        'reference': str(ref_path),
-                        'actual': str(act_path) if act_path else None,
-                        'ssim': None,
-                        'status': 'SKIP',
-                        'note': f'Reference rasterization failed: {ref_rast_err}',
-                    })
-                    continue
-                ref_tmp_path = ref_rast_path
-                ref_load_path = ref_rast_path
-
-                act_rast_path, act_rast_err = rasterize_to_png(act_path, dpi, fmt)
-                if act_rast_err:
-                    if not quiet:
-                        print(f"SKIP (rasterize actual: {act_rast_err})")
-                    results.append({
-                        'name': name,
-                        'reference': str(ref_path),
-                        'actual': str(act_path),
-                        'ssim': None,
-                        'status': 'SKIP',
-                        'note': f'Rasterization failed: {act_rast_err}',
-                    })
-                    continue
-                act_tmp_path = act_rast_path
-                act_load_path = act_rast_path
-            else:
-                ref_load_path = ref_path
-                act_load_path = act_path
-
-            try:
-                ref_arr = load_image_rgb(ref_load_path)
-                act_arr = load_image_rgb(act_load_path)
-            except Exception as e:
-                if not quiet:
-                    print(f"SKIP (load error: {e})")
-                results.append({
-                    'name': name,
-                    'reference': str(ref_path),
-                    'actual': str(act_path),
-                    'ssim': None,
-                    'status': 'SKIP',
-                    'note': f'Image load error: {e}',
-                })
-                continue
-
-            ssim_score, warning = compute_ssim(ref_arr, act_arr)
-            passed = ssim_score >= threshold
-            status = 'PASS' if passed else 'FAIL'
-
-            # Allowlist override: FAIL -> ALLOW
-            allow_reason = None
-            if status == 'FAIL' and name in allowlist:
-                status = 'ALLOW'
-                allow_reason = allowlist[name]
-
-            generate_comparison_sheet(name, ref_arr, act_arr, ssim_score, out_dir)
-
-            note = warning or ''
-            if allow_reason:
-                note = f"ALLOW: {allow_reason}" + (f" | {note}" if note else '')
-            if not quiet:
-                print(f"{ssim_score:.4f}  {status}", end='')
-                if allow_reason:
-                    print(f"  ({allow_reason})", end='')
-                if warning:
-                    print(f"  (warning: {warning})", end='')
-                print()
-
-            results.append({
-                'name': name,
-                'reference': str(ref_path),
-                'actual': str(act_path),
-                'ssim': round(float(ssim_score), 6),
-                'status': status,
-                'note': note,
-            })
-        finally:
-            for tmp in (ref_tmp_path, act_tmp_path):
-                if tmp:
-                    try: os.unlink(tmp)
-                    except OSError: pass
+    work = [(ref_path, act_dir, fmt, threshold, dpi, allowlist, out_dir)
+            for ref_path in ref_images]
+    if jobs > 1:
+        with multiprocessing.Pool(jobs) as pool:
+            results = pool.starmap(compare_single, work)
+        results.sort(key=lambda r: r['name'])
+        for r in results:
+            emit(r)
+    else:
+        results = []
+        for args in work:
+            r = compare_single(*args)
+            results.append(r)
+            emit(r)
 
     generate_html_report(results, threshold, out_dir, fmt=fmt)
     generate_summary_json(results, threshold, out_dir)
@@ -696,6 +683,11 @@ Exit codes:
         '--allowlist', default=None,
         help='JSON file mapping example names to allow reasons. Matched FAILs become ALLOW.',
     )
+    parser.add_argument(
+        '--jobs', type=int, default=os.cpu_count() or 1,
+        help='Parallel comparison workers (default: all cores). Results are '
+             'sorted by name before reporting, so output is deterministic.',
+    )
     args = parser.parse_args()
 
     # DPI default
@@ -747,7 +739,8 @@ Exit codes:
             fmt_out_dir = out_dir / fmt
 
             results, passed, failed, allowed, skipped = run_comparison(
-                ref_dir, act_dir, fmt_out_dir, fmt, threshold, dpi, allowlist)
+                ref_dir, act_dir, fmt_out_dir, fmt, threshold, dpi, allowlist,
+                jobs=args.jobs)
 
             total_failed += failed
             scored = [r for r in results if r['ssim'] is not None]
@@ -790,7 +783,8 @@ Exit codes:
     print(f"Output: {out_dir}")
 
     results, passed_count, failed_count, allowed_count, skipped_count = run_comparison(
-        ref_dir, act_dir, out_dir, args.format, args.threshold, args.dpi, allowlist)
+        ref_dir, act_dir, out_dir, args.format, args.threshold, args.dpi, allowlist,
+        jobs=args.jobs)
 
     print(f"\nResults: {passed_count} passed, {failed_count} failed, "
           f"{allowed_count} allowed, {skipped_count} skipped")

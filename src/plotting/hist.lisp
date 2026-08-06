@@ -34,19 +34,20 @@ Returns a list of counts (length = (1- (length bin-edges)))."
          (n-edges (length edges)))
     (dolist (val (coerce data 'list))
       (let ((v (float val 1.0d0)))
-        ;; Binary search for bin
         (when (and (>= v (aref edges 0))
                    (<= v (aref edges (1- n-edges))))
-          (let ((bin (1- n-bins)))  ; default to last bin
-            ;; Linear search (simple, correct)
-            (loop for i from 0 below n-bins
-                  when (and (>= v (aref edges i))
-                            (< v (aref edges (1+ i))))
-                    do (setf bin i) (return))
-            ;; Include right edge in last bin
-            (when (= v (aref edges (1- n-edges)))
-              (setf bin (1- n-bins)))
-            (incf (aref counts bin))))))
+          ;; Binary search: find the largest i with edges[i] <= v
+          ;; (bisect-right minus one)
+          (let ((lo 0)
+                (hi n-edges))
+            (loop while (< lo hi)
+                  do (let ((mid (floor (+ lo hi) 2)))
+                       (if (<= (aref edges mid) v)
+                           (setf lo (1+ mid))
+                           (setf hi mid))))
+            ;; Clamp so the right edge is included in the last bin
+            (let ((bin (min (1- lo) (1- n-bins))))
+              (incf (aref counts bin)))))))
     (coerce counts 'list)))
 
 (defun %normalize-to-density (counts bin-edges)
@@ -94,18 +95,34 @@ ZORDER — drawing order (default 1).
 
 Returns (values counts bin-edges patches)."
   (let* ((effective-color (or color "C0"))
-         ;; Compute bin edges
-         (bin-edges (if (listp bins)
-                        bins
+         ;; Compute bin edges (BINS may be a count, or a list/vector of edges)
+         (bin-edges (if (and (typep bins 'sequence) (not (stringp bins)))
+                        (coerce bins 'list)
                         (%compute-bin-edges data bins range)))
          ;; Compute histogram counts
          (counts (%histogram-counts data bin-edges))
-         ;; Apply cumulative
-         (counts (if cumulative (%cumulative-histogram counts) counts))
-         ;; Apply density normalization
-         (heights (if density
-                      (%normalize-to-density counts bin-edges)
-                      (mapcar (lambda (c) (float c 1.0d0)) counts)))
+         ;; matplotlib semantics: density is computed first, then cumulated
+         ;; as cumsum(density * bin_width) — a CDF ending at 1.0. Cumulating
+         ;; raw counts and then density-normalizing those is wrong in both
+         ;; shape and scale.
+         (heights (cond
+                    ((and density cumulative)
+                     (let ((dens (%normalize-to-density counts bin-edges))
+                           (edges-vec (coerce bin-edges 'vector))
+                           (cumsum 0.0d0))
+                       (loop for d in dens
+                             for i from 0
+                             do (incf cumsum
+                                      (* d (- (aref edges-vec (1+ i))
+                                              (aref edges-vec i))))
+                             collect cumsum)))
+                    (density
+                     (%normalize-to-density counts bin-edges))
+                    (cumulative
+                     (mapcar (lambda (c) (float c 1.0d0))
+                             (%cumulative-histogram counts)))
+                    (t
+                     (mapcar (lambda (c) (float c 1.0d0)) counts))))
          ;; Create patches/artists
          (patches nil))
     ;; Coerce bin-edges to vector once — all hist types need random access (1+ i)
@@ -211,5 +228,6 @@ Returns (values counts bin-edges patches)."
     (axes-autoscale-view ax)
     ;; Clamp y_min to 0 (matching matplotlib's hist behavior)
     (axes-set-ylim ax :min 0.0d0)
-    ;; Return values matching matplotlib
-    (values counts bin-edges (nreverse patches))))
+    ;; Return values matching matplotlib: n is the plotted values
+    ;; (with density/cumulative applied), not the raw counts
+    (values heights bin-edges (nreverse patches))))

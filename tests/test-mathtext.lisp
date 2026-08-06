@@ -42,7 +42,12 @@
 (def-suite mathtext-suite :description "Mathtext parser and layout engine tests")
 
 (defun run-mathtext-tests ()
-  (run! 'mathtext-suite))
+  "Run all mathtext tests, signaling an error on failure."
+  (let ((results (run 'mathtext-suite)))
+    (explain! results)
+    (unless (results-status results)
+      (error "Mathtext tests failed"))
+    results))
 
 ;;; ============================================================
 ;;; Helper — get a font loader for testing

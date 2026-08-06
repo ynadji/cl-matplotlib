@@ -280,14 +280,28 @@ Returns (values vertices codes n-vertices)."
 ;;; Main hatch path generator
 ;;; ============================================================
 
+(defvar *hatch-path-cache* (make-hash-table :test #'equal)
+  "Cache of generated hatch paths keyed by (pattern . density).")
+
 (defun hatch-get-path (hatch-pattern &optional (density 6))
   "Generate an mpl-path for the given HATCH-PATTERN string.
 DENSITY is the number of lines/shapes per unit square (default 6).
 Patterns: / \\ | - + x o O . *
 Density controlled by repetition: // = denser than /
-Returns an mpl-path that tiles to fill a unit square."
+Returns an mpl-path that tiles to fill a unit square.
+Hatch geometry is deterministic, so results are cached by
+\(pattern . density) — callers must not mutate the returned path."
   (when (or (null hatch-pattern) (string= hatch-pattern ""))
     (return-from hatch-get-path nil))
+  (let ((key (cons hatch-pattern density)))
+    (multiple-value-bind (cached present-p) (gethash key *hatch-path-cache*)
+      (if present-p
+          cached
+          (setf (gethash key *hatch-path-cache*)
+                (%compute-hatch-path hatch-pattern density))))))
+
+(defun %compute-hatch-path (hatch-pattern density)
+  "Build the mpl-path for HATCH-PATTERN at DENSITY (see HATCH-GET-PATH)."
   (let ((density (max 1 density))
         (all-vertices nil)
         (all-codes nil)
@@ -323,7 +337,7 @@ Returns an mpl-path that tiles to fill a unit square."
           (collect-pattern #'%star-hatch-vertices hatch-pattern density))))
     ;; Merge all patterns into single path
     (when (zerop total-vertices)
-      (return-from hatch-get-path nil))
+      (return-from %compute-hatch-path nil))
     (let ((merged-verts (make-array (list total-vertices 2)
                                     :element-type 'double-float
                                     :initial-element 0.0d0))

@@ -12,9 +12,31 @@
 ;;; Font path configuration
 ;;; ============================================================
 
-(defparameter *default-font-path*
-  "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-  "Default font path for text rendering.")
+(defun resolve-default-font-path ()
+  "Resolve a usable default font path across platforms. Prefers the
+DejaVu Sans bundled with cl-matplotlib (data/fonts/ttf/, always present
+and used by the visual tests), so text rendering works on macOS and
+Windows without system font discovery; falls back to common system
+locations, then to the Linux DejaVu path."
+  (or
+   ;; Bundled font — present on every checkout, no discovery needed.
+   (let ((dir (ignore-errors (mpl.rendering:shipped-font-directory))))
+     (when dir
+       (let ((p (merge-pathnames "DejaVuSans.ttf" dir)))
+         (when (probe-file p) (namestring p)))))
+   ;; Common system fallbacks, should the bundle ever be missing.
+   (find-if #'probe-file
+            '("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf" ; Debian/Ubuntu
+              "/usr/share/fonts/dejavu/DejaVuSans.ttf"          ; Fedora/Arch
+              "/opt/homebrew/share/fonts/DejaVuSans.ttf"        ; Homebrew fonts
+              "/usr/local/share/fonts/DejaVuSans.ttf"))
+   ;; Last resort: original Linux path (keeps prior behavior).
+   "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"))
+
+(defparameter *default-font-path* (resolve-default-font-path)
+  "Default font path for text rendering. Resolved at load time,
+preferring the bundled DejaVu Sans so rendering works on any platform.
+Re-run RESOLVE-DEFAULT-FONT-PATH (or setf directly) to override.")
 
 ;;; ============================================================
 ;;; renderer-vecto — Vecto-based rasterizer
@@ -424,12 +446,20 @@ HATCH-PATH from hatch-get-path is in [0,1]x[0,1] unit space, scaled by tile-size
 (defmethod draw-path ((renderer renderer-vecto) gc path transform &optional rgbface)
   "Draw a path using Vecto. Handles fill, stroke, or fill+stroke.
 Must be called within an active canvas context (see canvas-vecto)."
-  (let ((edge-color (let ((ec (%gc-edge-color gc)))
+  (let ((edge-color (let ((ec (%gc-edge-color gc))
+                          (ls (mpl.rendering:gc-linestyle gc)))
                     ;; Treat fully-transparent edge-color (alpha=0.0) as no edge.
                     ;; Prevents anti-aliased seam artifacts at cell boundaries
                     ;; in pcolormesh: to-rgba("none") returns #(0 0 0 0) which is
                     ;; truthy but should not trigger the fill+stroke branch.
-                    (when (and ec (> (fourth ec) 0.0))
+                    ;; Likewise linestyle :none means no stroke at all
+                    ;; (matplotlib) — the dash handling would otherwise fall
+                    ;; through to a solid stroke.
+                    (when (and ec (> (fourth ec) 0.0)
+                               (not (eq ls :none))
+                               (not (and (stringp ls)
+                                         (member ls '("none" "" " ")
+                                                 :test #'string-equal))))
                       ec)))
         (face-color (%gc-face-color gc rgbface))
         (alpha (mpl.rendering:gc-alpha gc)))
@@ -539,34 +569,49 @@ raw matrices, and delegates to draw-collection-uniform-fast."
 Builds a cl-vectors path directly from transformed vertices, runs the
 rasterization pipeline once, and returns frozen scanline data.
 The marker is rasterized centered at pixel (0,0) — offsets applied at replay."
+  ;; Rotation/shear can't be baked into this axis-aligned rasterization;
+  ;; return NIL so the caller falls back to per-item tracing (which copies
+  ;; the full matrix).
+  (when (and scale-mtx
+             (or (/= (aref scale-mtx 1) 0.0d0)
+                 (/= (aref scale-mtx 2) 0.0d0)))
+    (return-from %rasterize-marker-to-scanlines nil))
   (let* ((verts (mpl.primitives:mpl-path-vertices mpl-path))
          (codes (mpl.primitives:mpl-path-codes mpl-path))
          (n (array-dimension verts 0))
          (state (net.tuxee.aa:make-state))
-         (cl-path (net.tuxee.paths:create-path :closed-polyline))
+         (cl-path nil)
+         (paths '())
          ;; Apply scale transform to get pixel-space marker coordinates.
+         ;; The scanlines are replayed in raster space (Y grows downward)
+         ;; while the marker path is in user space (Y grows upward), so the
+         ;; y scale must be negated to keep marker shapes upright.
          (sx (if scale-mtx (aref scale-mtx 0) 1.0d0))
-         (sy (if scale-mtx (aref scale-mtx 3) 1.0d0)))
+         (sy (- (if scale-mtx (aref scale-mtx 3) 1.0d0))))
     (when (zerop n) (return-from %rasterize-marker-to-scanlines nil))
-    ;; Build cl-vectors path from mpl-path vertices + scale transform.
-    ;; This bypasses Vecto's path API entirely — no graphics state interaction.
+    ;; Build cl-vectors paths from mpl-path vertices + scale transform,
+    ;; one per subpath (path-reset on a single path would discard previously
+    ;; built subpaths). This bypasses Vecto's path API entirely.
     (let ((i 0))
       (loop while (< i n) do
         (let ((code (if codes (aref codes i) (if (zerop i) mpl.primitives:+moveto+ mpl.primitives:+lineto+))))
           (cond
             ((= code mpl.primitives:+moveto+)
+             (setf cl-path (net.tuxee.paths:create-path :closed-polyline))
              (net.tuxee.paths:path-reset cl-path
                (net.tuxee.paths:make-point
                 (* sx (aref verts i 0)) (* sy (aref verts i 1))))
+             (push cl-path paths)
              (incf i))
             ((= code mpl.primitives:+lineto+)
-             (net.tuxee.paths:path-extend cl-path
-               (net.tuxee.paths:make-straight-line)
-               (net.tuxee.paths:make-point
-                (* sx (aref verts i 0)) (* sy (aref verts i 1))))
+             (when cl-path
+               (net.tuxee.paths:path-extend cl-path
+                 (net.tuxee.paths:make-straight-line)
+                 (net.tuxee.paths:make-point
+                  (* sx (aref verts i 0)) (* sy (aref verts i 1)))))
              (incf i))
             ((= code mpl.primitives:+curve4+)
-             (when (< (+ i 2) n)
+             (when (and cl-path (< (+ i 2) n))
                (net.tuxee.paths:path-extend cl-path
                  (net.tuxee.paths:make-bezier-curve
                   (list (net.tuxee.paths:make-point
@@ -577,7 +622,7 @@ The marker is rasterized centered at pixel (0,0) — offsets applied at replay."
                   (* sx (aref verts (+ i 2) 0)) (* sy (aref verts (+ i 2) 1)))))
              (incf i 3))
             ((= code mpl.primitives:+curve3+)
-             (when (< (1+ i) n)
+             (when (and cl-path (< (1+ i) n))
                (net.tuxee.paths:path-extend cl-path
                  (net.tuxee.paths:make-bezier-curve
                   (list (net.tuxee.paths:make-point
@@ -590,8 +635,10 @@ The marker is rasterized centered at pixel (0,0) — offsets applied at replay."
             ((= code mpl.primitives:+stop+)
              (return))
             (t (incf i))))))
-    ;; Rasterize the path (no transform — already in pixel-centered coords)
-    (net.tuxee.vectors:update-state state (list cl-path))
+    (when (null paths)
+      (return-from %rasterize-marker-to-scanlines nil))
+    ;; Rasterize the paths (no transform — already in pixel-centered coords)
+    (net.tuxee.vectors:update-state state (nreverse paths))
     (net.tuxee.aa:freeze-state state)))
 
 (defun %scanline-sweep-offset (scanline function dx dy start end)

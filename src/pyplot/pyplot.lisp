@@ -70,16 +70,34 @@ Returns the current mpl-figure object."
       (gethash *current-figure* *figures*)
       (figure)))
 
+(defvar *current-axes* nil
+  "The current axes, tracked explicitly like matplotlib's pyplot: sca and
+axes-creating calls set it; gca returns it while it still belongs to the
+current figure.")
+
+(defun sca (axes)
+  "Make AXES the current axes (matplotlib's sca). Also makes its figure
+current when it is registered in *figures*."
+  (maphash (lambda (num fig)
+             (when (member axes (mpl.containers:figure-axes fig))
+               (setf *current-figure* num)))
+           *figures*)
+  (setf *current-axes* axes))
+
 (defun gca ()
   "Get the current axes. Creates figure and axes if needed.
 Returns the current axes object."
   (let* ((fig (gcf))
          (axes-list (mpl.containers:figure-axes fig)))
-    (if axes-list
-        ;; Return the most recently added axes (first in the list)
-        (first axes-list)
-        ;; No axes — create default subplot (1,1,1)
-        (mpl.containers:add-subplot fig 1 1 1))))
+    (cond
+      ;; explicit current axes still valid for the current figure
+      ((and *current-axes* (member *current-axes* axes-list))
+       *current-axes*)
+      (axes-list
+       ;; fall back to the most recently added axes
+       (setf *current-axes* (first axes-list)))
+      (t
+       (setf *current-axes* (mpl.containers:add-subplot fig 1 1 1))))))
 
 (defun close-figure (&optional (num :current))
   "Close figure(s).
@@ -174,6 +192,12 @@ Returns (values figure axes) where axes is a single axes, 1D array, or 2D array.
                                          :sharex sharex :sharey sharey
                                          :squeeze squeeze
                                          :projection projection)))
+     ;; matplotlib makes the last-created subplot current
+     (setf *current-axes*
+           (cond ((arrayp axes)
+                  (row-major-aref axes (1- (array-total-size axes))))
+                 ((listp axes) (car (last axes)))
+                 (t axes)))
      (values fig axes)))
 
 ;;; ============================================================
@@ -839,13 +863,13 @@ Returns list of Line2D objects."
   "Create a twin axes sharing the x-axis with the current axes,
 with an independent y-axis on the right side.
 Returns the new twin axes (which becomes the current axes)."
-  (mpl.containers:axes-twinx (gca)))
+  (setf *current-axes* (mpl.containers:axes-twinx (gca))))
 
 (defun twiny ()
   "Create a twin axes sharing the y-axis with the current axes,
 with an independent x-axis on the top side.
 Returns the new twin axes (which becomes the current axes)."
-  (mpl.containers:axes-twiny (gca)))
+  (setf *current-axes* (mpl.containers:axes-twiny (gca))))
 
 ;;; ============================================================
 ;;; Output functions
@@ -869,9 +893,101 @@ TRANSPARENT — if T, use transparent background."
                            :facecolor facecolor :edgecolor edgecolor
                            :transparent transparent))
 
-(defun show ()
-  "Display the current figure (no-op for non-interactive backend).
-In a non-interactive backend, this does nothing.
-For interactive use, consider using savefig instead."
-  (format t "~&; pyplot: Non-interactive backend — use (savefig \"file.png\") to save.~%")
-  (values))
+(defvar *show-hook* nil
+  "When bound to a function (figure &key block), (show) displays the
+current figure through it. Set by loading the cl-matplotlib-show system;
+pyplot itself carries no display-backend dependency.")
+
+(defun show (&key block)
+  "Display the current figure.
+With an interactive display system loaded (cl-matplotlib-show plus a
+backend such as cl-matplotlib-show-web or -sdl2) this opens a live
+window; BLOCK T returns only after it is closed. Otherwise it is a
+no-op that suggests savefig."
+  (if *show-hook*
+      (funcall *show-hook* (gcf) :block block)
+      (progn
+        (format t "~&; pyplot: No display backend loaded — use (savefig \"file.png\"), or (ql:quickload :cl-matplotlib-show-web) for interactive display.~%")
+        (values))))
+
+;;; ============================================================
+;;; Long-tail plot wrappers
+;;; ============================================================
+
+(defun eventplot (positions &rest args &key orientation lineoffsets
+                                            linelengths linewidth colors
+                                            alpha zorder)
+  "Event raster rows on the current axes (matplotlib eventplot)."
+  (declare (ignore orientation lineoffsets linelengths linewidth colors
+                   alpha zorder))
+  (apply #'mpl.containers:eventplot (gca) positions args))
+
+(defun stairs (values &optional edges &rest args
+               &key fill baseline color linewidth alpha label zorder)
+  "Step function over bin edges on the current axes (matplotlib stairs)."
+  (declare (ignore fill baseline color linewidth alpha label zorder))
+  (apply #'mpl.containers:stairs (gca) values edges args))
+
+(defun broken-barh (xranges yrange &rest args
+                    &key facecolors edgecolor linewidth alpha label zorder)
+  "Horizontal bar segments on the current axes (matplotlib broken_barh)."
+  (declare (ignore facecolors edgecolor linewidth alpha label zorder))
+  (apply #'mpl.containers:broken-barh (gca) xranges yrange args))
+
+(defun axline (xy1 &rest args &key xy2 slope color linewidth linestyle
+                                   label zorder)
+  "Infinite line through XY1 on the current axes (matplotlib axline)."
+  (declare (ignore xy2 slope color linewidth linestyle label zorder))
+  (apply #'mpl.containers:axline (gca) xy1 args))
+
+(defun matshow (z &rest args &key cmap vmin vmax)
+  "Matrix display with top ticks on the current axes."
+  (declare (ignore cmap vmin vmax))
+  (apply #'mpl.containers:matshow (gca) z args))
+
+(defun spy (z &rest args &key precision)
+  "Sparsity pattern of matrix Z on the current axes."
+  (declare (ignore precision))
+  (apply #'mpl.containers:spy (gca) z args))
+
+(defun psd (x &rest args &key nfft fs noverlap color linewidth label zorder)
+  "Power spectral density on the current axes (Welch, matplotlib psd)."
+  (declare (ignore nfft fs noverlap color linewidth label zorder))
+  (apply #'mpl.containers:psd (gca) x args))
+
+(defun csd (x y &rest args &key nfft fs noverlap color linewidth label zorder)
+  "Cross spectral density on the current axes."
+  (declare (ignore nfft fs noverlap color linewidth label zorder))
+  (apply #'mpl.containers:csd (gca) x y args))
+
+(defun specgram (x &rest args &key nfft fs noverlap cmap vmin vmax)
+  "Spectrogram on the current axes."
+  (declare (ignore nfft fs noverlap cmap vmin vmax))
+  (apply #'mpl.containers:specgram (gca) x args))
+
+(defun magnitude-spectrum (x &rest args &key fs color linewidth label zorder)
+  "Magnitude spectrum on the current axes."
+  (declare (ignore fs color linewidth label zorder))
+  (apply #'mpl.containers:magnitude-spectrum (gca) x args))
+
+(defun triplot (x y &rest args &key triangles color linewidth marker zorder)
+  "Triangulation edges on the current axes (matplotlib triplot)."
+  (declare (ignore triangles color linewidth marker zorder))
+  (apply #'mpl.containers:triplot (gca) x y args))
+
+(defun tripcolor (x y c &rest args &key triangles cmap vmin vmax alpha zorder)
+  "Flat-shaded triangulation fill on the current axes."
+  (declare (ignore triangles cmap vmin vmax alpha zorder))
+  (apply #'mpl.containers:tripcolor (gca) x y c args))
+
+(defun tricontour (x y z &rest args &key triangles levels n-levels cmap
+                                         colors linewidth zorder)
+  "Contour lines over a triangulation on the current axes."
+  (declare (ignore triangles levels n-levels cmap colors linewidth zorder))
+  (apply #'mpl.containers:tricontour (gca) x y z args))
+
+(defun tricontourf (x y z &rest args &key triangles levels n-levels cmap
+                                          alpha zorder)
+  "Filled contours over a triangulation on the current axes."
+  (declare (ignore triangles levels n-levels cmap alpha zorder))
+  (apply #'mpl.containers:tricontourf (gca) x y z args))

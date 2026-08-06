@@ -308,28 +308,30 @@
     (is (eq :lower (image-origin img)))))
 
 (test imshow-default-extent
-  "Test imshow default extent is (0 W 0 H)."
+  "Test imshow default extent is (-0.5 W-0.5 -0.5 H-0.5), matching
+matplotlib (pixel centers at integer coordinates)."
   (let* ((ax (make-test-axes))
          (data (make-2d-array 10 20))
          (img (imshow ax data)))
     (let ((ext (image-extent img)))
-      (is (approx= 0.0d0 (first ext)))
-      (is (approx= 20.0d0 (second ext)))
-      (is (approx= 0.0d0 (third ext)))
-      (is (approx= 10.0d0 (fourth ext))))))
+      (is (approx= -0.5d0 (first ext)))
+      (is (approx= 19.5d0 (second ext)))
+      (is (approx= -0.5d0 (third ext)))
+      (is (approx= 9.5d0 (fourth ext))))))
 
 (test imshow-updates-datalim
   "Test that imshow updates axes data limits."
   (let* ((ax (make-test-axes))
          (data (make-2d-array 10 20)))
     (imshow ax data)
-    ;; View limits should include the image extent
+    ;; View limits should cover the image extent. The default origin :upper
+    ;; inverts the y-axis, so compare min/max rather than the raw bounds.
     (multiple-value-bind (xmin xmax) (axes-get-xlim ax)
-      (is (<= xmin 0.0d0))
-      (is (>= xmax 20.0d0)))
+      (is (<= (min xmin xmax) -0.5d0))
+      (is (>= (max xmin xmax) 19.5d0)))
     (multiple-value-bind (ymin ymax) (axes-get-ylim ax)
-      (is (<= ymin 0.0d0))
-      (is (>= ymax 10.0d0)))))
+      (is (<= (min ymin ymax) -0.5d0))
+      (is (>= (max ymin ymax) 9.5d0)))))
 
 (test imshow-with-vmin-vmax
   "Test imshow with explicit vmin/vmax."
@@ -346,11 +348,19 @@
          (img (imshow ax data :alpha 0.5)))
     (is (approx= 0.5d0 (artist-alpha img)))))
 
-(test imshow-aspect-auto
-  "Test imshow with aspect :auto (default)."
+(test imshow-aspect-default-equal
+  "Test imshow default aspect is :equal, matching matplotlib's
+rc image.aspect default."
   (let* ((ax (make-test-axes))
          (data (make-2d-array 5 5))
          (img (imshow ax data)))
+    (is (eq :equal (image-aspect img)))))
+
+(test imshow-aspect-auto
+  "Test imshow accepts aspect :auto."
+  (let* ((ax (make-test-axes))
+         (data (make-2d-array 5 5))
+         (img (imshow ax data :aspect :auto)))
     (is (eq :auto (image-aspect img)))))
 
 (test imshow-aspect-equal
@@ -532,5 +542,5 @@
   "Run all image tests and report results."
   (let ((results (run 'image-suite)))
     (explain! results)
-    (unless (every #'fiveam::test-passed-p results)
+    (unless (results-status results)
       (error "Image tests FAILED"))))

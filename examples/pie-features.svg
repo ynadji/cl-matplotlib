@@ -6,7 +6,7 @@
 </defs>
 <g transform="translate(0,600) scale(1,-1)">
 <rect width="800" height="600" fill="white"/>
-<path d="M 0.00 0.00 L 800.00 0.00 L 800.00 600.00 L 0.00 600.00 L 0.00 0.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
+<path d="M 0.00 0.00 L 800.00 0.00 L 800.00 600.00 L 0.00 600.00 Z " fill="#FFFFFF" fill-opacity="1.00" stroke="#FFFFFF" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 410.00 297.00 L 467.11 472.76 C 457.90 475.75 448.47 478.01 438.91 479.52 C 429.35 481.04 419.68 481.80 410.00 481.80 L 410.00 297.00 Z " fill="#9370DB" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 410.00 297.00 L 585.76 354.11 C 576.74 381.84 561.29 407.05 540.67 427.67 C 520.05 448.29 494.84 463.74 467.11 472.76 L 410.00 297.00 Z " fill="#DAA520" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 410.00 297.00 L 518.62 147.49 C 550.19 170.43 573.70 202.78 585.76 239.89 C 597.81 277.00 597.81 317.00 585.76 354.11 L 410.00 297.00 Z " fill="#2E8B57" fill-opacity="1.00" stroke="#000000" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="butt" stroke-linejoin="miter"/>

@@ -270,7 +270,9 @@
 ;;; ============================================================
 
 (defun run-pyplot-ported-tests ()
-  "Run all ported pyplot tests and return results."
+  "Run all pyplot ported tests, signaling an error on failure."
   (let ((results (run 'pyplot-ported-suite)))
     (explain! results)
-    (results-status results)))
+    (unless (results-status results)
+      (error "Pyplot ported tests failed"))
+    results))

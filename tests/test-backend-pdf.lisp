@@ -567,7 +567,9 @@
     (is (file-exists-and-valid-p output 1000))
     (is (pdf-header-valid-p output))
     ;; Copy to evidence
-    (let ((evidence-path ".sisyphus/evidence/phase3c-pdf-render.pdf"))
+    (let ((evidence-path (asdf:system-relative-pathname
+                          :cl-matplotlib-backends
+                          ".sisyphus/evidence/phase3c-pdf-render.pdf")))
       (ensure-directories-exist evidence-path)
       (uiop:copy-file output evidence-path))))
 
@@ -629,7 +631,9 @@
 ;;; ============================================================
 
 (defun run-pdf-backend-tests ()
-  "Run all backend-pdf tests and return results."
+  "Run all pdf backend tests, signaling an error on failure."
   (let ((results (run 'backend-pdf-suite)))
     (explain! results)
+    (unless (results-status results)
+      (error "Pdf backend tests failed"))
     results))

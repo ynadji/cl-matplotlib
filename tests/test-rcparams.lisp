@@ -260,9 +260,13 @@
          (progn
            ;; Modify a param
            (setf (rc "lines.linewidth") 99.0)
-           ;; Load from default file
+           ;; Load from the bundled default file, resolved relative to
+           ;; the system rather than the current directory (the CWD is
+           ;; not the repo root under, e.g., the LispWorks IDE).
            (multiple-value-bind (applied skipped)
-               (rc-from-file "data/matplotlibrc")
+               (rc-from-file
+                (asdf:system-relative-pathname
+                 :cl-matplotlib-foundation "data/matplotlibrc"))
              (is (> applied 0))
              (is (>= skipped 0)))
            ;; Should be reset to default from file
@@ -389,7 +393,9 @@
 ;;; ============================================================
 
 (defun run-rcparams-tests ()
-  "Run all rcParams tests and return T if all pass, NIL otherwise."
+  "Run all rcparams tests, signaling an error on failure."
   (let ((results (run 'rcparams-suite)))
     (explain! results)
-    (results-status results)))
+    (unless (results-status results)
+      (error "Rcparams tests failed"))
+    results))

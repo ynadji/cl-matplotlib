@@ -55,12 +55,21 @@
 ;;; ============================================================
 
 (defparameter *system-font-directories*
-  (list "/usr/share/fonts/"
+  (list ;; Linux / X11
+        "/usr/share/fonts/"
         "/usr/local/share/fonts/"
         "/usr/X11R6/lib/X11/fonts/TTF/"
+        ;; macOS
+        "/System/Library/Fonts/"
+        "/Library/Fonts/"
+        (namestring (merge-pathnames "Library/Fonts/" (user-homedir-pathname)))
+        ;; Windows
+        "C:/Windows/Fonts/"
+        ;; user fonts (Linux)
         (namestring (merge-pathnames ".fonts/" (user-homedir-pathname)))
         (namestring (merge-pathnames ".local/share/fonts/" (user-homedir-pathname))))
-  "Directories to scan for system fonts (X11/Linux).")
+  "Directories to scan for system fonts. Non-existent entries are
+skipped, so all platforms' locations can be listed unconditionally.")
 
 ;;; ============================================================
 ;;; Font entry — metadata for a discovered font
@@ -150,9 +159,13 @@ Ported from matplotlib's FontManager."))
 ;;; ============================================================
 
 (defun list-font-files (directory &key (extensions '("ttf" "otf" "ttc")))
-  "Recursively find font files in DIRECTORY matching EXTENSIONS."
+  "Recursively find font files in DIRECTORY matching EXTENSIONS.
+Any directory that cannot be parsed or probed on this platform is
+skipped — e.g. a Windows drive-letter path like \"C:/Windows/Fonts/\"
+errors when parsed on a Unix Lisp, so the whole scan is guarded."
   (let ((result '()))
-    (when (and directory (probe-file directory))
+    (when (and directory (ignore-errors (probe-file directory)))
+      (ignore-errors
       (dolist (ext extensions)
         (let ((pattern (merge-pathnames (make-pathname :name :wild :type ext)
                                          (pathname-as-directory directory))))
@@ -171,7 +184,7 @@ Ported from matplotlib's FontManager."))
                                                :name :wild :type ext)
                                 (pathname-as-directory directory))))
           (dolist (f (directory subdir-pattern2))
-            (push (namestring f) result)))))
+            (push (namestring f) result))))))
     (remove-duplicates result :test #'string=)))
 
 (defun pathname-as-directory (pathname)
@@ -234,8 +247,16 @@ Returns a FONT-ENTRY or NIL on error."
 ;;; ============================================================
 
 (defmethod initialize-instance :after ((fm font-manager) &key)
-  "Discover fonts and build the database."
-  (build-font-database fm))
+  "Discover fonts and build the database.
+Tries the on-disk font cache first; falls back to a full system scan
+(and refreshes the cache) when the cache is missing, stale, or empty."
+  (unless (and (not (font-cache-stale-p))
+               (load-font-cache fm)
+               (fm-ttf-list fm))
+    (build-font-database fm)
+    ;; Cache write failures (e.g. read-only home) are non-fatal.
+    (handler-case (save-font-cache fm)
+      (error () nil))))
 
 (defun build-font-database (fm)
   "Scan for fonts and populate the font manager database."
@@ -363,6 +384,27 @@ The font-loader is cached."
   (merge-pathnames ".cache/cl-matplotlib/fontlist.cache"
                    (user-homedir-pathname)))
 
+(defun font-cache-stale-p ()
+  "Return T if the on-disk font cache is missing or older than any font
+directory. Cheap staleness check: only the mtimes of the top-level font
+directories and their immediate subdirectories are examined."
+  (let ((cache (probe-file (font-cache-path))))
+    (if (null cache)
+        t
+        (let ((cache-date (file-write-date cache)))
+          (flet ((dir-newer-p (dir)
+                   (handler-case
+                       (let ((d (probe-file dir)))
+                         (when d
+                           (or (> (file-write-date d) cache-date)
+                               (loop for sub in (uiop:subdirectories d)
+                                     thereis (> (file-write-date sub) cache-date)))))
+                     ;; Treat lookup errors as stale — a rescan is always safe.
+                     (error () t))))
+            (or (some #'dir-newer-p *system-font-directories*)
+                (let ((shipped (shipped-font-directory)))
+                  (and shipped (dir-newer-p shipped)))))))))
+
 (defun save-font-cache (fm)
   "Serialize the font list to disk."
   (let ((path (font-cache-path)))
@@ -474,27 +516,30 @@ Returns a BBOX (from cl-matplotlib.primitives)."
          (prev-glyph nil))
     (loop for char across text
           for glyph = (zpb-ttf:find-glyph (char-code char) font-loader)
-          do (when glyph
-               ;; Kerning
-               (when prev-glyph
-                 (let ((kern (zpb-ttf:kerning-offset prev-glyph glyph font-loader)))
-                   (when kern
-                     (incf x-pos (* (float kern 1.0d0) scale)))))
-               ;; Advance
-               (let ((advance (* (float (zpb-ttf:advance-width glyph) 1.0d0) scale)))
-                 (incf x-pos advance))
-               ;; Track glyph bbox
-               (let ((bb (zpb-ttf:bounding-box glyph)))
-                 (when bb
-                   (let ((gx-min (* (float (zpb-ttf:xmin bb) 1.0d0) scale))
-                         (gy-min (* (float (zpb-ttf:ymin bb) 1.0d0) scale))
-                         (gx-max (* (float (zpb-ttf:xmax bb) 1.0d0) scale))
-                         (gy-max (* (float (zpb-ttf:ymax bb) 1.0d0) scale)))
-                     (declare (ignore gx-min))
-                     (setf min-y (min min-y gy-min))
-                     (setf max-y (max max-y gy-max))
-                     (setf max-x (max max-x (+ x-pos gx-max))))))
-               (setf prev-glyph glyph))
-             (setf prev-glyph nil))
+          do (if glyph
+                 (progn
+                   ;; Kerning against the previous glyph, applied before
+                   ;; positioning this one
+                   (when prev-glyph
+                     (let ((kern (zpb-ttf:kerning-offset prev-glyph glyph font-loader)))
+                       (when kern
+                         (incf x-pos (* (float kern 1.0d0) scale)))))
+                   ;; Track glyph ink bbox at the current pen position
+                   ;; (before advancing)
+                   (let ((bb (zpb-ttf:bounding-box glyph)))
+                     (when bb
+                       (let ((gx-min (* (float (zpb-ttf:xmin bb) 1.0d0) scale))
+                             (gy-min (* (float (zpb-ttf:ymin bb) 1.0d0) scale))
+                             (gx-max (* (float (zpb-ttf:xmax bb) 1.0d0) scale))
+                             (gy-max (* (float (zpb-ttf:ymax bb) 1.0d0) scale)))
+                         (setf min-x (min min-x (+ x-pos gx-min)))
+                         (setf min-y (min min-y gy-min))
+                         (setf max-y (max max-y gy-max))
+                         (setf max-x (max max-x (+ x-pos gx-max))))))
+                   ;; Advance
+                   (incf x-pos (* (float (zpb-ttf:advance-width glyph) 1.0d0) scale))
+                   (setf prev-glyph glyph))
+                 ;; Missing glyph: reset the kerning context
+                 (setf prev-glyph nil)))
     (setf max-x (max max-x x-pos))
     (cl-matplotlib.primitives:make-bbox min-x min-y max-x max-y)))

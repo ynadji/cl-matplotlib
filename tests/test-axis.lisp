@@ -500,7 +500,9 @@
   "Evidence: Generate ticks-labels.png for plan acceptance."
   (let* ((fig (make-figure))
          (ax (add-subplot fig 1 1 1))
-         (path ".sisyphus/evidence/phase4c-ticks-labels.png"))
+         (path (asdf:system-relative-pathname
+                :cl-matplotlib-containers
+                ".sisyphus/evidence/phase4c-ticks-labels.png")))
     (plot ax '(0 1 2 3 4) '(0 1 4 9 16))
     (ensure-directories-exist path)
     (savefig fig path)
@@ -512,7 +514,9 @@
 ;;; ============================================================
 
 (defun run-axis-tests ()
-  "Run all axis/ticker/spine tests and return success boolean."
+  "Run all axis tests, signaling an error on failure."
   (let ((results (run 'axis-suite)))
     (explain! results)
-    (results-status results)))
+    (unless (results-status results)
+      (error "Axis tests failed"))
+    results))

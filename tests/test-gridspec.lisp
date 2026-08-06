@@ -608,5 +608,9 @@
 ;;; ============================================================
 
 (defun run-gridspec-tests ()
-  "Run all gridspec tests."
-  (run! 'gridspec-suite))
+  "Run all gridspec tests, signaling an error on failure."
+  (let ((results (run 'gridspec-suite)))
+    (explain! results)
+    (unless (results-status results)
+      (error "Gridspec tests failed"))
+    results))

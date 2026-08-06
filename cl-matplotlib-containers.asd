@@ -5,12 +5,13 @@
 (asdf:defsystem #:cl-matplotlib-containers
   :description "Container hierarchy for cl-matplotlib: Figure, Axes, layout engines"
   :version "0.2.0"
-  :depends-on (#:cl-matplotlib-backends)
+  :depends-on (#:cl-matplotlib-backends #:local-time #:bordeaux-fft)
   :serial t
   :components ((:module "src/containers"
                 :components ((:file "layout-engine")
                              (:file "figure")
                              (:file "ticker")
+                             (:file "dates")
                              (:file "scale")
                              (:file "spines")
                              (:file "axis")
@@ -23,7 +24,8 @@
                              (:file "polar")))
                (:module "src/algorithms"
                  :components ((:file "marching-squares")
-                              (:file "streamplot")))
+                              (:file "streamplot")
+                              (:file "delaunay")))
                  (:module "src/plotting"
                   :components ((:file "contour")
                                (:file "image")
@@ -31,7 +33,9 @@
                                (:file "stats")
                                (:file "violin")
                                (:file "quiver")
-                               (:file "hexbin"))))
+                               (:file "hexbin")
+                               (:file "spectral")
+                               (:file "tri"))))
   :in-order-to ((asdf:test-op (asdf:test-op #:cl-matplotlib-containers/tests))))
 
 (asdf:defsystem #:cl-matplotlib-containers/tests
@@ -48,7 +52,10 @@
                (:file "test-contour")
                  (:file "test-image")
                 (:file "test-plot-types")
-                (:file "test-polar"))
+                (:file "test-polar")
+                (:file "test-dates")
+                (:file "test-spectral")
+                (:file "test-tri"))
    :perform (asdf:test-op (o c)
                   (uiop:symbol-call '#:cl-matplotlib.tests.figure '#:run-figure-tests)
                   (uiop:symbol-call '#:cl-matplotlib.tests.axes '#:run-axes-tests)
@@ -60,4 +67,7 @@
                   (uiop:symbol-call '#:cl-matplotlib.tests.contour '#:run-contour-tests)
                   (uiop:symbol-call '#:cl-matplotlib.tests.image '#:run-image-tests)
                   (uiop:symbol-call '#:cl-matplotlib.tests.plot-types '#:run-plot-types-tests)
-                  (uiop:symbol-call '#:cl-matplotlib.tests.polar '#:run-polar-tests)))
+                  (uiop:symbol-call '#:cl-matplotlib.tests.polar '#:run-polar-tests)
+                  (uiop:symbol-call '#:cl-matplotlib.tests.dates '#:run-dates-tests)
+                  (uiop:symbol-call '#:cl-matplotlib.tests.spectral '#:run-spectral-tests)
+                  (uiop:symbol-call '#:cl-matplotlib.tests.tri '#:run-tri-tests)))

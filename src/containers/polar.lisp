@@ -59,8 +59,9 @@ trans-data = polar-transform ∘ polar-affine ∘ trans-axes"
          (pt (polar-axes-polar-transform ax)))
     ;; trans-data = polar-transform ∘ polar-affine ∘ trans-axes
     (setf (axes-base-trans-data ax)
-          (mpl.primitives:compose pt
-                                  (mpl.primitives:compose pa trans-axes)))))
+          (%rewrap-transform (axes-base-trans-data ax)
+                             (mpl.primitives:compose pt
+                                                     (mpl.primitives:compose pa trans-axes))))))
 
 ;;; ============================================================
 ;;; Draw method override

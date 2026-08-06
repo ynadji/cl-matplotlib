@@ -214,7 +214,7 @@ Returns (values x y width height) in display space."
          (fontsize (legend-fontsize leg))
          ;; DPI scale factor: convert points to pixels
          (dpi-scale (if (and renderer (typep renderer 'mpl.backends:renderer-base))
-                        (/ (mpl.backends:renderer-dpi renderer) 72.0d0)
+                        (/ (mpl.rendering:renderer-dpi renderer) 72.0d0)
                         1.0d0))
          (n-entries (length (legend-entry-artists leg)))
          (ncol (min (legend-ncol leg) (max 1 n-entries)))
@@ -304,7 +304,7 @@ Returns (values x y width height) in display space."
                               ;; right, center-left, center-right, center
                               ((5 6 7 10) (- anchor-py (/ legend-height 2.0d0)))
                               (otherwise (- anchor-py legend-height)))))
-                      (values x-display y-display legend-width legend-height))
+                      (values x-display y-display legend-width legend-height col-width))
                     ;; Standard loc-code positioning with borderaxespad
                     (let* ((x-display
                             (case resolved-code
@@ -324,9 +324,9 @@ Returns (values x y width height) in display space."
                               ;; right, center-left, center-right, center
                               ((5 6 7 10) (+ dy (/ (- axes-height legend-height) 2.0d0)))
                               (otherwise (+ dy axes-height (- legend-height) (- axes-pad))))))
-                      (values x-display y-display legend-width legend-height))))))
+                      (values x-display y-display legend-width legend-height col-width))))))
           ;; No parent — use figure-level positioning
-          (values 320.0d0 240.0d0 legend-width legend-height)))))
+          (values 320.0d0 240.0d0 legend-width legend-height col-width)))))
 
 ;;; ============================================================
 ;;; Legend auto-placement ("best" position)
@@ -456,7 +456,7 @@ legend box and bboxes that overlap with it."
   "Draw the legend: frame, then entries (handle artists + labels)."
   (unless (mpl.rendering:artist-visible leg)
     (return-from mpl.rendering:draw))
-  (multiple-value-bind (x y width height)
+  (multiple-value-bind (x y width height col-width)
       (%legend-compute-bbox leg renderer)
     ;; Draw frame
     (when (legend-frameon-p leg)
@@ -466,7 +466,7 @@ legend box and bboxes that overlap with it."
           (current-y (+ y height))
           ;; DPI scale factor: must match %legend-compute-bbox
           (dpi-scale (if (and renderer (typep renderer 'mpl.backends:renderer-base))
-                         (/ (mpl.backends:renderer-dpi renderer) 72.0d0)
+                         (/ (mpl.rendering:renderer-dpi renderer) 72.0d0)
                          1.0d0)))
       (when (and title (plusp (length title)))
         (let* ((title-fontsize (legend-title-fontsize leg))
@@ -475,23 +475,31 @@ legend box and bboxes that overlap with it."
           (%legend-draw-text renderer title title-x title-y
                               :fontsize (* title-fontsize dpi-scale) :weight :bold)
           (decf current-y (* title-fontsize 1.5d0 dpi-scale))))
-      ;; Draw entries
+      ;; Draw entries, filling columns top-to-bottom then left-to-right
+      ;; (column-major, like matplotlib). Column geometry must match
+      ;; %legend-compute-bbox, which sized the frame for ncol columns.
       (let* ((fontsize (legend-fontsize leg))
              (border-pad (* (legend-borderpad leg) fontsize dpi-scale))
              (handle-len (* (legend-handlelength leg) fontsize dpi-scale))
              (text-pad (* (legend-handletextpad leg) fontsize dpi-scale))
              (label-spacing (* (legend-labelspacing leg) fontsize dpi-scale))
+             (col-spacing (* (legend-columnspacing leg) fontsize dpi-scale))
              (row-height (max (* (legend-handleheight leg) fontsize dpi-scale)
                               (* fontsize dpi-scale)))
+             (n-entries (length (legend-entry-artists leg)))
+             (ncol (min (legend-ncol leg) (max 1 n-entries)))
+             (nrow (ceiling n-entries ncol))
              (entry-x (+ x border-pad))
              (entry-y (- current-y border-pad)))
         (loop for entry in (legend-entry-artists leg)
               for i from 0
+              for col = (floor i nrow)
+              for row = (mod i nrow)
               do (let* ((handle-artists (car entry))
                         (text-art (cdr entry))
                         ;; Position for this entry
-                        (ex entry-x)
-                        (ey (- entry-y (* i (+ row-height label-spacing))
+                        (ex (+ entry-x (* col (+ col-width col-spacing))))
+                        (ey (- entry-y (* row (+ row-height label-spacing))
                                (/ row-height 2.0d0))))
                    ;; Draw handle artists
                    (dolist (artist handle-artists)
@@ -668,10 +676,15 @@ Returns the created mpl-legend."
                                :ncol ncol
                                :handler-map handler-map
                                :zorder 5)))
-    ;; Store in axes
+    ;; Store in axes. The axes draw method draws the legend explicitly on top
+    ;; of everything, so it must NOT also be in axes-base-artists (that drew it
+    ;; twice, double-compositing the semi-transparent frame). Storing only in
+    ;; the slot also means re-calling axes-legend replaces the old legend
+    ;; instead of leaving a stale one behind.
     (setf (axes-base-legend ax) legend)
-    ;; Add to axes artists for drawing
-    (axes-add-artist ax legend)
+    (setf (mpl.rendering:artist-axes legend) ax
+          (mpl.rendering:artist-figure legend) (axes-base-figure ax))
+    (setf (mpl.rendering:artist-stale ax) t)
     legend))
 
 (defun %axes-get-legend-handles-labels (ax)

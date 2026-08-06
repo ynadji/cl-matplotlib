@@ -24,7 +24,7 @@
            #:warn-deprecated
            #:suppress-matplotlib-deprecation-warning
            #:deprecated
-           #:define-cached-function #:clear-cache
+           #:clear-cache
            #:*unset* #:unsetp #:unset-type
            #:nargs-error #:getitem-checked #:levenshtein-distance))
 
@@ -74,15 +74,6 @@
 ;;; ============================================================
 ;;; Original packages (Phase 0 — preserved)
 ;;; ============================================================
-
-(defpackage #:cl-matplotlib.foundation
-  (:use #:cl)
-  (:nicknames #:mpl.foundation)
-  (:documentation "Core types, math utilities, color, transforms.")
-  (:export #:rgba-color #:make-rgba
-           #:affine-2d #:make-affine-2d #:affine-multiply
-           #:deg->rad #:rad->deg
-           #:clamp))
 
 (defpackage #:cl-matplotlib.primitives
   (:use #:cl)
@@ -195,6 +186,7 @@
            #:listed-colormap #:make-listed-colormap
            ;; Colormap registry
            #:*colormaps* #:register-colormap #:get-colormap #:list-colormaps
+           #:colormap-reversed
            #:initialize-colormaps
            ;; Normalize classes
            #:normalize #:make-normalize #:normalize-call #:normalize-inverse
@@ -234,6 +226,7 @@
            #:mock-renderer-record
            #:renderer-draw-path #:renderer-draw-collection-uniform
            #:renderer-draw-text #:renderer-draw-image
+           #:renderer-dpi #:renderer-draw-markers
            ;; Line2D
            #:line-2d #:line-2d-xdata #:line-2d-ydata
            #:line-2d-linewidth #:line-2d-linestyle #:line-2d-color
@@ -472,6 +465,12 @@
              ;; Plotting functions
              #:add-subplot
               #:plot #:scatter #:bar #:axes-fill #:fill-between
+            #:eventplot #:stairs #:broken-barh #:axline #:matshow #:spy
+            #:psd #:csd #:specgram #:magnitude-spectrum
+            #:triplot #:tripcolor #:tricontour #:tricontourf
+            #:delaunay-triangulate #:ensure-triangulation
+            #:triangulation #:triangulation-x #:triangulation-y
+            #:triangulation-triangles
               #:imshow #:axes-add-image
               ;; Additional plot types (Phase 6b)
               #:hist #:pie #:errorbar #:stem #:axes-step
@@ -497,6 +496,16 @@
             #:max-n-locator-integer-p #:max-n-locator-symmetric-p
             #:max-n-locator-prune #:max-n-locator-min-n-ticks
             #:auto-locator
+            ;; dates (src/containers/dates.lisp)
+            #:date-locator #:auto-date-locator
+            #:year-locator #:month-locator #:week-locator #:day-locator
+            #:hour-locator #:minute-locator
+            #:date-formatter #:concise-date-formatter
+            #:tick-formatter-offset-string
+            #:date-to-num #:num-to-date #:ut-to-num #:num-to-ut
+            #:format-date #:date-break-uts #:date-add-months
+            #:auto-date-spec #:auto-date-fmt
+            #:register-unit-converter #:find-unit-converter
             #:auto-minor-locator #:auto-minor-locator-num-subdivisions
             #:log-locator #:log-locator-base #:log-locator-subs
             ;; Ticker — Formatter base
@@ -523,7 +532,7 @@
             #:axis-major-formatter #:axis-minor-formatter
             #:axis-label-text #:axis-label-artist
              #:axis-tick-size-major #:axis-tick-size-minor
-             #:axis-tick-direction #:axis-tick-label-fontsize
+             #:axis-tick-direction #:axis-tick-label-fontsize #:axis-tick-label-color
              #:axis-tick-labels-visible-p
              #:axis-grid-on-p #:axis-grid-color #:axis-grid-linewidth
             #:axis-grid-linestyle #:axis-grid-alpha
@@ -655,7 +664,7 @@
             ;; Convenience
             #:make-graphics-context #:render-to-png
             ;; Font config
-            #:*default-font-path*
+            #:*default-font-path* #:resolve-default-font-path
              ;; PDF renderer
              #:renderer-pdf #:renderer-pdf-font-cache
              ;; PDF canvas
@@ -674,11 +683,14 @@
 Provides a procedural interface wrapping the OO Figure/Axes API.
 Manages global figure state for convenience.")
   (:export ;; Figure management
-           #:figure #:gcf #:gca #:close-figure #:clf #:cla
+           #:figure #:gcf #:gca #:sca #:close-figure #:clf #:cla
            ;; Subplot creation
            #:subplots
            ;; Plot functions
              #:plot #:scatter #:bar #:hist #:imshow #:contour #:contourf
+             #:eventplot #:stairs #:broken-barh #:axline #:matshow #:spy
+             #:psd #:csd #:specgram #:magnitude-spectrum
+             #:triplot #:tripcolor #:tricontour #:tricontourf
              #:pie #:errorbar #:stem #:step-plot #:stackplot #:barh #:boxplot
               #:violinplot #:quiver #:streamplot
                #:fill-between #:pcolormesh #:hexbin
@@ -693,9 +705,21 @@ Manages global figure state for convenience.")
                #:twinx #:twiny
                #:minorticks-on
              ;; Output
-           #:savefig #:show
+           #:savefig #:show #:*show-hook*
            ;; State management
-           #:*figures* #:*current-figure* #:*figure-counter*))
+           #:*figures* #:*current-figure* #:*figure-counter*
+           ;; Dates (re-exported from containers)
+           #:date-to-num #:num-to-date #:ut-to-num #:num-to-ut
+           #:date-formatter #:concise-date-formatter
+           #:auto-date-locator #:year-locator #:month-locator
+           #:week-locator #:day-locator #:hour-locator #:minute-locator
+           #:register-unit-converter)
+  (:import-from #:cl-matplotlib.containers
+                #:date-to-num #:num-to-date #:ut-to-num #:num-to-ut
+                #:date-formatter #:concise-date-formatter
+                #:auto-date-locator #:year-locator #:month-locator
+                #:week-locator #:day-locator #:hour-locator #:minute-locator
+                #:register-unit-converter))
 
 (defpackage #:cl-matplotlib
   (:use #:cl)

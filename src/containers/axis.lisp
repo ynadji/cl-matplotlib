@@ -138,6 +138,9 @@ Ported from matplotlib.axis.Tick."))
    (tick-label-fontsize :initform 10.0
                         :accessor axis-tick-label-fontsize
                         :type real)
+   (tick-label-color :initform "black"
+                     :accessor axis-tick-label-color
+                     :documentation "Tick label text color.")
    (tick-pad :initform 3.5d0
              :accessor axis-tick-pad
              :type double-float)
@@ -171,7 +174,15 @@ Ported from matplotlib.axis.Tick."))
     (minor-grid-linestyle :initform :solid
                           :accessor axis-minor-grid-linestyle)
     (minor-grid-alpha :initform 1.0
-                      :accessor axis-minor-grid-alpha))
+                      :accessor axis-minor-grid-alpha)
+    ;; Tick caches — ticks are requested several times per draw
+    ;; (grid pass, tick pass, ylabel measurement); memoize per key
+    (major-ticks-cache :initform nil
+                       :accessor axis-major-ticks-cache
+                       :documentation "Cons (key . ticks) memoizing AXIS-GET-MAJOR-TICKS.")
+    (minor-ticks-cache :initform nil
+                       :accessor axis-minor-ticks-cache
+                       :documentation "Cons (key . ticks) memoizing AXIS-GET-MINOR-TICKS."))
   (:default-initargs :zorder 1.5)
   (:documentation "Base class for axes axis objects.
 Ported from matplotlib.axis.Axis."))
@@ -287,7 +298,9 @@ The scale sets default locators and formatters."
 ;;; ============================================================
 
 (defun axis-get-major-ticks (axis)
-  "Generate tick objects for major ticks."
+  "Generate tick objects for major ticks.
+Memoized per (view-interval, locator, formatter, tick/grid params) —
+the cache is checked first and refreshed when any key component changes."
   (multiple-value-bind (vmin vmax) (axis-get-view-interval axis)
     ;; Apply scale-specific range limiting for log scales
     (let ((scale (axis-scale axis)))
@@ -296,7 +309,29 @@ The scale sets default locators and formatters."
           (let ((minpos (if (> data-min 0.0d0) data-min 1.0d-300)))
             (multiple-value-setq (vmin vmax)
               (scale-limit-range-for-scale scale vmin vmax minpos))))))
-    (let* ((locator (axis-major-locator axis))
+    (let ((key (list vmin vmax
+                     (axis-major-locator axis)
+                     (axis-major-formatter axis)
+                     (axis-axes axis)
+                     (axis-tick-size-major axis)
+                     (axis-tick-direction axis)
+                     (axis-tick-label-fontsize axis)
+                     (axis-tick-label-color axis)
+                     (axis-grid-on-p axis)
+                     (axis-grid-color axis)
+                     (axis-grid-linewidth axis)
+                     (axis-grid-linestyle axis)
+                     (axis-grid-alpha axis)))
+          (cache (axis-major-ticks-cache axis)))
+      (when (and cache (equal (car cache) key))
+        (return-from axis-get-major-ticks (cdr cache)))
+      (let ((ticks (%axis-compute-major-ticks axis vmin vmax)))
+        (setf (axis-major-ticks-cache axis) (cons key ticks))
+        ticks))))
+
+(defun %axis-compute-major-ticks (axis vmin vmax)
+  "Compute the major tick objects for the (scale-adjusted) view interval."
+  (let* ((locator (axis-major-locator axis))
            (formatter (axis-major-formatter axis))
            (locs (locator-tick-values locator vmin vmax))
             ;; Filter to visible range (with small tolerance)
@@ -305,13 +340,16 @@ The scale sets default locators and formatters."
            (real-max (max vmin vmax))
            (range (- real-max real-min))
            (tol (* range 0.001d0))
-           (visible-locs (remove-if-not
-                          (lambda (l) (and (>= l (- real-min tol))
-                                           (<= l (+ real-max tol))))
-                          locs))
-           (labels (tick-formatter-format-ticks formatter visible-locs)))
-      (loop for loc in visible-locs
-            for label in labels
+           ;; Format labels by index over the FULL locator list before
+           ;; clipping (matplotlib semantics) so index-based formatters like
+           ;; fixed-formatter stay aligned when leading ticks are clipped.
+           (all-labels (tick-formatter-format-ticks formatter locs))
+           (visible (loop for loc in locs
+                          for label in all-labels
+                          when (and (>= loc (- real-min tol))
+                                    (<= loc (+ real-max tol)))
+                            collect (cons loc label))))
+      (loop for (loc . label) in visible
             collect (let ((tk (make-instance 'tick
                                             :axes (axis-axes axis)
                                             :loc (float loc 1.0d0)
@@ -319,16 +357,19 @@ The scale sets default locators and formatters."
                                             :size (axis-tick-size-major axis)
                                             :direction (axis-tick-direction axis)
                                             :label-fontsize (axis-tick-label-fontsize axis)
+                                            :label-color (axis-tick-label-color axis)
                                             :grid-on (axis-grid-on-p axis)
                                             :grid-color (axis-grid-color axis)
                                             :grid-linewidth (axis-grid-linewidth axis)
                                             :grid-linestyle (axis-grid-linestyle axis)
                                             :grid-alpha (axis-grid-alpha axis))))
                      (setf (tick-label-text tk) label)
-                     tk)))))
+                     tk))))
 
 (defun axis-get-minor-ticks (axis)
-  "Generate tick objects for minor ticks."
+  "Generate tick objects for minor ticks.
+Memoized per (view-interval, locator, tick/grid params) — the cache is
+checked first and refreshed when any key component changes."
   (multiple-value-bind (vmin vmax) (axis-get-view-interval axis)
     ;; Apply scale-specific range limiting for log scales
     (let ((scale (axis-scale axis)))
@@ -337,7 +378,28 @@ The scale sets default locators and formatters."
           (let ((minpos (if (> data-min 0.0d0) data-min 1.0d-300)))
             (multiple-value-setq (vmin vmax)
               (scale-limit-range-for-scale scale vmin vmax minpos))))))
-    (let* ((locator (axis-minor-locator axis))
+    (let ((key (list vmin vmax
+                     (axis-minor-locator axis)
+                     (axis-axes axis)
+                     (axis-tick-size-minor axis)
+                     (axis-tick-direction axis)
+                     (axis-tick-label-fontsize axis)
+                     (axis-tick-label-color axis)
+                     (axis-minor-grid-on-p axis)
+                     (axis-minor-grid-color axis)
+                     (axis-minor-grid-linewidth axis)
+                     (axis-minor-grid-linestyle axis)
+                     (axis-minor-grid-alpha axis)))
+          (cache (axis-minor-ticks-cache axis)))
+      (when (and cache (equal (car cache) key))
+        (return-from axis-get-minor-ticks (cdr cache)))
+      (let ((ticks (%axis-compute-minor-ticks axis vmin vmax)))
+        (setf (axis-minor-ticks-cache axis) (cons key ticks))
+        ticks))))
+
+(defun %axis-compute-minor-ticks (axis vmin vmax)
+  "Compute the minor tick objects for the (scale-adjusted) view interval."
+  (let* ((locator (axis-minor-locator axis))
             (locs (locator-tick-values locator vmin vmax))
            ;; Use min/max to handle inverted axes (vmin > vmax)
            (real-min (min vmin vmax))
@@ -356,11 +418,12 @@ The scale sets default locators and formatters."
                                   :size (axis-tick-size-minor axis)
                                   :direction (axis-tick-direction axis)
                                   :label-fontsize (axis-tick-label-fontsize axis)
+                                  :label-color (axis-tick-label-color axis)
                                   :grid-on (axis-minor-grid-on-p axis)
                                   :grid-color (axis-minor-grid-color axis)
                                   :grid-linewidth (axis-minor-grid-linewidth axis)
                                   :grid-linestyle (axis-minor-grid-linestyle axis)
-                                  :grid-alpha (axis-minor-grid-alpha axis))))))
+                                  :grid-alpha (axis-minor-grid-alpha axis)))))
 
 ;;; ============================================================
 ;;; XAxis — horizontal axis
@@ -463,7 +526,11 @@ to ensure they appear behind data artists (matplotlib grid zorder=0.5)."
       (when (and labels-visible
                  (axis-label-text axis)
                  (> (length (axis-label-text axis)) 0))
-        (%draw-x-axis-label renderer ax axis trans-axes side))))
+        (%draw-x-axis-label renderer ax axis trans-axes side))
+      ;; Formatter offset string (ConciseDateFormatter context, scalar
+      ;; magnitude offsets) at the axis end
+      (when labels-visible
+        (%draw-x-axis-offset renderer axis trans-axes side))))
   (setf (mpl.rendering:artist-stale axis) nil))
 
 (defun %draw-x-tick (renderer ax tk trans-data trans-axes &optional (labels-visible t) (skip-grid nil) (side :bottom))
@@ -478,7 +545,7 @@ SIDE is :bottom (default) or :top for twin axes."
          ;; Get axes bottom/top in display coords
          (axes-bottom (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 1))
          (axes-top (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 1.0d0)) 1))
-         (dpi (mpl.backends:renderer-dpi renderer))
+         (dpi (mpl.rendering:renderer-dpi renderer))
          (pts->px (/ dpi 72.0d0))
          (tick-len (* (float (or (tick-size tk) 3.5) 1.0d0) pts->px))
          (tick-wid (float (or (tick-width tk) 0.8) 1.0d0))
@@ -527,7 +594,7 @@ SIDE is :bottom (default) or :top for twin axes."
                           (+ y-end (* (float (tick-pad tk) 1.0d0) pts->px))
                           (- y-end (* (float (tick-pad tk) 1.0d0) pts->px))))
               (fontsize-px (* (tick-label-fontsize tk)
-                              (/ (mpl.backends:renderer-dpi renderer) 72.0)))
+                              (/ (mpl.rendering:renderer-dpi renderer) 72.0)))
               (gc (mpl.rendering:make-gc
                    :foreground (tick-label-color tk)
                    :linewidth fontsize-px
@@ -559,7 +626,7 @@ The tick_label_height uses the font line-height ratio (0.9754) matching matplotl
 SIDE is :bottom (default) or :top for twin axes."
   (declare (ignore ax))
   (let* ((top-p (eq side :top))
-         (dpi (mpl.backends:renderer-dpi renderer))
+         (dpi (mpl.rendering:renderer-dpi renderer))
          (pts->px (/ dpi 72.0d0))
          (p-mid (mpl.primitives:transform-point trans-axes
                                                  (list 0.5d0 (if top-p 1.0d0 0.0d0))))
@@ -583,6 +650,38 @@ SIDE is :bottom (default) or :top for twin axes."
                                       :angle 0.0
                                       :ha :center
                                       :va (if top-p :bottom :top))))
+
+(defun %draw-x-axis-offset (renderer axis trans-axes side)
+  "Draw the formatter's offset string (e.g. ConciseDateFormatter's
+\"2024-Mar\") at the right end of the x axis, below the tick labels
+(matplotlib placement)."
+  (let ((offset-text (let ((fmt (axis-major-formatter axis)))
+                       (and fmt (tick-formatter-offset-string fmt)))))
+    (when (and offset-text (plusp (length offset-text)))
+      (let* ((top-p (eq side :top))
+             (dpi (mpl.rendering:renderer-dpi renderer))
+             (pts->px (/ dpi 72.0d0))
+             (p-end (mpl.primitives:transform-point
+                     trans-axes (list 1.0d0 (if top-p 1.0d0 0.0d0))))
+             (tick-fontsize-pts (float (axis-tick-label-fontsize axis) 1.0d0))
+             (tick-label-height (* tick-fontsize-pts pts->px 0.9754d0))
+             (tick-size-px (* (float (axis-tick-size-major axis) 1.0d0)
+                              pts->px))
+             (tick-pad-px (* (float (axis-tick-pad axis) 1.0d0) pts->px))
+             (offset (+ tick-size-px tick-pad-px tick-label-height
+                        (* 4.0d0 pts->px)))
+             (y-pos (if top-p
+                        (+ (aref p-end 1) offset)
+                        (- (aref p-end 1) offset)))
+             (fontsize-px (* tick-fontsize-pts pts->px))
+             (gc (mpl.rendering:make-gc :foreground "black"
+                                        :linewidth fontsize-px :alpha 1.0)))
+        (mpl.rendering:renderer-draw-text renderer gc
+                                          (aref p-end 0) y-pos
+                                          offset-text
+                                          :angle 0.0
+                                          :ha :right
+                                          :va (if top-p :bottom :top))))))
 
 ;;; ============================================================
 ;;; YAxis — vertical axis
@@ -702,7 +801,7 @@ SIDE is :left (default) or :right for twin axes."
          ;; Get axes left/right edge in display coords
          (axes-left (aref (mpl.primitives:transform-point trans-axes (list 0.0d0 0.0d0)) 0))
          (axes-right (aref (mpl.primitives:transform-point trans-axes (list 1.0d0 0.0d0)) 0))
-         (dpi (mpl.backends:renderer-dpi renderer))
+         (dpi (mpl.rendering:renderer-dpi renderer))
          (pts->px (/ dpi 72.0d0))
          (tick-len (* (float (or (tick-size tk) 3.5) 1.0d0) pts->px))
          (tick-wid (float (or (tick-width tk) 0.8) 1.0d0))
@@ -751,7 +850,7 @@ SIDE is :left (default) or :right for twin axes."
                           (+ x-end (* (float (tick-pad tk) 1.0d0) pts->px))
                           (- x-end (* (float (tick-pad tk) 1.0d0) pts->px))))
               (fontsize-px (* (tick-label-fontsize tk)
-                              (/ (mpl.backends:renderer-dpi renderer) 72.0)))
+                              (/ (mpl.rendering:renderer-dpi renderer) 72.0)))
               (gc (mpl.rendering:make-gc
                    :foreground (tick-label-color tk)
                    :linewidth fontsize-px
@@ -782,7 +881,7 @@ Dynamically computes offset based on actual tick label widths.
 SIDE is :left (default) or :right for twin axes."
   (declare (ignore ax))
   (let* ((right-p (eq side :right))
-         (dpi (mpl.backends:renderer-dpi renderer))
+         (dpi (mpl.rendering:renderer-dpi renderer))
          (pts->px (/ dpi 72.0d0))
          (p-mid (mpl.primitives:transform-point trans-axes
                                                  (list (if right-p 1.0d0 0.0d0) 0.5d0)))
@@ -840,19 +939,22 @@ SIDE is :left (default) or :right for twin axes."
 
 (defun axis-set-tick-params (axis &key (size nil) (width nil)
                                        (direction nil) (pad nil)
-                                       (labelsize nil) (which :major))
+                                       (labelsize nil) (labelcolor nil)
+                                       (which :major))
   "Set tick parameters on AXIS.
 WHICH is :major, :minor, or :both."
   (when (member which '(:major :both))
     (when size (setf (axis-tick-size-major axis) size))
     (when direction (setf (axis-tick-direction axis) direction))
     (when pad (setf (axis-tick-pad axis) (float pad 1.0d0)))
-    (when labelsize (setf (axis-tick-label-fontsize axis) labelsize)))
+    (when labelsize (setf (axis-tick-label-fontsize axis) labelsize))
+    (when labelcolor (setf (axis-tick-label-color axis) labelcolor)))
   (when (member which '(:minor :both))
     (when size (setf (axis-tick-size-minor axis) size))
     (when direction (setf (axis-tick-direction axis) direction))
     (when pad (setf (axis-tick-pad axis) (float pad 1.0d0)))
-    (when labelsize (setf (axis-tick-label-fontsize axis) labelsize)))
+    (when labelsize (setf (axis-tick-label-fontsize axis) labelsize))
+    (when labelcolor (setf (axis-tick-label-color axis) labelcolor)))
   (when (and (null (member which '(:major :minor :both)))
              (null which))
     ;; Default: apply to major

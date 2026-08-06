@@ -45,8 +45,12 @@
 (in-suite font-suite)
 
 (defun run-font-tests ()
-  "Run all font tests and report results."
-  (run! 'font-suite))
+  "Run all font tests, signaling an error on failure."
+  (let ((results (run 'font-suite)))
+    (explain! results)
+    (unless (results-status results)
+      (error "Font tests failed"))
+    results))
 
 ;;; ============================================================
 ;;; Helper to get the shipped DejaVu Sans font path

@@ -169,7 +169,9 @@ Text rendering may have platform-dependent differences, so higher tolerance."
 ;;; ============================================================
 
 (defun run-backend-pdf-ported-tests ()
-  "Run all ported PDF backend tests and return results."
+  "Run all backend pdf ported tests, signaling an error on failure."
   (let ((results (run 'backend-pdf-ported-suite)))
     (explain! results)
-    (results-status results)))
+    (unless (results-status results)
+      (error "Backend pdf ported tests failed"))
+    results))

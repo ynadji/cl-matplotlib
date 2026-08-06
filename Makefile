@@ -7,7 +7,7 @@ EXAMPLES_DIR := examples
 COMPARISON_REPORT_DIR := comparison_report
 COMPARISON_TOOL := tools/compare.py
 
-.PHONY: setup-python reference-images cl-images compare compare-png compare-svg compare-pdf report clean all docs benchmark benchmark-python benchmark-cl
+.PHONY: setup-python reference-images cl-images compare compare-png compare-svg compare-pdf report clean all docs benchmark benchmark-python benchmark-cl gg-reference-images gg-images gg-compare-png gg-compare
 
 setup-python:
 	@echo "Setting up Python virtual environment..."
@@ -31,6 +31,18 @@ cl-images:
 		$(SBCL) --load "$$f" --quit 2>&1 || echo "WARNING: $$f failed"; \
 	done
 	@echo "CL images generated in $(EXAMPLES_DIR)/"
+
+# Parallel variants: warm-compile once, then one process per example
+# across all cores. See tools/parallel-images.sh.
+cl-images-par:
+	tools/parallel-images.sh base
+
+gg-images-par:
+	tools/parallel-images.sh gg
+
+reference-images-par:
+	tools/parallel-images.sh reference
+	tools/parallel-images.sh gg-reference
 
 compare: cl-images
 	@echo "Running combined comparison (PNG + SVG + PDF)..."
@@ -71,6 +83,36 @@ compare-pdf:
 
 report: compare
 	@echo "Report generated at $(COMPARISON_REPORT_DIR)/index.html"
+
+# --- ggplot (Grammar of Graphics) comparison harness ---
+
+gg-reference-images:
+	@echo "Generating plotnine reference images..."
+	@mkdir -p $(REFERENCE_IMAGES_DIR)/gg
+	@for f in $(REFERENCE_SCRIPTS_DIR)/gg/*.py; do \
+		echo "Running $$f..."; \
+		$(PYTHON) "$$f" || echo "WARNING: $$f failed"; \
+	done
+	@echo "plotnine reference images generated in $(REFERENCE_IMAGES_DIR)/gg/"
+
+gg-images:
+	@echo "Generating gg CL images..."
+	@for f in $(EXAMPLES_DIR)/gg/*.lisp; do \
+		echo "Running $$f..."; \
+		$(SBCL) --load "$$f" --quit 2>&1 || echo "WARNING: $$f failed"; \
+	done
+	@echo "gg CL images generated in $(EXAMPLES_DIR)/gg/"
+
+gg-compare-png:
+	$(PYTHON) $(COMPARISON_TOOL) \
+		--reference $(REFERENCE_IMAGES_DIR)/gg/ \
+		--actual $(EXAMPLES_DIR)/gg/ \
+		--format png \
+		--threshold 0.90 \
+		--allowlist allowlist-gg.json \
+		--output $(COMPARISON_REPORT_DIR)/gg/
+
+gg-compare: gg-images gg-compare-png
 
 clean:
 	rm -f $(REFERENCE_IMAGES_DIR)/*.png

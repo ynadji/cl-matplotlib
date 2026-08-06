@@ -368,15 +368,13 @@ Rendered as upright (roman) text."
           (setf (mt-list-shift-amount sub-hlist) sub-shift)
           ;; If we also had a superscript, add back-kern to overlap horizontally
           (when super-node
-            (let* ((nuc-width (typecase nucleus
-                                (mt-char (mt-char-width nucleus))
-                                (mt-box (mt-box-width nucleus))
-                                (t 0.0d0)))
-                   (sup-width (if (typep (car (cdr result-elements)) 'mt-list)
-                                  (mt-box-width (car (cdr result-elements)))
+            ;; result-elements is built in reverse: (sup-hlist kern nucleus),
+            ;; so the superscript hlist is at the head — NOT (car (cdr ...)),
+            ;; which is the script-space kern.
+            (let* ((sup-width (if (typep (car result-elements) 'mt-list)
+                                  (mt-box-width (car result-elements))
                                   0.0d0))
                    (back-kern (- (+ sup-width (* fs +script-space+)))))
-              (declare (ignore nuc-width))
               (push (make-mt-kern back-kern) result-elements)))
           (push kern result-elements)
           (push sub-hlist result-elements))))

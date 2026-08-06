@@ -15,6 +15,7 @@
                               (:file "scale-transforms")
                               (:file "polar-transforms")
                              (:file "colors")
+                             (:file "colormap-data")
                              (:file "colormaps"))))
   :in-order-to ((test-op (test-op #:cl-matplotlib-primitives/tests))))
 
@@ -26,9 +27,9 @@
                (:file "test-transforms")
                (:file "test-colors"))
   :perform (test-op (o c)
-             (uiop:symbol-call :fiveam :run!
-                               (uiop:find-symbol* :path-tests :cl-matplotlib.primitives.tests))
-             (uiop:symbol-call :fiveam :run!
-                               (uiop:find-symbol* :transform-tests :cl-matplotlib.primitives.tests))
-             (uiop:symbol-call :fiveam :run!
-                               (uiop:find-symbol* :color-tests :cl-matplotlib.primitives.tests))))
+             (dolist (suite '(:path-tests :transform-tests :color-tests))
+               (let ((results (uiop:symbol-call :fiveam :run
+                                                (uiop:find-symbol* suite :cl-matplotlib.primitives.tests))))
+                 (uiop:symbol-call :fiveam :explain! results)
+                 (unless (uiop:symbol-call :fiveam :results-status results)
+                   (error "Primitives test suite ~A failed" suite))))))
