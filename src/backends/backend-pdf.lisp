@@ -547,36 +547,63 @@ VA is vertical alignment (:baseline, :bottom, :center, :top). Default :baseline.
 ;;; draw-image — Embed image into PDF
 ;;; ============================================================
 
+(defun %rgba-to-hex-planes (data w h)
+  "Split flat RGBA octets DATA (W x H, row-major, top row first) into two
+ASCIIHexDecode strings: the RGB samples and the alpha samples. The alpha
+plane is NIL when every pixel is opaque, so an /SMask can be omitted."
+  (let* ((n (* w h))
+         (digits "0123456789ABCDEF")
+         (rgb (make-string (1+ (* 6 n))))
+         (alpha (make-string (1+ (* 2 n))))
+         (opaque t))
+    (flet ((put (str pos byte)
+             (setf (char str pos) (char digits (ash byte -4))
+                   (char str (1+ pos)) (char digits (logand byte 15)))))
+      (loop for i below n
+            for src = (* 4 i)
+            do (put rgb (* 6 i) (aref data src))
+               (put rgb (+ (* 6 i) 2) (aref data (+ src 1)))
+               (put rgb (+ (* 6 i) 4) (aref data (+ src 2)))
+               (let ((a (aref data (+ src 3))))
+                 (unless (= a 255) (setf opaque nil))
+                 (put alpha (* 2 i) a))))
+    ;; ASCIIHexDecode end-of-data marker
+    (setf (char rgb (* 6 n)) #\>
+          (char alpha (* 2 n)) #\>)
+    (values rgb (unless opaque alpha))))
+
 (defmethod draw-image ((renderer renderer-pdf) gc x y im)
   "Draw an RGBA image IM at position (X, Y) in the PDF.
-IM should be a plist with :data (flat RGBA bytes), :width, :height.
-Uses zpng to encode a PNG via temp file, then cl-pdf's make-image/draw-image API."
+IM is a plist with :data (flat RGBA bytes), :width, :height.
+
+The image XObject is built straight from the pixels: RGB samples as the
+image data (ASCIIHexDecode, uncompressed) and, when any pixel is not
+opaque, the alpha channel as an /SMask. No PNG round-trip: cl-pdf's own
+PNG reader cannot decode zpng output, and its fallback shells out to
+ImageMagick — absent on CI, and lossy (JPEG, alpha dropped) where present."
   (declare (ignore gc))
   (let ((data (getf im :data))
         (w (getf im :width))
         (h (getf im :height)))
     (when (and data w h)
-      (let* ((png (make-instance 'zpng:png
-                                 :color-type :truecolor-alpha
-                                 :width w :height h))
-             (tmp-path (format nil "/tmp/cl-mpl-pdf-~A-~A.png"
-                               (get-universal-time)
-                               (random 100000))))
-        ;; Copy RGBA data into zpng image buffer
-        (replace (zpng:image-data png) data)
-        ;; Write to temp file (zpng only accepts pathname)
-        (zpng:write-png png tmp-path)
-        ;; Load into cl-pdf, register with page, and draw; clean up temp file
-        (unwind-protect
-            (let ((pdf-image (pdf:make-image tmp-path)))
-              ;; Register image XObject with current page (required by cl-pdf)
-              (pdf:add-images-to-page pdf-image)
-              (pdf:with-saved-state
-                (pdf:draw-image pdf-image
-                                (float x 1.0) (float y 1.0)
-                                (float w 1.0) (float h 1.0)
-                                0)))
-          (ignore-errors (delete-file tmp-path)))))))
+      (multiple-value-bind (rgb-hex alpha-hex) (%rgba-to-hex-planes data w h)
+        (let ((image (make-instance 'pdf:image
+                                    :bits rgb-hex :width w :height h
+                                    :color-space "DeviceRGB" :bits-per-color 8
+                                    :filter "ASCIIHexDecode" :no-compression t)))
+          (when alpha-hex
+            (let ((smask (make-instance 'pdf:image
+                                        :bits alpha-hex :width w :height h
+                                        :color-space "DeviceGray" :bits-per-color 8
+                                        :filter "ASCIIHexDecode" :no-compression t)))
+              (pdf::add-dict-value (pdf::content image) "/SMask" smask)))
+          ;; Register image XObject with current page (required by cl-pdf)
+          (pdf:add-images-to-page image)
+          (pdf:with-saved-state
+            (pdf:draw-image image
+                            (float x 1.0) (float y 1.0)
+                            (float w 1.0) (float h 1.0)
+                            0)))))))
 
 ;;; ============================================================
 ;;; draw-markers — Repeated path drawing

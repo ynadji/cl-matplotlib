@@ -12,9 +12,14 @@ if [ "$MODE" = "--test" ]; then
 else
   FORM="(ql:quickload :$SYSTEM)"
 fi
-# On failure print the condition text (with *print-readably* off — ASDF's
-# test-op can leave it on, which turns the message into "cannot be printed
-# readably") and a backtrace, so the log names the failing call.
+# Failure reporting. handler-bind (not handler-case) so the backtrace is taken
+# where the condition was signaled, not after unwinding. *print-readably* is
+# bound off: under a readably-T context an error whose report mentions an
+# unreadable object (e.g. "no applicable method for #<GF ...>") turns into a
+# PRINT-NOT-READABLE inside FiveAM's own reporting and aborts the whole run
+# with a useless "#<...> cannot be printed readably" — when that still
+# happens, unwrap it and print the condition it was trying to print.
+REPORT='(lambda (e) (let ((*print-readably* nil)) (when (typep e (quote print-not-readable)) (setf e (print-not-readable-object e))) (format *error-output* "~&CI FAILED: ~A~%" e) (uiop:print-backtrace :stream *error-output* :count 40)) (uiop:quit 1))'
 exec ros run \
-  --eval "(handler-case $FORM (serious-condition (e) (let ((*print-readably* nil)) (format *error-output* \"~&CI FAILED: ~A~%\" e) (uiop:print-condition-backtrace e :stream *error-output*)) (uiop:quit 1)))" \
+  --eval "(let ((*print-readably* nil)) (handler-bind ((serious-condition $REPORT)) $FORM))" \
   --quit

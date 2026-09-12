@@ -343,6 +343,41 @@
     (print-pdf canvas output)
     (is (file-exists-and-valid-p output))))
 
+(defun %pdf-file-string (path)
+  "The bytes of the file at PATH as a latin-1 string (PDF is byte-oriented)."
+  (with-open-file (s path :element-type '(unsigned-byte 8))
+    (let ((octets (make-array (file-length s) :element-type '(unsigned-byte 8))))
+      (read-sequence octets s)
+      (map 'string #'code-char octets))))
+
+(test pdf-draw-image-embeds-exact-samples
+  "Pixels go into the PDF verbatim (hex, uncompressed): RGB as the image
+data, alpha as an /SMask — and no /SMask when every pixel is opaque.
+Regression: the old PNG round-trip fell back to ImageMagick (absent on
+CI) and stripped alpha."
+  (flet ((render (alpha)
+           (let* ((output (tmp-pdf-path (format nil "image-samples-~D" alpha)))
+                  (canvas (make-instance 'canvas-pdf :width 100 :height 100 :dpi 100))
+                  ;; 2x2: red, green / blue, white — with the given alpha
+                  (data (coerce (list 255 0 0 alpha   0 255 0 alpha
+                                      0 0 255 alpha   255 255 255 alpha)
+                                '(simple-array (unsigned-byte 8) (*)))))
+             (setf (canvas-render-fn-pdf canvas)
+                   (lambda (renderer)
+                     (draw-image renderer nil 10 10 (list :data data :width 2 :height 2))))
+             (print-pdf canvas output)
+             (%pdf-file-string output))))
+    (let ((opaque (render 255)))
+      (is (search "FF000000FF000000FFFFFFFF>" opaque))   ; RGB samples, hex, EOD marker
+      (is (search "/DeviceRGB" opaque))
+      (is (search "/ASCIIHexDecode" opaque))
+      (is-false (search "/SMask" opaque)))
+    (let ((translucent (render 128)))
+      (is (search "FF000000FF000000FFFFFFFF>" translucent))
+      (is (search "80808080>" translucent))                ; alpha plane
+      (is (search "/SMask" translucent))
+      (is (search "/DeviceGray" translucent)))))
+
 ;;; ============================================================
 ;;; Circle path test
 ;;; ============================================================
