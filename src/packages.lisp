@@ -177,6 +177,14 @@
              #:polar-affine
              #:polar-affine-update
              #:polar-affine-r-max
+             ;; proj3d — 3D projection math (mat4 / vec3 helpers + mplot3d pipeline)
+             #:vec3 #:vec3-add #:vec3-sub #:vec3-scale #:vec3-dot #:vec3-cross
+             #:vec3-norm #:vec3-normalize
+             #:mat4 #:make-mat4 #:mat4-identity #:mat4-ref #:mat4-mul #:mat4-invert
+             #:world-transformation #:rotation-about-vector #:view-axes
+             #:view-transformation-uvw #:persp-transformation #:ortho-transformation
+             #:proj-transform-vec #:proj-transform #:inv-transform
+             #:norm-angle #:default-box-aspect #:projection-matrix
             ;; Color conversion (extends foundation)
             #:to-hex #:to-rgb
            ;; Colormap classes
