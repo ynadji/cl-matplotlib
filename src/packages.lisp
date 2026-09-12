@@ -207,6 +207,7 @@
            #:boundary-norm #:make-boundary-norm
            ;; ScalarMappable
            #:scalar-mappable #:make-scalar-mappable
+           #:sm-norm #:sm-cmap #:sm-array
            #:scalar-mappable-to-rgba #:scalar-mappable-autoscale
            #:sm-norm #:sm-cmap))
 
@@ -407,6 +408,14 @@
              #:collection-set-patches
               ;; PolyCollection
               #:poly-collection #:poly-collection-verts
+              ;; art3d — 3D artists (project through a mat4 into their 2D slots)
+              #:do-3d-projection
+              #:line-3d #:make-line-3d #:line-3d-xs #:line-3d-ys #:line-3d-zs
+              #:path-3d-collection #:path-3d-collection-offsets3d
+              #:path-3d-collection-depthshade #:path-3d-collection-vzs
+              #:poly-3d-collection #:poly-3d-collection-verts3d
+              #:poly-3d-collection-zsort #:poly-3d-collection-sort-zpos
+              #:zalpha #:generate-normals #:shade-colors #:light-direction
               #:collection-set-verts
               ;; QuiverCollection
               #:quiver-collection #:quiver-x-data #:quiver-y-data
@@ -644,7 +653,18 @@
                 ;; Contour plotting functions
                 #:contour #:contourf #:clabel
                 ;; Polar axes
-                #:polar-axes))
+                #:polar-axes
+                ;; 3D (axes3d.lisp / axis3d.lisp / plotting/plot3d.lisp)
+                #:axes-3d #:axis-3d #:axis-3d-index
+                #:axes-3d-elev #:axes-3d-azim #:axes-3d-roll #:axes-3d-dist
+                #:axes-3d-focal-length #:axes-3d-box-aspect #:axes-3d-proj-matrix
+                #:axes-3d-inv-proj-matrix #:axes-3d-zaxis #:axes-3d-grid-on
+                #:axes-3d-axis-on #:axes-3d-computed-zorder
+                #:axes-3d-xy-view-lim #:axes-3d-z-view-lim
+                #:axes-3d-get-proj #:axes-3d-auto-scale-xyz #:axes-3d-autoscale-view
+                #:axes-get-zlim #:axes-set-zlim #:axes-set-zlabel #:axes-set-zticks
+                #:axes-set-box-aspect #:view-init
+                #:plot3d #:scatter3d #:plot-surface #:plot-trisurf #:bar3d))
 
 (defpackage #:cl-matplotlib.backends
   (:use #:cl)
@@ -695,6 +715,9 @@ Manages global figure state for convenience.")
            ;; Subplot creation
            #:subplots
            ;; Plot functions
+             ;; 3D (projection :3d)
+             #:plot3d #:scatter3d #:plot-surface #:plot-trisurf #:bar3d
+             #:view-init #:zlim #:zlabel #:zticks
              #:plot #:scatter #:bar #:hist #:imshow #:contour #:contourf
              #:eventplot #:stairs #:broken-barh #:axline #:matshow #:spy
              #:psd #:csd #:specgram #:magnitude-spectrum
