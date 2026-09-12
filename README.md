@@ -63,6 +63,28 @@ readout — in the browser (works over SSH) or a native SDL2 window:
 See [docs/interactive.md](docs/interactive.md) for backend selection,
 the interaction reference, and how to write a new display adapter.
 
+## 3D plots (`:projection :3d`)
+
+A port of matplotlib's `mplot3d`: the same projection math (`view_init`
+angles, perspective, box aspect), painter's-algorithm depth sorting,
+depth-shaded scatter markers and lit surfaces.
+
+```lisp
+(subplots 1 1 :projection :3d)
+(plot-surface x y z :cmap "viridis")      ; x y z are rows×cols arrays
+(plot3d xs ys zs :color "red")            ; lines
+(scatter3d xs ys zs :c values :cmap "plasma" :s 30)
+(plot-trisurf xs ys zs :cmap "viridis")   ; Delaunay-triangulated surface
+(bar3d xs ys 0 0.6 0.6 heights)           ; bars
+(view-init :elev 20 :azim 45)
+(zlabel "z") (zlim 0 10)
+(savefig "plot.png")
+```
+
+See `examples/{surface3d,scatter3d,lines3d,trisurf3d,bar3d}.lisp`, whose
+references are rendered with `mplot3d` itself. Not yet ported: wireframes,
+`contour3D`, `quiver3D`, 3D text and interactive rotation (planned).
+
 ## Grammar of Graphics (ggplot)
 
 The `ggplot` system (package nickname `gg`) layers a ggplot2/plotnine-style

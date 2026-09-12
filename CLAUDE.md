@@ -85,7 +85,8 @@ cl-matplotlib-foundation   -- cbook utilities, RC params, color database, styles
       -> cl-matplotlib-backends -- renderer implementations (PNG via Vecto, SVG, PDF via cl-pdf)
         -> cl-matplotlib-containers -- figure, axes, axis, ticks, scales, legends, gridspec, polar
                                    -- also src/algorithms/ (marching squares, streamplot)
-                                   -- and src/plotting/ (contour, hexbin, hist, ...)
+                                   -- and src/plotting/ (contour, hexbin, hist, plot3d, ...)
+                                   -- 3D: axes3d/axis3d (projection :3d) on primitives/proj3d + rendering/art3d
           -> cl-matplotlib-pyplot   -- procedural API (the user-facing entry point)
           -> ggplot                 -- Grammar of Graphics layer (package nickname `gg`)
           -> cl-matplotlib-show     -- interactive display core (interactor + adapter protocol)
