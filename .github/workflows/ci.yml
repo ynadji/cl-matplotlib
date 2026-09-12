@@ -9,8 +9,13 @@ on:
 jobs:
   test:
     strategy:
+      # Let both implementations report; a failure on one must not cancel the other.
+      fail-fast: false
       matrix:
-        lisp: [sbcl-bin, ccl-bin]
+        # Pinned: with an unpinned ccl-bin the 2021 roswell that setup-lisp
+        # defaults to resolved "latest" to CCL 1.10 (2015), whose compiler
+        # miscompiles double-float code (see test-de-casteljau-cubic-midpoint).
+        lisp: [sbcl-bin/2.6.8, ccl-bin/1.13]
     env:
       LISP: ${{ matrix.lisp }}
     runs-on: ubuntu-latest
@@ -20,7 +25,16 @@ jobs:
       - name: Setup Common Lisp
         uses: 40ants/setup-lisp@v2
         with:
-          implementation: ${{ matrix.lisp }}
+          # The implementation comes from the LISP env var above (the action
+          # has no `implementation` input). A current roswell and an ASDF
+          # matching the one bundled with these implementations: the 2021
+          # default left SBCL on ASDF 3.3.1 with Quicklisp layering UIOP
+          # 3.3.7 on top of it.
+          roswell-version: v24.10.115
+          asdf-version: 3.3.7
+
+      - name: Print toolchain
+        run: ros run --eval '(format t "~&~A ~A / ASDF ~A / UIOP ~A~%" (lisp-implementation-type) (lisp-implementation-version) (asdf:asdf-version) (uiop:uiop-version))' --quit
 
       - name: Run Foundation Tests
         run: ./tools/ci-run.sh cl-matplotlib-foundation --test
@@ -56,9 +70,9 @@ jobs:
         run: ./tools/ci-run.sh cl-matplotlib-show-emacs --test
 
       - name: Install SDL2
-        if: matrix.lisp == 'sbcl-bin'
+        if: startsWith(matrix.lisp, 'sbcl')
         run: sudo apt-get update && sudo apt-get install -y libsdl2-2.0-0
 
       - name: Run show-sdl2 Tests
-        if: matrix.lisp == 'sbcl-bin'
+        if: startsWith(matrix.lisp, 'sbcl')
         run: SDL_VIDEODRIVER=dummy ./tools/ci-run.sh cl-matplotlib-show-sdl2 --test

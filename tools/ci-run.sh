@@ -12,6 +12,9 @@ if [ "$MODE" = "--test" ]; then
 else
   FORM="(ql:quickload :$SYSTEM)"
 fi
+# On failure print the condition text (with *print-readably* off — ASDF's
+# test-op can leave it on, which turns the message into "cannot be printed
+# readably") and a backtrace, so the log names the failing call.
 exec ros run \
-  --eval "(handler-case $FORM (serious-condition (e) (format *error-output* \"~&CI FAILED: ~A~%\" e) (uiop:quit 1)))" \
+  --eval "(handler-case $FORM (serious-condition (e) (let ((*print-readably* nil)) (format *error-output* \"~&CI FAILED: ~A~%\" e) (uiop:print-condition-backtrace e :stream *error-output*)) (uiop:quit 1)))" \
   --quit
