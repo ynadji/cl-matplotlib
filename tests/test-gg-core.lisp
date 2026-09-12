@@ -393,6 +393,42 @@
                    (is (typep (gg:ggshow p) 'cl-matplotlib.containers:mpl-figure)))))
         (is (search "No display backend" out))))))
 
+(test stat-smooth-small-groups
+  "ggplot2 rules: a group needs 2 distinct x values (line only at n=2,
+band only with residual df, n > 2); singletons are dropped."
+  (flet ((smooth-table (data mapping &rest smooth-args)
+           ;; points first so the scales train even when the smooth is empty
+           (let* ((p (gg:stack (gg:ggplot data mapping)
+                       (gg:geom-point)
+                       (apply #'gg:geom-smooth :method :lm smooth-args)))
+                  (built (gg:ggbuild p)))
+             (cdr (second (ggplot::ggbuilt-layer-tables built))))))
+    ;; two-point groups (4, 6) fit a line; the singleton group (8) is dropped
+    (let* ((tbl (smooth-table '(:wt #(2.6d0 2.9d0 3.2d0 3.4d0 4.1d0)
+                                :mpg #(21.0d0 22.8d0 21.4d0 18.7d0 14.3d0)
+                                :cyl #("4" "4" "6" "6" "8"))
+                              (gg:aes :x :wt :y :mpg :color :cyl)))
+           (groups (ggplot::gtable-split tbl :group)))
+      (is (= 2 (length groups)))
+      (is (= 160 (ggplot::gtable-nrows tbl)))          ; 80-point grid per group
+      (is (null (ggplot::gtable-column tbl :ymin)))    ; no band without residual df
+      ;; the fitted line passes through both points of group "4"
+      (let* ((sub (cdr (first groups)))
+             (xs (ggplot::gtable-column sub :x))
+             (ys (ggplot::gtable-column sub :y)))
+        (is (< (abs (- (aref xs 0) 2.6d0)) 1.0d-9))
+        (is (< (abs (- (aref ys 0) 21.0d0)) 1.0d-6))
+        (is (< (abs (- (aref ys (1- (length ys))) 22.8d0)) 1.0d-6))))
+    ;; two points sharing one x value: no fit
+    (is (zerop (ggplot::gtable-nrows
+                (smooth-table '(:x #(1.0d0 1.0d0) :y #(1.0d0 2.0d0)) (gg:aes :x :x :y :y)))))
+    ;; three points: line and band
+    (let ((tbl (smooth-table '(:x #(1.0d0 2.0d0 3.0d0) :y #(1.0d0 2.5d0 2.0d0))
+                             (gg:aes :x :x :y :y))))
+      (is (= 80 (ggplot::gtable-nrows tbl)))
+      (is-true (ggplot::gtable-column tbl :ymin))
+      (is-true (ggplot::gtable-column tbl :ymax)))))
+
 (defun run-gg-tests ()
   "Run all gg tests, signaling an error on failure."
   (let ((results (run 'gg-suite)))

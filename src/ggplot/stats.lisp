@@ -478,25 +478,29 @@ standard first-order loess variance approximation."
            (y-col (gtable-column sub :y)))
        (unless (and x-col y-col)
          (error "stat-smooth requires x and y aesthetics"))
-       (when (> (length x-col) 2)
-         (let* ((xs (map 'simple-vector (lambda (v) (float v 1.0d0)) x-col))
-                (ys (map 'simple-vector (lambda (v) (float v 1.0d0)) y-col))
-                (lo (reduce #'min xs))
-                (hi (reduce #'max xs))
-                (grid (%linspace lo hi (stat-smooth-n stat)))
-                (se-p (stat-smooth-se-p stat)))
-           (multiple-value-bind (yhat half)
-               (ecase (stat-smooth-method stat)
-                 (:lm (%smooth-lm xs ys grid (stat-smooth-level stat) se-p))
-                 (:loess (%smooth-loess xs ys grid (stat-smooth-level stat)
-                                        se-p (stat-smooth-span stat))))
-             (let ((table (make-gtable :x grid :y yhat)))
-               (if (and se-p half)
-                   (gtable-set-column
-                    (gtable-set-column
-                     table :ymin (map 'simple-vector #'- yhat half))
-                    :ymax (map 'simple-vector #'+ yhat half))
-                   table)))))))))
+       (let* ((xs (map 'simple-vector (lambda (v) (float v 1.0d0)) x-col))
+              (ys (map 'simple-vector (lambda (v) (float v 1.0d0)) y-col))
+              (n (length xs)))
+         ;; ggplot2/plotnine: a group needs two distinct x values to fit;
+         ;; smaller groups are dropped. The confidence band needs residual
+         ;; degrees of freedom (n > 2); a two-point group gets the line only.
+         (when (> (length (remove-duplicates xs :test #'=)) 1)
+           (let* ((lo (reduce #'min xs))
+                  (hi (reduce #'max xs))
+                  (grid (%linspace lo hi (stat-smooth-n stat)))
+                  (se-p (and (stat-smooth-se-p stat) (> n 2))))
+             (multiple-value-bind (yhat half)
+                 (ecase (stat-smooth-method stat)
+                   (:lm (%smooth-lm xs ys grid (stat-smooth-level stat) se-p))
+                   (:loess (%smooth-loess xs ys grid (stat-smooth-level stat)
+                                          se-p (stat-smooth-span stat))))
+               (let ((table (make-gtable :x grid :y yhat)))
+                 (if (and se-p half)
+                     (gtable-set-column
+                      (gtable-set-column
+                       table :ymin (map 'simple-vector #'- yhat half))
+                      :ymax (map 'simple-vector #'+ yhat half))
+                     table))))))))))
 
 ;;; ============================================================
 ;;; stat-ecdf / stat-qq
