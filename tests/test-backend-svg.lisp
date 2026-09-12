@@ -396,6 +396,44 @@
 ;;; Run all tests
 ;;; ============================================================
 
+;;; ============================================================
+;;; Destination tests — file / stream / string
+;;; ============================================================
+
+(defun %line-canvas ()
+  "A canvas that draws one red line; used by the destination tests."
+  (let ((canvas (make-instance 'canvas-svg :width 200 :height 200 :dpi 100)))
+    (setf (canvas-render-fn-svg canvas)
+          (lambda (renderer)
+            (let ((path (mpl.primitives:make-path
+                         :vertices '((10.0 10.0) (190.0 190.0))
+                         :codes (list mpl.primitives:+moveto+ mpl.primitives:+lineto+)))
+                  (gc (make-graphics-context :linewidth 2.0 :edgecolor "red")))
+              (draw-path renderer gc path nil))))
+    canvas))
+
+(test svg-print-svg-nil-returns-string
+  "print-svg with a NIL destination returns the SVG document as a string."
+  (let ((doc (print-svg (%line-canvas) nil)))
+    (is (stringp doc))
+    (is (eql 0 (search "<?xml" doc)))
+    (is (search "<path" doc))
+    (is (search "</svg>" doc))))
+
+(test svg-print-svg-destinations-agree
+  "File, stream and string destinations produce identical documents."
+  (let* ((output (tmp-svg-path "destinations"))
+         (from-string (print-svg (%line-canvas) nil))
+         (from-stream (with-output-to-string (s)
+                        (is (eq s (print-svg (%line-canvas) s)))))
+         (from-file (progn
+                      (is (equal output (print-svg (%line-canvas) output)))
+                      (with-open-file (s output :external-format :utf-8)
+                        (let ((content (make-string (file-length s))))
+                          (subseq content 0 (read-sequence content s)))))))
+    (is (string= from-string from-stream))
+    (is (string= from-string from-file))))
+
 (defun run-svg-backend-tests ()
   "Run all svg backend tests, signaling an error on failure."
   (let ((results (run 'backend-svg-suite)))

@@ -52,7 +52,7 @@ cursor-anchored zoom, drag pan, home/reset, save, and a data-coordinate
 readout — in the browser (works over SSH) or a native SDL2 window:
 
 ```lisp
-(ql:quickload :cl-matplotlib-show-web)   ; or :cl-matplotlib-show-sdl2
+(ql:quickload :cl-matplotlib-show-web)   ; or :cl-matplotlib-show-sdl2, :cl-matplotlib-show-emacs
 (use-package :cl-matplotlib.pyplot)
 
 (plot '(1 2 3 4) '(1 4 2 3))

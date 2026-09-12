@@ -12,7 +12,7 @@
                 #:auto-date-spec #:auto-date-fmt #:ut-to-num #:num-to-ut)
   (:export
    ;; core entry points
-   #:ggplot #:aes #:stack #:ggsave #:ggdraw #:ggbuild #:ggrender #:qplot
+   #:ggplot #:aes #:stack #:ggsave #:ggsvg #:ggshow #:ggdraw #:ggbuild #:ggrender #:qplot
    ;; data protocol
    #:ggcolumns #:ggcolumn #:ggnrows #:ggdata-p
    #:ggdata #:make-ggdata

@@ -882,12 +882,16 @@ Returns the new twin axes (which becomes the current axes)."
 Detects format from file extension unless FORMAT specified.
 Creates canvas, renders figure, and saves.
 
-FILENAME — output file path.
+FILENAME — output file path. With :format :svg it may also be a
+  character stream, or NIL to return the SVG document as a string:
+  (savefig nil :format :svg).
 DPI — resolution override.
 FORMAT — output format keyword (:png, etc.).
 FACECOLOR — override figure facecolor.
 EDGECOLOR — override figure edgecolor.
-TRANSPARENT — if T, use transparent background."
+TRANSPARENT — if T, use transparent background.
+
+Returns FILENAME, or the SVG string for a NIL destination."
   (mpl.containers:savefig (gcf) filename
                            :dpi dpi :format format
                            :facecolor facecolor :edgecolor edgecolor

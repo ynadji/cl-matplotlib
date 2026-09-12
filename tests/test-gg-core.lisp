@@ -348,6 +348,51 @@
 ;;; Runner
 ;;; ============================================================
 
+;;; ============================================================
+;;; ggsvg / ggsave string destination
+;;; ============================================================
+
+(test ggsvg-returns-svg-string
+  "ggsvg renders to a string identical to what ggsave writes to a file."
+  (let* ((p (gg:ggplot '(:x #(1.0d0 2.0d0 3.0d0) :y #(1.0d0 4.0d0 9.0d0))
+                       (gg:aes :x :x :y :y)))
+         (path (format nil "/tmp/gg-test-svg-~D.svg" (get-universal-time)))
+         (doc (gg:ggsvg p)))
+    (is (stringp doc))
+    (is (eql 0 (search "<?xml" doc)))
+    (is (search "</svg>" doc))
+    (multiple-value-bind (fig result) (gg:ggsave p path)
+      (is (typep fig 'cl-matplotlib.containers:mpl-figure))
+      (is (equal path result)))
+    (is (string= doc (with-open-file (s path :external-format :utf-8)
+                       (let ((content (make-string (file-length s))))
+                         (subseq content 0 (read-sequence content s))))))
+    (when (probe-file path) (delete-file path))))
+
+(test ggsave-nil-second-value-is-svg
+  "ggsave with NIL and :format :svg returns the figure and the SVG string."
+  (let ((p (gg:ggplot '(:x #(1.0d0 2.0d0) :y #(1.0d0 2.0d0)) (gg:aes :x :x :y :y))))
+    (multiple-value-bind (fig doc) (gg:ggsave p nil :format :svg)
+      (is (typep fig 'cl-matplotlib.containers:mpl-figure))
+      (is (stringp doc))
+      (is (string= doc (gg:ggsvg p))))))
+
+(test ggshow-uses-pyplot-show-hook
+  "ggshow draws the plot and hands the figure to mpl.pyplot:*show-hook*."
+  (let* ((p (gg:ggplot '(:x #(1.0d0 2.0d0) :y #(1.0d0 2.0d0)) (gg:aes :x :x :y :y)))
+         (seen nil))
+    (let ((cl-matplotlib.pyplot:*show-hook*
+            (lambda (fig &key block) (setf seen (list fig block)) :shown)))
+      (let ((fig (gg:ggshow p :block t)))
+        (is (typep fig 'cl-matplotlib.containers:mpl-figure))
+        (is (eq fig (first seen)))
+        (is (eq t (second seen)))))
+    ;; No backend: prints a hint, still returns the figure.
+    (let ((cl-matplotlib.pyplot:*show-hook* nil))
+      (let ((out (with-output-to-string (*standard-output*)
+                   (is (typep (gg:ggshow p) 'cl-matplotlib.containers:mpl-figure)))))
+        (is (search "No display backend" out))))))
+
 (defun run-gg-tests ()
   "Run all gg tests, signaling an error on failure."
   (let ((results (run 'gg-suite)))

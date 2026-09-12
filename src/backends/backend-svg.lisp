@@ -770,8 +770,11 @@ Usage:
 ;;; print-svg generic function
 ;;; ============================================================
 
-(defgeneric print-svg (canvas filename)
-  (:documentation "Render figure and save to SVG file at FILENAME."))
+(defgeneric print-svg (canvas destination)
+  (:documentation "Render the figure as an SVG document.
+DESTINATION is a string or pathname (write that file, return it), a
+character output stream (write to it, return it), or NIL (return the SVG
+text as a string). Follows the FORMAT destination convention."))
 
 ;;; ============================================================
 ;;; get-renderer
@@ -797,13 +800,9 @@ Usage:
     (when (canvas-figure canvas)
       (mpl.rendering:draw (canvas-figure canvas) renderer))))
 
-;;; ============================================================
-;;; print-svg — Main output method
-;;; ============================================================
-
-(defmethod print-svg ((canvas canvas-svg) filename)
-  "Render figure to an SVG file.
-Assembles the SVG document from defs-stream and output-stream."
+(defun %svg-document (canvas)
+  "Render CANVAS and return the complete SVG document as a string.
+Assembles the document from the renderer's defs-stream and output-stream."
   (let* ((w (canvas-width canvas))
          (h (canvas-height canvas))
          (renderer (get-renderer canvas)))
@@ -823,11 +822,7 @@ Assembles the SVG document from defs-stream and output-stream."
     ;; Collect accumulated SVG content
     (let ((defs-content (get-output-stream-string (renderer-svg-defs-stream renderer)))
           (body-content (get-output-stream-string (renderer-svg-output-stream renderer))))
-      ;; Write complete SVG document to file
-      (with-open-file (s filename
-                         :direction :output
-                         :if-exists :supersede
-                         :external-format :utf-8)
+      (with-output-to-string (s)
         ;; XML declaration
         (format s "<?xml version=\"1.0\" encoding=\"UTF-8\"?>~%")
         ;; SVG root element with namespaces
@@ -844,8 +839,27 @@ Assembles the SVG document from defs-stream and output-stream."
         (write-string body-content s)
         ;; Close Y-flip group and SVG
         (format s "</g>~%")
-        (format s "</svg>~%"))))
-  filename)
+        (format s "</svg>~%")))))
+
+;;; ============================================================
+;;; print-svg — Main output method
+;;; ============================================================
+
+(defmethod print-svg ((canvas canvas-svg) destination)
+  "Render the figure to DESTINATION: a file (string/pathname), a character
+stream, or NIL to return the SVG document as a string."
+  (let ((doc (%svg-document canvas)))
+    (etypecase destination
+      (null doc)
+      (stream (write-string doc destination)
+              destination)
+      ((or string pathname)
+       (with-open-file (s destination
+                          :direction :output
+                          :if-exists :supersede
+                          :external-format :utf-8)
+         (write-string doc s))
+       destination))))
 
 ;;; ============================================================
 ;;; Convenience: render-to-svg — functional interface

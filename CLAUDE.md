@@ -28,7 +28,7 @@ Tests use the FiveAM framework. Each ASDF system has its own test suite.
 # aggregate; also reachable as (asdf:test-system :cl-matplotlib)). Runs
 # each suite even if an earlier one fails and prints a final summary. The
 # base library suites are required; the display backends (show/-web/
-# -sdl2) are load-guarded, so an unavailable one — missing libSDL2, web
+# -sdl2/-emacs) are load-guarded, so an unavailable one — missing libSDL2, web
 # deps not fetched, or a freshly added .asd not yet in ASDF's registry —
 # is reported skipped rather than aborting. If a show suite is
 # unexpectedly skipped just after adding those systems, run

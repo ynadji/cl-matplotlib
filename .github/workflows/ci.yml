@@ -52,6 +52,9 @@ jobs:
       - name: Run show-web Tests
         run: ./tools/ci-run.sh cl-matplotlib-show-web --test
 
+      - name: Run show-emacs Tests
+        run: ./tools/ci-run.sh cl-matplotlib-show-emacs --test
+
       - name: Install SDL2
         if: matrix.lisp == 'sbcl-bin'
         run: sudo apt-get update && sudo apt-get install -y libsdl2-2.0-0

@@ -126,8 +126,14 @@ per-theme :plot-margin-extra, and legend-position
 effects/handwriting font).
 
 ### helpers
-labs xlab ylab ggtitle annotate qplot after-stat ggsave ggdraw
+labs xlab ylab ggtitle annotate qplot after-stat ggsave ggdraw ggsvg ggshow
 date format-date (universal-time helpers for date scales).
+
+`ggsave` also accepts a character stream or NIL (with `:format :svg`) in
+place of a filename; `ggsvg` returns the SVG document as a string; `ggshow`
+draws the plot through pyplot's display backend (see docs/interactive.md),
+the analogue of plotnine's `ggplot.show()`/`draw()`. `ggsave`-to-stream and
+`ggsvg` have no plotnine counterpart (plotnine's `save` takes a `BytesIO`).
 
 `after-stat` accepts a stat-output column keyword or a function of the
 stat table, the analogue of plotnine's `after_stat('count / count.sum()')`:

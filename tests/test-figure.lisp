@@ -516,6 +516,36 @@
 ;;; Runner
 ;;; ============================================================
 
+;;; ============================================================
+;;; savefig Tests — stream / string destinations (SVG only)
+;;; ============================================================
+
+(test savefig-nil-returns-svg-string
+  "savefig with a NIL destination and :format :svg returns the SVG text."
+  (let* ((fig (make-figure :figsize '(2 2) :dpi 50))
+         (doc (savefig fig nil :format :svg)))
+    (is (stringp doc))
+    (is (eql 0 (search "<?xml" doc)))
+    (is (search "</svg>" doc))))
+
+(test savefig-stream-writes-svg
+  "savefig with a stream destination writes the SVG to that stream."
+  (let* ((fig (make-figure :figsize '(2 2) :dpi 50))
+         (doc (with-output-to-string (s) (savefig fig s :format :svg))))
+    (is (string= doc (savefig fig nil :format :svg)))))
+
+(test savefig-non-file-requires-format
+  "A NIL or stream destination without :format is an error."
+  (let ((fig (make-figure :figsize '(2 2) :dpi 50)))
+    (signals error (savefig fig nil))
+    (signals error (with-output-to-string (s) (savefig fig s)))))
+
+(test savefig-non-file-rejects-png
+  "Only :svg may go to a NIL or stream destination."
+  (let ((fig (make-figure :figsize '(2 2) :dpi 50)))
+    (signals error (savefig fig nil :format :png))
+    (signals error (savefig fig nil :format :pdf))))
+
 (defun run-figure-tests ()
   "Run all figure tests, signaling an error on failure."
   (let ((results (run 'figure-suite)))

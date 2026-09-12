@@ -11,6 +11,7 @@ use:
 | `cl-matplotlib-show-web` | browser backend — HTTP + websocket + HTML canvas (works everywhere, including over SSH) |
 | `cl-matplotlib-show-sdl2` | native window backend via SDL2 (needs `libsdl2` and a display) |
 | `cl-matplotlib-show-capi` | LispWorks CAPI backend (stretch; see caveats below) |
+| `cl-matplotlib-show-emacs` | Emacs backend — SVG image buffer over the SLIME/SLY connection (static; no window system or server needed) |
 
 ## Quick start
 
@@ -27,11 +28,11 @@ use:
 loaded. With several loaded, `mpl.show:*show-backend*` picks:
 
 ```lisp
-(setf mpl.show:*show-backend* :web)    ; or :sdl2, :capi
+(setf mpl.show:*show-backend* :web)    ; or :sdl2, :capi, :emacs
 (setf mpl.show:*show-backend* :auto)   ; default: best available
 ```
 
-`:auto` prefers a native window (`:capi` 30 > `:sdl2` 20 > `:web` 10)
+`:auto` prefers a native window (`:capi` 30 > `:sdl2` 20 > `:emacs` 15 > `:web` 10)
 among backends whose environment check passes — SDL2 requires
 `DISPLAY`/`WAYLAND_DISPLAY` (or `SDL_VIDEODRIVER`), the web backend is
 always available. `(mpl.show:show figure)` displays a specific figure.
@@ -139,3 +140,41 @@ ros run -- --eval '(ql:quickload :cl-matplotlib-show-web)' \
 SDL_VIDEODRIVER=dummy ros run -- --eval '(ql:quickload :cl-matplotlib-show-sdl2)' \
            --eval '(asdf:test-system :cl-matplotlib-show-sdl2)' --quit
 ```
+
+## The Emacs backend
+
+`cl-matplotlib-show-emacs` displays figures inside Emacs itself. Each
+`(show)` renders the figure to SVG text and, through swank/slynk's
+`eval-in-emacs`, drops it into the `*cl-matplotlib*` buffer in
+`image-mode` (Emacs renders SVG natively). No file is written, no server
+runs, and there is no elisp to install. The image is static: no zoom or
+pan, and `:block` is ignored.
+
+One Emacs setting is required, since SLIME/SLY refuse Lisp-initiated
+evaluation by default:
+
+```elisp
+(setq slime-enable-evaluate-in-emacs t)   ; SLIME
+(setq sly-enable-evaluate-in-emacs t)     ; SLY
+```
+
+Then, in the SLIME/SLY REPL:
+
+```lisp
+(ql:quickload '(:cl-matplotlib-show-emacs :ggplot))
+
+(plt:plot '(1 2 3) '(1 4 2))
+(plt:show)                     ; pyplot: current figure → Emacs buffer
+
+(gg:ggshow my-plot)            ; ggplot: any plot value, same backend
+```
+
+`:auto` picks `:emacs` whenever an Emacs connection is live and no native
+window backend is available; `(setf mpl.show:*show-backend* :emacs)`
+forces it. `mpl.show.emacs:*buffer-name*` changes the target buffer.
+Text in the SVG references font names rather than embedding outlines, so
+Emacs's librsvg substitutes the fonts it has installed.
+
+`gg:ggshow` is backend-agnostic: it draws the plot and hands the figure
+to `mpl.pyplot:*show-hook*`, so it works with the web and SDL2 backends
+too. With no backend loaded it prints a hint, like `(show)`.

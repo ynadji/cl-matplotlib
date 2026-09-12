@@ -26,7 +26,7 @@
 ;;;; signals a single summary error at the end if any failed.
 ;;;;
 ;;;; The base library suites are hard :depends-on. The display backends
-;;;; (show / show-web / show-sdl2) are instead loaded lazily inside
+;;;; (show / show-web / show-sdl2 / show-emacs) are instead loaded lazily inside
 ;;;; perform and guarded: an adapter that is unavailable — a native lib
 ;;;; like libSDL2 that isn't installed, web deps not fetched, or a newly
 ;;;; added .asd not yet in ASDF's source registry — is reported SKIPPED
@@ -73,7 +73,8 @@
                    ;; is skipped, not fatal.
                    (optional '("cl-matplotlib-show/tests"
                                "cl-matplotlib-show-web/tests"
-                               "cl-matplotlib-show-sdl2/tests"))
+                               "cl-matplotlib-show-sdl2/tests"
+                               "cl-matplotlib-show-emacs/tests"))
                    (failed '())
                    (skipped '()))
                (dolist (sys required)

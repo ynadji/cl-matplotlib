@@ -485,18 +485,29 @@ Detects format from file extension unless FORMAT is specified.
 Creates an appropriate canvas, renders the figure, and saves.
 
 FIGURE — an mpl-figure instance.
-FILENAME — output file path (string or pathname).
+FILENAME — output file path (string or pathname). For :svg only, it may
+  also be a character output stream (the SVG is written to it) or NIL
+  (the SVG document is returned as a string); FORMAT is then required.
 DPI — resolution override (defaults to figure DPI).
 FORMAT — output format keyword (:png, :pdf, etc.) or NIL for auto-detect.
 FACECOLOR — override figure facecolor for save.
 EDGECOLOR — override figure edgecolor for save.
-TRANSPARENT — if T, use transparent background."
-  (let* ((fmt (or format (detect-format filename)))
+TRANSPARENT — if T, use transparent background.
+
+Returns FILENAME, or for a NIL destination the SVG string."
+  (let* ((file-p (or (stringp filename) (pathnamep filename)))
+         (fmt (cond (format format)
+                    (file-p (detect-format filename))
+                    (t (error "savefig: :format is required when FILENAME is a stream or NIL, got ~S."
+                              filename))))
          (save-dpi (or dpi (figure-dpi figure)))
          ;; Temporarily override figure properties for saving
          (orig-facecolor (figure-facecolor figure))
          (orig-edgecolor (figure-edgecolor figure))
          (orig-dpi (figure-dpi figure)))
+    (unless (or file-p (eq fmt :svg))
+      (error "savefig: only :svg can be written to a stream or returned as a string, not ~S."
+             fmt))
     ;; Apply save-time overrides
     (when facecolor (setf (figure-facecolor figure) facecolor))
     (when edgecolor (setf (figure-edgecolor figure) edgecolor))
@@ -527,15 +538,16 @@ TRANSPARENT — if T, use transparent background."
              (:pdf
               (mpl.backends:print-pdf canvas (namestring (pathname filename))))
              (:svg
-              (mpl.backends:print-svg canvas (namestring (pathname filename))))
+              (mpl.backends:print-svg canvas (if file-p
+                                                 (namestring (pathname filename))
+                                                 filename)))
              (otherwise
               (warn "Format ~A not yet supported, falling back to PNG." fmt)
               (mpl.backends:print-png canvas (namestring (pathname filename))))))
       ;; Restore original properties
       (setf (figure-facecolor figure) orig-facecolor)
       (setf (figure-edgecolor figure) orig-edgecolor)
-      (setf (figure-dpi figure) orig-dpi)))
-  filename)
+      (setf (figure-dpi figure) orig-dpi))))
 
 ;;; ============================================================
 ;;; SubFigure — logical figure inside a figure
