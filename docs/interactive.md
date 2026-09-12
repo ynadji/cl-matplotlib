@@ -39,18 +39,59 @@ always available. `(mpl.show:show figure)` displays a specific figure.
 
 ## Interaction reference
 
+Both live backends share one event dispatcher (`src/show/events.lisp`),
+so they behave the same; the browser client is a dumb terminal.
+
 | action | web (browser) | SDL2 window |
 |---|---|---|
-| zoom (anchored at cursor) | scroll wheel | scroll wheel |
-| pan | left-drag | left-drag |
-| reset view (home) | Home button or double-click | `h` |
+| zoom (anchored at cursor; 3D: about the center) | scroll wheel | scroll wheel |
+| pan (2D) / rotate (3D) | left-drag | left-drag |
+| pan a 3D view | shift-drag | shift-drag |
+| reset view (home) | Home button, `h`, or double-click | `h` |
+| select a trace | click it | click it |
+| copy / cut / paste the selected trace | ctrl-c / ctrl-x / ctrl-v | same |
+| delete the selected trace | Delete | Delete |
+| undo / redo | ctrl-z / ctrl-shift-z (toolbar buttons too) | same |
+| hide or show a series | click its legend entry | same |
+| data cursor mode (click pins a vertex's value) | Cursor button or `c` | `c` |
+| clear selection and pins | Escape | Escape |
 | save PNG | Save button (downloads last frame) | `s` (writes `figure-<time>.png` in cwd) |
-| close | close the tab | `q` / Escape / close window |
-| cursor data coordinates | toolbar readout | window title |
+| close | close the tab | `q` / close window |
+| cursor readout (data coords, nearest vertex) | toolbar readout | window title |
+
+Paste targets the axes under the pointer (else the figure's first axes)
+and works across figures and windows: the clipboard
+(`mpl.show:*trace-clipboard*`) is global. Edits are undoable per figure.
+The selection highlight and pinned cursors are drawn as an overlay, never
+by mutating the figure's artists.
 
 Zoom and pan operate on the axes under the cursor, respect log scales
-(the math runs in scaled space), and propagate through shared axes.
-Resizing the window/page re-renders the figure at the new size.
+(the math runs in scaled space), and propagate through shared axes. A 3D
+axes rotates like matplotlib's (`Axes3D._on_move`) and zooms by scaling
+its projected window, leaving ticks in place. Resizing the window/page
+re-renders the figure at the new size.
+
+The key map is `mpl.show:*key-bindings*`; SDL2 maps its scancodes onto
+the browser key names so one table serves both.
+
+## Frame times
+
+Every interaction re-renders the whole figure through the Vecto
+rasterizer. `benchmarks/show_frame_benchmark.lisp` prints ms per frame;
+on a 2024 laptop at 640x480:
+
+| figure | ms/frame |
+|---|---|
+| empty axes | 7 |
+| line plot with title and legend | 25 |
+| 5,000-point scatter | 48 |
+| 40x40 colormapped surface (3D) | 76 |
+
+The interactive path fills opaque axis-aligned rectangles (figure and
+axes backgrounds) directly instead of through the anti-aliased scanline
+rasterizer (`mpl.backends:*fast-rect-fills*`; file output keeps the exact
+rasterizer), keeps font loaders across frames, and coalesces input so a
+drag renders once per idle step rather than once per motion event.
 
 ## The web backend
 

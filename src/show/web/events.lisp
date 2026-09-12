@@ -57,7 +57,8 @@ or NIL — what the connection should send next."
 coordinates over a 2D axes, the nearest data vertex (label, index) when
 one is within reach, the interaction mode; outside every axes it is
 bare (client clears the readout)."
-  (let ((info (mpl.show:interactor-cursor-info interactor x-px y-px)))
+  (let ((info (when (and x-px y-px)     ; a key event may carry no pointer
+                (mpl.show:interactor-cursor-info interactor x-px y-px))))
     (with-output-to-string (s)
       (yason:encode-plist
        (append (list "type" "coords"

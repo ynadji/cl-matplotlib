@@ -48,8 +48,10 @@ See the Lisp files in [examples](examples/) for other plots.
 ## Interactive display (`show`)
 
 Optional display backends open figures in live windows with
-cursor-anchored zoom, drag pan, home/reset, save, and a data-coordinate
-readout — in the browser (works over SSH) or a native SDL2 window:
+cursor-anchored zoom, drag pan (or rotate, for 3D), home/reset, save,
+a data-coordinate readout, click-to-select traces with copy/cut/paste
+between figures, undo/redo, legend toggling and a pinnable data cursor —
+in the browser (works over SSH) or a native SDL2 window:
 
 ```lisp
 (ql:quickload :cl-matplotlib-show-web)   ; or :cl-matplotlib-show-sdl2, :cl-matplotlib-show-emacs

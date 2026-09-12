@@ -19,6 +19,7 @@
 (mpl.pyplot:plot '(0.0 1.0 2.0 3.0 4.0 5.0 6.0)
                  '(1.0 0.54 -0.42 -0.99 -0.65 0.28 0.96)
                  :label "cos")
+(mpl.pyplot:plot '(0.0 6.0) '(0.0 0.0) :label "zero" :color "gray")   ; a line at a known pixel row for the pick test
 (mpl.pyplot:xlabel "x")
 (mpl.pyplot:ylabel "y")
 (mpl.pyplot:title "show-web demo")

@@ -117,6 +117,30 @@ def main():
         check("home restores the first frame exactly", home == first,
               f"{len(home)} vs {len(first)} bytes")
 
+        # interaction: click the y=0 line (its pixel row is known from the
+        # default 640x480 layout) → the selection highlight changes the frame;
+        # Delete removes it; ctrl-z restores it and the frame is the home
+        # frame again, byte for byte.
+        ws.send('{"type":"click","x":320,"y":243}')
+        selected = recv_binary(ws)
+        check("click selects a trace (highlight frame)", selected != home)
+        ws.send('{"type":"keydown","key":"c","ctrl":true}')
+        ws.send('{"type":"keydown","key":"Delete"}')
+        deleted = recv_binary(ws)
+        check("Delete removes the trace", deleted != selected and deleted != home)
+        ws.send('{"type":"keydown","key":"z","ctrl":true}')
+        restored = recv_binary(ws)
+        check("undo restores the home frame exactly", restored == home,
+              f"{len(restored)} vs {len(home)} bytes")
+
+        # cursor mode: the coords message carries the mode
+        ws.send('{"type":"keydown","key":"c"}')
+        ws.settimeout(30)
+        opcode, data = ws.recv_data()
+        while opcode == websocket.ABNF.OPCODE_BINARY:
+            opcode, data = ws.recv_data()
+        check("cursor mode is reported", '"mode":"cursor"' in bytes(data).decode(), bytes(data).decode())
+
         # closing the last socket unblocks (show :block t) → server exits
         ws.close()
         try:
