@@ -14,7 +14,7 @@
                 #:canvas-render-fn
                 ;; Helpers
                 #:make-graphics-context #:render-to-png
-                #:*default-font-path*)
+                #:*default-font-path* #:renderer-active-p #:*fast-rect-fills*)
   (:export #:run-backend-tests))
 
 (in-package #:cl-matplotlib.tests.backend-vecto)
@@ -556,6 +556,46 @@
 ;;; ============================================================
 ;;; Run all tests
 ;;; ============================================================
+
+;;; ============================================================
+;;; Fast rectangle fills (interactive path) match the rasterizer
+;;; ============================================================
+
+(defun %render-rect-pixels (fast x0 y0 x1 y1 &key (alpha 1.0))
+  "Pixels of a 40x30 canvas after filling the rectangle, via the fast
+path when FAST or the anti-aliased rasterizer otherwise."
+  (let ((renderer (make-instance 'renderer-vecto :width 40 :height 30 :dpi 100)))
+    (vecto:with-canvas (:width 40 :height 30)
+      (vecto:set-rgb-fill 1.0 1.0 1.0)
+      (vecto:clear-canvas)
+      (let* ((verts (make-array '(5 2) :element-type 'double-float
+                                       :initial-contents (list (list x0 y0) (list x1 y0) (list x1 y1)
+                                                               (list x0 y1) (list x0 y0))))
+             (path (mpl.primitives:make-path :vertices verts))
+             (gc (make-graphics-context :facecolor (list 0.2 0.4 0.8 alpha) :edgecolor nil))
+             (*fast-rect-fills* fast))
+        (setf (renderer-active-p renderer) t)
+        (draw-path renderer gc path nil (list 0.2 0.4 0.8 alpha)))
+      (copy-seq (zpng:image-data (vecto::image vecto::*graphics-state*))))))
+
+(test fast-rect-fill-matches-rasterizer
+  "Integer-aligned opaque rectangles are byte-identical; fractional
+edges differ by at most one unit of coverage on boundary pixels."
+  (let ((a (%render-rect-pixels nil 5d0 4d0 25d0 20d0))
+        (b (%render-rect-pixels t 5d0 4d0 25d0 20d0)))
+    (is (equalp a b)))
+  (let* ((a (%render-rect-pixels nil 5.3d0 4.6d0 25.7d0 20.2d0))
+         (b (%render-rect-pixels t 5.3d0 4.6d0 25.7d0 20.2d0))
+         (maxdiff (loop for i below (length a) maximize (abs (- (aref a i) (aref b i))))))
+    (is (<= maxdiff 2))
+    ;; interior pixel exactly the fill color
+    (let ((i (* 4 (+ 15 (* (- 30 12) 40)))))
+      (is (equalp (subseq b i (+ i 4)) #(51 102 204 255)))))
+  ;; translucent fills also blend like the rasterizer
+  (let* ((a (%render-rect-pixels nil 5d0 4d0 25d0 20d0 :alpha 0.5))
+         (b (%render-rect-pixels t 5d0 4d0 25d0 20d0 :alpha 0.5))
+         (maxdiff (loop for i below (length a) maximize (abs (- (aref a i) (aref b i))))))
+    (is (<= maxdiff 1))))
 
 (defun run-backend-tests ()
   "Run all backend tests, signaling an error on failure."

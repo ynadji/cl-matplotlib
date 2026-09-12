@@ -26,11 +26,14 @@
   "SDL pixel format matching zpng's RGBA byte order on little-endian.")
 
 (defun %upload-frame (texture fbuf rgba width)
-  "Copy the lisp RGBA buffer through foreign memory into TEXTURE."
-  (declare (type (simple-array (unsigned-byte 8) (*)) rgba))
-  (loop for i of-type fixnum below (length rgba)
-        do (setf (cffi:mem-aref fbuf :uint8 i) (aref rgba i)))
-  (sdl2:update-texture texture nil fbuf (* 4 width)))
+  "Upload the lisp RGBA buffer into TEXTURE in one copy. FBUF is unused
+(kept for the call signature): the buffer is pinned and its address
+handed to SDL directly, instead of the former byte-by-byte copy through
+foreign memory, which cost more than the render for large windows."
+  (declare (type (simple-array (unsigned-byte 8) (*)) rgba)
+           (ignore fbuf))
+  (cffi:with-pointer-to-vector-data (ptr rgba)
+    (sdl2:update-texture texture nil ptr (* 4 width))))
 
 (defun %save-frame (interactor)
   "Save the figure as figure-<universal-time>.png in the cwd."
@@ -51,12 +54,20 @@ Returns when the window closes."
                                               :streaming w h))
                 (fbuf (cffi:foreign-alloc :uint8 :count (* 4 w h)))
                 (dragging nil))
+            (let ((dirty nil))
             (labels ((blit (buf)
                        (%upload-frame texture fbuf buf w)
                        (sdl2:render-copy renderer texture)
                        (sdl2:render-present renderer))
                      (refresh ()
-                       (blit (mpl.show:interactor-render-rgba interactor)))
+                       ;; Deferred to the loop's idle step: a drag delivers
+                       ;; many motion events per frame, and rendering once
+                       ;; per event let the backlog grow ("glacial" drags).
+                       (setf dirty t))
+                     (flush ()
+                       (when dirty
+                         (setf dirty nil)
+                         (blit (mpl.show:interactor-render-rgba interactor))))
                      (sync-size ()
                        ;; window size changed → re-render at the new size
                        (multiple-value-bind (ww wh) (sdl2:get-window-size win)
@@ -74,7 +85,11 @@ Returns when the window closes."
               (unwind-protect
                    (progn
                      (blit rgba)
-                     (sdl2:with-event-loop (:method :wait)
+                     (sdl2:with-event-loop (:method :poll)
+                       (:idle ()
+                         (if dirty
+                             (flush)
+                             (sdl2:delay 8)))
                        (:mousewheel (:y wy)
                          (multiple-value-bind (mx my) (sdl2:mouse-state)
                            (when (mpl.show:interactor-zoom
@@ -114,7 +129,7 @@ Returns when the window closes."
                          (sync-size))
                        (:quit () t)))
                 (cffi:foreign-free fbuf)
-                (sdl2:destroy-texture texture)))))))))
+                (sdl2:destroy-texture texture))))))))))
 
 ;;; ============================================================
 ;;; The :sdl2 adapter

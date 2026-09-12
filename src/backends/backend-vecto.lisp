@@ -443,6 +443,91 @@ HATCH-PATH from hatch-get-path is in [0,1]x[0,1] unit space, scaled by tile-size
 ;;; draw-path — Core rendering method
 ;;; ============================================================
 
+(defvar *fast-rect-fills* nil
+  "When true, opaque fill-only axis-aligned rectangles (figure and axes
+backgrounds, legend boxes) are written straight into the canvas instead
+of going through the anti-aliased scanline rasterizer, which charges
+tens of milliseconds for a canvas-sized fill. Interior pixels are
+identical; boundary pixels can differ by a unit of coverage. Bound to T
+by the interactive display path; file output keeps the exact rasterizer.")
+
+(defun %transformed-rect (path transform)
+  "When PATH (after TRANSFORM) is an axis-aligned rectangle, return
+(values x0 y0 x1 y1) in display coordinates, else NIL."
+  (let* ((verts (mpl.primitives:mpl-path-vertices path))
+         (codes (mpl.primitives:mpl-path-codes path))
+         (n (array-dimension verts 0)))
+    (when (and (<= 4 n 5)
+               (or (null codes)
+                   (every (lambda (c) (member c (list mpl.primitives:+moveto+
+                                                       mpl.primitives:+lineto+
+                                                       mpl.primitives:+closepoly+)))
+                          codes)))
+      (let ((xs '()) (ys '()))
+        (dotimes (i (min n 4))
+          (let* ((x (aref verts i 0)) (y (aref verts i 1))
+                 (p (if transform
+                        (mpl.primitives:transform-point transform (list (float x 1.0d0) (float y 1.0d0)))
+                        (vector (float x 1.0d0) (float y 1.0d0)))))
+            (push (aref p 0) xs) (push (aref p 1) ys)))
+        (let ((xd (remove-duplicates xs :test (lambda (a b) (< (abs (- a b)) 1d-9))))
+              (yd (remove-duplicates ys :test (lambda (a b) (< (abs (- a b)) 1d-9)))))
+          (when (and (= (length xd) 2) (= (length yd) 2))
+            (values (reduce #'min xd) (reduce #'min yd) (reduce #'max xd) (reduce #'max yd))))))))
+
+(defun %fill-rect-fast (renderer x0 y0 x1 y1 r g b a)
+  "Blend the rectangle [X0,X1]×[Y0,Y1] (display coordinates, y up) with
+color R G B A (0..1) into the current Vecto canvas. Fully covered pixels
+of an opaque color are written directly (what the rasterizer's blend
+reduces to at full coverage); boundary pixels get area coverage through
+the same premultiplied blend Vecto uses."
+  (declare (optimize (speed 3) (safety 1)))
+  (let* ((data (zpng:image-data (vecto::image vecto::*graphics-state*)))
+         (w (renderer-width renderer))
+         (h (renderer-height renderer))
+         (fr (vecto::float-octet r)) (fg (vecto::float-octet g))
+         (fb (vecto::float-octet b)) (fa (vecto::float-octet a))
+         ;; raster rows run top-down: user y → h - y
+         (ry0 (max 0.0d0 (- h y1))) (ry1 (min (float h 1.0d0) (- h y0)))
+         (cx0 (max 0.0d0 x0)) (cx1 (min (float w 1.0d0) x1)))
+    (declare (type (simple-array (unsigned-byte 8) (*)) data)
+             (type fixnum w h)
+             (type (unsigned-byte 8) fr fg fb fa)
+             (type double-float ry0 ry1 cx0 cx1))
+    (when (and (< cx0 cx1) (< ry0 ry1))
+      (let* ((row0 (floor ry0)) (row1 (ceiling ry1))
+             (col0 (floor cx0)) (col1 (ceiling cx1))
+             ;; pixels strictly inside are fully covered
+             (irow0 (ceiling ry0)) (irow1 (floor ry1))
+             (icol0 (ceiling cx0)) (icol1 (floor cx1)))
+        (declare (type fixnum row0 row1 col0 col1 irow0 irow1 icol0 icol1))
+        (flet ((coverage (lo hi i)
+                 (declare (type double-float lo hi) (type fixnum i))
+                 (max 0.0d0 (- (min hi (+ i 1.0d0)) (max lo (float i 1.0d0)))))
+               (blend (i alpha)
+                 (declare (type fixnum i) (type (unsigned-byte 8) alpha))
+                 (let* ((a.fg (vecto::imult alpha fa))
+                        (a.bg (aref data (+ i 3)))
+                        (gamma (vecto::prelerp a.fg a.bg a.bg)))
+                   (unless (zerop gamma)
+                     (flet ((ch (k fgc)
+                              (let ((v (vecto::lerp (vecto::imult (aref data (+ i k)) a.bg) fgc a.fg)))
+                                (setf (aref data (+ i k)) (vecto::float-octet (/ v gamma))))))
+                       (ch 0 fr) (ch 1 fg) (ch 2 fb)))
+                   (setf (aref data (+ i 3)) gamma))))
+          (loop for row from row0 below row1
+                for interior-row = (and (>= row irow0) (< row irow1))
+                for cy = (if interior-row 1.0d0 (coverage ry0 ry1 row))
+                do (loop for col from col0 below col1
+                         for i = (* 4 (+ col (* row w)))
+                         do (if (and interior-row (>= col icol0) (< col icol1) (= fa 255))
+                                ;; full coverage, opaque: the blend is the identity
+                                (setf (aref data i) fr (aref data (+ i 1)) fg
+                                      (aref data (+ i 2)) fb (aref data (+ i 3)) 255)
+                                (let ((alpha (min 255 (round (* 256 (coverage cx0 cx1 col) cy)))))
+                                  (when (plusp alpha) (blend i alpha)))))))))
+    t))
+
 (defmethod draw-path ((renderer renderer-vecto) gc path transform &optional rgbface)
   "Draw a path using Vecto. Handles fill, stroke, or fill+stroke.
 Must be called within an active canvas context (see canvas-vecto)."
@@ -463,6 +548,21 @@ Must be called within an active canvas context (see canvas-vecto)."
                       ec)))
         (face-color (%gc-face-color gc rgbface))
         (alpha (mpl.rendering:gc-alpha gc)))
+    ;; Interactive fast path: an opaque axis-aligned rectangle with no
+    ;; visible edge (none, or linewidth 0 — the figure patch) is written
+    ;; straight into the canvas; see *fast-rect-fills*.
+    (when (and *fast-rect-fills* face-color
+               (or (null edge-color)
+                   (let ((lw (mpl.rendering:gc-linewidth gc))) (and lw (<= lw 0))))
+               (not (mpl.rendering:gc-clip-rectangle gc))
+               (let ((hatch (mpl.rendering:gc-hatch gc)))
+                 (or (null hatch) (and (stringp hatch) (string= hatch "")))))
+      (multiple-value-bind (x0 y0 x1 y1) (%transformed-rect path transform)
+        (when x0
+          (%fill-rect-fast renderer x0 y0 x1 y1
+                           (first face-color) (second face-color) (third face-color)
+                           (* (fourth face-color) (float alpha 1.0)))
+          (return-from draw-path nil))))
     (vecto:with-graphics-state
       ;; Apply graphics context state
       (%apply-gc-to-vecto gc renderer)
@@ -854,11 +954,15 @@ Canvas coordinates have y=0 at top, so we flip Y."
 ;;; ============================================================
 
 (defun %get-font (renderer font-path)
-  "Get or cache a Vecto font object."
+  "Get or cache the zpb-ttf font loader for FONT-PATH.
+Opened directly rather than through vecto:get-font: Vecto closes every
+loader it opened when its canvas exits, which would leave a cached
+loader dead for the next canvas (interactive frames render one canvas
+per frame). vecto:set-font accepts any loader."
   (let ((cache (renderer-font-cache renderer)))
     (or (gethash font-path cache)
         (setf (gethash font-path cache)
-              (vecto:get-font font-path)))))
+              (zpb-ttf:open-font-loader font-path)))))
 
 (defmethod draw-text ((renderer renderer-vecto) gc x y s prop angle &optional ismath ha va)
   "Draw text string S at position (X, Y) using Vecto's text rendering.
@@ -876,12 +980,9 @@ VA is vertical alignment (:baseline, :bottom, :center, :top). Default :baseline.
              (edge-color (%gc-edge-color gc))
              (alpha (if gc (mpl.rendering:gc-alpha gc) 1.0)))
         ;; Reset clip to full figure for text labels (axis labels go outside axes clip)
-        (unless (and gc (mpl.rendering:gc-clip-rectangle gc))
-          (vecto:rectangle 0 0
-                           (float (renderer-width renderer) 1.0)
-                           (float (renderer-height renderer) 1.0))
-          (vecto:clip-path)
-          (vecto:end-path-no-op))
+        ;; No clip reset here: draw-path applies its clip inside its own
+        ;; graphics state, so the ambient clip is already the full canvas,
+        ;; and re-clipping rasterized a canvas-sized mask per text call.
         (vecto:set-font font (float fontsize 1.0))
         ;; Set text fill color
         (if edge-color
@@ -1188,8 +1289,7 @@ drawing operations, and saves the result to FILENAME."
       (setf (renderer-active-p renderer) t)
       ;; White background
       (vecto:set-rgb-fill 1.0 1.0 1.0)
-      (vecto:rectangle 0 0 w h)
-      (vecto:fill-path)
+      (vecto:clear-canvas)   ; direct fill; the rasterizer would charge ~50 ms for a canvas-sized rect
       ;; Execute any render function (for direct API usage)
       (when (canvas-render-fn canvas)
         (funcall (canvas-render-fn canvas) renderer))
@@ -1250,8 +1350,7 @@ Example:
       (setf (renderer-active-p renderer) t)
       ;; White background
       (vecto:set-rgb-fill 1.0 1.0 1.0)
-      (vecto:rectangle 0 0 w h)
-      (vecto:fill-path)
+      (vecto:clear-canvas)   ; direct fill; the rasterizer would charge ~50 ms for a canvas-sized rect
       ;; Replay recorded draw calls
       (dolist (call (reverse (canvas-draw-calls canvas)))
         (case (draw-call-type call)

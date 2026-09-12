@@ -702,7 +702,9 @@
              #:renderer-svg
              ;; SVG canvas
              #:canvas-svg #:canvas-render-fn-svg
-             #:print-svg #:render-to-svg))
+             #:print-svg #:render-to-svg
+             ;; interactive rendering knob (backend-vecto)
+             #:*fast-rect-fills*))
 
 (defpackage #:cl-matplotlib.pyplot
   (:use #:cl)

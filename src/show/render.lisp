@@ -25,19 +25,16 @@ Width/height slots are re-synced here because renderers memoize size."
 with no arguments while the canvas is still live and return its value."
   (let ((w (mpl.backends:renderer-width renderer))
         (h (mpl.backends:renderer-height renderer)))
-    ;; vecto:with-canvas closes every font loader opened through
-    ;; vecto:get-font when it exits, but the renderer's font cache keeps
-    ;; them across canvases — stale entries would hit a closed stream on
-    ;; the next frame's lazy glyph reads. Re-resolve fonts per canvas.
-    (clrhash (mpl.backends:renderer-font-cache renderer))
+    ;; The renderer's font loaders are opened by the backend itself (not
+    ;; vecto:get-font), so they survive across canvases and the cache is
+    ;; kept between frames.
     (vecto:with-canvas (:width w :height h)
       (setf (mpl.backends:renderer-active-p renderer) t)
       (unwind-protect
-           (progn
+           (let ((mpl.backends:*fast-rect-fills* t))   ; interactive: direct rectangle fills
              ;; White background, as in print-png
              (vecto:set-rgb-fill 1.0 1.0 1.0)
-             (vecto:rectangle 0 0 w h)
-             (vecto:fill-path)
+             (vecto:clear-canvas)
              (mpl.rendering:draw figure renderer)
              (funcall grab-fn))
         (setf (mpl.backends:renderer-active-p renderer) nil)))))
