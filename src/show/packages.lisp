@@ -29,7 +29,20 @@ figure's bottom-left display space happens internally.")
    #:interactor-reset
    #:interactor-resize
    #:interactor-cursor-coords
+   #:interactor-cursor-info
    #:interactor-hit-axes
+   #:interactor-mode #:interactor-selection #:interactor-select #:interactor-clear-selection
+   #:interactor-pins #:interactor-pin-point #:interactor-clear-pins
+   #:interactor-rotate-start #:interactor-rotate-move
+   ;; pick.lisp — hit testing
+   #:interactor-pick #:interactor-nearest-point #:interactor-legend-hit
+   ;; commands.lisp — clipboard and undo
+   #:plot-trace #:make-plot-trace #:trace-from-artist #:trace-instantiate #:*trace-clipboard*
+   #:interactor-copy #:interactor-cut #:interactor-paste #:interactor-delete
+   #:interactor-undo #:interactor-redo #:interactor-toggle-visible
+   #:interactor-can-undo-p #:interactor-can-redo-p
+   ;; events.lisp — backend-agnostic event dispatch
+   #:interactor-handle-event #:*key-bindings*
    ;; protocol.lisp — adapter registry + show entry point
    #:show-figure
    #:register-show-adapter

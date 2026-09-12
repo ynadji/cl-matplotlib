@@ -38,6 +38,9 @@
                   :initform nil
                   :accessor legend-parent
                   :documentation "Parent Axes or Figure.")
+   (legend-entry-bboxes :initform nil
+                        :accessor legend-entry-bboxes
+                        :documentation "After a draw: one (handle x0 y0 x1 y1) per entry, display pixels — for click-to-toggle.")
    (legend-handles :initarg :handles
                    :initform nil
                    :accessor legend-handles
@@ -491,7 +494,9 @@ legend box and bboxes that overlap with it."
              (nrow (ceiling n-entries ncol))
              (entry-x (+ x border-pad))
              (entry-y (- current-y border-pad)))
+        (setf (legend-entry-bboxes leg) nil)
         (loop for entry in (legend-entry-artists leg)
+              for handle in (legend-handles leg)
               for i from 0
               for col = (floor i nrow)
               for row = (mod i nrow)
@@ -500,15 +505,23 @@ legend box and bboxes that overlap with it."
                         ;; Position for this entry
                         (ex (+ entry-x (* col (+ col-width col-spacing))))
                         (ey (- entry-y (* row (+ row-height label-spacing))
-                               (/ row-height 2.0d0))))
+                               (/ row-height 2.0d0)))
+                        ;; a hidden series draws its entry dimmed (matplotlib's
+                        ;; legend-picking recipe) so it can be clicked back on
+                        (dim (and (typep handle 'mpl.rendering:artist)
+                                  (not (mpl.rendering:artist-visible handle))))
+                        (entry-alpha (if dim 0.2d0 1.0d0)))
+                   (push (list handle ex (- ey (/ row-height 2.0d0))
+                               (+ ex col-width) (+ ey (/ row-height 2.0d0)))
+                         (legend-entry-bboxes leg))
                    ;; Draw handle artists
                    (dolist (artist handle-artists)
                      (%legend-draw-handle-artist
-                      renderer artist ex ey handle-len row-height))
+                      renderer artist ex ey handle-len row-height :alpha entry-alpha))
                     ;; Draw label text — use :center VA to match matplotlib's center_baseline
                     (let ((text-x (+ ex handle-len text-pad)))
                       (when (typep renderer 'mpl.backends:renderer-base)
-                        (let* ((rgba-color (%resolve-legend-color "black" 1.0d0))
+                        (let* ((rgba-color (%resolve-legend-color "black" entry-alpha))
                                (gc (mpl.backends:make-graphics-context
                                     :facecolor nil
                                     :edgecolor rgba-color
@@ -516,7 +529,8 @@ legend box and bboxes that overlap with it."
                           (mpl.backends:draw-text renderer gc
                                                   (float text-x 1.0d0) (float ey 1.0d0)
                                                   (mpl.rendering:text-text text-art)
-                                                  nil 0.0 nil :left :center)))))))))
+                                                  nil 0.0 nil :left :center)))))))
+        (setf (legend-entry-bboxes leg) (nreverse (legend-entry-bboxes leg)))))
   (setf (mpl.rendering:artist-stale leg) nil))
 
 ;;; ============================================================
@@ -552,15 +566,16 @@ legend box and bboxes that overlap with it."
                   (* (aref rgba 3) (float alpha 1.0d0)))
             (list 1.0d0 1.0d0 1.0d0 (float alpha 1.0d0))))))
 
-(defun %legend-draw-handle-artist (renderer artist x y width height)
-  "Draw a legend handle artist at the given position."
+(defun %legend-draw-handle-artist (renderer artist x y width height &key (alpha 1.0d0))
+  "Draw a legend handle artist at the given position. ALPHA (default 1)
+dims the entry, used for series that are hidden."
   (cond
     ;; Line2D handle
     ((typep artist 'mpl.rendering:line-2d)
      (let* ((color (mpl.rendering:line-2d-color artist))
             (lw (mpl.rendering:line-2d-linewidth artist))
             (linestyle (mpl.rendering:line-2d-linestyle artist))
-            (rgba-color (%resolve-legend-color color 1.0d0)))
+            (rgba-color (%resolve-legend-color color alpha)))
        (when (and rgba-color (typep renderer 'mpl.backends:renderer-base))
          (let* ((xdata (list x (+ x width)))
                 (ydata (list y y))
@@ -583,9 +598,9 @@ legend box and bboxes that overlap with it."
     ((typep artist 'mpl.rendering:rectangle)
      (let* ((facecolor (or (mpl.rendering:patch-facecolor artist) "C0"))
             (edgecolor (or (mpl.rendering:patch-edgecolor artist) "black"))
-            (alpha (or (mpl.rendering:artist-alpha artist) 1.0d0))
+            (alpha (* alpha (or (mpl.rendering:artist-alpha artist) 1.0d0)))
             (face-rgba (%resolve-legend-color facecolor alpha))
-      (edge-rgba (%resolve-legend-color edgecolor 1.0d0)))
+      (edge-rgba (%resolve-legend-color edgecolor alpha)))
        (when (typep renderer 'mpl.backends:renderer-base)
          (let* ((path (mpl.primitives:path-unit-rectangle))
                 (transform (mpl.primitives:make-affine-2d
@@ -599,7 +614,7 @@ legend box and bboxes that overlap with it."
     ;; Circle handle (for scatter)
     ((typep artist 'mpl.rendering:circle)
      (let* ((facecolor (or (mpl.rendering:patch-facecolor artist) "C0"))
-            (face-rgba (%resolve-legend-color facecolor 1.0d0)))
+            (face-rgba (%resolve-legend-color facecolor alpha)))
        (when (typep renderer 'mpl.backends:renderer-base)
          (let* ((center-x (+ x (/ width 2.0d0)))
                 (radius (* (min width height) 0.25d0))

@@ -467,6 +467,20 @@ regions like axhspan/axvspan/fill-between."
   (setf (mpl.rendering:artist-stale ax) t)
   patch)
 
+(defun axes-remove-artist (ax artist)
+  "Remove ARTIST from AX, whichever list it is in (lines, patches,
+artists, texts, images). Returns T when it was found."
+  (let ((found nil))
+    (flet ((drop (accessor)
+             (when (member artist (funcall accessor ax))
+               (setf found t)
+               (funcall (fdefinition (list 'setf accessor))
+                        (remove artist (funcall accessor ax)) ax))))
+      (drop 'axes-base-lines) (drop 'axes-base-patches) (drop 'axes-base-artists)
+      (drop 'axes-base-texts) (drop 'axes-base-images))
+    (when found (setf (mpl.rendering:artist-stale ax) t))
+    found))
+
 (defun axes-add-artist (ax artist)
   "Add an arbitrary artist to the axes."
   (push artist (axes-base-artists ax))

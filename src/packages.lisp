@@ -481,7 +481,8 @@
             #:axes-base-xaxis #:axes-base-yaxis #:axes-base-spines
              ;; Plotting functions
              #:add-subplot
-              #:plot #:scatter #:bar #:axes-fill #:fill-between
+              #:axes-remove-artist
+            #:plot #:scatter #:bar #:axes-fill #:fill-between
             #:eventplot #:stairs #:broken-barh #:axline #:matshow #:spy
             #:psd #:csd #:specgram #:magnitude-spectrum
             #:triplot #:tripcolor #:tricontour #:tricontourf
@@ -595,7 +596,7 @@
              #:create-legend-artists #:legend-artist
              #:get-legend-handler #:*default-handler-map*
              ;; Legend class
-             #:mpl-legend #:legend-parent #:legend-handles #:legend-labels
+             #:mpl-legend #:legend-parent #:legend-handles #:legend-labels #:legend-entry-bboxes
              #:legend-loc #:legend-bbox-to-anchor #:legend-ncol
              #:legend-fontsize #:legend-frameon-p #:legend-facecolor
              #:legend-edgecolor #:legend-framealpha #:legend-title

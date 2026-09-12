@@ -24,9 +24,16 @@ ws.onmessage = async (ev) => {
   } else {
     const msg = JSON.parse(ev.data);
     if (msg.type === 'coords') {
-      coordsEl.textContent = (msg.x !== undefined && msg.x !== null)
+      // The server decides what the readout says; this only formats it.
+      let text = (msg.x !== undefined && msg.x !== null)
         ? `x=${Number(msg.x).toPrecision(6)}  y=${Number(msg.y).toPrecision(6)}`
         : '';
+      if (msg.label !== undefined && msg.label !== null) {
+        const z = (msg.pz !== undefined && msg.pz !== null) ? `  z=${Number(msg.pz).toPrecision(6)}` : '';
+        text = `${msg.label}[${msg.index}]  x=${Number(msg.px).toPrecision(6)}  y=${Number(msg.py).toPrecision(6)}${z}`;
+      }
+      coordsEl.textContent = text;
+      document.body.classList.toggle('cursor-mode', msg.mode === 'cursor');
     }
   }
 };
@@ -48,16 +55,28 @@ canvas.addEventListener('wheel', (ev) => {
   send({ type: 'wheel', x: p.x, y: p.y, deltaY: ev.deltaY });
 }, { passive: false });
 
-// Drag pan.
+// Drag pan (2D) / rotate (3D; shift-drag pans). A press-and-release
+// without movement is a click: select a trace, toggle a legend entry,
+// or pin a data cursor — the server decides.
 let dragging = false;
+let pressAt = null;
+let moved = false;
 canvas.addEventListener('mousedown', (ev) => {
   if (ev.button !== 0) return;
   dragging = true;
+  moved = false;
   const p = pos(ev);
-  send({ type: 'mousedown', x: p.x, y: p.y });
+  pressAt = p;
+  send({ type: 'mousedown', x: p.x, y: p.y, shift: ev.shiftKey, button: ev.button });
 });
-window.addEventListener('mouseup', () => {
-  if (dragging) { dragging = false; send({ type: 'mouseup' }); }
+window.addEventListener('mouseup', (ev) => {
+  if (!dragging) return;
+  dragging = false;
+  send({ type: 'mouseup' });
+  if (!moved && pressAt) {
+    send({ type: 'click', x: pressAt.x, y: pressAt.y, shift: ev.shiftKey, ctrl: ev.ctrlKey });
+  }
+  pressAt = null;
 });
 
 // Mousemove throttled to one message per animation frame; the server
@@ -66,6 +85,7 @@ window.addEventListener('mouseup', () => {
 let pendingMove = null;
 canvas.addEventListener('mousemove', (ev) => {
   const p = pos(ev);
+  if (dragging && pressAt && (Math.abs(p.x - pressAt.x) > 2 || Math.abs(p.y - pressAt.y) > 2)) moved = true;
   if (pendingMove === null) {
     pendingMove = p;
     requestAnimationFrame(() => {
@@ -81,6 +101,27 @@ canvas.addEventListener('mouseleave', () => { coordsEl.textContent = ''; });
 // Home: toolbar button or double-click.
 canvas.addEventListener('dblclick', () => send({ type: 'home' }));
 document.getElementById('home').onclick = () => send({ type: 'home' });
+
+// Toolbar buttons are keyboard shortcuts in disguise; the key map lives
+// on the server (mpl.show:*key-bindings*).
+let lastMouse = null;
+canvas.addEventListener('mousemove', (ev) => { lastMouse = pos(ev); });
+function sendKey(key, opts = {}) {
+  send({ type: 'keydown', key, ctrl: !!opts.ctrl, shift: !!opts.shift,
+         x: lastMouse ? lastMouse.x : null, y: lastMouse ? lastMouse.y : null });
+}
+document.getElementById('cursor').onclick = () => sendKey('c');
+document.getElementById('undo').onclick = () => sendKey('z', { ctrl: true });
+document.getElementById('redo').onclick = () => sendKey('z', { ctrl: true, shift: true });
+window.addEventListener('keydown', (ev) => {
+  if (ev.target && (ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA')) return;
+  const ctrl = ev.ctrlKey || ev.metaKey;
+  const plain = ['h', 'c', 'Escape', 'Delete', 'Backspace'].includes(ev.key) && !ctrl;
+  const chord = ctrl && ['c', 'x', 'v', 'z', 'Z', 'y'].includes(ev.key);
+  if (!plain && !chord) return;
+  sendKey(ev.key, { ctrl, shift: ev.shiftKey });
+  ev.preventDefault();
+});
 
 // Save: download the most recent frame, no server round-trip.
 document.getElementById('save').onclick = () => {

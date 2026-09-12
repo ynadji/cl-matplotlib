@@ -5,9 +5,14 @@
 ;;;; R,G,B,A — exactly zpng's layout; +texture-format+ is the single
 ;;;; constant to flip if a platform disagrees.
 ;;;;
-;;;; Interaction: scroll wheel = cursor-anchored zoom, left-drag = pan,
-;;;; h = home, s = save PNG in the current directory, q/Escape = close.
-;;;; The cursor's data coordinates live in the window title.
+;;;; Interaction goes through the shared dispatcher
+;;;; (mpl.show:interactor-handle-event), so it matches the web backend:
+;;;; wheel = zoom, left-drag = pan (2D) or rotate (3D; shift-drag pans),
+;;;; click = select a trace / toggle a legend entry / pin a data cursor,
+;;;; h = home, c = cursor mode, ctrl-c/x/v = copy/cut/paste, Delete,
+;;;; ctrl-z / ctrl-shift-z = undo/redo, Escape = clear selection and pins.
+;;;; SDL2-only: s = save PNG in the current directory, q = close.
+;;;; The cursor readout lives in the window title.
 ;;;;
 ;;;; Threading: cl-sdl2 routes window/event calls through its own main
 ;;;; thread channel, so show-figure :block t simply waits for the loop;
@@ -52,10 +57,40 @@ Returns when the window closes."
         (sdl2:with-renderer (renderer win)
           (let ((texture (sdl2:create-texture renderer +texture-format+
                                               :streaming w h))
-                (fbuf (cffi:foreign-alloc :uint8 :count (* 4 w h)))
-                (dragging nil))
-            (let ((dirty nil))
-            (labels ((blit (buf)
+                (fbuf (cffi:foreign-alloc :uint8 :count (* 4 w h))))
+            (let ((dirty nil) (dragging nil) (moved nil) (press-x 0) (press-y 0))
+            (labels ((dispatch (event)
+                       (mpl.show:interactor-handle-event interactor event))
+                     (mod-p (&rest names)
+                       (apply #'sdl2:mod-value-p (sdl2:get-mod-state) names))
+                     (ctrl-p () (mod-p :lctrl :rctrl :lgui :rgui))
+                     (shift-p () (mod-p :lshift :rshift))
+                     (key-name (keysym)
+                       ;; the browser KeyboardEvent.key names the shared key map uses
+                       (cond ((sdl2:scancode= keysym :scancode-h) "h")
+                             ((sdl2:scancode= keysym :scancode-c) "c")
+                             ((sdl2:scancode= keysym :scancode-x) "x")
+                             ((sdl2:scancode= keysym :scancode-v) "v")
+                             ((sdl2:scancode= keysym :scancode-z) "z")
+                             ((sdl2:scancode= keysym :scancode-y) "y")
+                             ((sdl2:scancode= keysym :scancode-s) "s")
+                             ((sdl2:scancode= keysym :scancode-q) "q")
+                             ((sdl2:scancode= keysym :scancode-escape) "Escape")
+                             ((sdl2:scancode= keysym :scancode-delete) "Delete")
+                             ((sdl2:scancode= keysym :scancode-backspace) "Backspace")
+                             (t nil)))
+                     (update-title (x y)
+                       (let ((info (mpl.show:interactor-cursor-info interactor x y)))
+                         (sdl2:set-window-title
+                          win
+                          (cond ((getf info :label)
+                                 (format nil "~A — ~A[~D] x=~,6G y=~,6G~@[ z=~,6G~]" title
+                                         (getf info :label) (getf info :index)
+                                         (getf info :px) (getf info :py) (getf info :z)))
+                                ((getf info :x)
+                                 (format nil "~A — x=~,6G y=~,6G" title (getf info :x) (getf info :y)))
+                                (t title)))))
+                     (blit (buf)
                        (%upload-frame texture fbuf buf w)
                        (sdl2:render-copy renderer texture)
                        (sdl2:render-present renderer))
@@ -92,38 +127,39 @@ Returns when the window closes."
                              (sdl2:delay 8)))
                        (:mousewheel (:y wy)
                          (multiple-value-bind (mx my) (sdl2:mouse-state)
-                           (when (mpl.show:interactor-zoom
-                                  interactor mx my (expt 1.1d0 wy))
+                           (when (eq (dispatch (list :type :wheel :x mx :y my
+                                                     :delta-y (* -100 wy)))
+                                     :frame)
                              (refresh))))
                        (:mousebuttondown (:button button :x x :y y)
                          (when (= button 1)
-                           (setf dragging t)
-                           (mpl.show:interactor-pan-start interactor x y)))
+                           (setf dragging t moved nil press-x x press-y y)
+                           (dispatch (list :type :mousedown :x x :y y :shift (shift-p) :button 0))))
                        (:mousemotion (:x x :y y)
-                         (if dragging
-                             (when (mpl.show:interactor-pan-move interactor x y)
-                               (refresh))
-                             (multiple-value-bind (dx dy)
-                                 (mpl.show:interactor-cursor-coords interactor x y)
-                               (sdl2:set-window-title
-                                win
-                                (if dx
-                                    (format nil "~A — x=~,6G y=~,6G" title dx dy)
-                                    title)))))
-                       (:mousebuttonup (:button button)
+                         (when (and dragging (or (> (abs (- x press-x)) 2) (> (abs (- y press-y)) 2)))
+                           (setf moved t))
+                         (case (dispatch (list :type :mousemove :x x :y y))
+                           (:frame (refresh))
+                           (:coords (update-title x y))))
+                       (:mousebuttonup (:button button :x x :y y)
                          (when (= button 1)
                            (setf dragging nil)
-                           (mpl.show:interactor-pan-end interactor)))
+                           (dispatch (list :type :mouseup))
+                           (unless moved
+                             (when (eq (dispatch (list :type :click :x x :y y :shift (shift-p))) :frame)
+                               (refresh)))))
                        (:keydown (:keysym keysym)
-                         (cond
-                           ((sdl2:scancode= keysym :scancode-h)
-                            (mpl.show:interactor-reset interactor)
-                            (refresh))
-                           ((sdl2:scancode= keysym :scancode-s)
-                            (%save-frame interactor))
-                           ((or (sdl2:scancode= keysym :scancode-q)
-                                (sdl2:scancode= keysym :scancode-escape))
-                            (sdl2:push-quit-event))))
+                         (let ((name (key-name keysym)))
+                           (cond
+                             ((null name))
+                             ((string= name "s") (%save-frame interactor))
+                             ((string= name "q") (sdl2:push-quit-event))
+                             (t (multiple-value-bind (mx my) (sdl2:mouse-state)
+                                  (case (dispatch (list :type :keydown :key name
+                                                        :ctrl (ctrl-p) :shift (shift-p)
+                                                        :x mx :y my))
+                                    (:frame (refresh))
+                                    (:coords (update-title mx my))))))))
                        (:windowevent (:event event)
                          (declare (ignore event))
                          (sync-size))

@@ -20,9 +20,12 @@ Width/height slots are re-synced here because renderers memoize size."
                        :width w :height h
                        :dpi (mpl.containers:figure-dpi figure)))))
 
-(defun %render-figure-grabbing (figure renderer grab-fn)
+(defun %render-figure-grabbing (figure renderer grab-fn &key overlay-fn)
   "Draw FIGURE with RENDERER on a fresh Vecto canvas, then call GRAB-FN
-with no arguments while the canvas is still live and return its value."
+with no arguments while the canvas is still live and return its value.
+OVERLAY-FN, when given, is called with the renderer after the figure is
+drawn — for interaction feedback (selection highlight, data cursor pins)
+that must not mutate the figure's artists."
   (let ((w (mpl.backends:renderer-width renderer))
         (h (mpl.backends:renderer-height renderer)))
     ;; The renderer's font loaders are opened by the backend itself (not
@@ -36,6 +39,7 @@ with no arguments while the canvas is still live and return its value."
              (vecto:set-rgb-fill 1.0 1.0 1.0)
              (vecto:clear-canvas)
              (mpl.rendering:draw figure renderer)
+             (when overlay-fn (funcall overlay-fn renderer))
              (funcall grab-fn))
         (setf (mpl.backends:renderer-active-p renderer) nil)))))
 
