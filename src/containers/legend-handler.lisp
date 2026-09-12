@@ -25,8 +25,12 @@ Returns a list of artists to be drawn in the legend box."))
 
 (defmethod legend-artist ((h handler-base) legend orig-handle fontsize handlebox)
   "Default legend-artist: compute drawing area and delegate to create-legend-artists."
-  (let* ((xdescent (* (handler-xpad h) fontsize))
-         (ydescent (* (handler-ypad h) fontsize))
+  ;; Everything handed to the handlers is a double: artists such as
+  ;; RECTANGLE declare double-float slots, and CCL enforces slot types at
+  ;; initialization (SBCL does not), so a single-float here — the pads
+  ;; default to 0.0 — fails on CCL only.
+  (let* ((xdescent (float (* (handler-xpad h) fontsize) 1.0d0))
+         (ydescent (float (* (handler-ypad h) fontsize) 1.0d0))
          (width (max 1.0d0 (- (float handlebox 1.0d0) (* (handler-xpad h) fontsize))))
          (height (max 1.0d0 (float fontsize 1.0d0)))
          (transform mpl.primitives:*identity-transform*))
@@ -106,10 +110,10 @@ Ported from matplotlib.legend_handler.HandlerPatch."))
          (alpha (when (typep orig-handle 'mpl.rendering:artist)
                   (mpl.rendering:artist-alpha orig-handle)))
          (rect (make-instance 'mpl.rendering:rectangle
-                              :x0 (- xdescent)
-                              :y0 (- ydescent)
-                              :width width
-                              :height height
+                              :x0 (- (float xdescent 1.0d0))
+                              :y0 (- (float ydescent 1.0d0))
+                              :width (float width 1.0d0)
+                              :height (float height 1.0d0)
                               :facecolor facecolor
                               :edgecolor edgecolor
                               :linewidth linewidth

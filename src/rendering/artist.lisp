@@ -157,6 +157,26 @@ are subclasses of Artist."))
   (declare (ignore value))
   (setf (artist-stale a) t))
 
+;;; The ALPHA slot is typed (or null (double-float 0.0d0 1.0d0)). CCL enforces
+;;; slot types at initialization and on writes (SBCL does not), and callers
+;;; routinely pass single-floats such as :alpha 0.5, so coerce on both paths
+;;; rather than at every call site.
+
+(defun %coerce-alpha (value)
+  "VALUE as a double-float alpha, or NIL."
+  (if (and value (not (typep value 'double-float)))
+      (float value 1.0d0)
+      value))
+
+(defmethod initialize-instance :around ((a artist) &rest initargs &key alpha &allow-other-keys)
+  (if (and alpha (not (typep alpha 'double-float)))
+      ;; leftmost initarg wins, so this overrides the caller's :alpha
+      (apply #'call-next-method a :alpha (%coerce-alpha alpha) initargs)
+      (call-next-method)))
+
+(defmethod (setf artist-alpha) :around (value (a artist))
+  (call-next-method (%coerce-alpha value) a))
+
 (defmethod (setf artist-visible) :after (value (a artist))
   "Mark artist stale when visibility changes."
   (declare (ignore value))
