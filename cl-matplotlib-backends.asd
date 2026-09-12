@@ -9,6 +9,7 @@
                #:vecto
                #:zpb-ttf
                #:zpng
+               #:flexi-streams
                #:cl-pdf)
   :serial t
   :pathname "src/backends/"

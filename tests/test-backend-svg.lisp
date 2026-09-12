@@ -434,6 +434,50 @@
     (is (string= from-string from-stream))
     (is (string= from-string from-file))))
 
+;;; ============================================================
+;;; Vertical text alignment — baseline shift from font metrics
+;;; ============================================================
+
+(defun %text-element-for (va)
+  "The <text ...> element emitted for the string \"Title\" with vertical alignment VA."
+  (let* ((canvas (make-instance 'canvas-svg :width 200 :height 100 :dpi 100))
+         (gc (make-graphics-context :linewidth 20.0 :edgecolor "black")))
+    (setf (canvas-render-fn-svg canvas)
+          (lambda (renderer)
+            (draw-text renderer gc 100.0d0 90.0d0 "Title" nil 0.0d0 nil :center va)))
+    (let* ((doc (print-svg canvas nil))
+           (start (search "<text" doc))
+           (end (search "</text>" doc)))
+      (subseq doc start end))))
+
+(defun %y-attr (element)
+  "The numeric value of ELEMENT's y=\"...\" attribute, or NIL."
+  (let ((pos (search " y=\"" element)))
+    (when pos
+      (let ((from (+ pos 4)))
+        (read-from-string (subseq element from (position #\" element :start from)))))))
+
+(test svg-text-valign-uses-baseline-shift-not-dominant-baseline
+  "Vertical alignment is a metric-derived y offset; librsvg (Emacs) ignores dominant-baseline."
+  (let ((top (%text-element-for :top))
+        (center (%text-element-for :center))
+        (bottom (%text-element-for :bottom))
+        (baseline (%text-element-for :baseline)))
+    (is-false (search "dominant-baseline" top))
+    (is-false (search "dominant-baseline" center))
+    (is-false (search "dominant-baseline" bottom))
+    ;; :baseline needs no shift at all
+    (is (null (%y-attr baseline)))
+    ;; :top shifts the baseline down by the ascent: 0.5-1x the 20px font size
+    (let ((y (%y-attr top)))
+      (is (and y (< 10 y 20))))
+    ;; :center is roughly half of :top for a string without descenders
+    (let ((yt (%y-attr top)) (yc (%y-attr center)))
+      (is (and yt yc (< (abs (- yc (/ yt 2))) 1.5))))
+    ;; :bottom moves the baseline up (toward the ascenders) for "Title": no descenders, ~0
+    (let ((y (%y-attr bottom)))
+      (is (or (null y) (<= -1.0 y 0.5))))))
+
 (defun run-svg-backend-tests ()
   "Run all svg backend tests, signaling an error on failure."
   (let ((results (run 'backend-svg-suite)))

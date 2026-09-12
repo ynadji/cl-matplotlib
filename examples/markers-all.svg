@@ -99,24 +99,24 @@
 <path d="M 136.50 355.50 " fill="none" fill-opacity="0.00" stroke="#4682B4" stroke-opacity="1.00" stroke-width="0.00" stroke-linecap="square" stroke-linejoin="round"/>
 <use xlink:href="#marker-18" x="136.47" y="354.75"/>
 <text font-family="DejaVu Sans" font-size="16.67" fill="#000000" fill-opacity="1.00" text-anchor="middle" transform="translate(410.00,537.33) scale(1,-1)">Marker Types</text>
-<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(512.12,123.75) scale(1,-1)">point</text>
-<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(439.18,123.75) scale(1,-1)">hline</text>
-<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(366.24,123.75) scale(1,-1)">vline</text>
-<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(293.29,123.75) scale(1,-1)">star</text>
-<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(220.35,123.75) scale(1,-1)">x</text>
-<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(147.41,123.75) scale(1,-1)">plus</text>
-<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(512.12,239.25) scale(1,-1)">x_filled</text>
-<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(439.18,239.25) scale(1,-1)">plus_filled</text>
-<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(366.24,239.25) scale(1,-1)">thin_diamond</text>
-<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(293.29,239.25) scale(1,-1)">hexagon</text>
-<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(220.35,239.25) scale(1,-1)">pentagon</text>
-<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(147.41,239.25) scale(1,-1)">diamond</text>
-<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(512.12,354.75) scale(1,-1)">triangle_right</text>
-<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(439.18,354.75) scale(1,-1)">triangle_left</text>
-<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(366.24,354.75) scale(1,-1)">triangle_down</text>
-<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(293.29,354.75) scale(1,-1)">triangle_up</text>
-<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(220.35,354.75) scale(1,-1)">square</text>
-<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(147.41,354.75) scale(1,-1)">circle</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" y="2.68" transform="translate(512.12,123.75) scale(1,-1)">point</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" y="3.62" transform="translate(439.18,123.75) scale(1,-1)">hline</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" y="3.62" transform="translate(366.24,123.75) scale(1,-1)">vline</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" y="3.34" transform="translate(293.29,123.75) scale(1,-1)">star</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" y="2.66" transform="translate(220.35,123.75) scale(1,-1)">x</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" y="2.68" transform="translate(147.41,123.75) scale(1,-1)">plus</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" y="2.55" transform="translate(512.12,239.25) scale(1,-1)">x_filled</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" y="2.55" transform="translate(439.18,239.25) scale(1,-1)">plus_filled</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" y="2.55" transform="translate(366.24,239.25) scale(1,-1)">thin_diamond</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" y="2.68" transform="translate(293.29,239.25) scale(1,-1)">hexagon</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" y="2.40" transform="translate(220.35,239.25) scale(1,-1)">pentagon</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" y="3.62" transform="translate(147.41,239.25) scale(1,-1)">diamond</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" y="2.55" transform="translate(512.12,354.75) scale(1,-1)">triangle_right</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" y="2.55" transform="translate(439.18,354.75) scale(1,-1)">triangle_left</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" y="2.55" transform="translate(366.24,354.75) scale(1,-1)">triangle_down</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" y="2.55" transform="translate(293.29,354.75) scale(1,-1)">triangle_up</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" y="1.71" transform="translate(220.35,354.75) scale(1,-1)">square</text>
+<text font-family="DejaVu Sans" font-size="9.72" fill="#000000" fill-opacity="1.00" text-anchor="start" y="3.62" transform="translate(147.41,354.75) scale(1,-1)">circle</text>
 <path d="M 136.50 66.50 L 136.50 61.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 209.50 66.50 L 209.50 61.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 282.50 66.50 L 282.50 61.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>

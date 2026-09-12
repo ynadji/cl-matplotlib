@@ -25,6 +25,34 @@ Replaces & < > \" with their XML entity equivalents."
         (#\" (write-string "&quot;" out))
         (otherwise (write-char ch out))))))
 
+(defun %svg-baseline-shift (renderer s font-size va)
+  "Offset, in the text element's own frame (+y toward the descenders), that
+moves the baseline of S so that VA (:top, :center, :bottom) lands on the
+anchor point; 0 for :baseline/NIL.
+
+Measured from the DejaVu Sans glyph ink extents with the same font loader
+the Vecto backend renders with, so PNG and SVG agree.
+Done here rather than with the SVG dominant-baseline attribute because
+librsvg (Emacs, GTK, GNOME thumbnails) ignores that attribute and draws
+the baseline at the anchor, which pushed top-aligned titles off the top
+edge of the figure."
+  (if (or (null va) (eq va :baseline))
+      0.0d0
+      (let* ((cache (renderer-svg-font-cache renderer))
+             (font (or (gethash *default-font-path* cache)
+                       (setf (gethash *default-font-path* cache)
+                             (zpb-ttf:open-font-loader *default-font-path*))))
+             (bbox (zpb-ttf:string-bounding-box s font :kerning t))
+             (scale (/ font-size (coerce (zpb-ttf:units/em font) 'double-float)))
+             ;; y-up glyph extents: ymin <= 0 (descent), ymax >= 0 (ascent)
+             (ymin (* scale (zpb-ttf:ymin bbox)))
+             (ymax (* scale (zpb-ttf:ymax bbox))))
+        (case va
+          (:top ymax)
+          (:center (/ (+ ymax ymin) 2.0d0))
+          (:bottom ymin)
+          (otherwise 0.0d0)))))
+
 ;;; ============================================================
 ;;; renderer-svg — SVG string-based renderer
 ;;; ============================================================
@@ -467,7 +495,9 @@ STROKE can be T (use gc-foreground) or nil."
 PROP is unused (font-family is always DejaVu Sans for SVG).
 ANGLE is rotation in degrees (counterclockwise).
 HA — horizontal alignment (:left, :center, :right) → SVG text-anchor.
-VA — vertical alignment (accepted but not used for dominant-baseline)."
+VA — vertical alignment (:baseline, :bottom, :center, :top), applied as a
+baseline shift measured from the glyph outlines (see
+%SVG-BASELINE-SHIFT) so every SVG renderer agrees on placement."
   (declare (ignore prop ismath))
   ;; Guard: nil or empty string → no output
   (when (or (null s) (and (stringp s) (string= s "")))
@@ -485,11 +515,9 @@ VA — vertical alignment (accepted but not used for dominant-baseline)."
          ;; Fix: place at (x, -y) and add scale(1,-1) to un-flip.
          ;; With rotation angle A (degrees, CCW): the global Y-flip and per-text
          (angle-d (if (numberp angle) (coerce angle 'double-float) 0.0d0))
-         (dominant-baseline (case va
-                              (:bottom "text-after-edge")
-                              (:top "text-before-edge")
-                              (:center "central")
-                              (otherwise nil)))
+         ;; Vertical alignment: a y offset in the text's own frame (after the
+         ;; transform below, +y runs from the baseline toward the descenders).
+         (baseline-shift (%svg-baseline-shift renderer s font-size va))
          (transform-str
            (if (/= angle-d 0.0d0)
                (format nil "translate(~A,~A) rotate(~A) scale(1,-1)"
@@ -499,10 +527,9 @@ VA — vertical alignment (accepted but not used for dominant-baseline)."
                (format nil "translate(~A,~A) scale(1,-1)"
                        (%format-float x)
                        (%format-float (coerce y 'double-float)))))
-         (dominant-baseline-attr (if dominant-baseline
-                                      (format nil " dominant-baseline=\"~A\""
-                                              dominant-baseline)
-                                      "")))
+         (y-attr (if (zerop baseline-shift)
+                     ""
+                     (format nil " y=\"~A\"" (%format-float baseline-shift)))))
     ;; Emit <text> element
     (let ((out (renderer-svg-output-stream renderer)))
       (multiple-value-bind (fill-hex fill-op)
@@ -514,7 +541,7 @@ VA — vertical alignment (accepted but not used for dominant-baseline)."
                 (%format-float font-size)
                 fill-hex (%format-float fill-op)
                 text-anchor
-                dominant-baseline-attr
+                y-attr
                 transform-str
                 (%svg-xml-escape s))))))
 
@@ -550,37 +577,29 @@ VA — vertical alignment (accepted but not used for dominant-baseline)."
 (defmethod draw-image ((renderer renderer-svg) gc x y im)
   "Draw an RGBA image IM at position (X, Y) as an embedded base64 PNG in SVG.
 IM is a plist with :data (flat RGBA bytes), :width, :height.
-Uses zpng to encode PNG via temp file, then base64-encodes the result."
+The PNG is encoded in memory (zpng → octet vector), never through a temp
+file: a shared /tmp name raced between the processes of a parallel image
+run and could embed an empty payload."
   (declare (ignore gc))
   (let ((data (getf im :data))
         (w (getf im :width))
         (h (getf im :height)))
     (when (and data w h)
-      (let* ((png (make-instance 'zpng:png
-                                 :color-type :truecolor-alpha
-                                 :width w :height h))
-             (tmp-path (format nil "/tmp/cl-mpl-svg-~A.png" (get-universal-time))))
+      (let ((png (make-instance 'zpng:png
+                                :color-type :truecolor-alpha
+                                :width w :height h)))
         ;; Copy RGBA data into zpng image buffer
         (replace (zpng:image-data png) data)
-        ;; Write to temp file (zpng only accepts pathname)
-        (zpng:write-png png tmp-path)
-        ;; Read bytes back
-        (let ((bytes (with-open-file (f tmp-path :element-type '(unsigned-byte 8))
-                       (let ((buf (make-array (file-length f)
-                                              :element-type '(unsigned-byte 8))))
-                         (read-sequence buf f)
-                         buf))))
-          ;; Delete temp file
-          (ignore-errors (delete-file tmp-path))
-          ;; Base64 encode and emit <image> element
-          (let ((b64 (%octets-to-base64 bytes))
-                (out (renderer-svg-output-stream renderer)))
-            ;; Y-flip counter: global <g> has scale(1,-1), images render upside-down
-            ;; Fix: translate(x, y+h) scale(1,-1) — position at image top-left, then un-flip
-            (format out "<image x=\"0\" y=\"0\" width=\"~D\" height=\"~D\" xlink:href=\"data:image/png;base64,~A\" transform=\"translate(~A,~A) scale(1,-1)\"/>~%"
-                    w h b64
-                    (%format-float (coerce x 'double-float))
-                    (%format-float (+ (coerce y 'double-float) h)))))))))
+        (let* ((bytes (flexi-streams:with-output-to-sequence (s)
+                        (zpng:write-png-stream png s)))
+               (b64 (%octets-to-base64 bytes))
+               (out (renderer-svg-output-stream renderer)))
+          ;; Y-flip counter: global <g> has scale(1,-1), images render upside-down
+          ;; Fix: translate(x, y+h) scale(1,-1) — position at image top-left, then un-flip
+          (format out "<image x=\"0\" y=\"0\" width=\"~D\" height=\"~D\" xlink:href=\"data:image/png;base64,~A\" transform=\"translate(~A,~A) scale(1,-1)\"/>~%"
+                  w h b64
+                  (%format-float (coerce x 'double-float))
+                  (%format-float (+ (coerce y 'double-float) h))))))))
 
 ;;; ============================================================
 ;;; draw-markers — <symbol> + <use> optimization for repeated markers

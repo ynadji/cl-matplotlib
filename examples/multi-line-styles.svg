@@ -32,36 +32,36 @@
 <path d="M 128.18 247.54 L 133.82 265.01 L 139.45 282.31 L 145.09 299.26 L 150.73 315.70 L 156.36 331.45 L 162.00 346.37 L 167.64 360.30 L 173.27 373.10 L 178.91 384.65 L 184.55 394.83 L 190.18 403.53 L 195.82 410.68 L 201.45 416.20 L 207.09 420.03 L 212.73 422.14 L 218.36 422.50 L 224.00 421.12 L 229.64 418.00 L 235.27 413.18 L 240.91 406.70 L 246.55 398.63 L 252.18 389.05 L 257.82 378.06 L 263.45 365.77 L 269.09 352.29 L 274.73 337.77 L 280.36 322.34 L 286.00 306.17 L 291.64 289.41 L 297.27 272.24 L 302.91 254.81 L 308.55 237.32 L 314.18 219.92 L 319.82 202.81 L 325.45 186.14 L 331.09 170.08 L 336.73 154.79 L 342.36 140.44 L 348.00 127.15 L 353.64 115.07 L 359.27 104.31 L 364.91 94.98 L 370.55 87.17 L 376.18 80.97 L 381.82 76.43 L 387.45 73.60 L 393.09 72.51 L 398.73 73.17 L 404.36 75.57 L 410.00 79.69 L 415.64 85.48 L 421.27 92.90 L 426.91 101.86 L 432.55 112.27 L 438.18 124.04 L 443.82 137.04 L 449.45 151.15 L 455.09 166.21 L 460.73 182.09 L 466.36 198.63 L 472.00 215.65 L 477.64 232.99 L 483.27 250.48 L 488.91 267.94 L 494.55 285.19 L 500.18 302.07 L 505.82 318.40 L 511.45 334.03 L 517.09 348.79 L 522.73 362.53 L 528.36 375.13 L 534.00 386.46 L 539.64 396.40 L 545.27 404.84 L 550.91 411.72 L 556.55 416.96 L 562.18 420.50 L 567.82 422.32 L 573.45 422.39 L 579.09 420.71 L 584.73 417.30 L 590.36 412.20 L 596.00 405.45 L 601.64 397.12 L 607.27 387.30 L 612.91 376.08 L 618.55 363.58 L 624.18 349.92 L 629.82 335.23 L 635.45 319.67 L 641.09 303.39 L 646.73 286.55 L 652.36 269.32 L 658.00 251.87 L 663.64 234.38 L 669.27 217.02 L 674.91 199.97 L 680.55 183.39 L 686.18 167.45 L 691.82 152.31 " fill="none" fill-opacity="0.00" stroke="#0000FF" stroke-opacity="1.00" stroke-width="2.78" stroke-linecap="square" stroke-linejoin="round"/>
 <text font-family="DejaVu Sans" font-size="16.67" fill="#000000" fill-opacity="1.00" text-anchor="middle" transform="translate(410.00,449.33) scale(1,-1)">Line Styles</text>
 <path d="M 128.50 55.50 L 128.50 50.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="text-before-edge" transform="translate(128.18,45.28) scale(1,-1)">0</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" y="10.31" transform="translate(128.18,45.28) scale(1,-1)">0</text>
 <path d="M 241.50 55.50 L 241.50 50.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="text-before-edge" transform="translate(240.91,45.28) scale(1,-1)">2</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" y="10.31" transform="translate(240.91,45.28) scale(1,-1)">2</text>
 <path d="M 354.50 55.50 L 354.50 50.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="text-before-edge" transform="translate(353.64,45.28) scale(1,-1)">4</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" y="10.13" transform="translate(353.64,45.28) scale(1,-1)">4</text>
 <path d="M 466.50 55.50 L 466.50 50.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="text-before-edge" transform="translate(466.36,45.28) scale(1,-1)">6</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" y="10.31" transform="translate(466.36,45.28) scale(1,-1)">6</text>
 <path d="M 579.50 55.50 L 579.50 50.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="text-before-edge" transform="translate(579.09,45.28) scale(1,-1)">8</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" y="10.31" transform="translate(579.09,45.28) scale(1,-1)">8</text>
 <path d="M 692.50 55.50 L 692.50 50.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="text-before-edge" transform="translate(691.82,45.28) scale(1,-1)">10</text>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" dominant-baseline="text-before-edge" transform="translate(410.00,26.17) scale(1,-1)">x</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" y="10.31" transform="translate(691.82,45.28) scale(1,-1)">10</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" y="7.60" transform="translate(410.00,26.17) scale(1,-1)">x</text>
 <path d="M 100.50 71.50 L 95.50 71.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="end" dominant-baseline="central" transform="translate(90.28,72.50) scale(1,-1)">-1.00</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="end" y="5.06" transform="translate(90.28,72.50) scale(1,-1)">-1.00</text>
 <path d="M 100.50 115.50 L 95.50 115.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="end" dominant-baseline="central" transform="translate(90.28,116.26) scale(1,-1)">-0.75</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="end" y="5.06" transform="translate(90.28,116.26) scale(1,-1)">-0.75</text>
 <path d="M 100.50 159.50 L 95.50 159.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="end" dominant-baseline="central" transform="translate(90.28,160.02) scale(1,-1)">-0.50</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="end" y="5.06" transform="translate(90.28,160.02) scale(1,-1)">-0.50</text>
 <path d="M 100.50 203.50 L 95.50 203.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="end" dominant-baseline="central" transform="translate(90.28,203.78) scale(1,-1)">-0.25</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="end" y="5.06" transform="translate(90.28,203.78) scale(1,-1)">-0.25</text>
 <path d="M 100.50 247.50 L 95.50 247.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="end" dominant-baseline="central" transform="translate(90.28,247.54) scale(1,-1)">0.00</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="end" y="5.06" transform="translate(90.28,247.54) scale(1,-1)">0.00</text>
 <path d="M 100.50 290.50 L 95.50 290.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="end" dominant-baseline="central" transform="translate(90.28,291.30) scale(1,-1)">0.25</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="end" y="5.06" transform="translate(90.28,291.30) scale(1,-1)">0.25</text>
 <path d="M 100.50 334.50 L 95.50 334.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="end" dominant-baseline="central" transform="translate(90.28,335.06) scale(1,-1)">0.50</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="end" y="5.06" transform="translate(90.28,335.06) scale(1,-1)">0.50</text>
 <path d="M 100.50 378.50 L 95.50 378.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="end" dominant-baseline="central" transform="translate(90.28,378.82) scale(1,-1)">0.75</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="end" y="5.06" transform="translate(90.28,378.82) scale(1,-1)">0.75</text>
 <path d="M 100.50 422.50 L 95.50 422.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="end" dominant-baseline="central" transform="translate(90.28,422.57) scale(1,-1)">1.00</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="end" y="5.06" transform="translate(90.28,422.57) scale(1,-1)">1.00</text>
 <text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="middle" transform="translate(35.68,247.50) rotate(90.00) scale(1,-1)">y</text>
 <path d="M 100.50 55.50 L 100.50 440.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 720.50 55.50 L 720.50 440.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
@@ -69,12 +69,12 @@
 <path d="M 100.50 439.50 L 720.50 439.50 " fill="none" fill-opacity="0.00" stroke="#000000" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="square" stroke-linejoin="miter"/>
 <path d="M 106.94 61.94 L 221.80 61.94 L 221.80 149.44 L 106.94 149.44 Z " fill="#FFFFFF" fill-opacity="0.80" stroke="#CCCCCC" stroke-opacity="1.00" stroke-width="1.11" stroke-linecap="butt" stroke-linejoin="miter"/>
 <path d="M 112.50 137.50 L 140.50 137.50 " fill="none" fill-opacity="0.00" stroke="#0000FF" stroke-opacity="1.00" stroke-width="2.78" stroke-linecap="butt" stroke-linejoin="miter"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(151.39,136.94) scale(1,-1)">solid</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" y="5.18" transform="translate(151.39,136.94) scale(1,-1)">solid</text>
 <path d="M 112.50 116.50 L 140.50 116.50 " fill="none" fill-opacity="0.00" stroke="#FF0000" stroke-opacity="1.00" stroke-width="2.78" stroke-linecap="butt" stroke-linejoin="miter" stroke-dasharray="10.28 4.44"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(151.39,116.11) scale(1,-1)">dashed</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" y="5.18" transform="translate(151.39,116.11) scale(1,-1)">dashed</text>
 <path d="M 112.50 95.50 L 140.50 95.50 " fill="none" fill-opacity="0.00" stroke="#008000" stroke-opacity="1.00" stroke-width="2.78" stroke-linecap="butt" stroke-linejoin="miter" stroke-dasharray="2.78 4.58"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(151.39,95.28) scale(1,-1)">dotted</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" y="5.18" transform="translate(151.39,95.28) scale(1,-1)">dotted</text>
 <path d="M 112.50 74.50 L 140.50 74.50 " fill="none" fill-opacity="0.00" stroke="#FFA500" stroke-opacity="1.00" stroke-width="2.78" stroke-linecap="butt" stroke-linejoin="miter" stroke-dasharray="17.78 4.44 2.78 4.44"/>
-<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" dominant-baseline="central" transform="translate(151.39,74.44) scale(1,-1)">dash-dot</text>
+<text font-family="DejaVu Sans" font-size="13.89" fill="#000000" fill-opacity="1.00" text-anchor="start" y="5.18" transform="translate(151.39,74.44) scale(1,-1)">dash-dot</text>
 </g>
 </svg>
