@@ -6,12 +6,17 @@
 ;;;;   SHOW_WEB_PORT=8977 SHOW_WEB_NO_BROWSER=1 \
 ;;;;     ros run -- --load tools/show-web-demo.lisp
 ;;;;
-;;;; Blocks until the browser page (or the test) disconnects.
+;;;; Shows two figures as tabs of one page: figure 1 (lines) without
+;;;; blocking, then figure 2 (scatter) with :block t. Exits when
+;;;; figure 2's tab is closed or the last page disconnects.
 
 (ql:quickload :cl-matplotlib-show-web :silent t)
 
 (in-package :cl-user)
 
+(setf mpl.show:*show-backend* :web)
+
+;;; figure 1 — lines
 (mpl.pyplot:figure)
 (mpl.pyplot:plot '(0.0 1.0 2.0 3.0 4.0 5.0 6.0)
                  '(0.0 0.84 0.91 0.14 -0.76 -0.96 -0.28)
@@ -24,9 +29,16 @@
 (mpl.pyplot:ylabel "y")
 (mpl.pyplot:title "show-web demo")
 (mpl.pyplot:legend)
+(mpl.pyplot:show)
 
-(setf mpl.show:*show-backend* :web)
-(format t "~&; demo: blocking until the page disconnects~%")
+;;; figure 2 — scatter, the blocking one
+(mpl.pyplot:figure)
+(mpl.pyplot:scatter '(1.0 2.0 3.0 4.0 5.0) '(5.0 3.0 4.0 1.0 2.0) :label "points")
+(mpl.pyplot:title "second figure")
+(mpl.pyplot:legend)
+
+(format t "~&; demo: blocking until figure 2 is closed~%")
 (mpl.pyplot:show :block t)
-(format t "~&; demo: page closed, exiting~%")
+(format t "~&; demo: figure 2 closed, exiting~%")
+(mpl.show.web:stop-server)
 (uiop:quit 0)

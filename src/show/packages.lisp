@@ -43,6 +43,12 @@ figure's bottom-left display space happens internally.")
    #:interactor-can-undo-p #:interactor-can-redo-p
    ;; events.lisp — backend-agnostic event dispatch
    #:interactor-handle-event #:*key-bindings*
+   ;; manager.lisp — the window manager shared by every backend
+   #:*wm* #:figure-window #:figure-window-id #:figure-window-title
+   #:figure-window-figure #:figure-window-interactor #:figure-window-closed-p
+   #:wm-register #:wm-windows #:wm-find #:wm-window-for-figure
+   #:wm-active-window #:wm-activate #:wm-close #:wm-close-all #:wm-wait-closed
+   #:wm-notify-changed #:wm-add-listener #:wm-remove-listener
    ;; protocol.lisp — adapter registry + show entry point
    #:show-figure
    #:register-show-adapter

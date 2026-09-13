@@ -19,7 +19,8 @@
           :key (gethash "key" h)
           :ctrl (eq (gethash "ctrl" h) t)
           :shift (eq (gethash "shift" h) t)
-          :button (gethash "button" h))))
+          :button (gethash "button" h)
+          :fig (gethash "fig" h))))
 
 (defun %event-type (event) (getf event :type))
 
@@ -52,17 +53,18 @@ dispatcher (mpl.show:interactor-handle-event). Returns :frame, :coords
 or NIL — what the connection should send next."
   (mpl.show:interactor-handle-event interactor event))
 
-(defun coords-json (interactor x-px y-px)
+(defun coords-json (interactor x-px y-px &key fig)
   "The coords text message for the cursor at the pixel: the data
 coordinates over a 2D axes, the nearest data vertex (label, index) when
 one is within reach, the interaction mode; outside every axes it is
-bare (client clears the readout)."
+bare (client clears the readout). FIG names the window it is about."
   (let ((info (when (and x-px y-px)     ; a key event may carry no pointer
                 (mpl.show:interactor-cursor-info interactor x-px y-px))))
     (with-output-to-string (s)
       (yason:encode-plist
        (append (list "type" "coords"
                      "mode" (string-downcase (symbol-name (mpl.show:interactor-mode interactor))))
+               (when fig (list "fig" fig))
                (when (getf info :x)
                  (list "x" (float (getf info :x) 1.0d0)
                        "y" (float (getf info :y) 1.0d0)))
@@ -73,3 +75,28 @@ bare (client clears the readout)."
                                "py" (float (getf info :py) 1.0d0))
                          (when (getf info :z) (list "pz" (float (getf info :z) 1.0d0))))))
        s))))
+
+(defun windows-json ()
+  "The tab-list message: every window's id and title, and the active id."
+  (let ((active (mpl.show:wm-active-window)))
+    (with-output-to-string (s)
+      (yason:with-output (s)
+        (yason:with-object ()
+          (yason:encode-object-element "type" "windows")
+          (yason:encode-object-element "active" (if active (mpl.show:figure-window-id active) :null))
+          (yason:with-object-element ("items")
+            (yason:with-array ()
+              (dolist (w (mpl.show:wm-windows))
+                (yason:with-object ()
+                  (yason:encode-object-element "id" (mpl.show:figure-window-id w))
+                  (yason:encode-object-element "title" (mpl.show:figure-window-title w)))))))))))
+
+(defun frame-message (id png)
+  "A binary frame for window ID: 4-byte big-endian id, then the PNG octets."
+  (let ((out (make-array (+ 4 (length png)) :element-type '(unsigned-byte 8))))
+    (setf (aref out 0) (ldb (byte 8 24) id)
+          (aref out 1) (ldb (byte 8 16) id)
+          (aref out 2) (ldb (byte 8 8) id)
+          (aref out 3) (ldb (byte 8 0) id))
+    (replace out png :start1 4)
+    out))

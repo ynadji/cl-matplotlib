@@ -54,8 +54,11 @@ no available backend or a named backend is not registered."
 
 (defun show (&optional (figure (mpl.pyplot:gcf)) &key block)
   "Display FIGURE (default: the current pyplot figure) with the backend
-selected by *show-backend*."
-  (show-figure (%resolve-adapter) figure :block block))
+selected by *show-backend*. The figure is registered with the window
+manager first (wm-register), so every backend sees the same windows."
+  (let ((adapter (%resolve-adapter)))
+    (wm-register figure)
+    (show-figure adapter figure :block block)))
 
 ;;; Wire pyplot's (show) to us. pyplot itself has no dependency on this
 ;;; system; the hook is the seam.

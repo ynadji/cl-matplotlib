@@ -99,6 +99,22 @@ Returns the current axes object."
       (t
        (setf *current-axes* (mpl.containers:add-subplot fig 1 1 1))))))
 
+(defvar *close-figure-hook* nil
+  "When bound to a function (figures), (close-figure) calls it with the
+list of figure objects about to be closed. Set by the display stack so
+open windows/tabs of those figures are closed too.")
+
+(defun %figures-to-close (num)
+  (cond ((eq num :all) (loop for f being the hash-values of *figures* collect f))
+        ((eq num :current) (let ((f (and *current-figure* (gethash *current-figure* *figures*))))
+                             (when f (list f))))
+        (t (let ((f (gethash num *figures*))) (when f (list f))))))
+
+(defun figure-number (figure)
+  "The pyplot number of FIGURE, or NIL when it is not a pyplot figure."
+  (loop for k being the hash-keys of *figures* using (hash-value v)
+        when (eq v figure) return k))
+
 (defun close-figure (&optional (num :current))
   "Close figure(s).
 
@@ -108,6 +124,9 @@ NUM — figure number to close, or:
   An integer — close that specific figure.
 
 After closing, switches to the highest-numbered remaining figure."
+  (when *close-figure-hook*
+    (let ((figs (%figures-to-close num)))
+      (when figs (funcall *close-figure-hook* figs))))
   (cond
     ((eq num :all)
      (clrhash *figures*)

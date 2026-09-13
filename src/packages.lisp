@@ -739,7 +739,7 @@ Manages global figure state for convenience.")
                #:twinx #:twiny
                #:minorticks-on
              ;; Output
-           #:savefig #:show #:*show-hook*
+           #:savefig #:show #:*show-hook* #:*close-figure-hook* #:figure-number
            ;; State management
            #:*figures* #:*current-figure* #:*figure-counter*
            ;; Dates (re-exported from containers)

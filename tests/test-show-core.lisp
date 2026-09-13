@@ -362,6 +362,79 @@
       (mpl.show:interactor-clear-selection it)
       (is (equalp plain (mpl.show:interactor-render-rgba it))))))
 
+;;; ============================================================
+;;; Window manager
+;;; ============================================================
+
+(defun %wm-reset ()
+  (mpl.show:wm-close-all)
+  (mpl.pyplot:close-figure :all))
+
+(test wm-register-activate-close
+  (%wm-reset)
+  (let* ((events '())
+         (listener (mpl.show:wm-add-listener (lambda (ev w) (push (list ev (mpl.show:figure-window-id w)) events)))))
+    (unwind-protect
+         (let* ((f1 (mpl.pyplot:figure))
+                (f2 (mpl.pyplot:figure))
+                (w1 (mpl.show:wm-register f1))
+                (w2 (mpl.show:wm-register f2 :title "second")))
+           (is (= 2 (length (mpl.show:wm-windows))))
+           (is (equal "second" (mpl.show:figure-window-title w2)))
+           (is (search "Figure" (mpl.show:figure-window-title w1)))
+           ;; registering again returns the same window
+           (is (eq w1 (mpl.show:wm-register f1)))
+           (is (= 2 (length (mpl.show:wm-windows))))
+           ;; the last registered/activated window is active and is pyplot's current figure
+           (is (eq w1 (mpl.show:wm-active-window)))
+           (is (eq f1 (mpl.pyplot:gcf)))
+           (mpl.show:wm-activate (mpl.show:figure-window-id w2))
+           (is (eq w2 (mpl.show:wm-active-window)))
+           (is (eq f2 (mpl.pyplot:gcf)))
+           (is (eq w2 (mpl.show:wm-find (mpl.show:figure-window-id w2))))
+           (is (eq w2 (mpl.show:wm-window-for-figure f2)))
+           ;; closing the active window activates the most recent remaining one
+           (mpl.show:wm-close (mpl.show:figure-window-id w2))
+           (is (mpl.show:figure-window-closed-p w2))
+           (is (eq w1 (mpl.show:wm-active-window)))
+           (is (= 1 (length (mpl.show:wm-windows))))
+           ;; listener saw the lifecycle in order
+           (let ((seq (reverse events)))
+             (is (equal (list :added (mpl.show:figure-window-id w1)) (first seq)))
+             (is (member (list :removed (mpl.show:figure-window-id w2)) seq :test #'equal))
+             (is (member (list :activated (mpl.show:figure-window-id w2)) seq :test #'equal))))
+      (mpl.show:wm-remove-listener listener)
+      (%wm-reset))))
+
+(test wm-close-figure-hook-and-wait
+  (%wm-reset)
+  (let* ((fig (mpl.pyplot:figure))
+         (w (mpl.show:wm-register fig))
+         (done nil)
+         (waiter (bt:make-thread (lambda () (mpl.show:wm-wait-closed w) (setf done t)))))
+    (sleep 0.1)
+    (is (null done))
+    ;; pyplot's close-figure closes the window and releases the waiter
+    (mpl.pyplot:close-figure)
+    (bt:join-thread waiter)
+    (is (eq t done))
+    (is (null (mpl.show:wm-window-for-figure fig)))
+    (%wm-reset)))
+
+(test wm-notify-changed-reaches-listeners
+  (%wm-reset)
+  (let* ((seen nil)
+         (listener (mpl.show:wm-add-listener (lambda (ev w) (when (eq ev :changed) (setf seen w)))))
+         (fig (mpl.pyplot:figure))
+         (w (mpl.show:wm-register fig)))
+    (unwind-protect
+         (progn
+           (is (eq w (mpl.show:wm-notify-changed fig)))
+           (is (eq w seen))
+           (is (null (mpl.show:wm-notify-changed (mpl.pyplot:figure)))))
+      (mpl.show:wm-remove-listener listener)
+      (%wm-reset))))
+
 (defun run-show-tests ()
   "Run all cl-matplotlib-show tests and report results."
   (let ((results (run 'show-suite)))

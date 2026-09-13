@@ -56,7 +56,9 @@ so they behave the same; the browser client is a dumb terminal.
 | data cursor mode (click pins a vertex's value) | Cursor button or `c` | `c` |
 | clear selection and pins | Escape | Escape |
 | save PNG | Save button (downloads last frame) | `s` (writes `figure-<time>.png` in cwd) |
-| close | close the tab | `q` / close window |
+| switch figure | click its tab | (one window per figure) |
+| new empty figure | New button | — |
+| close | Close button, the tab's ×, or ctrl-w | `q` / close window |
 | cursor readout (data coords, nearest vertex) | toolbar readout | window title |
 
 Paste targets the axes under the pointer (else the figure's first axes)
@@ -73,6 +75,19 @@ re-renders the figure at the new size.
 
 The key map is `mpl.show:*key-bindings*`; SDL2 maps its scancodes onto
 the browser key names so one table serves both.
+
+## Windows and figures
+
+Every shown figure is a window of the window manager (`mpl.show:*wm*`),
+whatever the backend: `wm-register` gives it an id, a title ("Figure n"
+from pyplot, or `:title`) and an interactor; `wm-windows`, `wm-find`,
+`wm-activate`, `wm-close`, `wm-close-all` and `wm-wait-closed` manage
+them, and `wm-add-listener` hands backends the `:added` / `:removed` /
+`:activated` / `:changed` events they render from. The active window is
+pyplot's current figure — `(gca)` and a paste follow the tab you
+clicked — and `(close-figure)` closes the figure's window, which unblocks
+a pending `(show :block t)`. `wm-notify-changed` asks every backend for a
+fresh frame after the REPL edits a shown figure.
 
 ## Frame times
 
@@ -96,16 +111,24 @@ drag renders once per idle step rather than once per motion event.
 ## The web backend
 
 The first `(show)` starts one HTTP server on a random ephemeral port
-(`SHOW_WEB_PORT=<port>` pins it) and opens `http://127.0.0.1:<port>/figure/<n>`
+(`SHOW_WEB_PORT=<port>` pins it) and opens `http://127.0.0.1:<port>/`
 in your browser (`SHOW_WEB_NO_BROWSER=1` prints the URL instead — handy
 over SSH with port forwarding: `ssh -L 8977:localhost:8977 host`).
-Each `(show)` registers a new figure page on the same server;
-`(mpl.show.web:stop-server)` shuts it down.
+That one page shows every figure as a tab: a later `(show)` from the
+REPL adds a tab to the page already open rather than opening another
+browser window, `/figure/<n>` opens the page on that tab, and the New
+button makes an empty pyplot figure. `(mpl.show.web:stop-server)`
+shuts the server down and closes every window.
 
-Frames travel as PNG over a binary websocket; events (wheel, drag,
-home, resize) go back as JSON and are coalesced server-side so a fast
-mouse can't outrun rendering. `:block t` returns when the page's last
-websocket disconnects.
+The page holds one websocket, `/ws`, for all figures. Server to client:
+a JSON `windows` message (the tab list and the active id) on every
+window-manager event, JSON `coords` readouts, and binary frames — a
+4-byte big-endian window id followed by the PNG. Client to server: JSON
+events carrying `fig` (wheel, drag, click, keydown, resize, ...) plus the
+page events `activate`, `close`, `new` and `refresh`. Events are
+coalesced server-side so a fast mouse can't outrun rendering. `:block t`
+returns when the figure's window closes — its tab, `(close-figure)`, or
+the last page disconnecting, which closes every window.
 
 ## The SDL2 backend
 

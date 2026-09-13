@@ -169,6 +169,29 @@
     ;; the coords message carries the mode
     (is (search "\"mode\":\"cursor\"" (mpl.show.web:coords-json it 1 1)))))
 
+(test frame-message-prefixes-window-id
+  (let* ((png (make-array 3 :element-type '(unsigned-byte 8) :initial-contents '(137 80 78)))
+         (msg (mpl.show.web:frame-message 258 png)))
+    (is (equalp msg #(0 0 1 2 137 80 78)))))
+
+(test windows-json-lists-tabs
+  (mpl.show:wm-close-all)
+  (mpl.pyplot:close-figure :all)
+  (let* ((w1 (mpl.show:wm-register (mpl.pyplot:figure) :title "one"))
+         (w2 (mpl.show:wm-register (mpl.pyplot:figure) :title "two"))
+         (json (mpl.show.web:windows-json))
+         (h (yason:parse json)))
+    (is (equal "windows" (gethash "type" h)))
+    (is (= (mpl.show:figure-window-id w2) (gethash "active" h)))
+    (is (= 2 (length (gethash "items" h))))
+    (is (equal "one" (gethash "title" (first (gethash "items" h)))))
+    (is (= (mpl.show:figure-window-id w1) (gethash "id" (first (gethash "items" h)))))
+    (mpl.show:wm-close-all)))
+
+(test parse-event-carries-fig
+  (let ((ev (mpl.show.web:parse-event "{\"type\":\"wheel\",\"fig\":7,\"x\":1,\"y\":2,\"deltaY\":-100}")))
+    (is (= 7 (getf ev :fig)))))
+
 (defun run-show-web-tests ()
   "Run all cl-matplotlib-show-web tests and report results."
   (let ((results (run 'show-web-suite)))

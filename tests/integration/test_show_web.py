@@ -2,16 +2,19 @@
 """Integration test for cl-matplotlib-show-web.
 
 Starts the demo server (tools/show-web-demo.lisp) on a fixed port,
-speaks real HTTP + websocket to it, and asserts the WebAgg-style
-contract: page serves, first binary frame is a PNG, wheel produces a
-different frame, home restores the first frame byte-for-byte
-(render determinism is proven in the show-core FiveAM suite), and
-closing the socket unblocks the server's (show :block t).
+speaks real HTTP + websocket to it, and asserts the multi-figure
+contract: one page at / (and /figure/<id>), one multiplexed socket at
+/ws that first sends a "windows" tab list and then one id-prefixed PNG
+frame per window; events carry "fig"; wheel produces a different frame,
+home restores the first frame byte-for-byte (render determinism is
+proven in the show-core FiveAM suite); a "new" event adds a tab; a
+"close" event on the blocking figure unblocks (show :block t).
 
 Run:  .venv/bin/python tests/integration/test_show_web.py
 Needs: pip install websocket-client (into .venv)
 """
 
+import json
 import os
 import subprocess
 import sys
@@ -38,22 +41,60 @@ def wait_for_server(timeout=120):
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
-            urllib.request.urlopen(f"{BASE}/figure/1", timeout=2)
+            urllib.request.urlopen(f"{BASE}/", timeout=2)
             return True
         except Exception:
             time.sleep(0.5)
     return False
 
 
-def recv_binary(ws, timeout=30):
-    """Next binary message, skipping text (coords) messages."""
-    ws.settimeout(timeout)
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        opcode, data = ws.recv_data()
-        if opcode == websocket.ABNF.OPCODE_BINARY:
-            return bytes(data)
-    raise TimeoutError("no binary frame received")
+class Client:
+    """A websocket with a message buffer, so a frame that arrives while we
+    wait for a text message (or vice versa) is kept, not dropped."""
+
+    def __init__(self, url):
+        self.ws = websocket.WebSocket()
+        self.ws.connect(url)
+        self.pending = []  # (opcode, bytes)
+
+    def send(self, **obj):
+        self.ws.send(json.dumps(obj))
+
+    def close(self):
+        self.ws.close()
+
+    def _next(self, pred, timeout):
+        for i, msg in enumerate(self.pending):
+            if pred(msg):
+                return self.pending.pop(i)
+        self.ws.settimeout(timeout)
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            opcode, data = self.ws.recv_data()
+            msg = (opcode, bytes(data))
+            if pred(msg):
+                return msg
+            self.pending.append(msg)
+        raise TimeoutError("no matching message received")
+
+    def recv_frame(self, fig=None, timeout=30):
+        """Next binary frame as (id, png); with FIG, the next one for that window."""
+        def pred(msg):
+            return (msg[0] == websocket.ABNF.OPCODE_BINARY
+                    and (fig is None or int.from_bytes(msg[1][:4], "big") == fig))
+        _, data = self._next(pred, timeout)
+        return int.from_bytes(data[:4], "big"), data[4:]
+
+    def recv_text(self, kind=None, match=None, timeout=30):
+        """Next text message parsed as JSON; with KIND, the next of that
+        type; with MATCH, the next one for which MATCH(msg) holds."""
+        def pred(msg):
+            if msg[0] != websocket.ABNF.OPCODE_TEXT:
+                return False
+            m = json.loads(msg[1].decode())
+            return (kind is None or m.get("type") == kind) and (match is None or match(m))
+        _, data = self._next(pred, timeout)
+        return json.loads(data.decode())
 
 
 def main():
@@ -69,86 +110,122 @@ def main():
         if failures:
             return
 
-        page = urllib.request.urlopen(f"{BASE}/figure/1", timeout=5)
+        page = urllib.request.urlopen(f"{BASE}/", timeout=5)
         body = page.read().decode()
-        check("GET /figure/1 is 200", page.status == 200)
+        check("GET / is 200", page.status == 200)
         check("page is the client html", "app.js" in body)
+        page2 = urllib.request.urlopen(f"{BASE}/figure/2", timeout=5)
+        check("GET /figure/<id> serves the same page", page2.status == 200 and "app.js" in page2.read().decode())
 
         js = urllib.request.urlopen(f"{BASE}/app.js", timeout=5)
         check("GET /app.js is 200", js.status == 200)
 
         try:
-            urllib.request.urlopen(f"{BASE}/ws?fig=999", timeout=5)
-            check("unknown figure id is 404", False)
+            urllib.request.urlopen(f"{BASE}/nope", timeout=5)
+            check("unknown path is 404", False)
         except urllib.error.HTTPError as e:
-            check("unknown figure id is 404", e.code == 404)
+            check("unknown path is 404", e.code == 404)
 
-        ws = websocket.WebSocket()
-        ws.connect(f"ws://127.0.0.1:{PORT}/ws?fig=1")
+        ws = Client(f"ws://127.0.0.1:{PORT}/ws")
 
-        first = recv_binary(ws)
-        check("first frame is a PNG", first[:8] == PNG_MAGIC, first[:8].hex())
+        # the tab list comes first: both demo figures, the second active
+        windows = ws.recv_text("windows")
+        ids = [w["id"] for w in windows["items"]]
+        check("windows message lists two tabs", len(ids) == 2, json.dumps(windows))
+        check("second figure is active", windows.get("active") == ids[-1], json.dumps(windows))
+        check("tabs have titles", all(w.get("title") for w in windows["items"]), json.dumps(windows))
+        fig1, fig2 = ids
+
+        # then one frame per window, routed by id
+        frames = {}
+        for _ in range(2):
+            wid, png = ws.recv_frame()
+            frames[wid] = png
+        check("a frame arrives for each window", set(frames) == {fig1, fig2}, str(sorted(frames)))
+        first = frames.get(fig1, b"")
+        check("frames are PNGs", all(p[:8] == PNG_MAGIC for p in frames.values()))
+        check("frames differ between windows", frames.get(fig1) != frames.get(fig2))
         check("first frame is plausibly sized", 1000 < len(first) < 500_000, str(len(first)))
 
-        # zoom in at the figure center → new, different frame
-        ws.send('{"type":"wheel","x":320,"y":240,"deltaY":-100}')
-        zoomed = recv_binary(ws)
-        check("wheel produces a new frame", zoomed != first)
+        # zoom in at figure 1's center → a new frame for figure 1 only
+        ws.send(type="wheel", fig=fig1, x=320, y=240, deltaY=-100)
+        wid, zoomed = ws.recv_frame()
+        check("wheel produces a new frame for its window", wid == fig1 and zoomed != first)
 
         # pan while dragging → another frame
-        ws.send('{"type":"mousedown","x":320,"y":240}')
-        ws.send('{"type":"mousemove","x":360,"y":240}')
-        panned = recv_binary(ws)
-        ws.send('{"type":"mouseup"}')
+        ws.send(type="mousedown", fig=fig1, x=320, y=240)
+        ws.send(type="mousemove", fig=fig1, x=360, y=240)
+        wid, panned = ws.recv_frame(fig1)
+        ws.send(type="mouseup", fig=fig1)
         check("drag pan produces a new frame", panned != zoomed)
 
-        # hover (no drag) → text coords message
-        ws.send('{"type":"mousemove","x":320,"y":240}')
-        ws.settimeout(30)
-        opcode, data = ws.recv_data()
-        while opcode == websocket.ABNF.OPCODE_BINARY:
-            opcode, data = ws.recv_data()
-        text = bytes(data).decode()
-        check("hover sends coords", '"type":"coords"' in text and '"x":' in text, text)
+        # hover (no drag) → coords message tagged with the window
+        ws.send(type="mousemove", fig=fig1, x=320, y=240)
+        coords = ws.recv_text("coords")
+        check("hover sends coords with fig", coords.get("fig") == fig1 and "x" in coords, json.dumps(coords))
 
         # home → byte-identical to the first frame
-        ws.send('{"type":"home"}')
-        home = recv_binary(ws)
+        ws.send(type="home", fig=fig1)
+        wid, home = ws.recv_frame(fig1)
         check("home restores the first frame exactly", home == first,
               f"{len(home)} vs {len(first)} bytes")
 
-        # interaction: click the y=0 line (its pixel row is known from the
-        # default 640x480 layout) → the selection highlight changes the frame;
-        # Delete removes it; ctrl-z restores it and the frame is the home
-        # frame again, byte for byte.
-        ws.send('{"type":"click","x":320,"y":243}')
-        selected = recv_binary(ws)
+        # interaction on a non-active tab: click the y=0 line of figure 1
+        # (its pixel row is known from the default 640x480 layout) → the
+        # selection highlight changes the frame; Delete removes it; ctrl-z
+        # restores it and the frame is the home frame again, byte for byte.
+        ws.send(type="click", fig=fig1, x=320, y=243)
+        wid, selected = ws.recv_frame(fig1)
         check("click selects a trace (highlight frame)", selected != home)
-        ws.send('{"type":"keydown","key":"c","ctrl":true}')
-        ws.send('{"type":"keydown","key":"Delete"}')
-        deleted = recv_binary(ws)
+        ws.send(type="keydown", fig=fig1, key="c", ctrl=True)
+        ws.send(type="keydown", fig=fig1, key="Delete")
+        wid, deleted = ws.recv_frame(fig1)
         check("Delete removes the trace", deleted != selected and deleted != home)
-        ws.send('{"type":"keydown","key":"z","ctrl":true}')
-        restored = recv_binary(ws)
+        ws.send(type="keydown", fig=fig1, key="z", ctrl=True)
+        wid, restored = ws.recv_frame(fig1)
         check("undo restores the home frame exactly", restored == home,
               f"{len(restored)} vs {len(home)} bytes")
 
-        # cursor mode: the coords message carries the mode
-        ws.send('{"type":"keydown","key":"c"}')
-        ws.settimeout(30)
-        opcode, data = ws.recv_data()
-        while opcode == websocket.ABNF.OPCODE_BINARY:
-            opcode, data = ws.recv_data()
-        check("cursor mode is reported", '"mode":"cursor"' in bytes(data).decode(), bytes(data).decode())
+        # paste the copied trace into figure 2 → figure 2's frame changes
+        ws.send(type="keydown", fig=fig2, key="v", ctrl=True)
+        wid, pasted = ws.recv_frame(fig2)
+        check("paste across figures changes the other window", pasted != frames[fig2])
 
-        # closing the last socket unblocks (show :block t) → server exits
-        ws.close()
+        # activating a tab makes it the active window
+        ws.send(type="activate", fig=fig1)
+        windows = ws.recv_text("windows", lambda m: m.get("active") == fig1)
+        check("activate updates the tab list", windows.get("active") == fig1, json.dumps(windows))
+
+        # a new figure from the page → a third tab plus its frame
+        ws.send(type="new")
+        windows = ws.recv_text("windows", lambda m: len(m["items"]) == 3 and m.get("active") == m["items"][-1]["id"])
+        new_ids = [w["id"] for w in windows["items"]]
+        check("new adds a tab and activates it", new_ids[:2] == [fig1, fig2], json.dumps(windows))
+        fig3 = new_ids[-1]
+        wid, png3 = ws.recv_frame(fig3)
+        check("new tab gets a frame", png3[:8] == PNG_MAGIC)
+
+        # closing a tab removes it and activates the most recent remaining one
+        ws.send(type="close", fig=fig3)
+        windows = ws.recv_text("windows", lambda m: len(m["items"]) == 2 and m.get("active") != fig3)
+        check("close removes the tab and activates the last remaining one",
+              [w["id"] for w in windows["items"]] == [fig1, fig2] and windows.get("active") == fig2,
+              json.dumps(windows))
+
+        # cursor mode: the coords message carries the mode
+        ws.send(type="keydown", fig=fig1, key="c")
+        coords = ws.recv_text("coords")
+        check("cursor mode is reported", coords.get("mode") == "cursor", json.dumps(coords))
+
+        # closing the blocking figure's tab unblocks (show :block t) → server exits
+        ws.send(type="close", fig=fig2)
         try:
             server.wait(timeout=60)
-            check("closing the page unblocks show :block", server.returncode == 0,
+            check("closing the tab unblocks show :block", server.returncode == 0,
                   str(server.returncode))
         except subprocess.TimeoutExpired:
-            check("closing the page unblocks show :block", False, "server still running")
+            check("closing the tab unblocks show :block", False, "server still running")
+        ws.close()
     finally:
         if server.poll() is None:
             server.kill()

@@ -51,7 +51,8 @@ Optional display backends open figures in live windows with
 cursor-anchored zoom, drag pan (or rotate, for 3D), home/reset, save,
 a data-coordinate readout, click-to-select traces with copy/cut/paste
 between figures, undo/redo, legend toggling and a pinnable data cursor —
-in the browser (works over SSH) or a native SDL2 window:
+in the browser (one page, a tab per figure; works over SSH) or a native
+SDL2 window:
 
 ```lisp
 (ql:quickload :cl-matplotlib-show-web)   ; or :cl-matplotlib-show-sdl2, :cl-matplotlib-show-emacs
@@ -85,7 +86,7 @@ depth-shaded scatter markers and lit surfaces.
 
 See `examples/{surface3d,scatter3d,lines3d,trisurf3d,bar3d}.lisp`, whose
 references are rendered with `mplot3d` itself. Not yet ported: wireframes,
-`contour3D`, `quiver3D`, 3D text and interactive rotation (planned).
+`contour3D`, `quiver3D` and 3D text.
 
 ## Grammar of Graphics (ggplot)
 

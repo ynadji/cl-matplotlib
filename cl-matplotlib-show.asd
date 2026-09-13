@@ -21,6 +21,7 @@
                (:file "pick")
                (:file "commands")
                (:file "events")
+               (:file "manager")
                (:file "protocol"))
   :in-order-to ((asdf:test-op (asdf:test-op #:cl-matplotlib-show/tests))))
 

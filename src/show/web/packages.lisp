@@ -12,6 +12,7 @@ zoom/pan/home/resize events back. Registered as the :web show adapter.")
    #:coalesce-events
    #:apply-event
    #:coords-json
+   #:windows-json #:frame-message
    ;; server.lisp
    #:web-show-adapter
    #:ensure-server
