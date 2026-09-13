@@ -14,6 +14,14 @@
 ;;;; A window manager listener pushes tab-list updates and fresh frames
 ;;;; to every connected page, so a figure shown from the REPL appears as
 ;;;; a new tab everywhere.
+;;;;
+;;;; Keepalive: hunchentoot closes a socket that has been silent for
+;;;; *default-connection-timeout* (20 s), which a page in a background
+;;;; tab is. A heartbeat thread pings every page every *ping-seconds*;
+;;;; the browser's pong is the input that keeps the socket open, and a
+;;;; page that is really gone fails the ping and is dropped. The client
+;;;; reconnects on its own, so "the last page went away" only closes the
+;;;; windows after *close-grace-seconds* without any page.
 
 (in-package #:cl-matplotlib.show.web)
 
@@ -26,6 +34,13 @@
 (defvar *conns-lock* (bt:make-lock "mpl-show-web-conns"))
 (defvar *ever-connected-p* nil
   "Set once a page has connected; closing the last page then closes every window.")
+(defvar *ping-seconds* 10
+  "Seconds between websocket pings to each page (must stay well under
+hunchentoot's 20 s connection timeout).")
+(defvar *close-grace-seconds* 5
+  "Seconds without any page before every window is closed — long enough
+for a reconnecting page to come back.")
+(defvar *heartbeat* nil)
 
 (defstruct conn
   ws
@@ -69,7 +84,8 @@ random ephemeral port (up to 10 attempts)."
                    (when (uiop:getenv "SHOW_WEB_PORT")
                      (error "show web server could not bind port ~D: ~A" port e))))
             finally (error "show web server: no free port found after 10 attempts"))
-      (mpl.show:wm-add-listener #'%wm-listener))
+      (mpl.show:wm-add-listener #'%wm-listener)
+      (setf *heartbeat* (bt:make-thread #'%heartbeat :name "mpl-show-web-heartbeat")))
     *port*))
 
 (defun stop-server ()
@@ -78,9 +94,22 @@ random ephemeral port (up to 10 attempts)."
     (when *server*
       (mpl.show:wm-remove-listener #'%wm-listener)
       (clack:stop *server*)
-      (setf *server* nil *port* nil *ever-connected-p* nil)))
+      (setf *server* nil *port* nil *ever-connected-p* nil *heartbeat* nil)))
   (mpl.show:wm-close-all)
   (values))
+
+;;; Stop the server (its listener thread would otherwise be aborted
+;;; mid-shutdown when the image exits, printing a join-thread backtrace).
+#+sbcl (pushnew 'stop-server sb-ext:*exit-hooks*)
+#+ccl (pushnew 'stop-server ccl:*lisp-cleanup-functions*)
+
+(defun %heartbeat ()
+  "Ping every page every *ping-seconds* while the server runs."
+  (loop while (bt:with-lock-held (*server-lock*) (and *server* (eq *heartbeat* (bt:current-thread))))
+        do (sleep *ping-seconds*)
+           (%broadcast (lambda (c)
+                         (handler-case (websocket-driver:send-ping (conn-ws c))
+                           (error () nil))))))
 
 ;;; ============================================================
 ;;; Routing
@@ -188,6 +217,7 @@ when handled."
      (let ((w (%event-window event)))
        (when w (%send-frame conn w)))
      t)
+    (:ping t)
     (t nil)))
 
 (defun %conn-worker (conn)
@@ -237,10 +267,16 @@ when handled."
     (bt:with-lock-held (*conns-lock*)
       (setf *conns* (remove conn *conns*))
       (setf last-p (and (null *conns*) *ever-connected-p*)))
-    ;; the last page went away: every window is closed, which unblocks
+    ;; the last page went away: unless one comes back within the grace
+    ;; period (a reconnect), every window is closed, which unblocks
     ;; (show :block t) callers
     (when last-p
-      (mpl.show:wm-close-all))))
+      (bt:make-thread
+       (lambda ()
+         (sleep *close-grace-seconds*)
+         (when (bt:with-lock-held (*conns-lock*) (and (null *conns*) *ever-connected-p*))
+           (mpl.show:wm-close-all)))
+       :name "mpl-show-web-close-grace"))))
 
 (defun %handle-ws (env)
   (declare (ignore env))

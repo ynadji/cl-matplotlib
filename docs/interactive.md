@@ -126,9 +126,12 @@ window-manager event, JSON `coords` readouts, and binary frames — a
 4-byte big-endian window id followed by the PNG. Client to server: JSON
 events carrying `fig` (wheel, drag, click, keydown, resize, ...) plus the
 page events `activate`, `close`, `new` and `refresh`. Events are
-coalesced server-side so a fast mouse can't outrun rendering. `:block t`
-returns when the figure's window closes — its tab, `(close-figure)`, or
-the last page disconnecting, which closes every window.
+coalesced server-side so a fast mouse can't outrun rendering. The server
+pings each page every 10 s so an idle or background tab stays connected
+(hunchentoot drops a silent socket after 20 s), and the page reconnects
+by itself if the socket drops. `:block t` returns when the figure's
+window closes — its tab, `(close-figure)`, or the last page staying
+away for 5 s, which closes every window.
 
 ## The SDL2 backend
 

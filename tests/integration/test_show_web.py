@@ -77,6 +77,34 @@ class Client:
             self.pending.append(msg)
         raise TimeoutError("no matching message received")
 
+    def recv_control(self, opcode, timeout=30):
+        """Wait for a control frame (e.g. a ping) with OPCODE, buffering
+        any data frames that arrive meanwhile. websocket-client answers a
+        ping with a pong by itself."""
+        self.ws.settimeout(timeout)
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            op, frame = self.ws.recv_data(control_frame=True)
+            if op == opcode:
+                return True
+            if op in (websocket.ABNF.OPCODE_TEXT, websocket.ABNF.OPCODE_BINARY):
+                self.pending.append((op, bytes(frame)))
+        return False
+
+    def idle(self, seconds):
+        """Stay quiet for SECONDS while still reading, so pings get their
+        pong (a browser does this in its network stack). Data frames that
+        arrive are buffered."""
+        deadline = time.time() + seconds
+        while time.time() < deadline:
+            self.ws.settimeout(max(0.1, min(1.0, deadline - time.time())))
+            try:
+                op, frame = self.ws.recv_data(control_frame=True)
+            except websocket.WebSocketTimeoutException:
+                continue
+            if op in (websocket.ABNF.OPCODE_TEXT, websocket.ABNF.OPCODE_BINARY):
+                self.pending.append((op, bytes(frame)))
+
     def recv_frame(self, fig=None, timeout=30):
         """Next binary frame as (id, png); with FIG, the next one for that window."""
         def pred(msg):
@@ -211,6 +239,19 @@ def main():
         check("close removes the tab and activates the last remaining one",
               [w["id"] for w in windows["items"]] == [fig1, fig2] and windows.get("active") == fig2,
               json.dumps(windows))
+
+        # keepalive: an idle page (background tab) must outlive hunchentoot's
+        # 20 s connection timeout (websocket-driver retries once, so a silent
+        # socket dies after ~40 s) — the server pings, the client pongs
+        check("server pings within 15 s", ws.recv_control(websocket.ABNF.OPCODE_PING, timeout=15))
+        print("  ...  idling 45 s to check the keepalive")
+        ws.idle(45)
+        ws.send(type="home", fig=fig1)
+        try:
+            wid, again = ws.recv_frame(fig1)
+            check("socket survives 45 s idle", again == home)
+        except Exception as e:  # noqa: BLE001
+            check("socket survives 45 s idle", False, repr(e))
 
         # cursor mode: the coords message carries the mode
         ws.send(type="keydown", fig=fig1, key="c")

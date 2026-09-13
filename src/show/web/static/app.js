@@ -20,11 +20,24 @@ const wantedId = (() => {
 })();
 let wantedApplied = false;
 
-const ws = new WebSocket(`ws://${location.host}/ws`);
-ws.binaryType = 'arraybuffer';
+// One socket for every figure; reconnects with backoff if it drops (the
+// server re-sends the tab list and a frame per window on connect).
+let ws = null;
+let reconnectDelay = 1000;
+function connect() {
+  ws = new WebSocket(`ws://${location.host}/ws`);
+  ws.binaryType = 'arraybuffer';
+  ws.onopen = () => { reconnectDelay = 1000; statusEl.textContent = ''; };
+  ws.onmessage = onMessage;
+  ws.onclose = () => {
+    statusEl.textContent = 'reconnecting…';
+    setTimeout(connect, reconnectDelay);
+    reconnectDelay = Math.min(reconnectDelay * 2, 10000);
+  };
+}
 
 function send(obj) {
-  if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
 }
 
 // ---- windows / tabs --------------------------------------------------
@@ -85,7 +98,7 @@ function renderTabs(items, active) {
 
 // ---- incoming ------------------------------------------------------------
 
-ws.onmessage = async (ev) => {
+async function onMessage(ev) {
   if (ev.data instanceof ArrayBuffer) {
     const view = new DataView(ev.data);
     const id = view.getUint32(0);
@@ -115,8 +128,8 @@ ws.onmessage = async (ev) => {
     coordsEl.textContent = text;
     document.body.classList.toggle('cursor-mode', msg.mode === 'cursor');
   }
-};
-ws.onclose = () => { statusEl.textContent = 'disconnected'; };
+}
+connect();
 
 // ---- pointer events on a figure's canvas ---------------------------------
 
