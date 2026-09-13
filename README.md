@@ -51,8 +51,8 @@ Optional display backends open figures in live windows with
 cursor-anchored zoom, drag pan (or rotate, for 3D), home/reset, save,
 a data-coordinate readout, click-to-select traces with copy/cut/paste
 between figures, undo/redo, legend toggling and a pinnable data cursor —
-in the browser (one page, a tab per figure; works over SSH) or a native
-SDL2 window:
+in the browser (one page, a tab per figure; works over SSH) or native
+SDL2 windows (one per figure):
 
 ```lisp
 (ql:quickload :cl-matplotlib-show-web)   ; or :cl-matplotlib-show-sdl2, :cl-matplotlib-show-emacs

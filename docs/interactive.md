@@ -56,9 +56,9 @@ so they behave the same; the browser client is a dumb terminal.
 | data cursor mode (click pins a vertex's value) | Cursor button or `c` | `c` |
 | clear selection and pins | Escape | Escape |
 | save PNG | Save button (downloads last frame) | `s` (writes `figure-<time>.png` in cwd) |
-| switch figure | click its tab | (one window per figure) |
+| switch figure | click its tab | focus its window |
 | new empty figure | New button | — |
-| close | Close button, the tab's ×, or ctrl-w | `q` / close window |
+| close | Close button, the tab's ×, or ctrl-w | `q` / the window's close button |
 | cursor readout (data coords, nearest vertex) | toolbar readout | window title |
 
 Paste targets the axes under the pointer (else the figure's first axes)
@@ -132,19 +132,29 @@ the last page disconnecting, which closes every window.
 
 ## The SDL2 backend
 
+One native window per figure, all driven by one event loop that mirrors
+the window manager: a figure shown from the REPL while windows are open
+pops up as a new window, a window closed anywhere (its close button,
+`q`, `(close-figure)`, a web tab) disappears here too, and focusing a
+window makes its figure the current one. Copy in one window, paste in
+another. The first `(show)` starts the loop — in the calling thread for
+`:block t`, which returns when that figure's window closes (remaining
+windows move to a worker thread), else on a worker; later `(show)`s just
+add windows, and `:block t` waits for theirs to close.
+
 Frames are RGBA buffers uploaded into a streaming `:abgr8888` texture
 (RGBA byte order on little-endian machines; `+texture-format+` in
 `src/show/sdl2/sdl2-adapter.lisp` is the single constant to flip if a
 platform renders swapped colors).
 
 **macOS**: Cocoa requires the GUI event loop on the initial thread —
-call `(show :block t)` from the main thread (e.g. a `ros run` script or
-the initial REPL thread). The non-blocking form spawns a worker thread
-and is Linux/Windows-only.
+make the first `(show :block t)` from the main thread (e.g. a `ros run`
+script or the initial REPL thread). The non-blocking form spawns a
+worker thread and is Linux/Windows-only.
 
-**Headless smoke test**: `SDL_VIDEODRIVER=dummy` lets the full
-init/window/texture/upload path run without a display (this is what CI
-does).
+**Headless tests**: `SDL_VIDEODRIVER=dummy` lets the full
+init/window/texture/upload path and the multi-window loop run without a
+display (this is what CI does).
 
 ## The CAPI backend (LispWorks, stretch)
 
