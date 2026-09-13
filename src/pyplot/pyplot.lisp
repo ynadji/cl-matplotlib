@@ -917,18 +917,22 @@ Returns FILENAME, or the SVG string for a NIL destination."
                            :transparent transparent))
 
 (defvar *show-hook* nil
-  "When bound to a function (figure &key block), (show) displays the
-current figure through it. Set by loading the cl-matplotlib-show system;
-pyplot itself carries no display-backend dependency.")
+  "When bound to a function (figure &key block all), (show) displays the
+current figure through it; ALL is every open figure in number order, to
+be shown as well (matplotlib's show displays every figure). Set by
+loading the cl-matplotlib-show system; pyplot itself carries no
+display-backend dependency.")
 
 (defun show (&key block)
-  "Display the current figure.
-With an interactive display system loaded (cl-matplotlib-show plus a
-backend such as cl-matplotlib-show-web or -sdl2) this opens a live
-window; BLOCK T returns only after it is closed. Otherwise it is a
-no-op that suggests savefig."
+  "Display every open figure, the current one on top (like matplotlib's
+plt.show). With an interactive display system loaded (cl-matplotlib-show
+plus a backend such as cl-matplotlib-show-web or -sdl2) this opens a
+live window or tab per figure; BLOCK T returns only after the current
+figure's window is closed. Otherwise it is a no-op that suggests savefig."
   (if *show-hook*
-      (funcall *show-hook* (gcf) :block block)
+      (let ((all (loop for n in (sort (loop for k being the hash-keys of *figures* collect k) #'<)
+                       collect (gethash n *figures*))))
+        (funcall *show-hook* (gcf) :block block :all all))
       (progn
         (format t "~&; pyplot: No display backend loaded — use (savefig \"file.png\"), or (ql:quickload :cl-matplotlib-show-web) for interactive display.~%")
         (values))))

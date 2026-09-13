@@ -63,4 +63,8 @@ manager first (wm-register), so every backend sees the same windows."
 ;;; Wire pyplot's (show) to us. pyplot itself has no dependency on this
 ;;; system; the hook is the seam.
 (setf mpl.pyplot:*show-hook*
-      (lambda (figure &key block) (show figure :block block)))
+      (lambda (figure &key block all)
+        ;; every open figure gets a window, in number order; showing the
+        ;; current one then makes it the active tab/window
+        (dolist (f all) (wm-register f))
+        (show figure :block block)))

@@ -199,6 +199,38 @@
 (test pyplot-show-hook-wired
   (is (functionp mpl.pyplot:*show-hook*)))
 
+;;; a recording adapter: (show) must register every open figure, current last
+(defclass %recording-adapter () ((shown :initform nil :accessor %shown)))
+(defmethod mpl.show:show-figure ((a %recording-adapter) figure &key block)
+  (declare (ignore block))
+  (push figure (%shown a))
+  figure)
+
+(test pyplot-show-registers-every-figure
+  (mpl.show:wm-close-all)
+  (mpl.pyplot:close-figure :all)
+  (let ((adapter (make-instance '%recording-adapter)))
+    (mpl.show:register-show-adapter :recording (lambda () adapter))
+    (unwind-protect
+         (let ((mpl.show:*show-backend* :recording))
+           (let ((f1 (mpl.pyplot:figure))
+                 (f2 (mpl.pyplot:figure))
+                 (f3 (mpl.pyplot:figure)))
+             (mpl.pyplot:figure :num (mpl.pyplot:figure-number f2))   ; make f2 current
+             (mpl.pyplot:show)
+             ;; only the current figure goes to the adapter ...
+             (is (equal (list f2) (%shown adapter)))
+             ;; ... but every figure has a window, in number order, current active
+             (is (equal (list f1 f2 f3)
+                        (mapcar #'mpl.show:figure-window-figure (mpl.show:wm-windows))))
+             (is (eq f2 (mpl.show:figure-window-figure (mpl.show:wm-active-window))))
+             ;; showing again adds nothing
+             (mpl.pyplot:show)
+             (is (= 3 (length (mpl.show:wm-windows))))))
+      (setf mpl.show::*adapters* (remove :recording mpl.show::*adapters* :key #'first))
+      (mpl.show:wm-close-all)
+      (mpl.pyplot:close-figure :all))))
+
 ;;; ============================================================
 ;;; Interaction: 3D gestures, picking, clipboard, undo, legend, cursor
 ;;; ============================================================

@@ -326,12 +326,28 @@ on the worker that already drives the other windows."
   (let ((window (mpl.show:wm-register figure)))
     (cond ((loop-running-p)
            (when block (mpl.show:wm-wait-closed window)))
+          ((%must-run-inline-p)
+           ;; macOS: cl-sdl2 pumps SDL on the initial thread, so a loop
+           ;; started from here on a worker would interrupt this thread
+           ;; anyway. Run it here until every window is closed.
+           (unless block
+             (format t "~&; show-sdl2: on macOS the windows run on this (initial) thread; ~
+                        the REPL resumes when all windows are closed. Use (show :block t), ~
+                        or the web backend / SLIME for a live REPL.~%"))
+           (run-sdl2-show-loop))
           (block
            (run-sdl2-show-loop :stop-fn (lambda () (mpl.show:figure-window-closed-p window)))
            ;; other windows are still open: keep them alive on a worker
            (when (mpl.show:wm-windows) (%start-worker)))
           (t (%start-worker)))
     window))
+
+(defun %must-run-inline-p ()
+  "True when the calling thread is the process's initial thread on macOS
+SBCL: cl-sdl2 interrupts that thread to pump SDL, so a worker could not
+leave it free."
+  #+(and sbcl darwin) (eq (bt:current-thread) (sb-thread:main-thread))
+  #-(and sbcl darwin) nil)
 
 (defun %display-available-p ()
   (flet ((set-p (name)

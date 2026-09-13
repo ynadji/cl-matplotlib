@@ -24,8 +24,9 @@ use:
 (show :block t)     ; returns when the window/page is closed
 ```
 
-`(show)` displays the current figure through whichever backend is
-loaded. With several loaded, `mpl.show:*show-backend*` picks:
+`(show)` displays every open figure — like matplotlib's `plt.show()` —
+with the current one on top, through whichever backend is loaded;
+`(mpl.show:show figure)` shows one figure. With several loaded, `mpl.show:*show-backend*` picks:
 
 ```lisp
 (setf mpl.show:*show-backend* :web)    ; or :sdl2, :capi, :emacs
@@ -150,10 +151,13 @@ Frames are RGBA buffers uploaded into a streaming `:abgr8888` texture
 `src/show/sdl2/sdl2-adapter.lisp` is the single constant to flip if a
 platform renders swapped colors).
 
-**macOS**: Cocoa requires the GUI event loop on the initial thread —
-make the first `(show :block t)` from the main thread (e.g. a `ros run`
-script or the initial REPL thread). The non-blocking form spawns a
-worker thread and is Linux/Windows-only.
+**macOS**: Cocoa requires the GUI event loop on the initial thread, and
+cl-sdl2 takes that thread over to pump SDL. From a terminal REPL (whose
+thread *is* the initial thread) `(show)` therefore runs the loop right
+there and the REPL resumes once every window is closed — build all your
+figures first, then `(show)` once to get a window for each. For a live
+REPL alongside SDL2 windows use SLIME/Sly (the REPL runs on another
+thread) or the web backend.
 
 **Headless tests**: `SDL_VIDEODRIVER=dummy` lets the full
 init/window/texture/upload path and the multi-window loop run without a

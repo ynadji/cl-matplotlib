@@ -59,8 +59,8 @@ SDL2 windows (one per figure):
 (use-package :cl-matplotlib.pyplot)
 
 (plot '(1 2 3 4) '(1 4 2 3))
-(show)              ; opens a browser tab / window
-(show :block t)     ; returns when it is closed
+(show)              ; opens a browser tab / window per open figure
+(show :block t)     ; returns when the current figure's is closed
 ```
 
 See [docs/interactive.md](docs/interactive.md) for backend selection,
