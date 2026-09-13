@@ -199,10 +199,15 @@ flagged :changed dirty."
         ((sdl2:scancode= keysym :scancode-backspace) "Backspace")
         (t nil)))
 
-(defun %mod-p (&rest names)
-  (apply #'sdl2:mod-value-p (sdl2:get-mod-state) names))
-(defun %ctrl-p () (%mod-p :lctrl :rctrl :lgui :rgui))
-(defun %shift-p () (%mod-p :lshift :rshift))
+(defun %mod-p (mask)
+  ;; through the FFI: sdl2:get-mod-state / mod-value-p are missing from
+  ;; older cl-sdl2 releases
+  (logtest mask (sdl2-ffi.functions:sdl-get-mod-state)))
+(defun %ctrl-p ()
+  (%mod-p (logior sdl2-ffi:+kmod-lctrl+ sdl2-ffi:+kmod-rctrl+
+                  sdl2-ffi:+kmod-lgui+ sdl2-ffi:+kmod-rgui+)))
+(defun %shift-p ()
+  (%mod-p (logior sdl2-ffi:+kmod-lshift+ sdl2-ffi:+kmod-rshift+)))
 
 (defun run-sdl2-show-loop (&key (stop-fn (lambda () (null (mpl.show:wm-windows)))))
   "Drive an SDL2 window per window-manager window until STOP-FN returns
