@@ -329,18 +329,26 @@ on the worker that already drives the other windows."
           ((%must-run-inline-p)
            ;; macOS: cl-sdl2 pumps SDL on the initial thread, so a loop
            ;; started from here on a worker would interrupt this thread
-           ;; anyway. Run it here until every window is closed.
+           ;; anyway. Run the pump here, with the loop inside it, until
+           ;; every window is closed.
            (unless block
              (format t "~&; show-sdl2: on macOS the windows run on this (initial) thread; ~
-                        the REPL resumes when all windows are closed. Use (show :block t), ~
-                        or the web backend / SLIME for a live REPL.~%"))
-           (run-sdl2-show-loop))
+                        the REPL resumes when all windows are closed. Use the web backend ~
+                        or SLIME for a live REPL.~%"))
+           (%run-loop-as-main-thread))
           (block
            (run-sdl2-show-loop :stop-fn (lambda () (mpl.show:figure-window-closed-p window)))
            ;; other windows are still open: keep them alive on a worker
            (when (mpl.show:wm-windows) (%start-worker)))
           (t (%start-worker)))
     window))
+
+(defun %run-loop-as-main-thread ()
+  "Make the calling thread SDL's main thread and run the loop inside its
+message pump; returns once the loop has quit SDL. (Calling the loop
+directly from the initial thread would hang: sdl2:init only starts a
+pump on another thread, and every SDL call waits on that pump.)"
+  (sdl2:make-this-thread-main #'run-sdl2-show-loop))
 
 (defun %must-run-inline-p ()
   "True when the calling thread is the process's initial thread on macOS
