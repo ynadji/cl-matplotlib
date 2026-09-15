@@ -5,7 +5,7 @@
 (asdf:defsystem #:cl-matplotlib-show-emacs
   :description "Emacs display backend for cl-matplotlib — SVG image buffer via SLIME/SLY eval-in-emacs"
   :version "0.1.0"
-  :depends-on (#:cl-matplotlib-show)
+  :depends-on (#:cl-matplotlib-show #:cl-base64)
   :serial t
   :pathname "src/show/emacs/"
   :components ((:file "emacs-adapter"))
