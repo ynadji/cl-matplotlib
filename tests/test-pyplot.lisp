@@ -425,10 +425,13 @@
     (when (probe-file path) (delete-file path))))
 
 (test show-no-error
-  "Test that show doesn't error (no-op for non-interactive)."
+  "Test that show doesn't error (no-op for non-interactive). The hook is
+bound off so the test means the same whether or not a display system
+happens to be loaded in this image."
   (reset-pyplot-state)
   (figure)
-  (finishes (show)))
+  (let ((cl-matplotlib.pyplot:*show-hook* nil))
+    (finishes (show))))
 
 ;;; ============================================================
 ;;; State isolation tests

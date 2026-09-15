@@ -12,7 +12,8 @@
 (in-suite show-web-suite)
 
 (defun %ev (type &rest kv)
-  (append (list :type type) kv))
+  "A core event plist; TYPE may be given as the wire string."
+  (append (list :type (if (stringp type) (intern (string-upcase type) :keyword) type)) kv))
 
 (defun %fresh-interactor ()
   (mpl.pyplot:close-figure :all)
@@ -38,13 +39,13 @@
 (test parse-event-fields
   (let ((ev (mpl.show.web:parse-event
              "{\"type\":\"wheel\",\"x\":120,\"y\":80,\"deltaY\":-100}")))
-    (is (string= "wheel" (getf ev :type)))
+    (is (eq :wheel (getf ev :type)))
     (is (= 120 (getf ev :x)))
     (is (= 80 (getf ev :y)))
     (is (= -100 (getf ev :delta-y)))
     (is (null (getf ev :w))))
   (let ((ev (mpl.show.web:parse-event "{\"type\":\"resize\",\"w\":800,\"h\":600}")))
-    (is (string= "resize" (getf ev :type)))
+    (is (eq :resize (getf ev :type)))
     (is (= 800 (getf ev :w)))
     (is (= 600 (getf ev :h)))))
 
@@ -79,7 +80,7 @@
                     (%ev "mousemove" :x 3 :y 3)
                     (%ev "mousemove" :x 4 :y 4)
                     (%ev "mouseup")))))
-    (is (equal '("mousemove" "mousedown" "mousemove" "mouseup")
+    (is (equal '(:mousemove :mousedown :mousemove :mouseup)
                (mapcar (lambda (e) (getf e :type)) out)))
     (is (= 2 (getf (first out) :x)))
     (is (= 4 (getf (third out) :x)))))
@@ -144,6 +145,52 @@
       (let ((json (mpl.show.web:coords-json it 1 1)))
         (is (search "\"type\":\"coords\"" json))
         (is (not (search "\"x\":" json)))))))
+
+(test parse-keydown-with-modifiers
+  (let ((ev (mpl.show.web:parse-event "{\"type\":\"keydown\",\"key\":\"c\",\"ctrl\":true,\"shift\":false,\"x\":10,\"y\":20}")))
+    (is (eq :keydown (getf ev :type)))
+    (is (equal "c" (getf ev :key)))
+    (is (eq t (getf ev :ctrl)))
+    (is (null (getf ev :shift)))
+    (is (= 10 (getf ev :x))))
+  (let ((ev (mpl.show.web:parse-event "{\"type\":\"click\",\"x\":3,\"y\":4,\"button\":0}")))
+    (is (eq :click (getf ev :type)))
+    (is (= 0 (getf ev :button)))))
+
+(test apply-event-keydown-dispatch
+  "Key events reach the shared dispatcher: h resets, c toggles cursor mode."
+  (let* ((fig (progn (mpl.pyplot:close-figure :all) (mpl.pyplot:figure)
+                     (mpl.pyplot:plot '(1 2 3) '(1 4 9)) (mpl.pyplot:gcf)))
+         (it (mpl.show:make-interactor fig)))
+    (mpl.show:interactor-render-rgba it)
+    (is (eq :coords (mpl.show.web:apply-event it (%ev "keydown" :key "c"))))
+    (is (eq :cursor (mpl.show:interactor-mode it)))
+    (is (eq :frame (mpl.show.web:apply-event it (%ev "keydown" :key "h"))))
+    ;; the coords message carries the mode
+    (is (search "\"mode\":\"cursor\"" (mpl.show.web:coords-json it 1 1)))))
+
+(test frame-message-prefixes-window-id
+  (let* ((png (make-array 3 :element-type '(unsigned-byte 8) :initial-contents '(137 80 78)))
+         (msg (mpl.show.web:frame-message 258 png)))
+    (is (equalp msg #(0 0 1 2 137 80 78)))))
+
+(test windows-json-lists-tabs
+  (mpl.show:wm-close-all)
+  (mpl.pyplot:close-figure :all)
+  (let* ((w1 (mpl.show:wm-register (mpl.pyplot:figure) :title "one"))
+         (w2 (mpl.show:wm-register (mpl.pyplot:figure) :title "two"))
+         (json (mpl.show.web:windows-json))
+         (h (yason:parse json)))
+    (is (equal "windows" (gethash "type" h)))
+    (is (= (mpl.show:figure-window-id w2) (gethash "active" h)))
+    (is (= 2 (length (gethash "items" h))))
+    (is (equal "one" (gethash "title" (first (gethash "items" h)))))
+    (is (= (mpl.show:figure-window-id w1) (gethash "id" (first (gethash "items" h)))))
+    (mpl.show:wm-close-all)))
+
+(test parse-event-carries-fig
+  (let ((ev (mpl.show.web:parse-event "{\"type\":\"wheel\",\"fig\":7,\"x\":1,\"y\":2,\"deltaY\":-100}")))
+    (is (= 7 (getf ev :fig)))))
 
 (defun run-show-web-tests ()
   "Run all cl-matplotlib-show-web tests and report results."

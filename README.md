@@ -48,20 +48,45 @@ See the Lisp files in [examples](examples/) for other plots.
 ## Interactive display (`show`)
 
 Optional display backends open figures in live windows with
-cursor-anchored zoom, drag pan, home/reset, save, and a data-coordinate
-readout — in the browser (works over SSH) or a native SDL2 window:
+cursor-anchored zoom, drag pan (or rotate, for 3D), home/reset, save,
+a data-coordinate readout, click-to-select traces with copy/cut/paste
+between figures, undo/redo, legend toggling and a pinnable data cursor —
+in the browser (one page, a tab per figure; works over SSH) or native
+SDL2 windows (one per figure):
 
 ```lisp
 (ql:quickload :cl-matplotlib-show-web)   ; or :cl-matplotlib-show-sdl2, :cl-matplotlib-show-emacs
 (use-package :cl-matplotlib.pyplot)
 
 (plot '(1 2 3 4) '(1 4 2 3))
-(show)              ; opens a browser tab / window
-(show :block t)     ; returns when it is closed
+(show)              ; opens a browser tab / window per open figure
+(show :block t)     ; returns when the current figure's is closed
 ```
 
 See [docs/interactive.md](docs/interactive.md) for backend selection,
 the interaction reference, and how to write a new display adapter.
+
+## 3D plots (`:projection :3d`)
+
+A port of matplotlib's `mplot3d`: the same projection math (`view_init`
+angles, perspective, box aspect), painter's-algorithm depth sorting,
+depth-shaded scatter markers and lit surfaces.
+
+```lisp
+(subplots 1 1 :projection :3d)
+(plot-surface x y z :cmap "viridis")      ; x y z are rows×cols arrays
+(plot3d xs ys zs :color "red")            ; lines
+(scatter3d xs ys zs :c values :cmap "plasma" :s 30)
+(plot-trisurf xs ys zs :cmap "viridis")   ; Delaunay-triangulated surface
+(bar3d xs ys 0 0.6 0.6 heights)           ; bars
+(view-init :elev 20 :azim 45)
+(zlabel "z") (zlim 0 10)
+(savefig "plot.png")
+```
+
+See `examples/{surface3d,scatter3d,lines3d,trisurf3d,bar3d}.lisp`, whose
+references are rendered with `mplot3d` itself. Not yet ported: wireframes,
+`contour3D`, `quiver3D` and 3D text.
 
 ## Grammar of Graphics (ggplot)
 

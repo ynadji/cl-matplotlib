@@ -20,25 +20,26 @@ Width/height slots are re-synced here because renderers memoize size."
                        :width w :height h
                        :dpi (mpl.containers:figure-dpi figure)))))
 
-(defun %render-figure-grabbing (figure renderer grab-fn)
+(defun %render-figure-grabbing (figure renderer grab-fn &key overlay-fn)
   "Draw FIGURE with RENDERER on a fresh Vecto canvas, then call GRAB-FN
-with no arguments while the canvas is still live and return its value."
+with no arguments while the canvas is still live and return its value.
+OVERLAY-FN, when given, is called with the renderer after the figure is
+drawn — for interaction feedback (selection highlight, data cursor pins)
+that must not mutate the figure's artists."
   (let ((w (mpl.backends:renderer-width renderer))
         (h (mpl.backends:renderer-height renderer)))
-    ;; vecto:with-canvas closes every font loader opened through
-    ;; vecto:get-font when it exits, but the renderer's font cache keeps
-    ;; them across canvases — stale entries would hit a closed stream on
-    ;; the next frame's lazy glyph reads. Re-resolve fonts per canvas.
-    (clrhash (mpl.backends:renderer-font-cache renderer))
+    ;; The renderer's font loaders are opened by the backend itself (not
+    ;; vecto:get-font), so they survive across canvases and the cache is
+    ;; kept between frames.
     (vecto:with-canvas (:width w :height h)
       (setf (mpl.backends:renderer-active-p renderer) t)
       (unwind-protect
-           (progn
+           (let ((mpl.backends:*fast-rect-fills* t))   ; interactive: direct rectangle fills
              ;; White background, as in print-png
              (vecto:set-rgb-fill 1.0 1.0 1.0)
-             (vecto:rectangle 0 0 w h)
-             (vecto:fill-path)
+             (vecto:clear-canvas)
              (mpl.rendering:draw figure renderer)
+             (when overlay-fn (funcall overlay-fn renderer))
              (funcall grab-fn))
         (setf (mpl.backends:renderer-active-p renderer) nil)))))
 

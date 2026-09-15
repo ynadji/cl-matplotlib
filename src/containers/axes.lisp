@@ -1750,6 +1750,12 @@ Returns the created mpl-axes or polar-axes."
                                          :facecolor facecolor
                                          :frameon frameon
                                          :zorder 0))
+                  (:3d (make-instance 'axes-3d
+                                      :figure figure
+                                      :position position
+                                      :facecolor facecolor
+                                      :frameon frameon
+                                      :zorder 0))
                   (otherwise (make-instance 'mpl-axes
                                             :figure figure
                                             :position position

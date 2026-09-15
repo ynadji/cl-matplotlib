@@ -29,7 +29,26 @@ figure's bottom-left display space happens internally.")
    #:interactor-reset
    #:interactor-resize
    #:interactor-cursor-coords
+   #:interactor-cursor-info
    #:interactor-hit-axes
+   #:interactor-mode #:interactor-selection #:interactor-select #:interactor-clear-selection
+   #:interactor-pins #:interactor-pin-point #:interactor-clear-pins
+   #:interactor-rotate-start #:interactor-rotate-move
+   ;; pick.lisp — hit testing
+   #:interactor-pick #:interactor-nearest-point #:interactor-legend-hit
+   ;; commands.lisp — clipboard and undo
+   #:plot-trace #:make-plot-trace #:trace-from-artist #:trace-instantiate #:*trace-clipboard*
+   #:interactor-copy #:interactor-cut #:interactor-paste #:interactor-delete
+   #:interactor-undo #:interactor-redo #:interactor-toggle-visible
+   #:interactor-can-undo-p #:interactor-can-redo-p
+   ;; events.lisp — backend-agnostic event dispatch
+   #:interactor-handle-event #:*key-bindings*
+   ;; manager.lisp — the window manager shared by every backend
+   #:*wm* #:figure-window #:figure-window-id #:figure-window-title
+   #:figure-window-figure #:figure-window-interactor #:figure-window-closed-p
+   #:wm-register #:wm-windows #:wm-find #:wm-window-for-figure
+   #:wm-active-window #:wm-activate #:wm-close #:wm-close-all #:wm-wait-closed
+   #:wm-notify-changed #:wm-add-listener #:wm-remove-listener
    ;; protocol.lisp — adapter registry + show entry point
    #:show-figure
    #:register-show-adapter

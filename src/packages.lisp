@@ -177,6 +177,14 @@
              #:polar-affine
              #:polar-affine-update
              #:polar-affine-r-max
+             ;; proj3d — 3D projection math (mat4 / vec3 helpers + mplot3d pipeline)
+             #:vec3 #:vec3-add #:vec3-sub #:vec3-scale #:vec3-dot #:vec3-cross
+             #:vec3-norm #:vec3-normalize
+             #:mat4 #:make-mat4 #:mat4-identity #:mat4-ref #:mat4-mul #:mat4-invert
+             #:world-transformation #:rotation-about-vector #:view-axes
+             #:view-transformation-uvw #:persp-transformation #:ortho-transformation
+             #:proj-transform-vec #:proj-transform #:inv-transform
+             #:norm-angle #:default-box-aspect #:projection-matrix
             ;; Color conversion (extends foundation)
             #:to-hex #:to-rgb
            ;; Colormap classes
@@ -199,6 +207,7 @@
            #:boundary-norm #:make-boundary-norm
            ;; ScalarMappable
            #:scalar-mappable #:make-scalar-mappable
+           #:sm-norm #:sm-cmap #:sm-array
            #:scalar-mappable-to-rgba #:scalar-mappable-autoscale
            #:sm-norm #:sm-cmap))
 
@@ -399,6 +408,14 @@
              #:collection-set-patches
               ;; PolyCollection
               #:poly-collection #:poly-collection-verts
+              ;; art3d — 3D artists (project through a mat4 into their 2D slots)
+              #:do-3d-projection
+              #:line-3d #:make-line-3d #:line-3d-xs #:line-3d-ys #:line-3d-zs
+              #:path-3d-collection #:path-3d-collection-offsets3d
+              #:path-3d-collection-depthshade #:path-3d-collection-vzs
+              #:poly-3d-collection #:poly-3d-collection-verts3d
+              #:poly-3d-collection-zsort #:poly-3d-collection-sort-zpos
+              #:zalpha #:generate-normals #:shade-colors #:light-direction
               #:collection-set-verts
               ;; QuiverCollection
               #:quiver-collection #:quiver-x-data #:quiver-y-data
@@ -464,7 +481,8 @@
             #:axes-base-xaxis #:axes-base-yaxis #:axes-base-spines
              ;; Plotting functions
              #:add-subplot
-              #:plot #:scatter #:bar #:axes-fill #:fill-between
+              #:axes-remove-artist
+            #:plot #:scatter #:bar #:axes-fill #:fill-between
             #:eventplot #:stairs #:broken-barh #:axline #:matshow #:spy
             #:psd #:csd #:specgram #:magnitude-spectrum
             #:triplot #:tripcolor #:tricontour #:tricontourf
@@ -578,7 +596,7 @@
              #:create-legend-artists #:legend-artist
              #:get-legend-handler #:*default-handler-map*
              ;; Legend class
-             #:mpl-legend #:legend-parent #:legend-handles #:legend-labels
+             #:mpl-legend #:legend-parent #:legend-handles #:legend-labels #:legend-entry-bboxes
              #:legend-loc #:legend-bbox-to-anchor #:legend-ncol
              #:legend-fontsize #:legend-frameon-p #:legend-facecolor
              #:legend-edgecolor #:legend-framealpha #:legend-title
@@ -636,7 +654,18 @@
                 ;; Contour plotting functions
                 #:contour #:contourf #:clabel
                 ;; Polar axes
-                #:polar-axes))
+                #:polar-axes
+                ;; 3D (axes3d.lisp / axis3d.lisp / plotting/plot3d.lisp)
+                #:axes-3d #:axis-3d #:axis-3d-index
+                #:axes-3d-elev #:axes-3d-azim #:axes-3d-roll #:axes-3d-dist
+                #:axes-3d-focal-length #:axes-3d-box-aspect #:axes-3d-proj-matrix
+                #:axes-3d-inv-proj-matrix #:axes-3d-zaxis #:axes-3d-grid-on
+                #:axes-3d-axis-on #:axes-3d-computed-zorder
+                #:axes-3d-xy-view-lim #:axes-3d-z-view-lim
+                #:axes-3d-get-proj #:axes-3d-auto-scale-xyz #:axes-3d-autoscale-view
+                #:axes-get-zlim #:axes-set-zlim #:axes-set-zlabel #:axes-set-zticks
+                #:axes-set-box-aspect #:view-init
+                #:plot3d #:scatter3d #:plot-surface #:plot-trisurf #:bar3d))
 
 (defpackage #:cl-matplotlib.backends
   (:use #:cl)
@@ -674,7 +703,9 @@
              #:renderer-svg
              ;; SVG canvas
              #:canvas-svg #:canvas-render-fn-svg
-             #:print-svg #:render-to-svg))
+             #:print-svg #:render-to-svg
+             ;; interactive rendering knob (backend-vecto)
+             #:*fast-rect-fills*))
 
 (defpackage #:cl-matplotlib.pyplot
   (:use #:cl)
@@ -687,6 +718,9 @@ Manages global figure state for convenience.")
            ;; Subplot creation
            #:subplots
            ;; Plot functions
+             ;; 3D (projection :3d)
+             #:plot3d #:scatter3d #:plot-surface #:plot-trisurf #:bar3d
+             #:view-init #:zlim #:zlabel #:zticks
              #:plot #:scatter #:bar #:hist #:imshow #:contour #:contourf
              #:eventplot #:stairs #:broken-barh #:axline #:matshow #:spy
              #:psd #:csd #:specgram #:magnitude-spectrum
@@ -705,7 +739,7 @@ Manages global figure state for convenience.")
                #:twinx #:twiny
                #:minorticks-on
              ;; Output
-           #:savefig #:show #:*show-hook*
+           #:savefig #:show #:*show-hook* #:*close-figure-hook* #:figure-number
            ;; State management
            #:*figures* #:*current-figure* #:*figure-counter*
            ;; Dates (re-exported from containers)

@@ -248,7 +248,10 @@ Matches matplotlib's _staircase method."
       (push (* 10.0d0 (second steps)) result))
     (sort (nreverse result) #'<)))
 
-(defun %axis-tick-space (axis)
+(defgeneric %axis-tick-space (axis)
+  (:documentation "The number of ticks that fit along AXIS (matplotlib Axis.get_tick_space); axis-3d specializes it."))
+
+(defmethod %axis-tick-space (axis)
   "Compute the tick space (number of ticks that fit) based on axis pixel length.
 Matches matplotlib's Axis.get_tick_space():
   X-axis: pixel_length / (fontsize * 4)

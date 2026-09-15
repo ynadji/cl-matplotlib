@@ -14,6 +14,7 @@
                              (:file "transforms")
                               (:file "scale-transforms")
                               (:file "polar-transforms")
+                              (:file "proj3d")
                              (:file "colors")
                              (:file "colormap-data")
                              (:file "colormaps"))))
@@ -25,9 +26,10 @@
   :pathname "tests/"
   :components ((:file "test-path")
                (:file "test-transforms")
-               (:file "test-colors"))
+               (:file "test-colors")
+               (:file "test-proj3d"))
   :perform (test-op (o c)
-             (dolist (suite '(:path-tests :transform-tests :color-tests))
+             (dolist (suite '(:path-tests :transform-tests :color-tests :proj3d-tests))
                (let ((results (uiop:symbol-call :fiveam :run
                                                 (uiop:find-symbol* suite :cl-matplotlib.primitives.tests))))
                  (uiop:symbol-call :fiveam :explain! results)

@@ -99,6 +99,22 @@ Returns the current axes object."
       (t
        (setf *current-axes* (mpl.containers:add-subplot fig 1 1 1))))))
 
+(defvar *close-figure-hook* nil
+  "When bound to a function (figures), (close-figure) calls it with the
+list of figure objects about to be closed. Set by the display stack so
+open windows/tabs of those figures are closed too.")
+
+(defun %figures-to-close (num)
+  (cond ((eq num :all) (loop for f being the hash-values of *figures* collect f))
+        ((eq num :current) (let ((f (and *current-figure* (gethash *current-figure* *figures*))))
+                             (when f (list f))))
+        (t (let ((f (gethash num *figures*))) (when f (list f))))))
+
+(defun figure-number (figure)
+  "The pyplot number of FIGURE, or NIL when it is not a pyplot figure."
+  (loop for k being the hash-keys of *figures* using (hash-value v)
+        when (eq v figure) return k))
+
 (defun close-figure (&optional (num :current))
   "Close figure(s).
 
@@ -108,6 +124,9 @@ NUM — figure number to close, or:
   An integer — close that specific figure.
 
 After closing, switches to the highest-numbered remaining figure."
+  (when *close-figure-hook*
+    (let ((figs (%figures-to-close num)))
+      (when figs (funcall *close-figure-hook* figs))))
   (cond
     ((eq num :all)
      (clrhash *figures*)
@@ -182,7 +201,7 @@ SHAREY — share Y axis: T, NIL, :all, :row, :col, :none.
 SQUEEZE — if T, squeeze out dimensions of length 1.
 FIGSIZE — figure size (width height) in inches.
 DPI — resolution.
-PROJECTION — axes projection type (:polar for polar axes, NIL for rectangular).
+PROJECTION — axes projection type (:polar for polar axes, :3d for a 3D axes, NIL for rectangular).
 
 Returns (values figure axes) where axes is a single axes, 1D array, or 2D array."
    (let* ((fig-args (append (when figsize (list :figsize figsize))
@@ -898,21 +917,82 @@ Returns FILENAME, or the SVG string for a NIL destination."
                            :transparent transparent))
 
 (defvar *show-hook* nil
-  "When bound to a function (figure &key block), (show) displays the
-current figure through it. Set by loading the cl-matplotlib-show system;
-pyplot itself carries no display-backend dependency.")
+  "When bound to a function (figure &key block all), (show) displays the
+current figure through it; ALL is every open figure in number order, to
+be shown as well (matplotlib's show displays every figure). Set by
+loading the cl-matplotlib-show system; pyplot itself carries no
+display-backend dependency.")
 
 (defun show (&key block)
-  "Display the current figure.
-With an interactive display system loaded (cl-matplotlib-show plus a
-backend such as cl-matplotlib-show-web or -sdl2) this opens a live
-window; BLOCK T returns only after it is closed. Otherwise it is a
-no-op that suggests savefig."
+  "Display every open figure, the current one on top (like matplotlib's
+plt.show). With an interactive display system loaded (cl-matplotlib-show
+plus a backend such as cl-matplotlib-show-web or -sdl2) this opens a
+live window or tab per figure; BLOCK T returns only after the current
+figure's window is closed. Otherwise it is a no-op that suggests savefig."
   (if *show-hook*
-      (funcall *show-hook* (gcf) :block block)
+      (let ((all (loop for n in (sort (loop for k being the hash-keys of *figures* collect k) #'<)
+                       collect (gethash n *figures*))))
+        (funcall *show-hook* (gcf) :block block :all all))
       (progn
         (format t "~&; pyplot: No display backend loaded — use (savefig \"file.png\"), or (ql:quickload :cl-matplotlib-show-web) for interactive display.~%")
         (values))))
+
+;;; ============================================================
+;;; 3D (projection :3d) wrappers — see src/containers/axes3d.lisp
+;;; ============================================================
+
+(defun %gca-3d (who)
+  (let ((ax (gca)))
+    (unless (typep ax 'mpl.containers:axes-3d)
+      (error "~A needs a 3D axes: create one with (subplots 1 1 :projection :3d) or (mpl.containers:add-subplot fig 1 1 1 :projection :3d)." who))
+    ax))
+
+(defun plot3d (xs ys zs &rest args &key color linewidth linestyle marker markersize label zorder alpha)
+  "Plot a 3D line through XS YS ZS on the current 3D axes (Axes3D.plot)."
+  (declare (ignore color linewidth linestyle marker markersize label zorder alpha))
+  (apply #'mpl.containers:plot3d (%gca-3d 'plot3d) xs ys zs args))
+
+(defun scatter3d (xs ys zs &rest args &key s c color marker cmap norm vmin vmax depthshade label zorder alpha)
+  "Scatter markers at XS YS ZS on the current 3D axes (Axes3D.scatter)."
+  (declare (ignore s c color marker cmap norm vmin vmax depthshade label zorder alpha))
+  (apply #'mpl.containers:scatter3d (%gca-3d 'scatter3d) xs ys zs args))
+
+(defun plot-surface (x y z &rest args &key rcount ccount rstride cstride color cmap norm vmin vmax
+                                             shade facecolors linewidth edgecolor alpha zorder)
+  "Plot the surface Z over the 2D grid X Y on the current 3D axes (Axes3D.plot_surface)."
+  (declare (ignore rcount ccount rstride cstride color cmap norm vmin vmax shade facecolors
+                   linewidth edgecolor alpha zorder))
+  (apply #'mpl.containers:plot-surface (%gca-3d 'plot-surface) x y z args))
+
+(defun plot-trisurf (x y z &rest args &key triangles color cmap norm vmin vmax shade linewidth edgecolor alpha zorder)
+  "Plot a triangulated surface through the points X Y Z on the current 3D axes (Axes3D.plot_trisurf)."
+  (declare (ignore triangles color cmap norm vmin vmax shade linewidth edgecolor alpha zorder))
+  (apply #'mpl.containers:plot-trisurf (%gca-3d 'plot-trisurf) x y z args))
+
+(defun bar3d (x y z dx dy dz &rest args &key color zsort shade alpha edgecolor linewidth zorder)
+  "3D bars with corners X Y Z and sizes DX DY DZ on the current 3D axes (Axes3D.bar3d)."
+  (declare (ignore color zsort shade alpha edgecolor linewidth zorder))
+  (apply #'mpl.containers:bar3d (%gca-3d 'bar3d) x y z dx dy dz args))
+
+(defun view-init (&key elev azim roll)
+  "Set the camera elevation, azimuth and roll (degrees) of the current 3D axes."
+  (mpl.containers:view-init (%gca-3d 'view-init) :elev elev :azim azim :roll roll))
+
+(defun zlim (&optional min max)
+  "Get or set the z limits of the current 3D axes. With no arguments
+returns (values zmin zmax)."
+  (let ((ax (%gca-3d 'zlim)))
+    (if (or min max)
+        (mpl.containers:axes-set-zlim ax :min min :max max)
+        (mpl.containers:axes-get-zlim ax))))
+
+(defun zlabel (text &key fontsize)
+  "Set the z axis label of the current 3D axes."
+  (mpl.containers:axes-set-zlabel (%gca-3d 'zlabel) text :fontsize fontsize))
+
+(defun zticks (ticks)
+  "Fix the z tick positions of the current 3D axes."
+  (mpl.containers:axes-set-zticks (%gca-3d 'zticks) ticks))
 
 ;;; ============================================================
 ;;; Long-tail plot wrappers

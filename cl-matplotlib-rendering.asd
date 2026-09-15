@@ -19,6 +19,7 @@
                (:file "afm")
                (:file "hatch")
                 (:file "collections")
+                (:file "art3d")
                   (:file "quiver")
                   (:file "fancy-arrow")
                  (:file "annotation")

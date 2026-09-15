@@ -373,7 +373,10 @@ If TIGHT is T, use exact data limits (no margin)."
 ;;; Set/get limits
 ;;; ============================================================
 
-(defun axes-set-xlim (ax &key min max)
+(defgeneric axes-set-xlim (ax &key min max)
+  (:documentation "Set the x-axis view limits. axes-3d specializes this."))
+
+(defmethod axes-set-xlim ((ax axes-base) &key min max)
   "Set the x-axis view limits."
   (let ((view (axes-base-view-lim ax)))
     (setf (axes-base-view-lim ax)
@@ -388,7 +391,10 @@ If TIGHT is T, use exact data limits (no margin)."
     ;; Propagate to shared axes
     (%propagate-xlim ax)))
 
-(defun axes-set-ylim (ax &key min max)
+(defgeneric axes-set-ylim (ax &key min max)
+  (:documentation "Set the y-axis view limits. axes-3d specializes this."))
+
+(defmethod axes-set-ylim ((ax axes-base) &key min max)
   "Set the y-axis view limits."
   (let ((view (axes-base-view-lim ax)))
     (setf (axes-base-view-lim ax)
@@ -403,13 +409,19 @@ If TIGHT is T, use exact data limits (no margin)."
     ;; Propagate to shared axes
     (%propagate-ylim ax)))
 
-(defun axes-get-xlim (ax)
+(defgeneric axes-get-xlim (ax)
+  (:documentation "Return (values xmin xmax) for the axes."))
+
+(defmethod axes-get-xlim ((ax axes-base))
   "Return (values xmin xmax) for the axes."
   (let ((view (axes-base-view-lim ax)))
     (values (mpl.primitives:bbox-x0 view)
             (mpl.primitives:bbox-x1 view))))
 
-(defun axes-get-ylim (ax)
+(defgeneric axes-get-ylim (ax)
+  (:documentation "Return (values ymin ymax) for the axes."))
+
+(defmethod axes-get-ylim ((ax axes-base))
   "Return (values ymin ymax) for the axes."
   (let ((view (axes-base-view-lim ax)))
     (values (mpl.primitives:bbox-y0 view)
@@ -454,6 +466,20 @@ regions like axhspan/axvspan/fill-between."
   (setf (mpl.rendering:artist-figure patch) (axes-base-figure ax))
   (setf (mpl.rendering:artist-stale ax) t)
   patch)
+
+(defun axes-remove-artist (ax artist)
+  "Remove ARTIST from AX, whichever list it is in (lines, patches,
+artists, texts, images). Returns T when it was found."
+  (let ((found nil))
+    (flet ((drop (accessor)
+             (when (member artist (funcall accessor ax))
+               (setf found t)
+               (funcall (fdefinition (list 'setf accessor))
+                        (remove artist (funcall accessor ax)) ax))))
+      (drop 'axes-base-lines) (drop 'axes-base-patches) (drop 'axes-base-artists)
+      (drop 'axes-base-texts) (drop 'axes-base-images))
+    (when found (setf (mpl.rendering:artist-stale ax) t))
+    found))
 
 (defun axes-add-artist (ax artist)
   "Add an arbitrary artist to the axes."

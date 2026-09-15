@@ -397,6 +397,12 @@ Returns a 2D array of axes (or squeezed version)."
                                              :facecolor "white"
                                              :frameon t
                                              :zorder 0))
+                      (:3d (make-instance 'axes-3d
+                                          :figure figure
+                                          :position pos
+                                          :facecolor "white"
+                                          :frameon t
+                                          :zorder 0))
                       (otherwise (make-instance 'mpl-axes
                                                 :figure figure
                                                 :position pos
