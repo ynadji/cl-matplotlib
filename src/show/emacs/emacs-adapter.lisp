@@ -22,6 +22,8 @@
   (:export #:emacs-show-adapter
            #:adapter-buffer-name
            #:*buffer-name*
+           #:*format*
+           #:*dpi*
            #:emacs-connection-p))
 
 (in-package #:cl-matplotlib.show.emacs)
@@ -30,11 +32,23 @@
   "Name of the Emacs buffer figures are displayed in. Each show replaces
 the buffer's contents.")
 
+(defvar *format* :png
+  "Image format sent to Emacs: :png (default) rasterizes with the PNG
+backend and ships the bytes; :svg sends SVG text for librsvg to render.
+PNG stays small however many points a plot has — an SVG carries one
+element per marker — and its text is our own font rasterization rather
+than librsvg's substitutes; SVG scales crisply when zoomed in image-mode.")
+
+(defvar *dpi* nil
+  "Resolution for :png output, or NIL for the figure's own dpi. Raise it
+(200 for a HiDPI display, or to zoom in image-mode) at the cost of
+proportionally more pixels; the figure's dpi is restored afterwards.")
+
 (defclass emacs-show-adapter ()
   ((buffer-name :initarg :buffer-name :initform nil
                 :accessor adapter-buffer-name
                 :documentation "Buffer name override; NIL means *buffer-name*."))
-  (:documentation "Show adapter that renders to SVG and displays it in an
+  (:documentation "Show adapter that renders to PNG (or SVG, see *format*) and displays it in an
 Emacs image buffer over the SLIME/SLY connection."))
 
 ;;; ------------------------------------------------------------
@@ -63,21 +77,40 @@ server's default connection so background threads can display too."
 ;;; The Emacs-side form
 ;;; ------------------------------------------------------------
 
-(defun %display-form (svg buffer-name)
-  "The elisp form that shows SVG text in BUFFER-NAME as an image.
-The buffer is made unibyte and receives the UTF-8 encoding of the text,
-so non-ASCII labels reach librsvg as the bytes the XML declaration
-promises. Returns the buffer name so the RPC has a printable value."
+(defun %display-form (payload buffer-name &key (format *format*))
+  "The elisp form that shows PAYLOAD in BUFFER-NAME as an image: for
+:png the base64 text of the file's bytes, decoded in Emacs; for :svg the
+SVG text, whose UTF-8 encoding is inserted so non-ASCII labels reach
+librsvg as the bytes the XML declaration promises. The buffer is made
+unibyte first either way. Returns the buffer name so the RPC has a
+printable value."
   `(let ((buf (get-buffer-create ,buffer-name)))
      (with-current-buffer buf
        (let ((inhibit-read-only t))
          (fundamental-mode)
          (erase-buffer)
          (set-buffer-multibyte nil)
-         (insert (encode-coding-string ,svg 'utf-8))
+         (insert ,(ecase format
+                    (:png `(base64-decode-string ,payload))
+                    (:svg `(encode-coding-string ,payload 'utf-8))))
          (image-mode)))
      (display-buffer buf)
      ,buffer-name))
+
+(defun %figure-payload (figure &key (format *format*) (dpi *dpi*))
+  "FIGURE rendered for %display-form: base64 text of the PNG bytes for
+:png (at DPI when given, the figure's dpi otherwise), or the SVG text
+for :svg."
+  (ecase format
+    (:png
+     (let ((old-dpi (mpl.containers:figure-dpi figure)))
+       (unwind-protect
+            (progn
+              (when dpi (setf (mpl.containers:figure-dpi figure) dpi))
+              (cl-base64:usb8-array-to-base64-string
+               (mpl.show:render-figure-to-png-octets figure)))
+         (setf (mpl.containers:figure-dpi figure) old-dpi))))
+    (:svg (mpl.containers:savefig figure nil :format :svg))))
 
 (defun %eval-in-emacs (form)
   "Evaluate FORM in Emacs through swank/slynk and return its value.
@@ -110,13 +143,13 @@ being disabled) surfaces here as a Lisp error."
 ;;; ------------------------------------------------------------
 
 (defmethod mpl.show:show-figure ((adapter emacs-show-adapter) figure &key block)
-  "Render FIGURE to SVG and display it in the Emacs buffer named by the
-adapter (default *buffer-name*). Returns the buffer name. BLOCK is
-ignored: the image buffer is static, so there is nothing to wait for."
+  "Render FIGURE (PNG bytes, or SVG text, per *format*) and display it in
+the Emacs buffer named by the adapter (default *buffer-name*). Returns
+the buffer name. BLOCK is ignored: the image buffer is static, so there
+is nothing to wait for."
   (declare (ignore block))
-  (let* ((name (or (adapter-buffer-name adapter) *buffer-name*))
-         (svg (mpl.containers:savefig figure nil :format :svg)))
-    (%eval-in-emacs (%display-form svg name))
+  (let ((name (or (adapter-buffer-name adapter) *buffer-name*)))
+    (%eval-in-emacs (%display-form (%figure-payload figure) name))
     name))
 
 (defvar *emacs-adapter* (make-instance 'emacs-show-adapter))

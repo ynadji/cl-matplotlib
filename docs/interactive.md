@@ -11,7 +11,7 @@ use:
 | `cl-matplotlib-show-web` | browser backend — HTTP + websocket + HTML canvas (works everywhere, including over SSH) |
 | `cl-matplotlib-show-sdl2` | native window backend via SDL2 (needs `libsdl2` and a display) |
 | `cl-matplotlib-show-capi` | LispWorks CAPI backend (stretch; see caveats below) |
-| `cl-matplotlib-show-emacs` | Emacs backend — SVG image buffer over the SLIME/SLY connection (static; no window system or server needed) |
+| `cl-matplotlib-show-emacs` | Emacs backend — PNG image buffer over the SLIME/SLY connection (static; no window system or server needed) |
 
 ## Quick start
 
@@ -225,11 +225,10 @@ SDL_VIDEODRIVER=dummy ros run -- --eval '(ql:quickload :cl-matplotlib-show-sdl2)
 ## The Emacs backend
 
 `cl-matplotlib-show-emacs` displays figures inside Emacs itself. Each
-`(show)` renders the figure to SVG text and, through swank/slynk's
-`eval-in-emacs`, drops it into the `*cl-matplotlib*` buffer in
-`image-mode` (Emacs renders SVG natively). No file is written, no server
-runs, and there is no elisp to install. The image is static: no zoom or
-pan, and `:block` is ignored.
+`(show)` renders the figure to PNG, and through swank/slynk's
+`eval-in-emacs` drops the bytes into the `*cl-matplotlib*` buffer in
+`image-mode`. No file is written, no server runs, and there is no elisp
+to install. The image is static: no zoom or pan, and `:block` is ignored.
 
 One Emacs setting is required, since SLIME/SLY refuse Lisp-initiated
 evaluation by default:
@@ -253,8 +252,14 @@ Then, in the SLIME/SLY REPL:
 `:auto` picks `:emacs` whenever an Emacs connection is live and no native
 window backend is available; `(setf mpl.show:*show-backend* :emacs)`
 forces it. `mpl.show.emacs:*buffer-name*` changes the target buffer.
-Text in the SVG references font names rather than embedding outlines, so
-Emacs's librsvg substitutes the fonts it has installed.
+
+`mpl.show.emacs:*dpi*` (default `nil`, the figure's own dpi) sets the
+resolution of the PNG — 200 for a HiDPI display, or to zoom in
+`image-mode` without blur. `mpl.show.emacs:*format*` set to `:svg` sends
+SVG text instead, which zooms crisply but has librsvg substitute its own
+fonts for the plot's, and grows with the number of points: a scatter of a
+few million markers is a gigabyte of SVG, while its PNG is a few tens of
+kilobytes.
 
 `gg:ggshow` is backend-agnostic: it draws the plot and hands the figure
 to `mpl.pyplot:*show-hook*`, so it works with the web and SDL2 backends
