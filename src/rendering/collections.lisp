@@ -170,12 +170,12 @@ For each item: get path, apply per-item transform, apply offset, draw."
          (alpha (or (artist-alpha c) 1.0d0)))
     (when (zerop n-items)
       (return-from draw))
-    ;; Fast path: when all properties are uniform (single path, single facecolor,
-    ;; single edgecolor, single linewidth, single/uniform transforms), delegate
-    ;; to the backend's batch renderer to avoid per-item overhead.
+    ;; Fast path: one path, one edgecolor, one linewidth and one (or no)
+    ;; transform — a scatter, whether its face color is uniform or varies
+    ;; per item — delegates to the backend's batch renderer to avoid
+    ;; per-item overhead. Varying face colors go as a simple-vector.
     (let ((uniform-p (and (= n-paths 1)
                           offsets
-                          (<= (length facecolors) 1)
                           (<= (length edgecolors) 1)
                           (<= (length linewidths) 1)
                           (<= (length transforms) 1))))
@@ -187,7 +187,9 @@ For each item: get path, apply per-item transform, apply offset, draw."
                        n-items
                        trans-offset
                        (when transforms (first transforms))
-                       (first facecolors)
+                       (if (<= (length facecolors) 1)
+                           (first facecolors)
+                           (coerce facecolors 'simple-vector))
                        (first edgecolors)
                        (if linewidths (first linewidths) 1.0)
                        alpha)))
@@ -202,7 +204,9 @@ For each item: get path, apply per-item transform, apply offset, draw."
               (multiple-value-bind (linewidths-vec linewidths-len) (%ensure-vector linewidths)
                 (multiple-value-bind (linestyles-vec linestyles-len) (%ensure-vector linestyles)
                   (multiple-value-bind (antialiaseds-vec antialiaseds-len) (%ensure-vector antialiaseds)
-                    (let ((paths-vec (if paths (coerce paths 'simple-vector) #())))
+                    (let ((paths-vec (if paths (coerce paths 'simple-vector) #()))
+                          (trans-offset-mtx (when trans-offset
+                                              (mpl.primitives:get-matrix trans-offset))))
                       ;; Draw each item
                       (dotimes (i n-items)
                         (let* ((path-idx (if (zerop n-paths) 0 (mod i n-paths)))
@@ -231,35 +235,39 @@ For each item: get path, apply per-item transform, apply offset, draw."
                                                :alpha (float alpha 1.0)
                                                :antialiased antialiased
                                                :capstyle (collection-capstyle c)
-                                               :joinstyle (collection-joinstyle c))))
-                              ;; Compute transform: per-item transform (if any) composed with offset
-                              (let ((item-transform (when (plusp transforms-len)
-                                                      (%coll-nth-vec transforms-vec transforms-len i)))
-                                    (final-transform nil))
-                                (if item-transform
-                                    (setf final-transform item-transform)
-                                    (setf final-transform nil))
-                                ;; Apply offset via translation
-                                (when offset
-                                  (let* ((ox (float (first offset) 1.0d0))
-                                         (oy (float (second offset) 1.0d0))
-                                         (transformed-offset
-                                           (if trans-offset
-                                               (mpl.primitives:transform-point
-                                                trans-offset (list ox oy))
-                                               (vector ox oy)))
-                                         (tx (aref transformed-offset 0))
-                                         (ty (aref transformed-offset 1))
-                                         (offset-tr (mpl.primitives:make-affine-2d
-                                                     :translate (list tx ty))))
-                                    (if final-transform
-                                        (setf final-transform
-                                              (mpl.primitives:compose final-transform offset-tr))
-                                        (setf final-transform offset-tr))))
-                                ;; Draw the path
-                                (renderer-draw-path renderer gc path final-transform
-                                                    :fill facecolor
-                                                    :stroke edgecolor))))))))))))))))
+                                               :joinstyle (collection-joinstyle c)))
+                                  (item-transform (when (plusp transforms-len)
+                                                    (%coll-nth-vec transforms-vec transforms-len i)))
+                                  (final-transform nil))
+                              ;; Per-item transform followed by the offset
+                              ;; translation. The result is a fresh,
+                              ;; childless affine built from the matrices:
+                              ;; COMPOSE would register each item as a
+                              ;; parent of the shared per-item transform,
+                              ;; and that weak-parent list is pruned and
+                              ;; deduplicated on every registration —
+                              ;; quadratic in the item count.
+                              (setf final-transform
+                                    (let ((m (if item-transform
+                                                 (mpl.primitives:copy-matrix
+                                                  (mpl.primitives:get-matrix item-transform))
+                                                 (mpl.primitives:make-identity-matrix))))
+                                      (declare (type mpl.primitives:affine-matrix m))
+                                      (when offset
+                                        (let ((ox (float (first offset) 1.0d0))
+                                              (oy (float (second offset) 1.0d0)))
+                                          (multiple-value-bind (tx ty)
+                                              (if trans-offset-mtx
+                                                  (mpl.primitives:affine-transform-point
+                                                   trans-offset-mtx ox oy)
+                                                  (values ox oy))
+                                            (incf (aref m 4) tx)
+                                            (incf (aref m 5) ty))))
+                                      (mpl.primitives:make-affine-2d :matrix m)))
+                              ;; Draw the path
+                              (renderer-draw-path renderer gc path final-transform
+                                                  :fill facecolor
+                                                  :stroke edgecolor)))))))))))))))
   (setf (artist-stale c) nil))
 
 ;;; ============================================================

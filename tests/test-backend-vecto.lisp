@@ -578,6 +578,49 @@ path when FAST or the anti-aliased rasterizer otherwise."
         (draw-path renderer gc path nil (list 0.2 0.4 0.8 alpha)))
       (copy-seq (zpng:image-data (vecto::image vecto::*graphics-state*))))))
 
+(defun %render-markers-pixels (facecolors &key (alpha 1.0d0))
+  "Pixels of a 40x30 white canvas after drawing two size-64 circle
+markers at (10,15) and (30,15) with FACECOLORS through the Vecto
+collection fast path."
+  (let ((renderer (make-instance 'renderer-vecto :width 40 :height 30 :dpi 100)))
+    (vecto:with-canvas (:width 40 :height 30)
+      (vecto:set-rgb-fill 1.0 1.0 1.0)
+      (vecto:clear-canvas)
+      (setf (renderer-active-p renderer) t)
+      (let ((pc (mpl.rendering:make-path-collection
+                 :paths (list (mpl.rendering:make-marker-path :o))
+                 :offsets '((10.0d0 15.0d0) (30.0d0 15.0d0))
+                 :sizes '(64.0)
+                 :facecolors facecolors
+                 :edgecolors nil
+                 :linewidths 0.0
+                 :alpha alpha
+                 :dpi 100)))
+        (mpl.rendering:draw pc renderer))
+      (copy-seq (zpng:image-data (vecto::image vecto::*graphics-state*))))))
+
+(test collection-fast-path-per-item-colors
+  "Stamped markers take their own face color per item, cover their
+centre fully, and blend translucent colors like the rasterizer."
+  (flet ((pixel (data x y)
+           ;; raster rows run top-down
+           (let ((i (* 4 (+ x (* (- 30 y) 40)))))
+             (subseq data i (+ i 4)))))
+    (let ((two (%render-markers-pixels '("red" "blue"))))
+      (is (equalp #(255 0 0 255) (pixel two 10 15)))
+      (is (equalp #(0 0 255 255) (pixel two 30 15)))
+      ;; untouched background stays white and opaque
+      (is (equalp #(255 255 255 255) (pixel two 20 15))))
+    ;; one color given once or per item renders identically
+    (is (equalp (%render-markers-pixels '("red"))
+                (%render-markers-pixels '("red" "red"))))
+    ;; half-transparent red over white: R stays 255, G and B drop to ~127
+    (let ((px (pixel (%render-markers-pixels '("red") :alpha 0.5d0) 10 15)))
+      (is (= 255 (aref px 0)))
+      (is (<= 126 (aref px 1) 128))
+      (is (<= 126 (aref px 2) 128))
+      (is (= 255 (aref px 3))))))
+
 (test fast-rect-fill-matches-rasterizer
   "Integer-aligned opaque rectangles are byte-identical; fractional
 edges differ by at most one unit of coverage on boundary pixels."
