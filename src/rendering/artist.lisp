@@ -240,8 +240,11 @@ Example: (artist-set line :color \"red\" :linewidth 2.0)"
 (defgeneric renderer-draw-collection-uniform (renderer path offsets-vec n-items
                                               trans-offset scale-transform
                                               face-color edge-color linewidth alpha)
-  (:documentation "Fast path for drawing a uniform collection (one path, one set of properties).
-Backends should specialize this to avoid per-item overhead.
+  (:documentation "Fast path for drawing a collection whose items share one
+path, one edge color, one linewidth and one (or no) transform. FACE-COLOR
+is a single color spec, or a simple-vector of per-item specs (cycled
+modulo its length) when the face color varies — a scatter colored by
+category. Backends should specialize this to avoid per-item overhead.
 Returns T if handled, NIL to fall back to the generic per-item loop.")
   (:method (renderer path offsets-vec n-items trans-offset scale-transform
             face-color edge-color linewidth alpha)

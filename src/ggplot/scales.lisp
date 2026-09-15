@@ -173,6 +173,20 @@ plotnine's additive 0.6."))
              value (scale-levels scale)))
     (1+ pos)))
 
+(defun %level-index-fn (scale)
+  "A function from a value to its 1-based position among the scale's
+levels, with the levels computed and indexed once: mapping a column of
+millions of values must not sort the levels and scan them per value."
+  (let ((levels (scale-levels scale))
+        (index (make-hash-table :test #'equal)))
+    (loop for level in levels
+          for i from 1
+          do (unless (gethash level index)
+               (setf (gethash level index) i)))
+    (lambda (value)
+      (or (gethash value index)
+          (error "Value ~S is not among the scale's levels ~S" value levels)))))
+
 (defmethod scale-limits ((scale scale-discrete))
   (let ((n (length (scale-levels scale))))
     (list 1.0d0 (float (max n 1) 1.0d0))))
@@ -187,8 +201,9 @@ plotnine's additive 0.6."))
       (list (- lo pad) (+ hi pad)))))
 
 (defmethod scale-map ((scale scale-discrete) values)
-  (map 'simple-vector (lambda (v) (float (%level-position scale v) 1.0d0))
-       values))
+  (let ((position (%level-index-fn scale)))
+    (map 'simple-vector (lambda (v) (float (funcall position v) 1.0d0))
+         values)))
 
 (defmethod scale-breaks ((scale scale-discrete))
   (let ((user (scale-user-breaks scale)))
@@ -223,13 +238,15 @@ plotnine's additive 0.6."))
 
 (defmethod scale-map ((scale scale-discrete-palette) values)
   (let* ((levels (scale-levels scale))
-         (mapped (funcall (scale-palette scale) (length levels))))
+         (mapped (funcall (scale-palette scale) (length levels)))
+         (position (%level-index-fn scale)))
     (unless (>= (length mapped) (length levels))
       (error "Palette supplied ~D values for ~D levels"
              (length mapped) (length levels)))
-    (map 'simple-vector
-         (lambda (v) (elt mapped (1- (%level-position scale v))))
-         values)))
+    (let ((mapped (coerce mapped 'simple-vector)))
+      (map 'simple-vector
+           (lambda (v) (svref mapped (1- (funcall position v))))
+           values))))
 
 (defun scale-color-discrete (&rest args &key name breaks labels limits guide)
   (declare (ignore name breaks labels limits guide))

@@ -74,13 +74,17 @@ semantics: a discrete x splits stats into per-category groups."
                                            :initial-element 0))
             (gtable-set-column
              table :group
+             ;; the key string is formatted once per distinct tuple, not
+             ;; once per row
              (loop with n = (gtable-nrows table)
                    with out = (make-array n)
+                   with keys = (make-hash-table :test #'equal)
                    for i from 0 below n
+                   for tuple = (mapcar (lambda (c) (svref c i)) discrete-cols)
                    do (setf (aref out i)
-                            (format nil "~{~A~^|~}"
-                                    (mapcar (lambda (c) (svref c i))
-                                            discrete-cols)))
+                            (or (gethash tuple keys)
+                                (setf (gethash tuple keys)
+                                      (format nil "~{~A~^|~}" tuple))))
                    finally (return out)))))))
 
 (defun %resolve-after-stat (plot layer table)

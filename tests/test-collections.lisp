@@ -47,6 +47,14 @@
 
 (in-package #:cl-matplotlib.tests.collections)
 
+(defun run-collection-tests ()
+  "Run all collection tests and report results."
+  (let ((results (run 'collection-suite)))
+    (explain! results)
+    (unless (results-status results)
+      (error "Collection tests FAILED"))
+    results))
+
 (def-suite collection-suite :description "Collection classes test suite")
 (in-suite collection-suite)
 
@@ -599,10 +607,57 @@
 ;;; Run all tests
 ;;; ============================================================
 
-(defun run-collection-tests ()
-  "Run all collection tests and report results."
-  (let ((results (run 'collection-suite)))
-    (explain! results)
-    (unless (results-status results)
-      (error "Collection tests FAILED"))
-    results))
+
+(test path-collection-per-item-facecolors-drawn
+  "A single-path collection with varying face colors offers the backend
+the batch path with a vector of colors; a backend without one (the mock)
+still gets every item with its own fill."
+  (let* ((marker (make-marker-path :circle))
+         (colors '("red" "green" "blue"))
+         (pc (make-instance 'path-collection
+                            :paths (list marker)
+                            :offsets '((0.0d0 0.0d0) (1.0d0 1.0d0) (2.0d0 2.0d0))
+                            :sizes '(36.0)
+                            :facecolors colors
+                            :edgecolors nil
+                            :linewidths '(0.0)))
+         (renderer (make-mock-renderer)))
+    (draw pc renderer)
+    (let ((calls (reverse (mock-renderer-calls renderer))))
+      (is (= 3 (length calls)))
+      (is (equal colors (mapcar (lambda (call) (getf (cddddr call) :fill)) calls))))))
+
+(test path-collection-per-item-transform-is-plain-affine
+  "The general per-item path hands the renderer a fresh affine (scale then
+offset) rather than a composite registered as a parent of the shared size
+transform — that registration is pruned and deduplicated per item, which
+made a scatter with per-item properties quadratic in its size."
+  (let* ((marker (make-marker-path :circle))
+         (n 50)
+         (pc (make-instance 'path-collection
+                            :paths (list marker)
+                            :offsets (loop for i below n
+                                           collect (list (float i 1.0d0) 2.0d0))
+                            :sizes '(36.0)
+                            :facecolors '("red")
+                            :edgecolors (loop for i below n
+                                              collect (if (evenp i) "black" "blue"))
+                            :linewidths '(1.0)
+                            :trans-offset (mpl.primitives:make-affine-2d
+                                           :scale '(10.0d0 10.0d0))
+                            :dpi 72))
+         (renderer (make-mock-renderer)))
+    (draw pc renderer)
+    (let ((calls (reverse (mock-renderer-calls renderer))))
+      (is (= n (length calls)))
+      (loop for call in calls
+            for i from 0
+            for tr = (fourth call)
+            for m = (mpl.primitives:get-matrix tr)
+            do (is (typep tr 'mpl.primitives:affine-2d))
+               (is (not (typep tr 'mpl.primitives:composite-affine-2d)))
+               ;; size 36 at 72 dpi → scale 6, offset (i, 2) scaled by 10
+               (is (< (abs (- (aref m 0) 6.0d0)) 1d-9))
+               (is (< (abs (- (aref m 3) 6.0d0)) 1d-9))
+               (is (< (abs (- (aref m 4) (* 10.0d0 i))) 1d-9))
+               (is (< (abs (- (aref m 5) 20.0d0)) 1d-9))))))

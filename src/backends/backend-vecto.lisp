@@ -645,20 +645,19 @@ STROKE can be T (use gc-foreground) or nil."
 (defmethod mpl.rendering:renderer-draw-collection-uniform
     ((renderer renderer-vecto) path offsets-vec n-items
      trans-offset scale-transform face-color edge-color linewidth alpha)
-  "Vecto fast path for uniform collections. Resolves colors once, extracts
-raw matrices, and delegates to draw-collection-uniform-fast."
-  (let ((resolved-face (when face-color (%resolve-color face-color)))
-        (resolved-edge (when edge-color (%resolve-color edge-color)))
-        (trans-offset-mtx (when trans-offset
-                            (mpl.primitives:get-matrix trans-offset)))
-        (scale-mtx (when scale-transform
-                     (mpl.primitives:get-matrix scale-transform))))
-    (draw-collection-uniform-fast renderer path offsets-vec n-items
-                                  trans-offset-mtx scale-mtx
-                                  resolved-face resolved-edge
-                                  (float linewidth 1.0d0)
-                                  (float alpha 1.0d0))
-    t))
+  "Vecto fast path for uniform collections. Extracts the raw matrices and
+delegates to draw-collection-uniform-fast, which resolves the face
+color(s) itself — FACE-COLOR may be a simple-vector of per-item specs."
+  (draw-collection-uniform-fast renderer path offsets-vec n-items
+                                (when trans-offset
+                                  (mpl.primitives:get-matrix trans-offset))
+                                (when scale-transform
+                                  (mpl.primitives:get-matrix scale-transform))
+                                face-color
+                                (when edge-color (%resolve-color edge-color))
+                                (float linewidth 1.0d0)
+                                (float alpha 1.0d0))
+  t)
 
 ;;; ============================================================
 ;;; Scanline cache: rasterize once, stamp many
@@ -788,92 +787,246 @@ Calls DRAW-FN with (x y alpha) for each covered pixel, clipped to image bounds."
       (when (and (>= y 0) (< y height))
         (%scanline-sweep-offset scanline draw-fn dx dy 0 width)))))
 
+(defstruct (%marker-mask (:constructor %make-marker-mask (x0 y0 w h alpha)))
+  "Coverage of one rasterized marker: ALPHA holds W×H coverage octets
+(0-255) whose top-left pixel sits at (X0, Y0) relative to the marker's
+anchor pixel."
+  (x0 0 :type fixnum)
+  (y0 0 :type fixnum)
+  (w 0 :type fixnum)
+  (h 0 :type fixnum)
+  (alpha (make-array 0 :element-type '(unsigned-byte 8))
+   :type (simple-array (unsigned-byte 8) (*))))
+
+(defun %marker-mask-from-scanlines (scanlines)
+  "Sweep frozen SCANLINES (from %rasterize-marker-to-scanlines) once into a
+%marker-mask, so that stamping a marker is a rectangular loop over octets
+rather than a walk over cells with a per-pixel closure call. Returns NIL
+for an empty rasterization."
+  (let ((xmin most-positive-fixnum) (xmax most-negative-fixnum)
+        (ymin most-positive-fixnum) (ymax most-negative-fixnum))
+    (dolist (scanline scanlines)
+      (let ((y (net.tuxee.aa::cell-y (first scanline))))
+        (setf ymin (min ymin y) ymax (max ymax y)))
+      (dolist (cell scanline)
+        (let ((x (net.tuxee.aa::cell-x cell)))
+          (setf xmin (min xmin x) xmax (max xmax x)))))
+    (when (> xmin xmax)
+      (return-from %marker-mask-from-scanlines nil))
+    (let* ((w (1+ (- xmax xmin)))
+           (h (1+ (- ymax ymin)))
+           (alpha (make-array (* w h) :element-type '(unsigned-byte 8)
+                                      :initial-element 0)))
+      (%replay-scanlines-at-offset
+       scanlines
+       (lambda (x y a)
+         (declare (type fixnum x y a))
+         ;; nonzero-winding coverage, as Vecto's draw function applies it
+         (setf (aref alpha (+ x (* y w))) (min 255 (abs a))))
+       (- xmin) (- ymin) w h)
+      (%make-marker-mask xmin ymin w h alpha))))
+
+(declaim (inline %imult %lerp8))
+
+(defun %imult (a b)
+  "Vecto's IMULT — (A*B)/255 with rounding — on fixnums (B may be negative)."
+  (declare (type fixnum a b) (optimize speed (safety 0)))
+  (let ((temp (+ (* a b) #x80)))
+    (declare (type fixnum temp))
+    (logand #xFF (ash (+ (ash temp -8) temp) -8))))
+
+(defun %lerp8 (p q a)
+  "Vecto's LERP: P blended toward Q by A/255, on fixnums."
+  (declare (type fixnum p q a) (optimize speed (safety 0)))
+  (logand #xFF (+ p (%imult a (- q p)))))
+
+(defun %stamp-mask (data width height clip mask cx cy r g b a)
+  "Blend MASK, anchored at raster pixel (CX, CY), into DATA — the canvas's
+WIDTH×HEIGHT RGBA octets — with the color octets R G B A, honoring CLIP
+(a coverage channel, or NIL). The arithmetic is Vecto's premultiplied
+blend (DRAW-FUNCTION) on fixnums: a fully covered opaque pixel is written
+straight, a pixel over an opaque background takes the division-free
+branch, and only a translucent background needs the general case."
+  (declare (optimize speed (safety 0))
+           (type (simple-array (unsigned-byte 8) (*)) data)
+           (type (or null (simple-array (unsigned-byte 8) (*))) clip)
+           (type fixnum width height cx cy)
+           (type (unsigned-byte 8) r g b a)
+           (type %marker-mask mask))
+  (let* ((malpha (%marker-mask-alpha mask))
+         (mw (%marker-mask-w mask))
+         (mh (%marker-mask-h mask))
+         (x0 (+ cx (%marker-mask-x0 mask)))
+         (y0 (+ cy (%marker-mask-y0 mask)))
+         (col0 (max 0 x0))
+         (col1 (min width (+ x0 mw)))
+         (row0 (max 0 y0))
+         (row1 (min height (+ y0 mh))))
+    (declare (type fixnum mw mh x0 y0 col0 col1 row0 row1))
+    (loop for row fixnum from row0 below row1
+          for mrow fixnum = (* (- row y0) mw)
+          do (loop for col fixnum from col0 below col1
+                   for cov fixnum = (aref malpha (+ (- col x0) mrow))
+                   do (unless (zerop cov)
+                        (let ((p (+ col (* row width))))
+                          (declare (type fixnum p))
+                          (when clip
+                            (setf cov (%imult (aref clip p) cov)))
+                          (unless (zerop cov)
+                            (let* ((i (* 4 p))
+                                   (afg (%imult cov a))
+                                   (abg (aref data (+ i 3))))
+                              (declare (type fixnum i afg abg))
+                              (cond
+                                ((= afg 255)
+                                 (setf (aref data i) r
+                                       (aref data (+ i 1)) g
+                                       (aref data (+ i 2)) b
+                                       (aref data (+ i 3)) 255))
+                                ((= abg 255)
+                                 ;; gamma = prelerp(afg, 255, 255) = 255,
+                                 ;; so the result is lerp(bg, fg, afg)
+                                 (setf (aref data i) (%lerp8 (aref data i) r afg)
+                                       (aref data (+ i 1)) (%lerp8 (aref data (+ i 1)) g afg)
+                                       (aref data (+ i 2)) (%lerp8 (aref data (+ i 2)) b afg)))
+                                (t
+                                 (let ((gamma (logand #xFF (- (+ afg abg)
+                                                              (%imult abg afg)))))
+                                   (declare (type fixnum gamma))
+                                   (unless (zerop gamma)
+                                     (flet ((ch (k fg)
+                                              (declare (type fixnum k fg))
+                                              (let ((v (%lerp8 (%imult (aref data (+ i k)) abg)
+                                                               fg afg)))
+                                                (declare (type fixnum v))
+                                                (setf (aref data (+ i k))
+                                                      (min 255 (round (* v 255) gamma))))))
+                                       (declare (inline ch))
+                                       (ch 0 r) (ch 1 g) (ch 2 b)))
+                                   (setf (aref data (+ i 3)) gamma))))))))))))
+
+(defun %color-key (spec)
+  "A key under EQUAL for the color spec SPEC: strings and lists as they
+are, other vectors (colormap output) as lists."
+  (if (and (vectorp spec) (not (stringp spec)))
+      (coerce spec 'list)
+      spec))
+
+
 (defun draw-collection-uniform-fast (renderer path offsets-vec n-items
                                      trans-offset-mtx scale-mtx
                                      face-color edge-color linewidth alpha)
-  "Fast path for drawing a collection where all items share the same path,
-facecolor, edgecolor, and linewidth. Avoids per-item GC/transform allocation.
-Uses scanline caching: rasterizes the marker ONCE, then stamps it at each offset."
+  "Fast path for a collection whose items share one path, edge color and
+linewidth. FACE-COLOR is one color spec, or a simple-vector of per-item
+specs (cycled modulo its length) — a scatter colored by category;
+EDGE-COLOR is already resolved to (r g b a). Fill-only markers are
+rasterized once into a coverage mask and stamped at every offset with a
+fixnum blend (%STAMP-MASK), resolving each distinct color once. A
+stroked or sheared marker falls back to per-item tracing."
   (declare (type simple-vector offsets-vec)
            (type fixnum n-items)
            (type (or null mpl.primitives::affine-matrix) trans-offset-mtx scale-mtx))
-  (let ((has-fill face-color)
-        (has-stroke (and edge-color (> linewidth 0.0))))
-    (vecto:with-graphics-state
-      ;; Set graphics state ONCE for all items
-      (vecto:set-line-width (float (points-to-pixels renderer linewidth) 1.0))
-      (when has-fill
-        (let ((r (first face-color))
-              (g (second face-color))
-              (b (third face-color))
-              (a (* (fourth face-color) (float alpha 1.0))))
-          (vecto:set-rgba-fill (float r 1.0) (float g 1.0) (float b 1.0) (float a 1.0))))
-      (when has-stroke
-        (let ((r (first edge-color))
-              (g (second edge-color))
-              (b (third edge-color))
-              (a (* (fourth edge-color) (float alpha 1.0))))
-          (vecto:set-rgba-stroke (float r 1.0) (float g 1.0) (float b 1.0) (float a 1.0))))
-      ;; Rasterize marker ONCE into scanline cache
-      (let ((fill-scanlines (when has-fill
-                              (%rasterize-marker-to-scanlines path scale-mtx)))
-            (stroke-scanlines (when has-stroke
-                                ;; TODO: stroke scanline caching (needs stroke path expansion)
-                                nil))
-            (draw-fn (when has-fill
-                       (vecto::fill-draw-function vecto::*graphics-state*)))
-            (img-width (vecto::width vecto::*graphics-state*))
-            (img-height (vecto::height vecto::*graphics-state*)))
-        (if (and fill-scanlines (not has-stroke))
-            ;; Fast path: fill-only with cached scanlines (common for scatter)
-            ;; trans-offset-mtx maps data coords to Vecto user-space (Y-up).
-            ;; We bypass Vecto's Y-flip transform, so apply it here:
-            ;; pixel-y = img-height - user-y
-            (dotimes (i n-items)
-              (let* ((offset (svref offsets-vec i))
-                     (ox (float (first offset) 1.0d0))
-                     (oy (float (second offset) 1.0d0)))
-                (multiple-value-bind (tx ty)
-                    (if trans-offset-mtx
-                        (mpl.primitives::affine-transform-point trans-offset-mtx ox oy)
-                        (values ox oy))
-                  (%replay-scanlines-at-offset fill-scanlines draw-fn
-                                               (round tx)
-                                               (round (- img-height ty))
-                                               img-width img-height))))
-            ;; Fallback: per-item trace+rasterize (for stroke or no fill)
-            (let ((final-mtx (make-array 6 :element-type 'double-float
-                                           :initial-element 0.0d0)))
-              (declare (type mpl.primitives::affine-matrix final-mtx))
-              (if scale-mtx
-                  (setf (aref final-mtx 0) (aref scale-mtx 0)
-                        (aref final-mtx 1) (aref scale-mtx 1)
-                        (aref final-mtx 2) (aref scale-mtx 2)
-                        (aref final-mtx 3) (aref scale-mtx 3))
-                  (setf (aref final-mtx 0) 1.0d0
-                        (aref final-mtx 3) 1.0d0))
+  (let* ((per-item-p (simple-vector-p face-color))
+         (n-colors (if per-item-p (length face-color) 1))
+         (has-fill (and face-color (plusp n-colors)))
+         (has-stroke (and edge-color (> linewidth 0.0)))
+         (alpha (float alpha 1.0))
+         (state vecto::*graphics-state*)
+         (img-width (vecto::width state))
+         (img-height (vecto::height state))
+         (cache (make-hash-table :test 'equal)))
+    (declare (type fixnum n-colors img-width img-height))
+    (labels ((item-face (i)
+               (declare (type fixnum i))
+               (if per-item-p (svref face-color (mod i n-colors)) face-color))
+             (resolved (spec)
+               ;; (r g b a) floats with ALPHA folded in, once per distinct spec
+               (let ((key (%color-key spec)))
+                 (or (gethash key cache)
+                     (setf (gethash key cache)
+                           (let ((c (%resolve-color spec)))
+                             (list (float (first c) 1.0) (float (second c) 1.0)
+                                   (float (third c) 1.0)
+                                   (* (float (fourth c) 1.0) alpha))))))))
+      (let ((mask (when (and has-fill (not has-stroke))
+                    (let ((scanlines (%rasterize-marker-to-scanlines path scale-mtx)))
+                      (when scanlines
+                        (%marker-mask-from-scanlines scanlines))))))
+        (if mask
+            ;; Stamp the cached coverage at each offset. trans-offset-mtx
+            ;; maps data coords to Vecto user space (Y up); the canvas is
+            ;; addressed top-down, hence img-height - y.
+            (let ((data (zpng:image-data (vecto::image state)))
+                  (clip (let ((cp (vecto::clipping-path state)))
+                          (unless (vecto::emptyp cp) (vecto::clipping-data cp))))
+                  (octets (make-hash-table :test 'equal)))
               (dotimes (i n-items)
                 (let* ((offset (svref offsets-vec i))
                        (ox (float (first offset) 1.0d0))
-                       (oy (float (second offset) 1.0d0)))
+                       (oy (float (second offset) 1.0d0))
+                       (spec (item-face i))
+                       (rgba (let ((key (%color-key spec)))
+                               (or (gethash key octets)
+                                   (setf (gethash key octets)
+                                         (let ((c (resolved spec)))
+                                           (list (vecto::float-octet (first c))
+                                                 (vecto::float-octet (second c))
+                                                 (vecto::float-octet (third c))
+                                                 (vecto::float-octet (fourth c)))))))))
                   (multiple-value-bind (tx ty)
                       (if trans-offset-mtx
                           (mpl.primitives::affine-transform-point trans-offset-mtx ox oy)
                           (values ox oy))
-                    (setf (aref final-mtx 4) tx
-                          (aref final-mtx 5) ty)
-                    (cond
-                      ((and has-fill has-stroke)
-                       (%trace-path-to-vecto-raw path final-mtx)
-                       (vecto:fill-path)
-                       (%trace-path-to-vecto-raw path final-mtx)
-                       (vecto:stroke))
-                      (has-fill
-                       (%trace-path-to-vecto-raw path final-mtx)
-                       (vecto:fill-path))
-                      (has-stroke
-                       (%trace-path-to-vecto-raw path final-mtx)
-                       (vecto:stroke))))))))))))
+                    (%stamp-mask data img-width img-height clip mask
+                                 (round tx) (round (- img-height ty))
+                                 (first rgba) (second rgba) (third rgba) (fourth rgba))))))
+            ;; Fallback: per-item trace+rasterize (stroke, sheared marker, or no fill)
+            (vecto:with-graphics-state
+              (vecto:set-line-width (float (points-to-pixels renderer linewidth) 1.0))
+              (when has-stroke
+                (vecto:set-rgba-stroke (float (first edge-color) 1.0)
+                                       (float (second edge-color) 1.0)
+                                       (float (third edge-color) 1.0)
+                                       (* (float (fourth edge-color) 1.0) alpha)))
+              (let ((final-mtx (make-array 6 :element-type 'double-float
+                                             :initial-element 0.0d0))
+                    (current-face nil))
+                (declare (type mpl.primitives::affine-matrix final-mtx))
+                (if scale-mtx
+                    (setf (aref final-mtx 0) (aref scale-mtx 0)
+                          (aref final-mtx 1) (aref scale-mtx 1)
+                          (aref final-mtx 2) (aref scale-mtx 2)
+                          (aref final-mtx 3) (aref scale-mtx 3))
+                    (setf (aref final-mtx 0) 1.0d0
+                          (aref final-mtx 3) 1.0d0))
+                (dotimes (i n-items)
+                  (let* ((offset (svref offsets-vec i))
+                         (ox (float (first offset) 1.0d0))
+                         (oy (float (second offset) 1.0d0)))
+                    (when has-fill
+                      (let ((c (resolved (item-face i))))
+                        (unless (eq c current-face)
+                          (vecto:set-rgba-fill (first c) (second c) (third c) (fourth c))
+                          (setf current-face c))))
+                    (multiple-value-bind (tx ty)
+                        (if trans-offset-mtx
+                            (mpl.primitives::affine-transform-point trans-offset-mtx ox oy)
+                            (values ox oy))
+                      (setf (aref final-mtx 4) tx
+                            (aref final-mtx 5) ty)
+                      (cond
+                        ((and has-fill has-stroke)
+                         (%trace-path-to-vecto-raw path final-mtx)
+                         (vecto:fill-path)
+                         (%trace-path-to-vecto-raw path final-mtx)
+                         (vecto:stroke))
+                        (has-fill
+                         (%trace-path-to-vecto-raw path final-mtx)
+                         (vecto:fill-path))
+                        (has-stroke
+                         (%trace-path-to-vecto-raw path final-mtx)
+                         (vecto:stroke)))))))))))
+    t))
 
 ;;; ============================================================
 ;;; Bridge: renderer-draw-text from artist protocol → draw-text
